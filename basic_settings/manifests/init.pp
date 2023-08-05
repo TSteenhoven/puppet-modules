@@ -90,23 +90,23 @@ class basic_settings(
 
     /* Install firewall and git */
     if ($backports and $allow_backports) {
-        package { ['git', $firewall_package]:
+        package { ['git', "${firewall_package}"]:
             ensure          => installed,
             install_options => ['-t', "${debianname}-backports"],
             require         => Exec['source_backports']
         }
     } else {
-        package { ['git', $firewall_package]:
+        package { ['git', "${firewall_package}"]:
             ensure  => installed,
             require => Exec['source_backports']
         }
     }
 
     /* Start nftables */
-    service { $firewall_package:
+    service { "${firewall_package}":
         ensure      => running,
         enable      => true,
-        require     => Package[$firewall_package]
+        require     => Package["${firewall_package}"]
     }
 
     /* Set script that's set the firewall */
@@ -114,7 +114,7 @@ class basic_settings(
         ensure  => present,
         mode    => '0755',
         content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
-        require => Package[firewall_package]
+        require => Package["${firewall_package}"]
     }
 
     /* Create RX buffer script */
