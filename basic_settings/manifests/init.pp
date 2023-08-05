@@ -7,7 +7,7 @@ class basic_settings(
     ) {
 
     /* Basic system packages */
-    package { [ 'apt-transport-https', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils' ]:
+    package { [ 'apt-transport-https', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils' ]:
         ensure  => installed
     }
 
@@ -103,15 +103,18 @@ class basic_settings(
     }
 
     /* Start nftables */
-    service { "${firewall_package}":
-        ensure      => running,
-        enable      => true,
-        require     => Package["${firewall_package}"]
+    if ($firewall_package == 'nftables') {
+        service { "${firewall_package}":
+            ensure      => running,
+            enable      => true,
+            require     => Package["${firewall_package}"]
+        }
     }
 
     /* Set script that's set the firewall */
-     file { '/etc/network/if-pre-up.d/iptables':
+    file { 'firewall_if_pre_up':
         ensure  => present,
+        path    => "/etc/network/if-pre-up.d/${firewall_package}",
         mode    => '0755',
         content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
         require => Package["${firewall_package}"]
@@ -134,25 +137,12 @@ class basic_settings(
             unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
-
-        /* Libssl dev package is newer in sury package */
-        package { 'libssl-dev':
-            ensure  => installed,
-            install_options => ['-t', 'sury_php'],
-            require => Exec['source_sury_php']
-        }
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
             command     => "rm /etc/apt/sources.list.d/sury_php.list; apt-get update;",
             onlyif      => "[ -e /etc/apt/sources.list.d/sury_php.list ]",
             require     => Exec['source_list_reload']
-        }
-
-        /* Install libssl from default repo */
-        package { 'libssl-dev':
-            ensure  => installed,
-            require => Exec['source_sury_php']
         }
     }
 
