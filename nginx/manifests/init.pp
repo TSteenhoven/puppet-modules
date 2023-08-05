@@ -44,8 +44,8 @@ class nginx(
         require => Package['nginx']
     }
     
-    /* Create sites enabled directory */
-    file { '/etc/nginx/sites-enabled':
+    /* Create sites connfig directory */
+    file { '/etc/nginx/conf.d':
         ensure  => directory,
         purge   => true,
         force   => true,

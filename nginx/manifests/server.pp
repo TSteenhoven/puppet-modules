@@ -32,7 +32,7 @@ define nginx::server(
     $fastcgi_read_timeout               = undef,
 
     $php_fpm_enable                     = true,
-    $php_fpm_uri                        = 'unix:/run/php/php7.0-fpm.sock',
+    $php_fpm_uri                        = 'unix:/run/php/php-fpm.sock',
     $allow_directories                  = false,
     $allow_http_options                 = true,
     $allow_http_options_origin          = '*',
@@ -67,7 +67,7 @@ define nginx::server(
 
     /* Inform nginx when file is changed or created */
     if ($restart_service) {
-        file { "/etc/nginx/sites-enabled/${name}.conf":
+        file { "/etc/nginx/conf.d/${name}.conf":
             ensure	=> present,
             content	=> template('nginx/server.conf'),
             owner   => 'root',
@@ -76,7 +76,7 @@ define nginx::server(
             notify 	=> Service['nginx']
         }
     } else {
-        file { "/etc/nginx/sites-enabled/${name}.conf":
+        file { "/etc/nginx/conf.d/${name}.conf":
             ensure	=> present,
             content	=> template('nginx/server.conf'),
             owner   => 'root',
