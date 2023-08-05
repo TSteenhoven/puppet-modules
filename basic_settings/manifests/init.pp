@@ -132,13 +132,13 @@ class basic_settings(
         exec { 'source_sury_php':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${debianname} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            require     => [ Package['curl'], Package['gnupg'] ]
+            require     => [Package['curl'], Package['gnupg']]
         }
 
         /* Libssl dev package is newer in sury package */
         package { 'libssl-dev':
             ensure  => installed,
-            install_options => ['-t', 'sury_php']
+            install_options => ['-t', 'sury_php'],
             require => Exec['source_sury_php']
         }
     } else {
@@ -161,7 +161,7 @@ class basic_settings(
         exec { 'source_nginx':
             command     => "printf \"deb http://nginx.org/packages/debian/ ${debianname} nginx\\ndeb-src http://nginx.org/packages/debian/ ${debianname} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl https://nginx.org/keys/nginx_signing.key | apt-key add -; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            require     => [ Package['curl'], Package['gnupg'] ]
+            require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove nginx repo */
