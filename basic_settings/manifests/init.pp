@@ -92,7 +92,7 @@ class basic_settings(
     if ($backports and $allow_backports) {
         package { ['git', $firewall_package]:
             ensure          => installed,
-            install_options => ['-t', "${debianname}-backports"]
+            install_options => ['-t', "${debianname}-backports"],
             require         => Exec['source_backports']
         }
     } else {
