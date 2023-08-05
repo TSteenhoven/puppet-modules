@@ -1,0 +1,11 @@
+<% if @non_free -%>
+deb http://deb.debian.org/debian/ <%= @debianname %> main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ <%= @debianname %> main contrib non-free non-free-firmware
+<% else -%>
+deb http://deb.debian.org/debian/ <%= @debianname %> main non-free-firmware
+deb-src http://deb.debian.org/debian/ <%= @debianname %> main non-free-firmware
+<% end -%>
+deb http://deb.debian.org/debian-security/ <%= @debianname %>-security main non-free-firmware
+deb-src http://deb.debian.org/debian-security/ <%= @debianname %>-security main non-free-firmware
+deb http://deb.debian.org/debian/ <%= @debianname %>-updates main non-free-firmware
+deb-src http://deb.debian.org/debian/ <%= @debianname %>-updates main non-free-firmware
