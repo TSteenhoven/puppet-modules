@@ -1,24 +1,24 @@
 
 class php8(
+        $bcmath             = false,
         $bzip2              = false,
         $curl               = false,
         $gd                 = false,
+        $gmp                = false,
+        $imagick            = false,
         $intl               = false,
         $ldap               = false,
-        $mysql              = false,
-        $sqlite3            = false,
-        $sybase             = false,
-        $imagick            = false,
-        $xdebug             = false,
-        $xsl                = false,
+        $mbstring           = false,
         $mcrypt             = false,
         $msgpack            = false,
-        $mbstring           = false,
+        $mysql              = false,
+        $readline           = false,
+        $soap               = false,
+        $sqlite3            = false,
+        $sybase             = false,
+        $xdebug             = false,
         $xml                = false,
         $zip                = false,
-        $soap               = false,
-        $bcmath             = false,
-        $gmp                = false,
         $minor_version      = '2',
         $skip_default_files = false
     ) {
@@ -28,6 +28,9 @@ class php8(
         ensure  => installed
     }
 
+    if ($bcmath) {
+        package { "php8.${minor_version}-bcmath": ensure => installed }
+    }
     if ($bzip2) {
         package { "php8.${minor_version}-bz2": ensure => installed }
     }
@@ -37,29 +40,20 @@ class php8(
     if ($gd) {
         package { "php8.${minor_version}-gd": ensure => installed }
     }
+    if ($gmp) {
+        package { "php8.${minor_version}-gmp": ensure => installed }
+    }
+    if ($imagick) {
+        package { "php8.${minor_version}-imagick": ensure => installed }
+    }
     if ($intl) {
         package { "php8.${minor_version}-intl": ensure => installed }
     }
     if ($ldap) {
         package { "php8.${minor_version}-ldap": ensure => installed }
     }
-    if ($mysql) {
-        package { "php8.${minor_version}-mysql": ensure => installed }
-    }
-    if ($sqlite3) {
-        package { "php8.${minor_version}-sqlite3": ensure => installed }
-    }
-    if ($sybase) {
-        package { "php8.${minor_version}-sybase": ensure => installed }
-    }
-    if ($imagick) {
-        package { "php8.${minor_version}-imagick": ensure => installed }
-    }
-    if ($xdebug) {
-        package { "php8.${minor_version}-xdebug": ensure => installed }
-    }
-    if ($xsl) {
-        package { "php8.${minor_version}-xsl": ensure => installed }
+    if ($mbstring) {
+        package { "php8.${minor_version}-mbstring": ensure => installed }
     }
     if ($mcrypt) {
         package { "php8.${minor_version}-mcrypt": ensure => installed }
@@ -67,23 +61,32 @@ class php8(
     if ($msgpack) {
         package { "php8.${minor_version}-msgpack": ensure => installed }
     }
-    if ($mbstring {
-        package { "php8.${minor_version}-mbstring": ensure => installed }
+    if ($mysql) {
+        package { "php8.${minor_version}-mysql": ensure => installed }
     }
-    if ($xml {
-        package { "php8.${minor_version}-xml": ensure => installed }
-    }
-    if ($zip {
-        package { "php8.${minor_version}-zip": ensure => installed }
+    if ($readline) {
+        package { "php8.${minor_version}-readline": ensure => installed }
     }
     if ($soap) {
         package { "php8.${minor_version}-soap": ensure => installed }
     }
-    if ($bcmath) {
-        package { "php8.${minor_version}-bcmath": ensure => installed }
+    if ($sqlite3) {
+        package { "php8.${minor_version}-sqlite3": ensure => installed }
     }
-    if ($gmp) {
-        package { "php8.${minor_version}-gmp": ensure => installed }
+    if ($sybase) {
+        package { "php8.${minor_version}-sybase": ensure => installed }
+    }
+    if ($xdebug) {
+        package { "php8.${minor_version}-xdebug": ensure => installed }
+    }
+    if ($xsl) {
+        package { "php8.${minor_version}-xsl": ensure => installed }
+    }
+    if ($xml) {
+        package { "php8.${minor_version}-xml": ensure => installed }
+    }
+    if ($zip) {
+        package { "php8.${minor_version}-zip": ensure => installed }
     }
 
     if (!$skip_default_files) {
