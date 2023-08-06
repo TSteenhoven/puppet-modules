@@ -19,7 +19,7 @@ define basic_settings::systemd_drop_in(
     }
 
     /* Reload systemd deamon */
-    if (!defined(Exec['systemd_drop_in_daemon_reload']])) {
+    if (!defined(Exec['systemd_drop_in_daemon_reload'])) {
         exec { 'systemd_drop_in_daemon_reload':
             command => "systemctl daemon-reload",
             refreshonly => true,
