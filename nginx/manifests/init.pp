@@ -35,7 +35,7 @@ class nginx(
         unit                => {
             'BindsTo'   => 'nginx.service'
         },
-        skip_deamon_reload  => true, 
+        skip_daemon_reload  => true, 
         require             => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
     }
 

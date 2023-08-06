@@ -23,13 +23,13 @@ define basic_settings::systemd_drop_in(
     if ($skip_daemon_reload) {
         file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
             ensure  => $ensure,
-            content => template('basic_settings/systemnd_drop_in'),
+            content => template('basic_settings/systemd_drop_in'),
             mode    => '0644'
         }
     } else {
         file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
             ensure  => $ensure,
-            content => template('basic_settings/systemnd_drop_in'),
+            content => template('basic_settings/systemd_drop_in'),
             mode    => '0644',
             notify  => Exec['systemd_daemon_reload']
         }
