@@ -7,6 +7,7 @@ define basic_settings::systemd_drop_in(
     $timer          = {}
 ) {
 
+    /* Check if this dir is not already managed by puppet */
     if (!defined(File["/etc/systemd/system/${target_unit}.d"])) {
         file { "/etc/systemd/system/${target_unit}.d":
             ensure  => directory,
@@ -17,10 +18,18 @@ define basic_settings::systemd_drop_in(
         }
     }
 
+    /* Reload systemd deamon */
+    exec { 'systemd_drop_in_daemon_reload':
+        command => "systemctl daemon-reload",
+        refreshonly => true,
+        require => Package['systemd']
+    }
+
+    /* Create configuration */
     file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
         ensure  => $ensure,
         content => template('basic_settings/systemnd_drop_in'),
         mode    => '0644',
-        notify  => Exec['systemd_daemon_reload']
+        notify  => Exec['systemd_drop_in_daemon_reload']
     }
 }

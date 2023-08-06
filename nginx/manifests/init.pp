@@ -34,7 +34,8 @@ class nginx(
         target_unit => "${basic_settings::cluster_id}-services.target",
         unit        => {
             'BindsTo'   => 'nginx.service'
-        }
+        },
+        require => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
     }
 
     /* Create log file */
