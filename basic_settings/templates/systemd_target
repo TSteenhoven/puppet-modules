@@ -1,0 +1,31 @@
+[Unit]
+Description=<%= @description %>
+After=<% @parent_targets.each do |targetname| %><%= targetname %>.target <% end %>
+<% if @stronger_requirements -%>
+BindsTo=<% @parent_targets.each do |targetname| %><%= targetname %>.target <% end %>
+<% else -%>
+Requires=<% @parent_targets.each do |targetname| %><%= targetname %>.target <% end %>
+<% end -%>
+AllowIsolate=<%= @allow_isolate ? 'true':'false' %>
+<% @unit.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% if ! @install.empty? -%>
+
+[Install]
+<% @install.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>

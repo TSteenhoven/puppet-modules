@@ -1,9 +1,11 @@
 class basic_settings(
+        $cluster_id     = 'core',
         $backports      = false,
         $non_free       = false,
         $include_sury   = false,
         $include_nginx  = false,
-        $nftables_enable = true
+        $nftables_enable = true,
+        $systemd_default_target = 'helpers'
     ) {
 
     /* Basic system packages */
@@ -90,16 +92,72 @@ class basic_settings(
 
     /* Install firewall and git */
     if ($backports and $allow_backports) {
-        package { ['git', "${firewall_package}"]:
+        package { ['systemd', 'systemd-sysv', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure          => installed,
             install_options => ['-t', "${debianname}-backports"],
             require         => Exec['source_backports']
         }
     } else {
-        package { ['git', "${firewall_package}"]:
+        package { ['systemd', 'systemd-sysv', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure  => installed,
             require => Exec['source_backports']
         }
+    }
+
+    /* Systemd storage target */
+    basic_settings::systemd_target { "${cluster_id}-system":
+        description     => 'System',
+        parent_targets  => ['multi-user'],
+        allow_isolate   => true
+    }
+
+    /* Systemd storage target */
+    basic_settings::systemd_target { "${cluster_id}-storage":
+        description     => 'Storage',
+        parent_targets  => ["${cluster_id}-system"],
+        allow_isolate   => true
+    }
+
+    /* Systemd services target */
+    basic_settings::systemd_target { "${cluster_id}-services":
+        description     => 'Services',
+        parent_targets  => ["${cluster_id}-storage"],
+        allow_isolate   => true
+    }
+
+    /* Systemd production target */
+    basic_settings::systemd_target { "${cluster_id}-production":
+        description     => 'Production',
+        parent_targets  => ["${cluster_id}-services"],
+        allow_isolate   => true
+    }
+
+    /* Systemd helpers target */
+    basic_settings::systemd_target { "${cluster_id}-helpers":
+        description     => 'Helpers',
+        parent_targets  => ["${cluster_id}-production"],
+        allow_isolate   => true
+    }
+
+    /* Systemd require services target */
+    basic_settings::systemd_target { "${cluster_id}-require-services":
+        description     => 'Require services',
+        parent_targets  => ["${cluster_id}-helpers"],
+        allow_isolate   => true
+    }
+
+    /* Set default target */
+    exec { 'set_default_target':
+        command => "systemctl set-default ${cluster_id}-${systemd_default_target}.target",
+        unless  => "test `/bin/systemctl get-default` = '${cluster_id}-${systemd_default_target}.target'",
+        require => [Package['systemd'], File["/etc/systemd/system/${cluster_id}-${systemd_default_target}.target"]]
+    }
+
+    /* Reload systemd deamon */
+    exec { 'systemd_daemon_reload':
+        command => "systemctl daemon-reload",
+        refreshonly => true,
+        require => Package['systemd']
     }
 
     /* Start nftables */
