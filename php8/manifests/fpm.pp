@@ -35,13 +35,22 @@ class php8::fpm(
         require => Package["php8.${minor_version}-fpm"]
     }
 
+    /* Reload systemd deamon */
+    exec { "php8_${minor_version}_systemd_daemon_reload":
+        command     => "systemctl daemon-reload",
+        refreshonly => true,
+        require     => Package['systemd']
+    }
+
     /* Create drop in for Nginx service */
     basic_settings::systemd_drop_in { 'nginx_php_dependency':
-        target_unit => 'nginx.service',
-        unit        => {
+        target_unit     => 'nginx.service',
+        unit            => {
             'After'     => "php8.${minor_version}-fpm.service",
             'BindsTo'   => "php8.${minor_version}-fpm.service"
-        }
+        },
+        daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
+        require         => Class['nginx']
     }
 
     /* Create PHP FPM config */

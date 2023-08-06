@@ -5,7 +5,7 @@ define basic_settings::systemd_drop_in(
     $service            = {},
     $mount              = {},
     $timer              = {},
-    $skip_daemon_reload = false
+    $daemon_reload      = 'systemd_daemon_reload'
 ) {
 
     /* Check if this dir is not already managed by puppet */
@@ -20,18 +20,10 @@ define basic_settings::systemd_drop_in(
     }
 
     /* Create configuration */
-    if ($skip_daemon_reload) {
-        file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
-            ensure  => $ensure,
-            content => template('basic_settings/systemd_drop_in'),
-            mode    => '0644'
-        }
-    } else {
-        file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
-            ensure  => $ensure,
-            content => template('basic_settings/systemd_drop_in'),
-            mode    => '0644',
-            notify  => Exec['systemd_daemon_reload']
-        }
+    file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
+        ensure  => $ensure,
+        content => template('basic_settings/systemd_drop_in'),
+        mode    => '0644',
+        notify  => Exec["${daemon_reload}"]
     }
 }

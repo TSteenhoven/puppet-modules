@@ -29,13 +29,20 @@ class nginx(
         require => Package['nginx']
     }
 
+    /* Reload systemd deamon */
+    exec { 'nginx_systemd_daemon_reload':
+        command     => "systemctl daemon-reload",
+        refreshonly => true,
+        require     => Package['systemd']
+    }
+
     /* Create drop in for services target */
     basic_settings::systemd_drop_in { 'nginx_dependency':
         target_unit         => "${basic_settings::cluster_id}-services.target",
         unit                => {
             'BindsTo'   => 'nginx.service'
         },
-        skip_daemon_reload  => true, 
+        daemon_reload       => 'nginx_systemd_daemon_reload', 
         require             => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
     }
 
