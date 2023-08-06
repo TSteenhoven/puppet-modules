@@ -97,10 +97,10 @@ class php8::fpm(
             subscribe   => Package["php8.${minor_version}"]
         }
     } else {
-    /* Install php package */
-    package { ["php8.${minor_version}"]:
-        ensure  => installed,
-        require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
-    }
+        /* Install php package */
+        package { ["php8.${minor_version}"]:
+            ensure  => installed,
+            require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
+        }
     }
 }
