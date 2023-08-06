@@ -18,20 +18,11 @@ define basic_settings::systemd_drop_in(
         }
     }
 
-    /* Reload systemd deamon */
-    if (!defined(Exec['systemd_drop_in_daemon_reload'])) {
-        exec { 'systemd_drop_in_daemon_reload':
-            command => "systemctl daemon-reload",
-            refreshonly => true,
-            require => Package['systemd']
-        }
-    }
-
     /* Create configuration */
     file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
         ensure  => $ensure,
         content => template('basic_settings/systemnd_drop_in'),
         mode    => '0644',
-        notify  => Exec['systemd_drop_in_daemon_reload']
+        notify  => Exec['systemd_daemon_reload']
     }
 }

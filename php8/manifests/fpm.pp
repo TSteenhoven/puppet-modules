@@ -41,8 +41,7 @@ class php8::fpm(
         unit        => {
             'After'     => "php8.${minor_version}-fpm.service",
             'BindsTo'   => "php8.${minor_version}-fpm.service"
-        },
-        require => Class['nginx']
+        }
     }
 
     /* Create PHP FPM config */
