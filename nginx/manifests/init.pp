@@ -1,8 +1,8 @@
 class nginx(
         $run_user               = 'www-data',
         $run_group              = 'www-data',
-        $keepalive_requests     = 150,
-        $keepalive_timeout      = '100s',
+        $keepalive_requests     = 1000,
+        $keepalive_timeout      = '75s',
         $types_hash_max_size    = 2048,
         $global_directives      = [],
         $events_directives      = [],
@@ -67,7 +67,7 @@ class nginx(
     file { 'nginx_fastcgi_php_conf':
         path    => '/etc/nginx/snippets/fastcgi-php.conf',
         ensure  => file,
-        source  => 'puppet:///modules/nginx/fastcgi-php-conf',
+        source  => 'puppet:///modules/nginx/fastcgi-php.conf',
         owner   => 'root',
         group   => 'root',
         mode    => '0600',

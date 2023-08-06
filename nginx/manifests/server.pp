@@ -7,12 +7,12 @@ define nginx::server(
 
     $http_enable                        = true,
     $http_port                          = 80,
-    $http_ipv6							= true,
+    $http_ipv6                          = true,
     $default_server                     = false,
 
     $https_enable                       = false,
     $https_port                         = 443,
-    $https_ipv6							= true,
+    $https_ipv6                         = true,
 
     $allow_acme                         = false,
 
