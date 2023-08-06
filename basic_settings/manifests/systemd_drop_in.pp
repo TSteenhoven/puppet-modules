@@ -19,10 +19,12 @@ define basic_settings::systemd_drop_in(
     }
 
     /* Reload systemd deamon */
-    exec { 'systemd_drop_in_daemon_reload':
-        command => "systemctl daemon-reload",
-        refreshonly => true,
-        require => Package['systemd']
+    if (!defined(Exec['systemd_drop_in_daemon_reload']])) {
+        exec { 'systemd_drop_in_daemon_reload':
+            command => "systemctl daemon-reload",
+            refreshonly => true,
+            require => Package['systemd']
+        }
     }
 
     /* Create configuration */
