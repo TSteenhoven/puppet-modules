@@ -31,11 +31,12 @@ class nginx(
 
     /* Create drop in for services target */
     basic_settings::systemd_drop_in { 'nginx_dependency':
-        target_unit => "${basic_settings::cluster_id}-services.target",
-        unit        => {
+        target_unit         => "${basic_settings::cluster_id}-services.target",
+        unit                => {
             'BindsTo'   => 'nginx.service'
         },
-        require => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+        skip_deamon_reload  => true, 
+        require             => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
     }
 
     /* Create log file */
