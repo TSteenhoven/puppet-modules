@@ -35,6 +35,16 @@ class php8::fpm(
         require => Package["php8.${minor_version}-fpm"]
     }
 
+    /* Create drop in for Nginx service */
+    basic_settings::systemd_drop_in { 'nginx_php_dependency':
+        target_unit => 'nginx.service',
+        unit        => {
+            'After'     => "php8.${minor_version}-fpm.service",
+            'BindsTo'   => "php8.${minor_version}-fpm.service"
+        },
+        require => Class['nginx']
+    }
+
     /* Create PHP FPM config */
     file { "/etc/php/8.${minor_version}/fpm/php-fpm.conf":
         ensure  => present,
@@ -87,10 +97,10 @@ class php8::fpm(
             subscribe   => Package["php8.${minor_version}"]
         }
     } else {
-        /* Install php package */
-        package { ["php8.${minor_version}"]:
-            ensure  => installed,
-            require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
-        }
+    /* Install php package */
+    package { ["php8.${minor_version}"]:
+        ensure  => installed,
+        require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
+    }
     }
 }

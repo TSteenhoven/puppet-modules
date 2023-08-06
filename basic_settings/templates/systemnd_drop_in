@@ -1,0 +1,51 @@
+<% if ! @unit.empty? -%>
+[Unit]
+<% @unit.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>
+<% if ! @service.empty? -%>
+
+[Service]
+<% @service.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>
+<% if ! @mount.empty? -%>
+
+[Mount]
+<% @mount.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>
+<% if ! @timer.empty? -%>
+
+[Timer]
+<% @timer.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>
