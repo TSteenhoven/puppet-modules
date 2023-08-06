@@ -61,7 +61,7 @@ define nginx::server(
   ) {
 
     /* Split server_name from by space, we need only the first in template to use as a redirect*/
-    if ($redirect_from != '') {
+    if ($redirect_from and $redirect_from != '') {
         $redirect_to = split($server_name, ' ')[0]
     }
 
