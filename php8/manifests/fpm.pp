@@ -30,8 +30,8 @@ class php8::fpm(
 
     /* Disable service */
     service { "php8.${minor_version}-fpm":
-        ensure => true,
-        enable => false,
+        ensure  => true,
+        enable  => false,
         require => Package["php8.${minor_version}-fpm"]
     }
 
@@ -52,6 +52,17 @@ class php8::fpm(
         daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
         require         => Class['nginx']
     }
+
+    /* Create drop in for PHP FPM service */
+    basic_settings::systemd_drop_in { "php8_${minor_version}_nice":
+        target_unit     => "php8.${minor_version}-fpm.service",
+        service         => {
+            'Nice' => "-${nginx::nice_level}"
+        },
+        daemon_reload   => "php8_${minor_version}_systemd_daemon_reload", 
+        require         => Package["php8.${minor_version}-fpm"]
+    }
+
 
     /* Create PHP FPM config */
     file { "/etc/php/8.${minor_version}/fpm/php-fpm.conf":

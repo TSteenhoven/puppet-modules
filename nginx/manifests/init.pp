@@ -6,7 +6,8 @@ class nginx(
         $types_hash_max_size    = 2048,
         $global_directives      = [],
         $events_directives      = [],
-        $http_directives        = []
+        $http_directives        = [],
+        $nice_level             = 10
     ) {
 
     /*  Check if we have sury */
@@ -38,12 +39,22 @@ class nginx(
 
     /* Create drop in for services target */
     basic_settings::systemd_drop_in { 'nginx_dependency':
-        target_unit         => "${basic_settings::cluster_id}-services.target",
-        unit                => {
-            'BindsTo'   => 'nginx.service'
+        target_unit     => "${basic_settings::cluster_id}-services.target",
+        unit            => {
+            'BindsTo' => 'nginx.service'
         },
-        daemon_reload       => 'nginx_systemd_daemon_reload', 
-        require             => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+        daemon_reload   => 'nginx_systemd_daemon_reload', 
+        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+    }
+
+    /* Create drop in for nginx service */
+    basic_settings::systemd_drop_in { 'nginx_nice':
+        target_unit     => 'nginx.service',
+        service         => {
+            'Nice' => "-${nice_level}"
+        },
+        daemon_reload   => 'nginx_systemd_daemon_reload', 
+        require         => Package['nginx']
     }
 
     /* Create log file */
