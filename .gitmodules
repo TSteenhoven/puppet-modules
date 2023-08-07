@@ -1,3 +1,6 @@
 [submodule "stdlib"]
 	path = stdlib
 	url = https://github.com/puppetlabs/puppetlabs-stdlib.git
+[submodule "reboot"]
+	path = reboot
+	url = https://github.com/puppetlabs/puppetlabs-reboot.git
