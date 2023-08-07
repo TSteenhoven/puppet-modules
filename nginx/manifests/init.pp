@@ -10,17 +10,9 @@ class nginx(
         $nice_level             = 10
     ) {
 
-    /*  Check if we have sury */
-    if ($basic_settings::nginx_allow) {
-        $install_options = ['-t', 'nginx']
-    } else {
-        $install_options = []
-    }
-
     /* Install Nginx */
     package { 'nginx':
-        ensure          => installed,
-        install_options => $install_options
+        ensure => installed
     }
 
     /* Disable service */
