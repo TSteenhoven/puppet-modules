@@ -238,4 +238,27 @@ class basic_settings(
             require     => Exec['source_list_reload']
         }
     }
+
+    /* Disable service */
+    service { 'puppet':
+        ensure  => true,
+        enable  => false
+    }
+
+    /* Create drop in for services target */
+    basic_settings::systemd_drop_in { 'puppet_dependency':
+        target_unit     => "${basic_settings::cluster_id}-system.target",
+        unit            => {
+            'Wants'   => 'puppet.service'
+        },
+        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-system"]
+    }
+
+    /* Create drop in for puppet service */
+    basic_settings::systemd_drop_in { 'puppet_nice':
+        target_unit     => 'puppet.service',
+        service         => {
+            'Nice' => '19'
+        }
+    }
 }
