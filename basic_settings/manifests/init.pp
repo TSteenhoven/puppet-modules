@@ -255,10 +255,11 @@ class basic_settings(
     }
 
     /* Create drop in for puppet service */
-    basic_settings::systemd_drop_in { 'puppet_nice':
+    basic_settings::systemd_drop_in { 'puppet_settings':
         target_unit     => 'puppet.service',
         service         => {
-            'Nice' => '19'
+            'Nice'          => 19,
+            'LimitNOFILE'   => 10000
         }
     }
 }
