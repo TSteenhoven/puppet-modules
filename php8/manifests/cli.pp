@@ -12,7 +12,7 @@ class php8::cli(
     }
     ->
     file { "/etc/php/8.${minor_version}/cli/conf.d/99-custom-settings.ini":
-        ensure  => present,
+        ensure  => file,
         content => template('php8/settings-template.ini'),
         owner   => 'root',
         group   => 'root',

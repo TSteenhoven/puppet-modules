@@ -26,12 +26,12 @@ define php8::fpm_pool(
     } elsif ($skip_default_files) {
         $listen_path = "/run/php/php8.${minor_version}-fpm.sock"
     } else {
-        $listen_path = "/run/php/php-fpm.sock"
+        $listen_path = '/run/php/php-fpm.sock'
     }
 
     /* Create config file */
     file { "/etc/php/8.${minor_version}/fpm/pool.d/${name}.conf":
-        ensure  => present,
+        ensure  => file,
         content => template('php8/fpm-pool.conf'),
         owner   => 'root',
         group   => 'root',

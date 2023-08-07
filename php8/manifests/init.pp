@@ -119,7 +119,7 @@ class php8(
 
         /* Create php browser list file */
         file { '/usr/lib/php/extras/lite_php_browscap.ini':
-            ensure  => present,
+            ensure  => file,
             source  => 'puppet:///modules/php8/extra/lite_php_browscap-ini',
             owner   => 'root',
             group   => 'root',
@@ -129,7 +129,7 @@ class php8(
 
         /* Create APT config */
         file { '/etc/apt/apt.conf.d/05php':
-            ensure  => present,
+            ensure  => file,
             source  => 'puppet:///modules/php8/apt-bash',
             owner   => 'root',
             group   => 'root',

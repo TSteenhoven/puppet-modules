@@ -3,22 +3,22 @@ define basic_settings::system_user(
     $uid,
     $gid,
     $password,
-    $ensure	            = present,
-    $groups	            = [],
+    $ensure             = present,
+    $groups             = [],
     $bash_profile       = undef,
-    $bashrc	            = undef,
-    $bash_aliases	    = undef,
-    $authorized_keys	= undef,
+    $bashrc             = undef,
+    $bash_aliases       = undef,
+    $authorized_keys    = undef,
     $shell              = '/bin/bash',
-    $disable_group		= false,
-    $disable_home 		= false
+    $disable_group      = false,
+    $disable_home       = false
 ) {
 
     /* Create only user group when group is disabled */
     if (!$disable_group) {
         group { $name:
-            ensure		=> $ensure,
-            gid			=> $gid
+            ensure      => $ensure,
+            gid         => $gid
         }
     }
 

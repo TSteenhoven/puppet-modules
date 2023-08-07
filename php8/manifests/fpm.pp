@@ -37,7 +37,7 @@ class php8::fpm(
 
     /* Reload systemd deamon */
     exec { "php8_${minor_version}_systemd_daemon_reload":
-        command     => "systemctl daemon-reload",
+        command     => 'systemctl daemon-reload',
         refreshonly => true,
         require     => Package['systemd']
     }
@@ -59,14 +59,13 @@ class php8::fpm(
         service         => {
             'Nice' => "-${nginx::nice_level}"
         },
-        daemon_reload   => "php8_${minor_version}_systemd_daemon_reload", 
+        daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
         require         => Package["php8.${minor_version}-fpm"]
     }
 
-
     /* Create PHP FPM config */
     file { "/etc/php/8.${minor_version}/fpm/php-fpm.conf":
-        ensure  => present,
+        ensure  => file,
         content => template('php8/fpm-global.conf'),
         owner   => 'root',
         group   => 'root',
@@ -74,7 +73,7 @@ class php8::fpm(
         notify  => Service["php8.${minor_version}-fpm"],
         require => Package["php8.${minor_version}-fpm"]
     }
-    
+
     /* Create PHP FPM pool */
     file { "/etc/php/8.${minor_version}/fpm/pool.d":
         ensure  => directory,
@@ -85,11 +84,11 @@ class php8::fpm(
         force   => true,
         recurse => true
     }
-    
+
     /* Create PHP custom settings */
     file { "/etc/php/8.${minor_version}/fpm/conf.d/99-custom-settings.ini":
-        ensure  => present,
-        content => template("php8/settings-template.ini"),
+        ensure  => file,
+        content => template('php8/settings-template.ini'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600'

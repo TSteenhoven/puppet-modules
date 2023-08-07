@@ -11,7 +11,7 @@ class nginx(
     ) {
 
     /*  Check if we have sury */
-    if ($basic_settings::allow_nginx) {
+    if ($basic_settings::nginx_allow) {
         $install_options = ['-t', 'nginx']
     } else {
         $install_options = []
@@ -19,20 +19,20 @@ class nginx(
 
     /* Install Nginx */
     package { 'nginx':
-        ensure  => installed,
+        ensure          => installed,
         install_options => $install_options
     }
 
     /* Disable service */
     service { 'nginx':
-        ensure => true,
-        enable => false,
+        ensure  => true,
+        enable  => false,
         require => Package['nginx']
     }
 
     /* Reload systemd deamon */
     exec { 'nginx_systemd_daemon_reload':
-        command     => "systemctl daemon-reload",
+        command     => 'systemctl daemon-reload',
         refreshonly => true,
         require     => Package['systemd']
     }
@@ -41,9 +41,9 @@ class nginx(
     basic_settings::systemd_drop_in { 'nginx_dependency':
         target_unit     => "${basic_settings::cluster_id}-services.target",
         unit            => {
-            'BindsTo' => 'nginx.service'
+            'BindsTo'   => 'nginx.service'
         },
-        daemon_reload   => 'nginx_systemd_daemon_reload', 
+        daemon_reload   => 'nginx_systemd_daemon_reload',
         require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
     }
 
@@ -53,7 +53,7 @@ class nginx(
         service         => {
             'Nice' => "-${nice_level}"
         },
-        daemon_reload   => 'nginx_systemd_daemon_reload', 
+        daemon_reload   => 'nginx_systemd_daemon_reload',
         require         => Package['nginx']
     }
 
@@ -66,12 +66,12 @@ class nginx(
 
     /* Create nginx config file */
     file { '/etc/nginx/nginx.conf':
-        ensure  => present,
+        ensure  => file,
         content => template('nginx/global.conf'),
         notify  => Service['nginx'],
         require => Package['nginx']
     }
-    
+
     /* Create sites connfig directory */
     file { '/etc/nginx/conf.d':
         ensure  => directory,

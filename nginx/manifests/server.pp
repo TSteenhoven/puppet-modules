@@ -54,8 +54,8 @@ define nginx::server(
 
     $redirect_from                      = undef,
     $redirect_ipv6                      = true,
-    $redirect_certificate        		= undef,
-    $redirect_certificate_key    		= undef,
+    $redirect_certificate               = undef,
+    $redirect_certificate_key           = undef,
 
     $restart_service                    = true
   ) {
@@ -68,17 +68,17 @@ define nginx::server(
     /* Inform nginx when file is changed or created */
     if ($restart_service) {
         file { "/etc/nginx/conf.d/${name}.conf":
-            ensure	=> present,
-            content	=> template('nginx/server.conf'),
+            ensure  => file,
+            content => template('nginx/server.conf'),
             owner   => 'root',
             group   => 'root',
             mode    => '0600',
-            notify 	=> Service['nginx']
+            notify  => Service['nginx']
         }
     } else {
         file { "/etc/nginx/conf.d/${name}.conf":
-            ensure	=> present,
-            content	=> template('nginx/server.conf'),
+            ensure  => file,
+            content => template('nginx/server.conf'),
             owner   => 'root',
             group   => 'root',
             mode    => '0600'

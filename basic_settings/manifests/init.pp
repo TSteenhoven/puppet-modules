@@ -1,10 +1,11 @@
 class basic_settings(
-        $cluster_id     = 'core',
-        $backports      = false,
-        $non_free       = false,
-        $include_sury   = false,
-        $include_nginx  = false,
-        $nftables_enable = true,
+        $cluster_id         = 'core',
+        $backports          = false,
+        $non_free           = false,
+        $sury_enable        = false,
+        $nginx_enable       = false,
+        $proxmox_enable     = false,
+        $nftables_enable    = true,
         $systemd_default_target = 'helpers'
     ) {
 
@@ -15,7 +16,7 @@ class basic_settings(
 
     /* Setup sudoers config file */
     file { '/etc/sudoers':
-        ensure  => present,
+        ensure  => file,
         mode    => '0440',
         owner   => 'root',
         group   => 'root',
@@ -32,20 +33,22 @@ class basic_settings(
 
     /* Get debian name */
     if ($operatingsystemrelease =~ /^12.*/) {
-        $allow_backports = false
-        $allow_sury = true
-        $allow_nginx = true
-        $debianname = "bookworm"
+        $backports_allow = false
+        $sury_allow = true
+        $nginx_allow = true
+        $proxmox_allow = true
+        $debianname = 'bookworm'
     } else {
-        $allow_backports = false
-        $allow_sury = false
-        $allow_nginx = false
-        $debianname = "unknown"
+        $backports_allow = false
+        $sury_allow = false
+        $nginx_allow = false
+        $proxmox_allow = false
+        $debianname = 'unknown'
     }
 
     /* Based on debian name use correct source list */
     file { '/etc/apt/sources.list':
-        ensure  => present,
+        ensure  => file,
         mode    => '0644',
         owner   => 'root',
         group   => 'root',
@@ -61,7 +64,7 @@ class basic_settings(
     }
 
     /* Check if we need backports */
-    if ($backports and $allow_backports) {
+    if ($backports and $backports_allow) {
         exec { 'source_backports':
             command     => "printf \"deb http://deb.debian.org/debian ${debianname}-backports main contrib\\n\" > /etc/apt/sources.list.d/${debianname}-backports.list; apt-get update;",
             unless      => "[ -e /etc/apt/sources.list.d/${debianname}-backports.list ]",
@@ -155,7 +158,7 @@ class basic_settings(
 
     /* Reload systemd deamon */
     exec { 'systemd_daemon_reload':
-        command => "systemctl daemon-reload",
+        command => 'systemctl daemon-reload',
         refreshonly => true,
         require => Package['systemd']
     }
@@ -171,7 +174,7 @@ class basic_settings(
 
     /* Set script that's set the firewall */
     file { 'firewall_if_pre_up':
-        ensure  => present,
+        ensure  => file,
         path    => "/etc/network/if-pre-up.d/${firewall_package}",
         mode    => '0755',
         content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
@@ -180,15 +183,15 @@ class basic_settings(
 
     /* Create RX buffer script */
     file { '/etc/network/rxbuffer.sh':
-        ensure  => present,
+        ensure  => file,
         source  => 'puppet:///modules/basic_settings/rxbuffer.sh',
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # High important
     }
-   
+
     /* Check if we need sury */
-    if ($include_sury and $allow_sury) {
+    if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
         exec { 'source_sury_php':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${debianname} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg; apt-get update;",
@@ -198,24 +201,40 @@ class basic_settings(
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
-            command     => "rm /etc/apt/sources.list.d/sury_php.list; apt-get update;",
-            onlyif      => "[ -e /etc/apt/sources.list.d/sury_php.list ]",
+            command     => 'rm /etc/apt/sources.list.d/sury_php.list; apt-get update;',
+            onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
             require     => Exec['source_list_reload']
         }
     }
 
     /* Check if variable nginx is true; if true, install new source list and key */
-    if ($include_nginx and $allow_nginx) {
+    if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb http://nginx.org/packages/debian/ ${debianname} nginx\\ndeb-src http://nginx.org/packages/debian/ ${debianname} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl https://nginx.org/keys/nginx_signing.key | apt-key add -; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian ${debianname} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove nginx repo */
         exec { 'source_nginx':
-            command     => "rm /etc/apt/sources.list.d/nginx.list; apt-get update;",
-            onlyif      => "[ -e /etc/apt/sources.list.d/nginx.list ]",
+            command     => 'rm /etc/apt/sources.list.d/nginx.list; apt-get update;',
+            onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
+            require     => Exec['source_list_reload']
+        }
+    }
+
+    /* Check if variable proxmox is true; if true, install new source list and key */
+    if ($proxmox_enable and $proxmox_allow) {
+        exec { 'source_proxmox':
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${debianname} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg; apt-get update;",
+            unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
+            require     => [Package['curl'], Package['gnupg']]
+        }
+    } else {
+        /* Remove proxmox repo */
+        exec { 'source_proxmox':
+            command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list; apt-get update;',
+            onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             require     => Exec['source_list_reload']
         }
     }
