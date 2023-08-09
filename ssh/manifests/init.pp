@@ -37,7 +37,7 @@ class ssh(
     service { 'ssh':
         ensure      => running,
         enable      => true,
-        require     => File['/etc/ssh/sshd_config'],
-        subscribe   => File['/etc/ssh/sshd_config']
+        require     => File['/etc/ssh/sshd_config.d/custom.conf'],
+        subscribe   => File['/etc/ssh/sshd_config.d/custom.conf']
     }
 }
