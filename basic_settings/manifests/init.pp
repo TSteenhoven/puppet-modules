@@ -41,7 +41,7 @@ class basic_settings(
         $proxmox_allow = true
         $mysql_allow = true
         $debianname = 'bookworm'
-        $mysql_debianname = 'bullseye';
+        $mysql_debianname = 'bullseye'
     } else {
         $backports_allow = false
         $sury_allow = false
@@ -49,7 +49,7 @@ class basic_settings(
         $proxmox_allow = false
         $mysql_allow = false
         $debianname = 'unknown'
-        $mysql_debianname = $debianname;
+        $mysql_debianname = $debianname
     }
 
     /* Based on debian name use correct source list */
