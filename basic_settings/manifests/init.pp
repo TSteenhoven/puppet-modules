@@ -19,11 +19,13 @@ class basic_settings(
         $proxmox_allow = false
         if ($architecture == 'amd64') {
             $mysql_allow = true
+            $os_url = 'http://archive.ubuntu.com/ubuntu/'
+            $os_url_security = 'http://security.ubuntu.com/ubuntu'
         } else {
             $mysql_allow = false
+            $os_url = 'http://ports.ubuntu.com/ubuntu-ports/'
+            $os_url_security = 'http://ports.ubuntu.com/ubuntu-ports/'
         }
-        $os_url = 'http://archive.ubuntu.com/ubuntu/'
-        $os_url_security = 'http://security.ubuntu.com/ubuntu'
         $os_parent = 'ubuntu'
         $os_name = 'lunar'
     } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
