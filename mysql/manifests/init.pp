@@ -23,6 +23,7 @@ class mysql (
     /* Basic variable */
     $script_dir = '/var/local/puppet-mysql'
     $script_path = "${script_dir}/grant.sh"
+    $version = $basic_settings::mysql_version
 
     /* Create script dir */
     file { $script_dir:
@@ -40,6 +41,7 @@ class mysql (
         mode    => '0755'
     }
 
+    /* Do only the following steps when install server is active */
     if ($install_server) {
         /* Default file is different than normal install */
         $defaults_file = '/etc/mysql/mysql.conf.d/mysqld.cnf'

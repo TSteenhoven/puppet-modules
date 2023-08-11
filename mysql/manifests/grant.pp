@@ -22,10 +22,9 @@ define mysql::grant (
     /* Set some settings */
     $priv_str = join($privileges, ', ')
     $grant_option_num = $grant_option ? { true => '1', default => '0"' }
-    $version = $basic_settings::mysql_version
 
     /* Change SQL queries based on version */
-    if ($version == '8.0' and $priv_str == 'ALL PRIVILEGES') {
+    if ($basic_settings::mysql_version == '8.0' and $priv_str == 'ALL PRIVILEGES') {
         if ($database != '*') {
             $check_all_priv = $priv_str
         } else {
@@ -41,15 +40,15 @@ define mysql::grant (
     /* Run query */
     case $ensure {
         present: {
-            exec { "mysql_grant_${username}@${hostname}_on_\$database.\$table":
-                unless => "${mysql::script_path} check \$check_script_args",
-                command => "${mysql::script_path} grant \$grant_script_args",
+            exec { "mysql_grant_${username}@${hostname}_on_${database}.${table}":
+                unless => "${mysql::script_path} check ${check_script_args}",
+                command => "${mysql::script_path} grant ${grant_script_args}",
             }
         }
         absent: {
-            exec { "mysql_revoke_${username}@${hostname}_on_\$database.\$table":
-                onlyif => "${mysql::script_path} check \$check_script_args",
-                command => "${mysql::script_path} revoke \$check_script_args",
+            exec { "mysql_revoke_${username}@${hostname}_on_${database}.${table}":
+                onlyif => "${mysql::script_path} check ${check_script_args}",
+                command => "${mysql::script_path} revoke ${check_script_args}",
             }
         }
         default: {
