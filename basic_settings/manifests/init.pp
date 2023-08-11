@@ -14,7 +14,7 @@ class basic_settings(
     /* Get OS name */
     if ($operatingsystem == 'Ubuntu' and $operatingsystemrelease =~ /^23.04.*/) {
         $backports_allow = false
-        $sury_allow = true
+        $sury_allow = false
         $nginx_allow = true
         $proxmox_allow = false
         if ($architecture == 'amd64') {
@@ -232,7 +232,7 @@ class basic_settings(
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
@@ -285,7 +285,7 @@ class basic_settings(
 
         /* Set source */
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
