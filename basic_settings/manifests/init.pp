@@ -6,7 +6,7 @@ class basic_settings(
         $nginx_enable       = false,
         $proxmox_enable     = false,
         $mysql_enable       = false,
-        $msyql_version      = '8.0',
+        $mysql_version      = '8.0',
         $nftables_enable    = true,
         $systemd_default_target = 'helpers'
     ) {
@@ -258,7 +258,7 @@ class basic_settings(
         }
 
         /* Create MySQL gpg */
-        file { 'mysql_gpg':
+        file { 'source_mysql_gpg':
             ensure  => file,
             path    => '/usr/share/keyrings/mysql.gpg',
             source  => "puppet:///modules/basic_settings/mysql/${mysql_gpg}",
@@ -269,9 +269,9 @@ class basic_settings(
 
         /* Set source */
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            require     => [Package['curl'], Package['gnupg'], File['mysql_gpg']]
+            require     => [Package['curl'], Package['gnupg'], File['source_mysql_gpg']]
         }
     } else {
         /* Remove mysql repo */
