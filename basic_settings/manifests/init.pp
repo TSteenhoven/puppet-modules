@@ -11,6 +11,41 @@ class basic_settings(
         $systemd_default_target = 'helpers'
     ) {
 
+    /* Get OS name */
+    if ($operatingsystem == 'Ubuntu' and $operatingsystemrelease =~ /^23.04.*/) {
+        $backports_allow = false
+        $sury_allow = true
+        $nginx_allow = true
+        $proxmox_allow = false
+        if ($architecture == 'amd64') {
+            $mysql_allow = true
+        } else {
+            $mysql_allow = false
+        }
+        $os_parent = 'ubuntu'
+        $os_name = 'lunar'
+    } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
+        $backports_allow = false
+        $sury_allow = true
+        $nginx_allow = true
+        $proxmox_allow = true
+        if ($architecture == 'amd64') {
+            $mysql_allow = true
+        } else {
+            $mysql_allow = false
+        }
+        $os_parent = 'debian'
+        $os_name = 'bookworm'
+    } else {
+        $backports_allow = false
+        $sury_allow = false
+        $nginx_allow = false
+        $proxmox_allow = false
+        $mysql_allow = false
+        $os_parent = 'unknown'
+        $os_name = 'unknown'
+    }
+
     /* Basic system packages */
     package { ['apt-transport-https', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
         ensure  => installed
@@ -33,25 +68,6 @@ class basic_settings(
         force   => true,
     }
 
-    /* Get debian name */
-    if ($operatingsystemrelease =~ /^12.*/) {
-        $backports_allow = false
-        $sury_allow = true
-        $nginx_allow = true
-        $proxmox_allow = true
-        $mysql_allow = true
-        $debianname = 'bookworm'
-        $mysql_debianname = 'bullseye'
-    } else {
-        $backports_allow = false
-        $sury_allow = false
-        $nginx_allow = false
-        $proxmox_allow = false
-        $mysql_allow = false
-        $debianname = 'unknown'
-        $mysql_debianname = $debianname
-    }
-
     /* Based on debian name use correct source list */
     file { '/etc/apt/sources.list':
         ensure  => file,
@@ -72,14 +88,14 @@ class basic_settings(
     /* Check if we need backports */
     if ($backports and $backports_allow) {
         exec { 'source_backports':
-            command     => "printf \"deb http://deb.debian.org/debian ${debianname}-backports main contrib\\n\" > /etc/apt/sources.list.d/${debianname}-backports.list; apt-get update;",
-            unless      => "[ -e /etc/apt/sources.list.d/${debianname}-backports.list ]",
+            command     => "printf \"deb http://deb.debian.org/debian ${os_name}-backports main contrib\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
+            unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             require     => Exec['source_list_reload']
         }
     } else {
         exec { 'source_backports':
-            command     => "rm /etc/apt/sources.list.d/${debianname}-backports.list; apt-get update;",
-            onlyif      => "[ -e /etc/apt/sources.list.d/${debianname}-backports.list ]",
+            command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
+            onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             require     => Exec['source_list_reload']
         }
     }
@@ -103,7 +119,7 @@ class basic_settings(
     if ($backports and $allow_backports) {
         package { ['systemd', 'systemd-sysv', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure          => installed,
-            install_options => ['-t', "${debianname}-backports"],
+            install_options => ['-t', "${os_name}-backports"],
             require         => Exec['source_backports']
         }
     } else {
@@ -200,7 +216,7 @@ class basic_settings(
     if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
         exec { 'source_sury_php':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${debianname} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
@@ -216,7 +232,7 @@ class basic_settings(
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian ${debianname} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
@@ -232,7 +248,7 @@ class basic_settings(
     /* Check if variable proxmox is true; if true, install new source list and key */
     if ($proxmox_enable and $proxmox_allow) {
         exec { 'source_proxmox':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${debianname} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
@@ -269,7 +285,7 @@ class basic_settings(
 
         /* Set source */
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }

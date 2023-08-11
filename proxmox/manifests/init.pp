@@ -1,7 +1,7 @@
 
 class proxmox() {
 
-    case $basic_settings::debianname {
+    case $basic_settings::os_name {
         'bookworm': {
             $kernel = '6.2'
         }
