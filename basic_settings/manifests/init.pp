@@ -247,8 +247,28 @@ class basic_settings(
 
     /* Check if variable mysql is true; if true, install new source list and key */
     if ($mysql_enable and $mysql_allow) {
+        /* Get source name */
+        case $mysql_version {
+            '8.0': {
+                $mysql_gpg = 'mysql-8.gpg'
+            }
+            default: {
+                $mysql_gpg = 'mysql-7.gpg'
+            }
+        }
+
+        /* Create MySQL gpg */
+        file { '/usr/share/keyrings/mysql.gpg':
+            ensure  => file,
+            source  => "puppet:///modules/basic_settings/mysql/${mysql_version}",
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0644'
+        }
+
+        /* Set source */
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; curl -sSLo /usr/share/keyrings/mysql.gpg http://repo.mysql.com/RPM-GPG-KEY-mysql; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
