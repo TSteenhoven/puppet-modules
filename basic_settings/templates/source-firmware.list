@@ -1,11 +1,11 @@
 <% if @non_free -%>
-deb http://deb.debian.org/debian/ <%= @os_name %> main contrib non-free non-free-firmware
-deb-src http://deb.debian.org/debian/ <%= @os_name %> main contrib non-free non-free-firmware
+deb <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
+deb-src <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
 <% else -%>
-deb http://deb.debian.org/debian/ <%= @os_name %> main non-free-firmware
-deb-src http://deb.debian.org/debian/ <%= @os_name %> main non-free-firmware
+deb <%= @os_url %> <%= @os_name %> main non-free-firmware
+deb-src <%= @os_url %> <%= @os_name %> main non-free-firmware
 <% end -%>
-deb http://deb.debian.org/debian-security/ <%= @os_name %>-security main non-free-firmware
-deb-src http://deb.debian.org/debian-security/ <%= @os_name %>-security main non-free-firmware
-deb http://deb.debian.org/debian/ <%= @os_name %>-updates main non-free-firmware
-deb-src http://deb.debian.org/debian/ <%= @os_name %>-updates main non-free-firmware
+deb <%= @os_url_security %> <%= @os_name %>-security main non-free-firmware
+deb-src <%= @os_url_security %> <%= @os_name %>-security main non-free-firmware
+deb <%= @os_url %> <%= @os_name %>-updates main non-free-firmware
+deb-src <%= @os_url %> <%= @os_name %>-updates main non-free-firmware

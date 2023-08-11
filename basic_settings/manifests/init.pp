@@ -22,6 +22,8 @@ class basic_settings(
         } else {
             $mysql_allow = false
         }
+        $os_url = 'http://archive.ubuntu.com/ubuntu/'
+        $os_url_security = 'http://security.ubuntu.com/ubuntu/'
         $os_parent = 'ubuntu'
         $os_name = 'lunar'
     } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
@@ -34,6 +36,8 @@ class basic_settings(
         } else {
             $mysql_allow = false
         }
+        $os_url = 'http://deb.debian.org/debian/'
+        $os_url_security = 'http://deb.debian.org/debian-security/'
         $os_parent = 'debian'
         $os_name = 'bookworm'
     } else {
@@ -42,6 +46,7 @@ class basic_settings(
         $nginx_allow = false
         $proxmox_allow = false
         $mysql_allow = false
+        $os_url = ''
         $os_parent = 'unknown'
         $os_name = 'unknown'
     }
