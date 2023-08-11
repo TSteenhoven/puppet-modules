@@ -79,9 +79,6 @@ class php8(
     if ($xdebug) {
         package { "php8.${minor_version}-xdebug": ensure => installed }
     }
-    if ($xsl) {
-        package { "php8.${minor_version}-xsl": ensure => installed }
-    }
     if ($xml) {
         package { "php8.${minor_version}-xml": ensure => installed }
     }
