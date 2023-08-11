@@ -257,20 +257,19 @@ class basic_settings(
             }
         }
 
-        # /* Create MySQL key */
-        # file { 'source_mysql_key':
-        #     ensure  => file,
-        #     path    => '/usr/share/keyrings/mysql.key',
-        #     source  => "puppet:///modules/basic_settings/mysql/${mysql_key}",
-        #     owner   => 'root',
-        #     group   => 'root',
-        #     mode    => '0644'
-        # }
+        /* Create MySQL key */
+        file { 'source_mysql_key':
+            ensure  => file,
+            path    => '/usr/share/keyrings/mysql.key',
+            source  => "puppet:///modules/basic_settings/mysql/${mysql_key}",
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0644'
+        }
 
         /* Set source */
-        $source_mysql_key = file("puppet:///modules/basic_settings/mysql/${mysql_key}")
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; printf \"${source_mysql_key}\" | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
