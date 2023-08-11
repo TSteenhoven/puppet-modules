@@ -1,0 +1,13 @@
+
+<% @servers.each do |server| -%>
+server <%= server %>
+restrict <%= server %> mask 255.255.255.255 nomodify notrap noquery
+<% end -%>
+
+<% @static_ips.each do |static_ip| -%>
+restrict <%= static_ip %> nomodify notrap
+<% end -%>
+<% @range_ips.each do |range| -%>
+restrict <%= range[0] %> mask <%= range[1] %> nomodify notrap
+<% end -%>
+restrict 127.0.0.1

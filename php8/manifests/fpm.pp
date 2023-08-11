@@ -43,14 +43,16 @@ class php8::fpm(
     }
 
     /* Create drop in for Nginx service */
-    basic_settings::systemd_drop_in { 'nginx_php_dependency':
-        target_unit     => 'nginx.service',
-        unit            => {
-            'After'     => "php8.${minor_version}-fpm.service",
-            'BindsTo'   => "php8.${minor_version}-fpm.service"
-        },
-        daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
-        require         => Class['nginx']
+    if (defined(Class['nginx'])) {
+        basic_settings::systemd_drop_in { 'nginx_php_dependency':
+            target_unit     => 'nginx.service',
+            unit            => {
+                'After'     => "php8.${minor_version}-fpm.service",
+                'BindsTo'   => "php8.${minor_version}-fpm.service"
+            },
+            daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
+            require         => Class['nginx']
+        }
     }
 
     /* Create drop in for PHP FPM service */

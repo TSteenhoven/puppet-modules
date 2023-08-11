@@ -5,6 +5,8 @@ class basic_settings(
         $sury_enable        = false,
         $nginx_enable       = false,
         $proxmox_enable     = false,
+        $mysql_enable       = false,
+        $msyql_version      = '8.0',
         $nftables_enable    = true,
         $systemd_default_target = 'helpers'
     ) {
@@ -37,12 +39,14 @@ class basic_settings(
         $sury_allow = true
         $nginx_allow = true
         $proxmox_allow = true
+        $mysql_allow = true
         $debianname = 'bookworm'
     } else {
         $backports_allow = false
         $sury_allow = false
         $nginx_allow = false
         $proxmox_allow = false
+        $mysql_allow = false
         $debianname = 'unknown'
     }
 
@@ -235,6 +239,22 @@ class basic_settings(
         exec { 'source_proxmox':
             command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list; apt-get update;',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
+            require     => Exec['source_list_reload']
+        }
+    }
+
+    /* Check if variable mysql is true; if true, install new source list and key */
+    if ($mysql_enable and $mysql_allow) {
+        exec { 'source_mysql':
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; curl -sSLo /usr/share/keyrings/mysql.gpg http://repo.mysql.com/RPM-GPG-KEY-mysql-2022; apt-get update;",
+            unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
+            require     => [Package['curl'], Package['gnupg']]
+        }
+    } else {
+        /* Remove mysql repo */
+        exec { 'source_mysql':
+            command     => 'rm /etc/apt/sources.list.d/mysql.list; apt-get update;',
+            onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => Exec['source_list_reload']
         }
     }
