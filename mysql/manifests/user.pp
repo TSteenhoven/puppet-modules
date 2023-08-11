@@ -30,10 +30,9 @@ define mysql::user (
             $unless_field = "bash -c \"if [ `mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql -u ${username} --password=\"${password}\" -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
         }
         default: {
-                $password_field = 'password'
-                $password_command = "SET PASSWORD FOR '${username}'@'${hostname}' = PASSWORD('${password}');"
-                $unless_field = "bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
-            }
+            $password_field = 'password'
+            $password_command = "SET PASSWORD FOR '${username}'@'${hostname}' = PASSWORD('${password}');"
+            $unless_field = "bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
         }
     }
 
