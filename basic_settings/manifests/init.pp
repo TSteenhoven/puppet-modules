@@ -41,6 +41,7 @@ class basic_settings(
         $proxmox_allow = true
         $mysql_allow = true
         $debianname = 'bookworm'
+        $mysql_debianname = 'bullseye';
     } else {
         $backports_allow = false
         $sury_allow = false
@@ -48,6 +49,7 @@ class basic_settings(
         $proxmox_allow = false
         $mysql_allow = false
         $debianname = 'unknown'
+        $mysql_debianname = $debianname;
     }
 
     /* Based on debian name use correct source list */
@@ -246,7 +248,7 @@ class basic_settings(
     /* Check if variable mysql is true; if true, install new source list and key */
     if ($mysql_enable and $mysql_allow) {
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; curl -sSLo /usr/share/keyrings/mysql.gpg http://repo.mysql.com/RPM-GPG-KEY-mysql-2022; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; curl -sSLo /usr/share/keyrings/mysql.gpg http://repo.mysql.com/RPM-GPG-KEY-mysql-2022; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => [Package['curl'], Package['gnupg']]
         }
