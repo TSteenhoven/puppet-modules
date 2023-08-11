@@ -23,7 +23,7 @@ class basic_settings(
             $mysql_allow = false
         }
         $os_url = 'http://archive.ubuntu.com/ubuntu/'
-        $os_url_security = 'http://security.ubuntu.com/ubuntu/'
+        $os_url_security = 'http://security.ubuntu.com/ubuntu'
         $os_parent = 'ubuntu'
         $os_name = 'lunar'
     } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
@@ -73,13 +73,13 @@ class basic_settings(
         force   => true,
     }
 
-    /* Based on debian name use correct source list */
+    /* Based on OS parent use correct source list */
     file { '/etc/apt/sources.list':
         ensure  => file,
         mode    => '0644',
         owner   => 'root',
         group   => 'root',
-        content => template('basic_settings/source-firmware.list')
+        content => template("basic_settings/source/${os_parent}.list")
     }
 
     /* Reload source list */

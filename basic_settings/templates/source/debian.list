@@ -1,4 +1,4 @@
-<% if @non_free && @non_free_allow -%>
+<% if @non_free -%>
 deb <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
 deb-src <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
 <% else -%>
