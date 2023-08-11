@@ -258,9 +258,10 @@ class basic_settings(
         }
 
         /* Create MySQL gpg */
-        file { '/usr/share/keyrings/mysql.gpg':
+        file { 'mysql_gpg':
             ensure  => file,
-            source  => "puppet:///modules/basic_settings/mysql/${mysql_version}",
+            path    => '/usr/share/keyrings/mysql.gpg',
+            source  => "puppet:///modules/basic_settings/mysql/${mysql_gpg}",
             owner   => 'root',
             group   => 'root',
             mode    => '0644'
@@ -270,7 +271,7 @@ class basic_settings(
         exec { 'source_mysql':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian ${mysql_debianname} mysql-${msyql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; apt-get update;",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            require     => [Package['curl'], Package['gnupg']]
+            require     => [Package['curl'], Package['gnupg'], File['mysql_gpg']]
         }
     } else {
         /* Remove mysql repo */
