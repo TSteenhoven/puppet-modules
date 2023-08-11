@@ -83,7 +83,7 @@ class mysql (
                 'Nice' => '-12'
             },
             daemon_reload   => 'mysql_systemd_daemon_reload',
-            require         => Package['mysql']
+            require         => Package['mysql-server']
         }
     } else {
         /* Default file for normal install */
