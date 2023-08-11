@@ -1,11 +1,11 @@
 <% if @non_free -%>
-deb <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
-deb-src <%= @os_url %> <%= @os_name %> main contrib non-free non-free-firmware
+deb <%= @os_url %> <%= @os_name %> <%= @os_repo %> non-free
+deb-src <%= @os_url %> <%= @os_name %> <%= @os_repo %> non-free
 <% else -%>
-deb <%= @os_url %> <%= @os_name %> main non-free-firmware
-deb-src <%= @os_url %> <%= @os_name %> main non-free-firmware
+deb <%= @os_url %> <%= @os_name %> <%= @os_repo %>
+deb-src <%= @os_url %> <%= @os_name %> <%= @os_repo %>
 <% end -%>
-deb <%= @os_url_security %> <%= @os_name %>-security main non-free-firmware
-deb-src <%= @os_url_security %> <%= @os_name %>-security main non-free-firmware
-deb <%= @os_url %> <%= @os_name %>-updates main non-free-firmware
-deb-src <%= @os_url %> <%= @os_name %>-updates main non-free-firmware
+deb <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %>
+deb-src <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %>
+deb <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %>
+deb-src <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %>

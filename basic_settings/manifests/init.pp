@@ -13,7 +13,7 @@ class basic_settings(
 
     /* Get OS name */
     if ($operatingsystem == 'Ubuntu' and $operatingsystemrelease =~ /^23.04.*/) {
-        $backports_allow = false
+        $backports_allow = true
         $sury_allow = false
         $nginx_allow = true
         $proxmox_allow = false
@@ -26,6 +26,7 @@ class basic_settings(
             $os_url = 'http://ports.ubuntu.com/ubuntu-ports/'
             $os_url_security = 'http://ports.ubuntu.com/ubuntu-ports/'
         }
+        $os_repo = 'main universe restricted'
         $os_parent = 'ubuntu'
         $os_name = 'lunar'
     } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
@@ -40,6 +41,7 @@ class basic_settings(
         }
         $os_url = 'http://deb.debian.org/debian/'
         $os_url_security = 'http://deb.debian.org/debian-security/'
+        $os_repo = 'main contrib non-free-firmware'
         $os_parent = 'debian'
         $os_name = 'bookworm'
     } else {
@@ -49,12 +51,14 @@ class basic_settings(
         $proxmox_allow = false
         $mysql_allow = false
         $os_url = ''
+        $os_url_security = ''
+        $os_repo = ''
         $os_parent = 'unknown'
         $os_name = 'unknown'
     }
 
     /* Basic system packages */
-    package { ['apt-transport-https', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
@@ -95,7 +99,7 @@ class basic_settings(
     /* Check if we need backports */
     if ($backports and $backports_allow) {
         exec { 'source_backports':
-            command     => "printf \"deb http://deb.debian.org/debian ${os_name}-backports main contrib\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
+            command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             require     => Exec['source_list_reload']
         }

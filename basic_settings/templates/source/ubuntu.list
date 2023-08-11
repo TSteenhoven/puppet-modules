@@ -1,15 +1,15 @@
 <% if @non_free -%>
-deb <%= @os_url %> <%= @os_name %> main universe restricted multiverse
-deb-src <%= @os_url %> <%= @os_name %> main universe restricted multiverse
-deb <%= @os_url_security %> <%= @os_name %>-security main universe restricted multiverse
-deb-src <%= @os_url_security %> <%= @os_name %>-security main universe restricted multiverse
-deb <%= @os_url %> <%= @os_name %>-updates main universe restricted multiverse
-deb-src <%= @os_url %> <%= @os_name %>-updates main universe restricted multiverse
+deb <%= @os_url %> <%= @os_name %> <%= @os_repo %> multiverse
+deb-src <%= @os_url %> <%= @os_name %> <%= @os_repo %> multiverse
+deb <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %> multiverse
+deb-src <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %> multiverse
+deb <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %> multiverse
+deb-src <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %> multiverse
 <% else -%>
-deb <%= @os_url %> <%= @os_name %> main universe restricted
-deb-src <%= @os_url %> <%= @os_name %> main universe restricted
-deb <%= @os_url_security %> <%= @os_name %>-security main universe restricted 
-deb-src <%= @os_url_security %> <%= @os_name %>-security main universe restricted
-deb <%= @os_url %> <%= @os_name %>-updates main universe restricted
-deb-src <%= @os_url %> <%= @os_name %>-updates main universe restricted
+deb <%= @os_url %> <%= @os_name %> <%= @os_repo %>
+deb-src <%= @os_url %> <%= @os_name %> <%= @os_repo %>
+deb <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %> 
+deb-src <%= @os_url_security %> <%= @os_name %>-security <%= @os_repo %>
+deb <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %>
+deb-src <%= @os_url %> <%= @os_name %>-updates <%= @os_repo %>
 <% end -%>
