@@ -1,8 +1,7 @@
 class php8::fpm(
         $pidfile = '',
         $errorlog = '',
-        $ini_settings = [],
-        $skip_default = false
+        $ini_settings = []
     ) {
 
     /* Get minor version from PHP init */
@@ -94,33 +93,5 @@ class php8::fpm(
         owner   => 'root',
         group   => 'root',
         mode    => '0600'
-    }
-
-    if (!$skip_default) {
-        /* Install php FPM package */
-        package { 'php-fpm':
-            ensure  => installed,
-            require => Package["php8.${minor_version}-fpm"]
-        }
-
-        /* Install php package */
-        package { ['php', "php8.${minor_version}"]:
-            ensure  => installed,
-            require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
-        }
-
-        /* Change PHP version */
-        exec { 'php_set_default_version':
-            command     => "update-alternatives --set php /usr/bin/php8.${minor_version}",
-            refreshonly => true,
-            require     => Package["php8.${minor_version}"],
-            subscribe   => Package["php8.${minor_version}"]
-        }
-    } else {
-        /* Install php package */
-        package { ["php8.${minor_version}"]:
-            ensure  => installed,
-            require => [Package['php-fpm'], Package["php8.${minor_version}-fpm"]]
-        }
     }
 }

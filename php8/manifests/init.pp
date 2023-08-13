@@ -24,7 +24,7 @@ class php8(
     ) {
 
     /* Install common php packages,  */
-    package { ["php8.${minor_version}-common", "php8.${minor_version}-opcache"]:
+    package { ["php8.${minor_version}", "php8.${minor_version}-common", "php8.${minor_version}-opcache"]:
         ensure  => installed
     }
 
@@ -86,6 +86,7 @@ class php8(
         package { "php8.${minor_version}-zip": ensure => installed }
     }
 
+    /* Skip only when you have multiple PHP versions */
     if (!$skip_default_files) {
         /* Custom extensions */
         file { '/usr/lib/php/custom_extensions':
