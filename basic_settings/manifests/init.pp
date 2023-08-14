@@ -368,14 +368,14 @@ class basic_settings(
 
     /* Activate turbo modus */
     exec { 'kernel_turbo':
-        command => "bash -c 'echo \'1\' > /sys/devices/system/cpu/cpufreq/boost'",
-        onlyif  => "bash -c 'if [ -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 0; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"1\" ]; then exit 1; else exit 0; fi'"
+        command => "bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
+        onlyif  => "bash -c 'if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"1\" ]; then exit 1; else exit 0; fi'"
     }
 
     /* Disable CPU core C states */
     exec { 'kernel_c_states':
-        command => 'bash -c "for (( i=0; i<`nproc`; i++ )); do echo \'1\' > /sys/devices/system/cpu/cpu$i/cpuidle/state2/disable; done > /tmp/kernel_c_states.state"',
-        onlyif  => 'bash -c "if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [ $(grep ^vendor_id /proc/cpuinfo | uniq | awk \'{print $3}\') == \'GenuineIntel\' ]; then exit 0; fi; if [ -f /tmp/kernel_c_states.state ]; then exit 0; else exit 1; fi"'
+        command => "bash -c 'for (( i=0; i<`nproc`; i++ )); do echo \"1\" > /sys/devices/system/cpu/cpu$i/cpuidle/state2/disable; done > /tmp/kernel_c_states.state'",
+        onlyif  => "bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [ $(grep ^vendor_id /proc/cpuinfo | uniq | \"(\$3!='GenuineIntel')\") ]; then exit 0; fi; if [ -f /tmp/kernel_c_states.state ]; then exit 0; else exit 1; fi'"
     }
 
     /* Disable service */
