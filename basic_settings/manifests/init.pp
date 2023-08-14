@@ -91,23 +91,23 @@ class basic_settings(
 
     /* Reload source list */
     exec { 'source_list_reload':
-        subscribe   => File['/etc/apt/sources.list'],
         command     => 'apt-get update',
-        require     => File['/etc/apt/sources.list'],
         refreshonly => true
     }
 
     /* Check if we need backports */
     if ($backports and $backports_allow) {
         exec { 'source_backports':
-            command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
+            command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
     } else {
         exec { 'source_backports':
-            command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list; apt-get update;",
+            command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
     }
@@ -228,15 +228,17 @@ class basic_settings(
     if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
         exec { 'source_sury_php':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            require     => [Package['curl'], Package['gnupg']]
+            notify      => Exec['source_list_reload'],
+            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
         }
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
-            command     => 'rm /etc/apt/sources.list.d/sury_php.list; apt-get update;',
+            command     => 'rm /etc/apt/sources.list.d/sury_php.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
     }
@@ -244,15 +246,17 @@ class basic_settings(
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            require     => [Package['curl'], Package['gnupg']]
+            notify      => Exec['source_list_reload'],
+            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
         }
     } else {
         /* Remove nginx repo */
         exec { 'source_nginx':
-            command     => 'rm /etc/apt/sources.list.d/nginx.list; apt-get update;',
+            command     => 'rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
     }
@@ -260,15 +264,17 @@ class basic_settings(
     /* Check if variable proxmox is true; if true, install new source list and key */
     if ($proxmox_enable and $proxmox_allow) {
         exec { 'source_proxmox':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            require     => [Package['curl'], Package['gnupg']]
+            notify      => Exec['source_list_reload'],
+            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
         }
     } else {
         /* Remove proxmox repo */
         exec { 'source_proxmox':
-            command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list; apt-get update;',
+            command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
     }
@@ -297,29 +303,66 @@ class basic_settings(
 
         /* Set source */
         exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null; apt-get update;",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            require     => [Package['curl'], Package['gnupg']]
+            notify      => Exec['source_list_reload'],
+            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
         }
     } else {
         /* Remove mysql repo */
         exec { 'source_mysql':
-            command     => 'rm /etc/apt/sources.list.d/mysql.list; apt-get update;',
+            command     => 'rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
+            notify      => Exec['source_list_reload'],
             require     => Exec['source_list_reload']
         }
+    }
+
+    /* Reload sysctl deamon */
+    exec { 'sysctl_reload':
+        command => 'sysctl --system',
+        refreshonly => true
+    }
+
+    /* Create sysctl config  */
+    file { '/etc/sysctl.conf':
+        ensure  => file,
+        source  => template('basic_settings/sysctl.conf'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Exec['sysctl_reload']
+    }
+
+    /* Create sysctl config  */
+    file { '/etc/sysctl.d':
+        ensure  => directory,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600'
+    }
+
+    /* Create sysctl network config  */
+    file { '/etc/sysctl.d/20-network-security.conf':
+        ensure  => file,
+        source  => template('basic_settings/sysctl/network.conf'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Exec['sysctl_reload']
     }
 
     /* Setup TCP BBR */
     if ($brr_enable) {
         exec { 'tcp_congestion_control':
-            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf;',
+            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; chmod 600 /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf',
             onlyif      => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')']
         }
     } else {
         exec { 'tcp_congestion_control':
-            command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl --system;',
-            onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]'
+            command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
+            onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
+            notify      => Exec['sysctl_reload']
         }
     }
 
