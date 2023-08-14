@@ -8,6 +8,7 @@ class basic_settings(
         $mysql_enable       = false,
         $mysql_version      = '8.0',
         $nftables_enable    = true,
+        $brr_enable         = true,
         $systemd_default_target = 'helpers'
     ) {
 
@@ -306,6 +307,13 @@ class basic_settings(
             command     => 'rm /etc/apt/sources.list.d/mysql.list; apt-get update;',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             require     => Exec['source_list_reload']
+        }
+    }
+
+    if ($brr_enable) {
+        exec { 'tcp_congestion_control':
+            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/tcp_congestion_control.conf; sysctl -p',
+            onlyif      => 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')'
         }
     }
 
