@@ -100,15 +100,13 @@ class basic_settings(
         exec { 'source_backports':
             command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
+            notify      => Exec['source_list_reload']
         }
     } else {
         exec { 'source_backports':
             command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
+            notify      => Exec['source_list_reload']
         }
     }
 
@@ -231,15 +229,14 @@ class basic_settings(
             command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
             notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
+            require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
             command     => 'rm /etc/apt/sources.list.d/sury_php.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
+            notify      => Exec['source_list_reload']
         }
     }
 
@@ -249,7 +246,7 @@ class basic_settings(
             command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
+            require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove nginx repo */
@@ -257,7 +254,6 @@ class basic_settings(
             command     => 'rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
         }
     }
 
@@ -267,15 +263,14 @@ class basic_settings(
             command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
+            require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove proxmox repo */
         exec { 'source_proxmox':
             command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
+            notify      => Exec['source_list_reload']
         }
     }
 
@@ -306,15 +301,14 @@ class basic_settings(
             command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg'], Exec['source_list_reload']]
+            require     => [Package['curl'], Package['gnupg']]
         }
     } else {
         /* Remove mysql repo */
         exec { 'source_mysql':
             command     => 'rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            notify      => Exec['source_list_reload'],
-            require     => Exec['source_list_reload']
+            notify      => Exec['source_list_reload']
         }
     }
 
