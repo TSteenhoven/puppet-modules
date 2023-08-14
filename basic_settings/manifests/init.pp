@@ -310,10 +310,16 @@ class basic_settings(
         }
     }
 
+    /* Setup TCP BBR */
     if ($brr_enable) {
         exec { 'tcp_congestion_control':
-            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/tcp_congestion_control.conf; sysctl -p',
-            onlyif      => 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')'
+            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf;',
+            onlyif      => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')']
+        }
+    } else {
+        exec { 'tcp_congestion_control':
+            command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl --system;',
+            onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]'
         }
     }
 
