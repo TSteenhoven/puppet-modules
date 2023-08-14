@@ -362,14 +362,14 @@ class basic_settings(
 
     /* Activate performance modus */
     exec { 'kernel_performance':
-        command     => 'bash -c "for (( i=0; i<`nproc`; i++ )); do echo \'performance\' > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor; done > /tmp/kernel_performance.state"',
-        onlyif      => 'bash -c "if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [[ $(grep ^vendor_id /proc/cpuinfo | uniq | awk \'($3!="GenuineIntel" && $3!="AuthenticAMD")\') ]]; then exit 1; fi; if [ -f /tmp/kernel_performance.state ]; then exit 1; else exit 0; fi"'
+        command     => "bash -c 'for (( i=0; i<`nproc`; i++ )); do echo \"performance\" > /sys/devices/system/cpu/cpu\${i}/cpufreq/scaling_governor; done > /tmp/kernel_performance.state'",
+        onlyif      => "bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [[ $(grep ^vendor_id /proc/cpuinfo | uniq | awk \"(\$3!='GenuineIntel' && \$3!='AuthenticAMD')\") ]]; then exit 1; fi; if [ -f /tmp/kernel_performance.state ]; then exit 1; else exit 0; fi'"
     }
 
     /* Activate turbo modus */
     exec { 'kernel_turbo':
-        command => 'bash -c "echo \'1\' > /sys/devices/system/cpu/cpufreq/boost"',
-        onlyif  => 'bash -c "if [ -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 0; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \'1\' ]; then exit 1; else exit 0; fi"'
+        command => "bash -c 'echo \'1\' > /sys/devices/system/cpu/cpufreq/boost'",
+        onlyif  => "bash -c 'if [ -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 0; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"1\" ]; then exit 1; else exit 0; fi'"
     }
 
     /* Disable CPU core C states */
