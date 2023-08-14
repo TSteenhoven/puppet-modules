@@ -360,6 +360,12 @@ class basic_settings(
         }
     }
 
+    /* Activate performance modus */
+    exec { 'kernel_performance':
+        command     => 'bash -c "for (( i=0; i<`nproc`; i++ )); do echo \'performance\' > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor; done > /tmp/kernel_performance.state"',
+        onlyif      => 'bash -c "if [[ $(grep ^vendor_id /proc/cpuinfo | uniq | awk \'($3!="GenuineIntel" && $3!="AuthenticAMD")\') ]]; then exit 1; fi; if [ -f /tmp/kernel_performance.state ]; then exit 1; else exit 0; fi"'
+    }
+
     /* Disable service */
     service { 'puppet':
         ensure  => true,
