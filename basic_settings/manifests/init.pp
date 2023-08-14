@@ -327,7 +327,7 @@ class basic_settings(
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
-        source  => template('basic_settings/sysctl.conf'),
+        content  => template('basic_settings/sysctl.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
@@ -345,7 +345,7 @@ class basic_settings(
     /* Create sysctl network config  */
     file { '/etc/sysctl.d/20-network-security.conf':
         ensure  => file,
-        source  => template('basic_settings/sysctl/network.conf'),
+        content  => template('basic_settings/sysctl/network.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
