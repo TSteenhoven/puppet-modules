@@ -13,54 +13,91 @@ class basic_settings(
     ) {
 
     /* Get OS name */
-    if ($operatingsystem == 'Ubuntu' and $operatingsystemrelease =~ /^23.04.*/) {
-        $backports_allow = true
-        $sury_allow = false
-        $nginx_allow = true
-        $proxmox_allow = false
-        if ($architecture == 'amd64') {
-            $mysql_allow = true
-            $os_url = 'http://archive.ubuntu.com/ubuntu/'
-            $os_url_security = 'http://security.ubuntu.com/ubuntu'
-        } else {
-            $mysql_allow = false
-            $os_url = 'http://ports.ubuntu.com/ubuntu-ports/'
-            $os_url_security = 'http://ports.ubuntu.com/ubuntu-ports/'
+    case $operatingsystem {
+        'Ubuntu': {
+            /* Set some variables */
+            $os_repo = 'main universe restricted'
+            $os_parent = 'ubuntu'
+            if ($architecture == 'amd64') {
+                $os_url = 'http://archive.ubuntu.com/ubuntu/'
+                $os_url_security = 'http://security.ubuntu.com/ubuntu'
+            } else {
+                $os_url = 'http://ports.ubuntu.com/ubuntu-ports/'
+                $os_url_security = 'http://ports.ubuntu.com/ubuntu-ports/'
+            }
+
+            /* Do thing based on version */
+            if ($operatingsystemrelease =~ /^23.04.*/) {
+                $os_name = 'lunar'
+                $backports_allow = true
+                $sury_allow = false
+                $nginx_allow = true
+                $proxmox_allow = false
+                if ($architecture == 'amd64') {
+                    $mysql_allow = true
+                } else {
+                    $mysql_allow = false
+                }
+            } else {
+                $backports_allow = false
+                $sury_allow = false
+                $nginx_allow = false
+                $proxmox_allow = false
+                $mysql_allow = false
+                $os_name = 'unknown'
+            }
         }
-        $os_repo = 'main universe restricted'
-        $os_parent = 'ubuntu'
-        $os_name = 'lunar'
-    } elsif ($operatingsystem == 'Debian' and $operatingsystemrelease =~ /^12.*/) {
-        $backports_allow = false
-        $sury_allow = true
-        $nginx_allow = true
-        $proxmox_allow = true
-        if ($architecture == 'amd64') {
-            $mysql_allow = true
-        } else {
+        'Debian': {
+            /* Set some variables */
+            $os_repo = 'main contrib non-free-firmware'
+            $os_parent = 'debian'
+            $os_url = 'http://deb.debian.org/debian/'
+            $os_url_security = 'http://deb.debian.org/debian-security/'
+
+            /* Do thing based on version */
+            if ($operatingsystemrelease =~ /^12.*/) {
+                $os_name = 'bookworm'
+                $backports_allow = false
+                $sury_allow = true
+                $nginx_allow = true
+                $proxmox_allow = true
+                if ($architecture == 'amd64') {
+                    $mysql_allow = true
+                } else {
+                    $mysql_allow = false
+                }
+            } else {
+                $os_name = 'unknown'
+                $backports_allow = false
+                $sury_allow = false
+                $nginx_allow = false
+                $proxmox_allow = false
+                $mysql_allow = false
+            }
+        }
+        default: {
+            $os_url = ''
+            $os_url_security = ''
+            $os_repo = ''
+            $os_parent = 'unknown'
+            $os_name = 'unknown'
+            $backports_allow = false
+            $sury_allow = false
+            $nginx_allow = false
+            $proxmox_allow = false
             $mysql_allow = false
         }
-        $os_url = 'http://deb.debian.org/debian/'
-        $os_url_security = 'http://deb.debian.org/debian-security/'
-        $os_repo = 'main contrib non-free-firmware'
-        $os_parent = 'debian'
-        $os_name = 'bookworm'
-    } else {
-        $backports_allow = false
-        $sury_allow = false
-        $nginx_allow = false
-        $proxmox_allow = false
-        $mysql_allow = false
-        $os_url = ''
-        $os_url_security = ''
-        $os_repo = ''
-        $os_parent = 'unknown'
-        $os_name = 'unknown'
+    }
+
+    /* Remove snapd packages */
+    package { 'snapd':
+        ensure  => absent
     }
 
     /* Basic system packages */
     package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
-        ensure  => installed
+        ensure  => installed,
+        require => Package['snapd']
     }
 
     /* Setup sudoers config file */
