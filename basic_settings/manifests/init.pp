@@ -7,6 +7,8 @@ class basic_settings(
         $proxmox_enable     = false,
         $mysql_enable       = false,
         $mysql_version      = '8.0',
+        $nodejs_enable      = false,
+        $nodejs_version     = '20',
         $nftables_enable    = true,
         $brr_enable         = true,
         $systemd_default_target = 'helpers'
@@ -16,8 +18,8 @@ class basic_settings(
     case $operatingsystem {
         'Ubuntu': {
             /* Set some variables */
-            $os_repo = 'main universe restricted'
             $os_parent = 'ubuntu'
+            $os_repo = 'main universe restricted'
             if ($architecture == 'amd64') {
                 $os_url = 'http://archive.ubuntu.com/ubuntu/'
                 $os_url_security = 'http://security.ubuntu.com/ubuntu'
@@ -38,19 +40,21 @@ class basic_settings(
                 } else {
                     $mysql_allow = false
                 }
+                $nodejs_allow = true
             } else {
+                $os_name = 'unknown'
                 $backports_allow = false
                 $sury_allow = false
                 $nginx_allow = false
                 $proxmox_allow = false
                 $mysql_allow = false
-                $os_name = 'unknown'
+                $nodejs_allow = false
             }
         }
         'Debian': {
             /* Set some variables */
-            $os_repo = 'main contrib non-free-firmware'
             $os_parent = 'debian'
+            $os_repo = 'main contrib non-free-firmware'
             $os_url = 'http://deb.debian.org/debian/'
             $os_url_security = 'http://deb.debian.org/debian-security/'
 
@@ -66,6 +70,7 @@ class basic_settings(
                 } else {
                     $mysql_allow = false
                 }
+                $nodejs_allow = true
             } else {
                 $os_name = 'unknown'
                 $backports_allow = false
@@ -73,19 +78,21 @@ class basic_settings(
                 $nginx_allow = false
                 $proxmox_allow = false
                 $mysql_allow = false
+                $nodejs_allow = false
             }
         }
         default: {
+            $os_parent = 'unknown'
+            $os_repo = ''
             $os_url = ''
             $os_url_security = ''
-            $os_repo = ''
-            $os_parent = 'unknown'
             $os_name = 'unknown'
             $backports_allow = false
             $sury_allow = false
             $nginx_allow = false
             $proxmox_allow = false
             $mysql_allow = false
+            $nodejs_allow = false
         }
     }
 
@@ -95,7 +102,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils', 'iputils-ping', 'mtr']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -346,6 +353,35 @@ class basic_settings(
             command     => 'rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             notify      => Exec['source_list_reload']
+        }
+    }
+
+    /* Check if variable nodejs is true; if true, install new source list and key */
+    if ($nodejs_enable and $nodejs_allow) {
+        exec { 'source_nodejs':
+            command     => "curl -fsSL https://deb.nodesource.com/setup_${nodejs_version}.x | bash - &&\\",
+            unless      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
+            notify      => Exec['source_list_reload'],
+            require     => Package['curl']
+        }
+
+        /* Install nodejs package */
+        package { 'nodejs':
+            ensure  => installed,
+            require => Exec['source_nodejs']
+        }
+    } else {
+        /* Install nodejs package */
+        package { 'nodejs':
+            ensure  => absent
+        }
+
+        /* Remove nodejs repo */
+        exec { 'source_nodejs':
+            command     => 'rm /etc/apt/sources.list.d/nodesource.list',
+            onlyif      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
+            notify      => Exec['source_list_reload'],
+            require     => Package['nodejs']
         }
     }
 

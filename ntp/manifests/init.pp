@@ -1,13 +1,11 @@
 
 class ntp(
-        $servers = [
-            '0.debian.pool.ntp.org',
-            '1.debian.pool.ntp.org',
-            '2.debian.pool.ntp.org',
-            '3.debian.pool.ntp.org',
-        ],
-        $static_ips = [],
-        $range_ips = []
+        $pools = [
+            "0.${basic_settings::os_parent}.pool.ntp.org",
+            "1.${basic_settings::os_parent}.pool.ntp.org",
+            "2.${basic_settings::os_parent}.pool.ntp.org",
+            "3.${basic_settings::os_parent}.pool.ntp.org",
+        ]
     ) {
 
         /* Add network time procotol package */
@@ -22,18 +20,13 @@ class ntp(
         }
 
         /* Set config file */
-        file { '/etc/ntp.conf':
+        file { '/etc/ntpsec/ntp.conf':
             ensure  => file,
             content => template('ntp/ntp-conf'),
             owner   => 'root',
             group   => 'ntpsec',
             mode    => '0750',
             require => Package['ntpsec']
-        }
-
-        /* Remove dhcp file */
-        file { '/var/lib/ntp/ntp.conf.dhcp':
-            ensure => absent
         }
 
         /* Disable service */

@@ -1,13 +1,15 @@
+# List files
+driftfile /var/lib/ntpsec/ntp.drift
+leapfile /usr/share/zoneinfo/leap-seconds.list
 
-<% @servers.each do |server| -%>
-server <%= server %>
-restrict <%= server %> mask 255.255.255.255 nomodify notrap noquery
+# Pools
+<% @pools.each do |pool| -%>
+pool <%= pool %>
 <% end -%>
 
-<% @static_ips.each do |static_ip| -%>
-restrict <%= static_ip %> nomodify notrap
-<% end -%>
-<% @range_ips.each do |range| -%>
-restrict <%= range[0] %> mask <%= range[1] %> nomodify notrap
-<% end -%>
+# By default, exchange time with everybody, but don't allow configuration.
+restrict default kod nomodify nopeer noquery limited
+
+# Local users may interrogate the ntp server more closely.
 restrict 127.0.0.1
+restrict ::1
