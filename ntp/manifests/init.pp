@@ -34,7 +34,7 @@ class ntp(
             ensure      => true,
             enable      => false,
             require     => Package['ntpsec'],
-            subscribe   => File['/etc/ntp.conf']
+            subscribe   => File['/etc/ntpsec/ntp.conf']
         }
 
         /* Reload systemd deamon */
