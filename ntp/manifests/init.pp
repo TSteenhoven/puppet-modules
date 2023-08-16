@@ -1,16 +1,16 @@
 
 class ntp(
         $pools = [
-            "0.${basic_settings::os_parent}.pool.ntp.org",
-            "1.${basic_settings::os_parent}.pool.ntp.org",
-            "2.${basic_settings::os_parent}.pool.ntp.org",
-            "3.${basic_settings::os_parent}.pool.ntp.org",
+            "0.${basic_settings::os_parent}.pool.ntp.org iburst",
+            "1.${basic_settings::os_parent}.pool.ntp.org iburst",
+            "2.${basic_settings::os_parent}.pool.ntp.org iburst",
+            "3.${basic_settings::os_parent}.pool.ntp.org iburst",
         ],
         $extra_pools = []
     ) {
 
         /* Create complete list */
-        $list_pools = merge($pools, $extra_pools)
+        $list_pools = flatten($pools, $extra_pools)
 
         /* Add network time procotol package */
         package { 'ntpsec':
