@@ -1,18 +1,29 @@
 class basic_settings(
-        $cluster_id         = 'core',
-        $backports          = false,
-        $non_free           = false,
-        $sury_enable        = false,
-        $nginx_enable       = false,
-        $proxmox_enable     = false,
-        $mysql_enable       = false,
-        $mysql_version      = '8.0',
-        $nodejs_enable      = false,
-        $nodejs_version     = '20',
-        $nftables_enable    = true,
-        $brr_enable         = true,
+        $cluster_id             = 'core',
+        $backports              = false,
+        $non_free               = false,
+        $sury_enable            = false,
+        $nginx_enable           = false,
+        $proxmox_enable         = false,
+        $mysql_enable           = false,
+        $mysql_version          = '8.0',
+        $nodejs_enable          = false,
+        $nodejs_version         = '20',
+        $nftables_enable        = true,
+        $brr_enable             = true,
         $systemd_default_target = 'helpers'
     ) {
+
+    /* Remove snapd packages */
+    package { 'snapd':
+        ensure  => absent
+    }
+
+    /* Basic system packages */
+    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils', 'iputils-ping', 'mtr', 'libpam-modules']:
+        ensure  => installed,
+        require => Package['snapd']
+    }
 
     /* Get OS name */
     case $operatingsystem {
@@ -49,6 +60,12 @@ class basic_settings(
                 $proxmox_allow = false
                 $mysql_allow = false
                 $nodejs_allow = false
+            }
+
+            /* Remove unminimize files */
+            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize']:
+                ensure      => absent,
+                require     => Package['libpam-modules']
             }
         }
         'Debian': {
@@ -94,17 +111,6 @@ class basic_settings(
             $mysql_allow = false
             $nodejs_allow = false
         }
-    }
-
-    /* Remove snapd packages */
-    package { 'snapd':
-        ensure  => absent
-    }
-
-    /* Basic system packages */
-    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils', 'iputils-ping', 'mtr']:
-        ensure  => installed,
-        require => Package['snapd']
     }
 
     /* Setup sudoers config file */
