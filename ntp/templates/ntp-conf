@@ -3,7 +3,7 @@ driftfile /var/lib/ntpsec/ntp.drift
 leapfile /usr/share/zoneinfo/leap-seconds.list
 
 # Pools
-<% @pools.each do |pool| -%>
+<% @list_pools.each do |pool| -%>
 pool <%= pool %>
 <% end -%>
 

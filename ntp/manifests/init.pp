@@ -5,8 +5,12 @@ class ntp(
             "1.${basic_settings::os_parent}.pool.ntp.org",
             "2.${basic_settings::os_parent}.pool.ntp.org",
             "3.${basic_settings::os_parent}.pool.ntp.org",
-        ]
+        ],
+        $extra_pools = []
     ) {
+
+        /* Create complete list */
+        $list_pools = merge($pools, $extra_pools)
 
         /* Add network time procotol package */
         package { 'ntpsec':
@@ -34,7 +38,7 @@ class ntp(
             content => template('ntp/ntp-conf'),
             owner   => 'root',
             group   => 'root',
-            mode    => '0644',
+            mode    => '0644', # Important
             require => Package['ntpsec']
         }
 
