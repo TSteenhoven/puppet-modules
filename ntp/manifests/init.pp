@@ -10,7 +10,7 @@ class ntp(
     ) {
 
         /* Create complete list */
-        $list_pools = flatten($pools, $extra_pools)
+        $list_pools = flatten($extra_pools, $pools)
 
         /* Add network time procotol package */
         package { 'ntpsec':
