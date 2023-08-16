@@ -32,9 +32,9 @@ class ntp(
         file { '/etc/ntpsec/ntp.conf':
             ensure  => file,
             content => template('ntp/ntp-conf'),
-            owner   => 'ntpsec',
-            group   => 'ntpsec',
-            mode    => '0600',
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0644',
             require => Package['ntpsec']
         }
 
