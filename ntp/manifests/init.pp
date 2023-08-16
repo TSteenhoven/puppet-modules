@@ -23,7 +23,7 @@ class ntp(
         file { '/etc/ntpsec/ntp.conf':
             ensure  => file,
             content => template('ntp/ntp-conf'),
-            owner   => 'root',
+            owner   => 'ntpsec',
             group   => 'ntpsec',
             mode    => '0750',
             require => Package['ntpsec']
