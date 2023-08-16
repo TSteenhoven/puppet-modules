@@ -7,6 +7,9 @@ leapfile /usr/share/zoneinfo/leap-seconds.list
 pool <%= pool %>
 <% end -%>
 
+# Specify the synchronization distance threshold used by the clock selection algorithm.
+tos maxdist 30
+
 # By default, exchange time with everybody, but don't allow configuration.
 restrict default kod nomodify nopeer noquery limited
 
