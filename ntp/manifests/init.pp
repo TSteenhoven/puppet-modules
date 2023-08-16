@@ -19,13 +19,22 @@ class ntp(
             require => Package['ntpsec']
         }
 
+        /* Create log dir */
+        file { '/var/log/ntpsec':
+            ensure  => directory,
+            owner   => 'ntpsec',
+            group   => 'ntpsec',
+            mode    => '0600',
+            require => Package['ntpsec']
+        }
+
         /* Set config file */
         file { '/etc/ntpsec/ntp.conf':
             ensure  => file,
             content => template('ntp/ntp-conf'),
             owner   => 'ntpsec',
             group   => 'ntpsec',
-            mode    => '0750',
+            mode    => '0600',
             require => Package['ntpsec']
         }
 
