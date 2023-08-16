@@ -13,3 +13,4 @@ restrict default kod nomodify nopeer noquery limited
 # Local users may interrogate the ntp server more closely.
 restrict 127.0.0.1
 restrict ::1
+
