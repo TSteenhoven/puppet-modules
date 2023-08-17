@@ -18,7 +18,8 @@ class basic_settings(
             'mysql-server',
             'nginx',
             'nodejs'
-        ]
+        ],
+        $unattended_upgrades_block_extra_packages = []
     ) {
 
     /* Remove unnecessary packages */
@@ -512,6 +513,7 @@ class basic_settings(
     }
 
     /* Create unattended upgrades config  */
+    $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
     file { '/etc/apt/apt.conf.d/99unattended-upgrades':
         ensure  => file,
         content  => template('basic_settings/unattended-upgrades'),
