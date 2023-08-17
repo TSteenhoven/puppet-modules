@@ -280,7 +280,7 @@ class basic_settings(
         file { '/etc/default/motd-news':
             ensure  => file,
             mode    => '0644',
-            source  => "ENABLED=0\n",
+            content => "ENABLED=0\n",
             require => Package['systemd']
         }
 
