@@ -11,7 +11,8 @@ class basic_settings(
         $nodejs_version         = '20',
         $nftables_enable        = true,
         $brr_enable             = true,
-        $systemd_default_target = 'helpers'
+        $systemd_default_target = 'helpers',
+        $systemd_ntp_extra_pools = []
     ) {
 
     /* Remove snapd packages */
@@ -42,7 +43,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($operatingsystemrelease =~ /^23.04.*/) {
                 $os_name = 'lunar'
-                $backports_allow = true
+                $backports_allow = false
                 $sury_allow = false
                 $nginx_allow = true
                 $proxmox_allow = false
@@ -243,6 +244,44 @@ class basic_settings(
         command => 'systemctl daemon-reload',
         refreshonly => true,
         require => Package['systemd']
+    }
+
+    /* Systemd NTP settings */
+    $systemd_ntp_all_pools = flatten($systemd_ntp_extra_pools, [
+        "0.${os_parent}.pool.ntp.org",
+        "1.${os_parent}.pool.ntp.org",
+        "2.${os_parent}.pool.ntp.org",
+        "3.${os_parent}.pool.ntp.org",
+    ]);
+    $systemd_ntp_list = join($systemd_ntp_all_pools, ' ')
+
+    /* Create systemd timesyncd config  */
+    file { '/etc/systemd/timesyncd.conf':
+        ensure  => file,
+        content  => template('basic_settings/systemd/timesyncd.conf'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Exec['systemd_daemon_reload']
+    }
+
+    /* Ensure that ssh is always running */
+    service { 'systemd-timesyncd':
+        ensure      => running,
+        enable      => true,
+        require     => File['/etc/systemd/timesyncd.conf'],
+        subscribe   => File['/etc/systemd/timesyncd.conf']
+    }
+
+    /* Check if OS is Ubuntul For the next step we need systemd package */
+    if ($os_parent == 'ubnutu') {
+        /* Disable motd news */
+        file { '/etc/default/motd-news':
+            ensure  => file,
+            mode    => '0644',
+            source  => "ENABLED=0\n",
+            require => Package['systemd']
+        }
     }
 
     /* Start nftables */

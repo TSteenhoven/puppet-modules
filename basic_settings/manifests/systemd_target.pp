@@ -11,7 +11,7 @@ define basic_settings::systemd_target(
 
 	file { "/etc/systemd/system/${title}.target":
 		ensure  => $ensure,
-		content => template('basic_settings/systemd_target'),
+		content => template('basic_settings/systemd/target'),
 		mode    => '0644',
 		notify  => Exec['systemd_daemon_reload']
 	}

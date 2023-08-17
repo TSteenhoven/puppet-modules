@@ -22,7 +22,7 @@ define basic_settings::systemd_drop_in(
     /* Create configuration */
     file { "/etc/systemd/system/${target_unit}.d/${title}.conf":
         ensure  => $ensure,
-        content => template('basic_settings/systemd_drop_in'),
+        content => template('basic_settings/systemd/drop_in'),
         mode    => '0644',
         notify  => Exec["${daemon_reload}"]
     }
