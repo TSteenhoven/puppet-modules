@@ -178,13 +178,13 @@ class basic_settings(
 
     /* Install firewall and git */
     if ($backports and $allow_backports) {
-        package { ['systemd', 'systemd-sysv', 'libpam-systemd', 'git', "${firewall_package}"]:
+        package { ['systemd', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure          => installed,
             install_options => ['-t', "${os_name}-backports"],
             require         => Exec['source_backports']
         }
     } else {
-        package { ['systemd', 'systemd-sysv', 'libpam-systemd', 'git', "${firewall_package}"]:
+        package { ['systemd', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure  => installed,
             require => Exec['source_backports']
         }
@@ -261,8 +261,9 @@ class basic_settings(
         content  => template('basic_settings/systemd/timesyncd.conf'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0600',
-        notify  => Exec['systemd_daemon_reload']
+        mode    => '0644',
+        notify  => Exec['systemd_daemon_reload'],
+        require => Package['systemd-timesyncd']
     }
 
     /* Ensure that ssh is always running */
