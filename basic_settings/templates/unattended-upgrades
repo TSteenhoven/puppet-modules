@@ -4,6 +4,6 @@ Unattended-Upgrade::Origins-Pattern {
 
 Unattended-Upgrade::Package-Blacklist {
 <% @unattended_upgrades_block_all_packages.map do |value| -%>
-    "<%= value %>"
+    "<%= value %>";
 <% end -%>
 };
