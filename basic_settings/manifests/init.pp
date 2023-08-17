@@ -275,7 +275,7 @@ class basic_settings(
     }
 
     /* Check if OS is Ubuntul For the next step we need systemd package */
-    if ($os_parent == 'ubnutu') {
+    if ($os_parent == 'ubuntu') {
         /* Disable motd news */
         file { '/etc/default/motd-news':
             ensure  => file,
