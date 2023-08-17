@@ -12,16 +12,22 @@ class basic_settings(
         $nftables_enable        = true,
         $brr_enable             = true,
         $systemd_default_target = 'helpers',
-        $systemd_ntp_extra_pools = []
+        $systemd_ntp_extra_pools = [],
+        $unattended_upgrades_block_packages = [
+            'php',
+            'mysql-server',
+            'nginx',
+            'nodejs'
+        ]
     ) {
 
     /* Remove unnecessary packages */
-    package { ['apport', 'snapd', 'lxd-installer']:
+    package { ['apport', 'chrony', 'lxd-installer', 'ntp', 'snapd']:
         ensure  => absent
     }
 
     /* Basic system packages */
-    package { ['apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'libssl-dev', 'lsb-release', 'mailutils', 'nano' ,'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils', 'iputils-ping', 'mtr', 'libpam-modules']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -266,7 +272,7 @@ class basic_settings(
         require => Package['systemd-timesyncd']
     }
 
-    /* Ensure that ssh is always running */
+    /* Ensure that systemd-timesyncd is always running */
     service { 'systemd-timesyncd':
         ensure      => running,
         enable      => true,
@@ -503,6 +509,23 @@ class basic_settings(
     exec { 'kernel_c_states':
         command => "bash -c 'for (( i=0; i<`nproc`; i++ )); do if [ -d /sys/devices/system/cpu/cpu\${i}/cpuidle/state2 ]; then echo \"1\" > /sys/devices/system/cpu/cpu\${i}/cpuidle/state2/disable; fi; done > /tmp/kernel_c_states.state'",
         onlyif  => "bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [ $(grep ^vendor_id /proc/cpuinfo | uniq | \"(\$3!='GenuineIntel')\") ]; then exit 1; fi; if [ -f /tmp/kernel_c_states.state ]; then exit 1; else exit 0; fi'"
+    }
+
+    /* Create unattended upgrades config  */
+    file { '/etc/apt/apt.conf.d/99unattended-upgrades':
+        ensure  => file,
+        content  => template('basic_settings/unattended-upgrades'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        require => Package['unattended-upgrades']
+    }
+
+    /* Ensure that apt-daily timers is always running */
+    service { ['apt-daily.timer', 'apt-daily-upgrade.timer']:
+        ensure      => running,
+        enable      => true,
+        require     => Package['unattended-upgrades']
     }
 
     /* Disable service */

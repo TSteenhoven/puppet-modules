@@ -131,7 +131,7 @@ class php8(
             source  => 'puppet:///modules/php8/apt-bash',
             owner   => 'root',
             group   => 'root',
-            mode    => '0644', # Import, otherwise non-root users will not be able to use PHP
+            mode    => '0644',
             require => File['/etc/php/mods-available']
         }
     }
