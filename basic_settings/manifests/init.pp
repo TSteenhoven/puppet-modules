@@ -15,8 +15,8 @@ class basic_settings(
         $systemd_ntp_extra_pools = []
     ) {
 
-    /* Remove snapd packages */
-    package { 'snapd':
+    /* Remove unnecessary packages */
+    package { ['apport', 'snapd', 'lxd-installer']:
         ensure  => absent
     }
 
