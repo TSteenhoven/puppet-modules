@@ -283,6 +283,14 @@ class basic_settings(
             source  => "ENABLED=0\n",
             require => Package['systemd']
         }
+
+        /* Ensure that motd-news is stopped */
+        service { 'motd-news.timer':
+            ensure      => stopped,
+            enable      => false,
+            require     => File['/etc/default/motd-news'],
+            subscribe   => File['/etc/default/motd-news']
+        }
     }
 
     /* Start nftables */
