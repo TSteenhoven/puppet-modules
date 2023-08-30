@@ -61,7 +61,7 @@ class basic_settings(
                     $mysql_allow = false
                 }
                 $nodejs_allow = true
-                $puppetserver_package = 'puppet-server'
+                $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
                 $backports_allow = true
