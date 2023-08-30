@@ -11,6 +11,7 @@ class basic_settings(
         $nodejs_version         = '20',
         $firewall_package       = 'nftables',
         $brr_enable             = true,
+        $sudoers_dir_enable     = true,
         $systemd_default_target = 'helpers',
         $systemd_ntp_extra_pools = [],
         $unattended_upgrades_block_packages = [
@@ -142,12 +143,14 @@ class basic_settings(
         content => template('basic_settings/sudoers')
     }
 
-    /* Setip sudoers dir */
-    file { '/etc/sudoers.d':
-        ensure  => directory,
-        purge   => true,
-        recurse => true,
-        force   => true,
+    /* Setup sudoers dir */
+    if ($sudoers_dir_enable) {
+        file { '/etc/sudoers.d':
+            ensure  => directory,
+            purge   => true,
+            recurse => true,
+            force   => true,
+        }
     }
 
     /* Based on OS parent use correct source list */
