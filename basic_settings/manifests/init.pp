@@ -61,6 +61,7 @@ class basic_settings(
                     $mysql_allow = false
                 }
                 $nodejs_allow = true
+                $puppetserver_package = 'puppet-server'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
                 $backports_allow = true
@@ -73,6 +74,7 @@ class basic_settings(
                     $mysql_allow = false
                 }
                 $nodejs_allow = true
+                $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
                 $backports_allow = false
@@ -81,6 +83,7 @@ class basic_settings(
                 $proxmox_allow = false
                 $mysql_allow = false
                 $nodejs_allow = false
+                $puppetserver_package = 'puppet-master'
             }
 
             /* Remove unminimize files */
@@ -109,6 +112,7 @@ class basic_settings(
                     $mysql_allow = false
                 }
                 $nodejs_allow = true
+                $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
                 $backports_allow = false
@@ -117,6 +121,7 @@ class basic_settings(
                 $proxmox_allow = false
                 $mysql_allow = false
                 $nodejs_allow = false
+                $puppetserver_package = 'puppet-master'
             }
         }
         default: {
@@ -427,7 +432,7 @@ class basic_settings(
             command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg']]
+            require     => [Package['curl'], Package['gnupg'], File['source_mysql_key']]
         }
     } else {
         /* Remove mysql repo */
