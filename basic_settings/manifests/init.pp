@@ -353,6 +353,15 @@ class basic_settings(
         mode    => '0755', # High important
     }
 
+    /* Disable floppy */
+    file { '/etc/modprobe.d/blacklist-floppy.conf':
+        ensure  => file,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        content => "blacklist floppy\n"
+    }
+
     /* Check if we need sury */
     if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
