@@ -9,7 +9,7 @@ class basic_settings(
         $mysql_version          = '8.0',
         $nodejs_enable          = false,
         $nodejs_version         = '20',
-        $nftables_enable        = true,
+        $firewall_package       = 'nftables',
         $brr_enable             = true,
         $systemd_default_target = 'helpers',
         $systemd_ntp_extra_pools = [],
@@ -48,9 +48,21 @@ class basic_settings(
             }
 
             /* Do thing based on version */
-            if ($operatingsystemrelease =~ /^23.04.*/) {
+            if ($operatingsystemrelease =~ /^23.04.*/) { # Stable
                 $os_name = 'lunar'
                 $backports_allow = false
+                $sury_allow = false
+                $nginx_allow = true
+                $proxmox_allow = false
+                if ($architecture == 'amd64') {
+                    $mysql_allow = true
+                } else {
+                    $mysql_allow = false
+                }
+                $nodejs_allow = true
+            } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
+                $os_name = 'jammy'
+                $backports_allow = true
                 $sury_allow = false
                 $nginx_allow = true
                 $proxmox_allow = false
@@ -168,18 +180,22 @@ class basic_settings(
         }
     }
 
-    /* Remove packages */
-    if ($nftables_enable) {
-        $firewall_package = 'nftables'
-        $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
-        package { 'iptables':
-            ensure => absent
+    /* Do special thinks based on firewall package */
+    case $firewall_package {
+        'nftables': {
+            $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
+            package { ['iptables', 'firwalld']:
+                ensure => absent
+            }
         }
-    } else {
-        $firewall_package = 'iptables'
-        $firewall_command = 'iptables-restore < /etc/firewall.conf'
-        package { 'nftables':
-            ensure => absent
+        'iptables': {
+            $firewall_command = 'iptables-restore < /etc/firewall.conf'
+            package { ['nftables', 'firwalld']:
+                ensure => absent
+            }
+        }
+        'firewalld': {
+            $firewall_command = ''
         }
     }
 
@@ -310,12 +326,14 @@ class basic_settings(
     }
 
     /* Set script that's set the firewall */
-    file { 'firewall_if_pre_up':
-        ensure  => file,
-        path    => "/etc/network/if-pre-up.d/${firewall_package}",
-        mode    => '0755',
-        content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
-        require => Package["${firewall_package}"]
+    if ($firewall_command != '') {
+        file { 'firewall_if_pre_up':
+            ensure  => file,
+            path    => "/etc/network/if-pre-up.d/${firewall_package}",
+            mode    => '0755',
+            content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
+            require => Package["${firewall_package}"]
+        }
     }
 
     /* Create RX buffer script */

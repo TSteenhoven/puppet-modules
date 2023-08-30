@@ -7,7 +7,8 @@ class nginx(
         $global_directives      = [],
         $events_directives      = [],
         $http_directives        = [],
-        $nice_level             = 10
+        $nice_level             = 10,
+        $limit_file             = 10000
     ) {
 
     /* Install Nginx */
@@ -40,10 +41,11 @@ class nginx(
     }
 
     /* Create drop in for nginx service */
-    basic_settings::systemd_drop_in { 'nginx_nice':
+    basic_settings::systemd_drop_in { 'nginx_settimgs':
         target_unit     => 'nginx.service',
         service         => {
-            'Nice' => "-${nice_level}"
+            'Nice'          => "-${nice_level}",
+            'LimitNOFILE'   => $limit_file
         },
         daemon_reload   => 'nginx_systemd_daemon_reload',
         require         => Package['nginx']

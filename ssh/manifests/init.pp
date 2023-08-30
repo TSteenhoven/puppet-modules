@@ -1,9 +1,10 @@
 
 class ssh(
-        $port                       = 22,
-        $permit_root_login          = false,
-        $password_authentication    = false,
-        $allow_users                = []
+        $port                           = 22,
+        $permit_root_login              = false,
+        $password_authentication        = false,
+        $password_authentication_users  = [],
+        $allow_users                    = []
     ) {
 
     /* Required packages for SSHD */
@@ -13,6 +14,7 @@ class ssh(
 
     /* Convert array to string */
     $str_allow_users = join($allow_users, ' ')
+    $str_password_authentication_users = join($password_authentication_users, ',')
 
     /* Create SSHD directory config */
     file { '/etc/ssh/sshd_config.d':
