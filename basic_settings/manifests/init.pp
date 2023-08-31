@@ -15,8 +15,9 @@ class basic_settings(
         $systemd_default_target = 'helpers',
         $systemd_ntp_extra_pools = [],
         $unattended_upgrades_block_packages = [
-            'php',
-            'mysql-server',
+            'php*',
+            'libmysql*',
+            'mysql*',
             'nginx',
             'nodejs'
         ],
@@ -90,6 +91,12 @@ class basic_settings(
             file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize']:
                 ensure      => absent,
                 require     => Package['libpam-modules']
+            }
+
+            /* Remove man */
+            exec { 'remove_man':
+                command     => 'rm /usr/bin/man',
+                onlyif      => '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]',
             }
         }
         'Debian': {
