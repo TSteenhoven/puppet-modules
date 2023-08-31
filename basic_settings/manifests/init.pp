@@ -96,7 +96,7 @@ class basic_settings(
             /* Remove man */
             exec { 'remove_man':
                 command     => 'rm /usr/bin/man',
-                onlyif      => '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]',
+                onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
             }
         }
         'Debian': {
