@@ -474,7 +474,7 @@ class basic_settings(
             require => Exec['source_nodejs']
         }
     } else {
-        /* Install nodejs package */
+        /* Remove nodejs package */
         package { 'nodejs':
             ensure  => absent
         }
