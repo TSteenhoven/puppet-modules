@@ -76,6 +76,16 @@ class mysql (
                 daemon_reload   => 'mysql_systemd_daemon_reload',
                 require         => Class['php8::fpm']
             }
+        } else {
+            /* Create drop in for services target */
+            basic_settings::systemd_drop_in { 'mysql_dependency':
+                target_unit     => "${basic_settings::cluster_id}-services.target",
+                unit            => {
+                    'BindsTo'   => 'mysql.service'
+                },
+                daemon_reload   => 'mysql_systemd_daemon_reload',
+                require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+            }
         }
 
         /* Create drop in for nginx service */

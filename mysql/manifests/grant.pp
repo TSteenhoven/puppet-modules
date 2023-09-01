@@ -21,7 +21,7 @@ define mysql::grant (
 
     /* Set some settings */
     $priv_str = join($privileges, ', ')
-    $grant_option_num = $grant_option ? { true => '1', default => '0"' }
+    $grant_option_num = $grant_option ? { true => '1', default => '0' }
 
     /* Change SQL queries based on version */
     if ($basic_settings::mysql_version == '8.0' and $priv_str == 'ALL PRIVILEGES') {
