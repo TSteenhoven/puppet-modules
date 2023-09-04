@@ -7,6 +7,8 @@ class basic_settings(
         $proxmox_enable         = false,
         $mysql_enable           = false,
         $mysql_version          = '8.0',
+        $mongodb_enable         = false,
+        $mongodb_version        = '4.4',
         $nodejs_enable          = false,
         $nodejs_version         = '20',
         $firewall_package       = 'nftables',
@@ -61,6 +63,7 @@ class basic_settings(
                 } else {
                     $mysql_allow = false
                 }
+                $mongodb_allow = true
                 $nodejs_allow = true
                 $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
@@ -74,6 +77,7 @@ class basic_settings(
                 } else {
                     $mysql_allow = false
                 }
+                $mongodb_allow = true
                 $nodejs_allow = true
                 $puppetserver_package = 'puppet-master'
             } else {
@@ -83,6 +87,7 @@ class basic_settings(
                 $nginx_allow = false
                 $proxmox_allow = false
                 $mysql_allow = false
+                $mongodb_allow = false
                 $nodejs_allow = false
                 $puppetserver_package = 'puppet-master'
             }
@@ -118,6 +123,7 @@ class basic_settings(
                 } else {
                     $mysql_allow = false
                 }
+                $mongodb_allow = true
                 $nodejs_allow = true
                 $puppetserver_package = 'puppet-master'
             } else {
@@ -127,6 +133,7 @@ class basic_settings(
                 $nginx_allow = false
                 $proxmox_allow = false
                 $mysql_allow = false
+                $mongodb_allow = false
                 $nodejs_allow = false
                 $puppetserver_package = 'puppet-master'
             }
@@ -142,6 +149,7 @@ class basic_settings(
             $nginx_allow = false
             $proxmox_allow = false
             $mysql_allow = false
+            $mongodb_allow = false
             $nodejs_allow = false
         }
     }
@@ -455,6 +463,23 @@ class basic_settings(
         exec { 'source_mysql':
             command     => 'rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
+            notify      => Exec['source_list_reload']
+        }
+    }
+
+    /* Check if variable mongodb is true; if true, install new source list and key */
+    if ($mongodb_enable and $mongodb_allow) {
+        exec { 'source_mongodb':
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_parent}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
+            unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
+            notify      => Exec['source_list_reload'],
+            require     => [Package['curl'], Package['gnupg']]
+        }
+    } else {
+        /* Remove mongodb repo */
+        exec { 'source_mongodb':
+            command     => 'rm /etc/apt/sources.list.d/mongodb.list',
+            onlyif      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
             notify      => Exec['source_list_reload']
         }
     }
