@@ -470,12 +470,23 @@ class basic_settings(
     /* Check if variable mongodb is true; if true, install new source list and key */
     if ($mongodb_enable and $mongodb_allow) {
         exec { 'source_mongodb':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_parent}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
             notify      => Exec['source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
+
+        /* Install mongodb-server package */
+        package { 'mongodb-server':
+            ensure  => installed,
+            require => Exec['source_mongodb']
+        }
     } else {
+        /* Remove mongodb-server package */
+        package { 'mongodb-server':
+            ensure  => absent
+        }
+
         /* Remove mongodb repo */
         exec { 'source_mongodb':
             command     => 'rm /etc/apt/sources.list.d/mongodb.list',
