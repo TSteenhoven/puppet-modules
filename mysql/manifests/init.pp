@@ -102,6 +102,15 @@ class mysql (
         $defaults_file = '/etc/mysql/debian.cnf'
     }
 
+    /* Create mysql cnf */
+    file { 'mysql_cnf':
+        path        => '/etc/mysql/mysql.cnf',
+        owner       => 'mysql',
+        group       => 'mysql',
+        mode        => '0600',
+        content     => template('mysql/mysql.cnf')
+    }
+
     # Actual root user
     if ($root_password != '') {
         /* Create mysql user */
@@ -118,7 +127,7 @@ class mysql (
             owner       => 'mysql',
             group       => 'mysql',
             mode        => '0600',
-            content     => template('mysql/debian-cnf'),
+            content     => template('mysql/debian.cnf'),
             require     => Mysql::User['root']
         }
 
