@@ -85,6 +85,16 @@ class nginx(
         require => Package['nginx']
     }
 
+    /* Create ssl directory */
+    file { 'nginx_ssl':
+        path    => '/etc/nginx/ssl',
+        ensure  => directory,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0770',
+        require => Package['nginx']
+    }
+
     /* Create FastCGI PHP config */
     file { 'nginx_fastcgi_php_conf':
         path    => '/etc/nginx/snippets/fastcgi-php.conf',
