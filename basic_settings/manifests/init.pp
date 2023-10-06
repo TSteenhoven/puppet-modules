@@ -32,7 +32,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -96,6 +96,12 @@ class basic_settings(
             file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize']:
                 ensure      => absent,
                 require     => Package['libpam-modules']
+            }
+
+            /* Remove unnecessary snapd files */
+            file { '/etc/xdg/autostart/snap-userd-autostart.desktop':
+                ensure      => absent,
+                require     => Package['snapd']
             }
 
             /* Remove man */
