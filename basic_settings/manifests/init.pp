@@ -482,14 +482,14 @@ class basic_settings(
             require     => [Package['curl'], Package['gnupg']]
         }
 
-        /* Install mongodb-server package */
-        package { 'mongodb-server':
+        /* Install mongodb-org-server package */
+        package { 'mongodb-org-server':
             ensure  => installed,
             require => Exec['source_mongodb']
         }
     } else {
-        /* Remove mongodb-server package */
-        package { 'mongodb-server':
+        /* Remove mongodb-org-server package */
+        package { 'mongodb-org-server':
             ensure  => absent
         }
 
