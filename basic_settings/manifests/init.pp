@@ -29,7 +29,7 @@ class basic_settings(
     ) {
 
     /* Remove unnecessary packages */
-    package { ['apport', 'chrony', 'lxd-installer', 'ntp', 'snapd', 'ifupdown']:
+    package { ['apport', 'chrony', 'ifupdown', 'lxd-installer', 'ntp', 'snapd']:
         ensure  => absent
     }
 
@@ -365,7 +365,7 @@ class basic_settings(
     if ($firewall_command != '') {
         file { 'firewall_networkd_dispatche':
             ensure  => file,
-            path    => "/usr/lib/networkd-dispatcher/routable.d/${firewall_package}",
+            path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
             mode    => '0755',
             content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
             require => Package["${firewall_package}"]
@@ -382,7 +382,7 @@ class basic_settings(
     }
 
     /* Create RX buffer script */
-    file { '/usr/lib/networkd-dispatcher/routable.d/rxbuffer':
+    file { '/etc/networkd-dispatcher/routable.d/rxbuffer':
         ensure  => file,
         content  => template('basic_settings/network/rxbuffer'),
         owner   => 'root',
