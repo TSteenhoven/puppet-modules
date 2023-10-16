@@ -391,6 +391,13 @@ class basic_settings(
         require => File['/usr/local/bin/rxbuffer']
     }
 
+    /* Ensure that networkd-dispatcher.service is always running */
+    service { 'networkd-dispatcher.service':
+        ensure      => running,
+        enable      => true,
+        require     => Package['networkd-dispatcher']
+    }
+
     /* Disable floppy */
     file { '/etc/modprobe.d/blacklist-floppy.conf':
         ensure  => file,
