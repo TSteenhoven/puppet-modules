@@ -363,7 +363,7 @@ class basic_settings(
 
     /* Set script that's set the firewall */
     if ($firewall_command != '') {
-        file { 'firewall_if_pre_up':
+        file { 'firewall_networkd_dispatche':
             ensure  => file,
             path    => "/usr/lib/networkd-dispatcher/routable.d/${firewall_package}",
             mode    => '0755',
@@ -382,7 +382,7 @@ class basic_settings(
     }
 
     /* Create RX buffer script */
-    file { '/usr/lib/networkd-dispatcher/no-carrier.d/rxbuffer':
+    file { '/usr/lib/networkd-dispatcher/routable.d/rxbuffer':
         ensure  => file,
         content  => template('basic_settings/network/rxbuffer'),
         owner   => 'root',
