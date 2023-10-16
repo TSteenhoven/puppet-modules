@@ -2,6 +2,7 @@
 
 # Set default values
 INTERFACE=""
+ETHTOOL=/sbin/ethtool
 
 # Grab the command line arguments
 while test -n "$1"; do
@@ -17,7 +18,7 @@ while test -n "$1"; do
         *)
             echo "Unknown argument: $1"
             print_usage
-            exit 1;
+            exit 0;
             ;;
     esac
     shift
@@ -26,8 +27,14 @@ done
 # Check if interface is empty
 if [ "${INTERFACE}" = "" ]; then
     echo "Interface is empty"
-    exit 1
+    exit 0;
 fi
+
+# Check if ethtool is not available
+if [ ! -x $ETHTOOL ]; then
+    echo "Ethtool not available"
+    exit 0;
+fi; 
 
 # Check if public interface is a bond
 if [ -f "/proc/net/bonding/${INTERFACE}" ]; then

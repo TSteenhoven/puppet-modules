@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Check if RX buffer tool is available
+RXBUFFERTOOL=/usr/local/bin/rxbuffer
+test -x $RXBUFFERTOOL || exit 0
+
+# Check if interface is not lo
+[ "$IFACE" != "lo" ] || exit 0
+
+# Run command
+$RXBUFFERTOOL --interface "$IFACE"

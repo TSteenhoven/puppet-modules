@@ -11,6 +11,8 @@ class basic_settings(
         $mongodb_version        = '4.4',
         $nodejs_enable          = false,
         $nodejs_version         = '20',
+        $openjdk_enable         = false,
+        $openjdk_version        = 'default',
         $firewall_package       = 'nftables',
         $brr_enable             = true,
         $sudoers_dir_enable     = true,
@@ -65,6 +67,7 @@ class basic_settings(
                 }
                 $mongodb_allow = true
                 $nodejs_allow = true
+                $openjdk_allow = true
                 $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
@@ -79,6 +82,7 @@ class basic_settings(
                 }
                 $mongodb_allow = true
                 $nodejs_allow = true
+                $openjdk_allow = true
                 $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
@@ -89,6 +93,7 @@ class basic_settings(
                 $mysql_allow = false
                 $mongodb_allow = false
                 $nodejs_allow = false
+                $openjdk_allow = false
                 $puppetserver_package = 'puppet-master'
             }
 
@@ -131,6 +136,7 @@ class basic_settings(
                 }
                 $mongodb_allow = true
                 $nodejs_allow = true
+                $openjdk_allow = true
                 $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
@@ -141,6 +147,7 @@ class basic_settings(
                 $mysql_allow = false
                 $mongodb_allow = false
                 $nodejs_allow = false
+                $openjdk_allow = false
                 $puppetserver_package = 'puppet-master'
             }
         }
@@ -366,12 +373,22 @@ class basic_settings(
     }
 
     /* Create RX buffer script */
-    file { '/etc/network/rxbuffer.sh':
+    file { '/usr/local/bin/rxbuffer':
         ensure  => file,
-        source  => 'puppet:///modules/basic_settings/rxbuffer.sh',
+        source  => 'puppet:///modules/basic_settings/rxbuffer',
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # High important
+    }
+
+    /* Create RX buffer script */
+    file { '/etc/network/if-pre-up.d/rxbuffer':
+        ensure  => file,
+        content  => template('basic_settings/network/rxbuffer'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0755', # High important,
+        require => File['/usr/local/bin/rxbuffer']
     }
 
     /* Disable floppy */
@@ -575,6 +592,28 @@ class basic_settings(
             command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
             onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
             notify      => Exec['sysctl_reload']
+        }
+    }
+
+    /* Check if variable openjdk is true; if true, install new package */
+    if ($openjdk_enable and $openjdk_allow) {
+        /* Get package name */
+        if ($openjdk_version == 'default') {
+            $openjdk_package = 'default-jdk'
+        } else {
+            $openjdk_package = "openjdk-${openjdk_version}-jdk"
+        }
+
+        /* Install openjdk package */
+        package { 'openjdk':
+            name    => $openjdk_package,
+            ensure  => installed
+        }
+    } else {
+        /* Remove openjdk package */
+        package { 'openjdk':
+            name    => 'openjdk*',
+            ensure  => absent
         }
     }
 
