@@ -57,13 +57,13 @@ if [ -f "/proc/net/bonding/${INTERFACE}" ]; then
         # Check if we need to change buffer */
         if [ "$apply_buffer" == "1" ]; then
             # Set new buffer
-            ethtool -G $line tx 4096
+            $ETHTOOL -G $line tx 4096
             status_buffer_one=$?
 
             # Check if command is finished successfully
             if [ $status_buffer_one -eq 0 ]; then
                 # Set new buffer
-                ethtool -G $line rx 4096
+                $ETHTOOL -G $line rx 4096
                 status_buffer_two=$?
 
                 # Check if command is finished successfully
@@ -94,13 +94,13 @@ else
     # Check if we need to change buffer */
     if [ "$apply_buffer" == "1" ]; then
         # Set new buffer
-        ethtool -G $INTERFACE tx 4096
+        $ETHTOOL -G $INTERFACE tx 4096
         status_buffer_one=$?
 
         # Check if command is finished successfully
         if [ $status_buffer_one -eq 0 ]; then
             # Set new buffer
-            ethtool -G $INTERFACE rx 4096
+            $ETHTOOL -G $INTERFACE rx 4096
             status_buffer_two=$?
 
             # Check if command is finished successfully

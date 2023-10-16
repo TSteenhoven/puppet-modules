@@ -29,12 +29,12 @@ class basic_settings(
     ) {
 
     /* Remove unnecessary packages */
-    package { ['apport', 'chrony', 'lxd-installer', 'ntp', 'snapd']:
+    package { ['apport', 'chrony', 'lxd-installer', 'ntp', 'snapd', 'ifupdown']:
         ensure  => absent
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -365,7 +365,7 @@ class basic_settings(
     if ($firewall_command != '') {
         file { 'firewall_if_pre_up':
             ensure  => file,
-            path    => "/etc/network/if-pre-up.d/${firewall_package}",
+            path    => "/usr/lib/networkd-dispatcher/routable.d/${firewall_package}",
             mode    => '0755',
             content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
             require => Package["${firewall_package}"]
@@ -382,7 +382,7 @@ class basic_settings(
     }
 
     /* Create RX buffer script */
-    file { '/etc/network/if-pre-up.d/rxbuffer':
+    file { '/usr/lib/networkd-dispatcher/no-carrier.d/rxbuffer':
         ensure  => file,
         content  => template('basic_settings/network/rxbuffer'),
         owner   => 'root',
