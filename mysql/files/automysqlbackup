@@ -189,9 +189,13 @@ mail_cleanup () {
         ###################################################################################
 
         # Clean up and finish
-        if (( ! $CONFIG_dryrun )) && [[ ! -s "$log_errfile" ]]; then
-            [[ -e "$log_file" ]] && rm -f "$log_file"
-            [[ -e "$log_errfile" ]] && rm -f "$log_errfile"
+        if (( $CONFIG_dryrun )); then
+            :
+        else
+            if [[ ! -s "$log_errfile" ]]; then
+                [[ -e "$log_file" ]] && rm -f "$log_file"
+                [[ -e "$log_errfile" ]] && rm -f "$log_errfile"
+            fi
         fi
     fi
 }
