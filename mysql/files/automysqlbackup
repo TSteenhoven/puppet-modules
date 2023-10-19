@@ -1518,7 +1518,7 @@ extended_select() {
                                     else
                                         if (( $op_rm )); then
                                             new_array=()
-                                            for ((m="$((${#selection[@]}-1));m>=0;m--)); do ///////// FIX
+                                            for ((m="$((${#selection[@]}-1))";m>=0;m--)); do
                                                 if [[ "x${selection[m]}" != "x$k" ]]; then
                                                     new_array=("${new_array[@]}" "${selection[m]}")
                                                 fi
