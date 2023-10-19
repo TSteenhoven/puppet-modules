@@ -72,8 +72,8 @@ class mysql (
             basic_settings::systemd_drop_in { "php8_${$php8::minor_version}_mysql_dependency":
                 target_unit     => "php8.${$php8::minor_version}-fpm.service",
                 unit            => {
-                    'After'     => 'mysql',
-                    'BindsTo'   => 'mysql'
+                    'After'     => 'mysql.service',
+                    'BindsTo'   => 'mysql.service'
                 },
                 daemon_reload   => 'mysql_systemd_daemon_reload',
                 require         => Class['php8::fpm']
@@ -132,8 +132,8 @@ class mysql (
             'Nice'      => '19',
         },
         unit            => {
-            'After'     => $package_name,
-            'BindsTo'   => $package_name
+            'After'     => "${package_name}.service",
+            'BindsTo'   => "${package_name}.service"
         },
         install     => {
             'WantedBy'  => 'multi-user.target'
