@@ -373,7 +373,7 @@ class basic_settings(
     }
 
     /* Create RX buffer script */
-    file { '/usr/local/bin/rxbuffer':
+    file { '/usr/local/sbin/rxbuffer':
         ensure  => file,
         source  => 'puppet:///modules/basic_settings/rxbuffer',
         owner   => 'root',
@@ -388,7 +388,7 @@ class basic_settings(
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # High important,
-        require => File['/usr/local/bin/rxbuffer']
+        require => File['/usr/local/sbin/rxbuffer']
     }
 
     /* Ensure that networkd services is always running */
@@ -616,11 +616,23 @@ class basic_settings(
             name    => $openjdk_package,
             ensure  => installed
         }
+
+        /* Remove java extensions */
+        package { 'ca-certificates-java':
+            ensure  => installed,
+            require => Package['openjdk']
+        }
     } else {
         /* Remove openjdk package */
         package { 'openjdk':
             name    => 'openjdk*',
             ensure  => absent
+        }
+
+        /* Remove java extensions */
+        package { 'ca-certificates-java':
+            ensure  => absent,
+            require => Package['openjdk']
         }
     }
 

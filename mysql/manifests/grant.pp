@@ -8,15 +8,9 @@ define mysql::grant (
         $grant_option = false,
     ) {
 
-    /* Based on install server option set requirements */
-    if ($mysql::install_server) {
-        Exec {
-            require => [Service['mysql'], File[$mysql::script_path]]
-        }
-    } else {
-        Exec {
-            require => File[$mysql::script_path]
-        }
+    /* Set requirements */
+    Exec {
+        require => [Service[$mysql::package_name], File[$mysql::script_path]]
     }
 
     /* Set some settings */

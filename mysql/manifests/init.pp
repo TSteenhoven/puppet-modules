@@ -1,7 +1,9 @@
 class mysql (
         $root_password = '',
         $settings = {},
-        $install_server = true
+        $package_name = 'mysql',
+        $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
+        $automysqlbackup_host_friendly = $fqdn
     ) {
 
     /* Set mysqld default values */
@@ -41,8 +43,8 @@ class mysql (
         mode    => '0755'
     }
 
-    /* Do only the following steps when install server is active */
-    if ($install_server) {
+    /* Do only the following steps when package name is mysql */
+    if ($package_name == 'mysql') {
         /* Default file is different than normal install */
         $defaults_file = '/etc/mysql/mysql.conf.d/mysqld.cnf'
 
@@ -102,6 +104,42 @@ class mysql (
         $defaults_file = '/etc/mysql/debian.cnf'
     }
 
+    /* Set config file */
+    file { '/etc/default/automysqlbackup.conf':
+        ensure  => file,
+        content => template('mysql/automysqlbackup.config'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600', # Only root
+    }
+
+    /* Create automysqlbackup script */
+    file { '/usr/local/sbin/automysqlbackup':
+        ensure  => file,
+        source  => 'puppet:///modules/mysql/automysqlbackup',
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0700', # Only root
+    }
+
+    /* Create systemd service */
+    basic_settings::systemd_service { 'automysqlbackup':
+        description => 'Automysqlbackup',
+        service     => {
+            'Type'      => 'oneshot',
+            'User'      => 'root',
+            'ExecStart' => '/usr/local/sbin/automysqlbackup',
+            'Nice'      => '19',
+        },
+        unit            => {
+            'After'     => $package_name,
+            'BindsTo'   => $package_name
+        },
+        install     => {
+            'WantedBy'  => 'multi-user.target'
+        }
+    }
+
     /* Create mysql cnf */
     file { 'mysql_cnf':
         path        => '/etc/mysql/mysql.cnf',
@@ -124,10 +162,10 @@ class mysql (
         /* Create debian cnf */
         file { 'mysql_debian_cnf':
             path        => $defaults_file,
+            content     => template('mysql/debian.cnf'),
             owner       => 'mysql',
             group       => 'mysql',
-            mode        => '0600',
-            content     => template('mysql/debian.cnf'),
+            mode        => '0600', # Only readably for user mysql
             require     => Mysql::User['root']
         }
 

@@ -5,11 +5,9 @@ define mysql::database (
         $destroy = false
     ) {
 
-    /* Based on install server option set requirements */
-    if ($mysql::install_server) {
-        Exec {
-            require => Service['mysql']
-        }
+    /* Set requirements */
+    Exec {
+        require => [Service[$mysql::package_name], File[$mysql::script_path]]
     }
 
     /* Run query */

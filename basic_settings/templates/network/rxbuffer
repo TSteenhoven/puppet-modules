@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Check if RX buffer tool is available
-RXBUFFERTOOL=/usr/local/bin/rxbuffer
+RXBUFFERTOOL=/usr/local/sbin/rxbuffer
 test -x $RXBUFFERTOOL || exit 0
 
 # Check if interface is not lo
