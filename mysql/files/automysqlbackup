@@ -189,7 +189,7 @@ mail_cleanup () {
         ###################################################################################
 
         # Clean up and finish
-        if [[ ! -s "$log_errfile" ]]; then
+        if (( ! $CONFIG_dryrun )) && [[ ! -s "$log_errfile" ]]; then
             [[ -e "$log_file" ]] && rm -f "$log_file"
             [[ -e "$log_errfile" ]] && rm -f "$log_errfile"
         fi
@@ -511,7 +511,7 @@ parse_configuration () {
     # <- determine suffix
 
     # Get mysql access
-    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=\"${CONFIG_mysql_dump_use_defaults_file}\""
+    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=${CONFIG_mysql_dump_use_defaults_file}"
 
     # -> check exclude tables for wildcards
     local tmp;tmp=()
@@ -540,7 +540,7 @@ parse_configuration () {
 # @deps:  load_default_config, parse_configuration
 dbstatus() {
     # Get mysql access
-    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=\"${CONFIG_mysql_dump_use_defaults_file}\""
+    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=${CONFIG_mysql_dump_use_defaults_file}"
 
     if (( $CONFIG_dryrun )); then
         case "${CONFIG_mysql_dump_compression}" in
@@ -579,7 +579,7 @@ dbstatus() {
 # @deps:  load_default_config, parse_configuration
 fullschema () {
     # Get mysql access
-    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=\"${CONFIG_mysql_dump_use_defaults_file}\""
+    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=${CONFIG_mysql_dump_use_defaults_file}"
 
     if (( $CONFIG_dryrun )); then
         case "${CONFIG_mysql_dump_compression}" in
@@ -710,7 +710,7 @@ process_dbs() {
     fi
 
     # Get mysql access
-    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=\"${CONFIG_mysql_dump_use_defaults_file}\""
+    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=${CONFIG_mysql_dump_use_defaults_file}"
 
     if [[ "x$CONFIG_mysql_dump_differential" = "xyes" ]] && [[ "x${CONFIG_encrypt}" != "xyes" ]] && (( $activate_differential_backup )) && ((! ($filename_flags & $filename_flag_encrypted) )); then
         # the master file is encrypted ... well this just shouldn't happen ^^ not going to decrypt or stuff like that ...at least not today :)
@@ -1053,7 +1053,7 @@ parse_databases() {
     printf "# Parsing databases ... "
 
     # Get mysql access
-    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=\"${CONFIG_mysql_dump_use_defaults_file}\""
+    [[ $CONFIG_mysql_dump_use_defaults_file == "" ]] && mysql_access="--user=\"${CONFIG_mysql_dump_username}\" --password=\"${CONFIG_mysql_dump_password}\"" || mysql_access="--defaults-file=${CONFIG_mysql_dump_use_defaults_file}"
 
     # Check if config databse names is empty
     if [ ${#CONFIG_db_names[@]} -eq 0 ]; then
