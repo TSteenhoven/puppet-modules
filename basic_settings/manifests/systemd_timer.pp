@@ -1,16 +1,16 @@
-define basic_settings::systemd_service(
+define basic_settings::systemd_timer(
         $ensure         = present,
         $description,
         $unit           = {},
-        $service        = {},
+        $timer          = {},
         $install        = {
-            'WantedBy'  => 'multi-user.target'
+            'WantedBy'  => 'timers.target'
         }
     ) {
 
-    file { "/etc/systemd/system/${title}.service":
+    file { "/etc/systemd/system/${title}.timer":
         ensure  => $ensure,
-        content => template('basic_settings/systemd/service'),
+        content => template('basic_settings/systemd/timer'),
         mode    => '0644',
         notify  => Exec['systemd_daemon_reload']
     }

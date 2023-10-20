@@ -1,7 +1,9 @@
 class basic_settings(
+        $server_fdqn                                = $fqdn,
         $cluster_id                                 = 'core',
         $backports                                  = false,
         $non_free                                   = false,
+        $puppetserver_enable                        = false,
         $sury_enable                                = false,
         $nginx_enable                               = false,
         $proxmox_enable                             = false,
@@ -18,7 +20,6 @@ class basic_settings(
         $sudoers_dir_enable                         = true,
         $systemd_default_target                     = 'helpers',
         $systemd_ntp_extra_pools                    = [],
-        $systemd_fdqn                               = $fqdn,
         $systemd_notify_mail                        = 'root',
         $unattended_upgrades_block_packages         = [
             'php*',
@@ -312,10 +313,7 @@ class basic_settings(
         description => 'Send systemd notifications to mail',
         service     => {
             'Type'      => 'oneshot',
-            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${systemd_fdqn}\" -r \"systemd@${systemd_fdqn}\" ${systemd_notify_mail}'",
-        },
-        install => {
-            'WantedBy'  => 'multi-user.target'
+            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" ${systemd_notify_mail}'",
         }
     }
 
@@ -617,9 +615,9 @@ class basic_settings(
     }
 
     /* Check if variable openjdk is true; if true, install new package */
-    if ($openjdk_enable and $openjdk_allow) {
+    if ($puppetserver_enable or ($openjdk_enable and $openjdk_allow)) {
         /* Get package name */
-        if ($openjdk_version == 'default') {
+        if ($puppetserver_enable or $openjdk_version == 'default') {
             $openjdk_package = 'default-jdk'
         } else {
             $openjdk_package = "openjdk-${openjdk_version}-jdk"
@@ -694,11 +692,11 @@ class basic_settings(
 
     /* Create drop in for services target */
     basic_settings::systemd_drop_in { 'puppet_dependency':
-        target_unit     => "${basic_settings::cluster_id}-system.target",
+        target_unit     => "${cluster_id}-system.target",
         unit            => {
             'Wants'   => 'puppet.service'
         },
-        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-system"]
+        require         => Basic_settings::Systemd_target["${cluster_id}-system"]
     }
 
     /* Create drop in for puppet service */
@@ -710,6 +708,41 @@ class basic_settings(
         service         => {
             'Nice'          => 19,
             'LimitNOFILE'   => 10000
+        }
+    }
+
+    /* Do only the next steps when we are puppet server */
+    if ($puppetserver_enable) {
+        /* Disable service */
+        service {  "${puppetserver_package}":
+            ensure  => true,
+            enable  => false
+        }
+
+        /* Create drop in for services target */
+        basic_settings::systemd_drop_in { 'puppetserver_dependency':
+            target_unit     => "${cluster_id}-system.target",
+            unit            => {
+                'Wants'   => "${puppetserver_package}.service"
+            },
+            require         => Basic_settings::Systemd_target["${cluster_id}-system"]
+        }
+
+        /* Create drop in for puppet master service */
+        basic_settings::systemd_drop_in { 'puppetserver_settings':
+            target_unit     => "${puppetserver_package}.service",
+            service         => {
+                'Nice'          => '-8',
+            }
+        }
+
+        /* Create drop in for puppet service */
+        basic_settings::systemd_drop_in { 'puppet_puppetserver_dependency':
+            target_unit     => 'puppet.service',
+            service         => {
+                'After'     => "${puppetserver_package}.service",
+                'BindsTo'   => "${puppetserver_package}.service"
+            }
         }
     }
 }

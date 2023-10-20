@@ -2,10 +2,12 @@ class mysql (
         $root_password = '',
         $settings = {},
         $package_name = 'mysql',
-        $automysqlbackup_mail_address = 'root',
-        $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
-        $automysqlbackup_host_friendly = $fqdn
+        $automysqlbackup_backupdir = '/var/lib/automysqlbackup'
     ) {
+
+    /* Use systemd settings */
+    $automysqlbackup_host_friendly = $basic_settings::server_fdqn
+    $automysqlbackup_mail_address = $basic_settings::systemd_notify_mail
 
     /* Set mysqld default values */
     $default_values = {
@@ -128,7 +130,7 @@ class mysql (
 
     /* Create systemd service */
     basic_settings::systemd_service { 'automysqlbackup':
-        description => 'Automysqlbackup',
+        description => 'Automysqlbackup service',
         service     => {
             'Type'      => 'oneshot',
             'User'      => 'root',
@@ -138,9 +140,14 @@ class mysql (
         unit            => {
             'After'     => "${package_name}.service",
             'BindsTo'   => "${package_name}.service"
-        },
-        install     => {
-            'WantedBy'  => 'multi-user.target'
+        }
+    }
+
+    /* Create systemd timer */
+    basic_settings::systemd_timer { 'automysqlbackup':
+        description => 'Automysqlbackup timer',
+        timer       => {
+            'OnCalendar' => '*-*-* 5:00'
         }
     }
 
