@@ -704,6 +704,9 @@ class basic_settings(
     /* Create drop in for puppet service */
     basic_settings::systemd_drop_in { 'puppet_settings':
         target_unit     => 'puppet.service',
+        unit            => {
+            'OnFailure' => 'notify-failed@%i.service'
+        },
         service         => {
             'Nice'          => 19,
             'LimitNOFILE'   => 10000

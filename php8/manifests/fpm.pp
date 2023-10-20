@@ -55,8 +55,11 @@ class php8::fpm(
     }
 
     /* Create drop in for PHP FPM service */
-    basic_settings::systemd_drop_in { "php8_${minor_version}_nice":
+    basic_settings::systemd_drop_in { "php8_${minor_version}_settings":
         target_unit     => "php8.${minor_version}-fpm.service",
+        unit            => {
+            'OnFailure' => 'notify-failed@%i.service'
+        },
         service         => {
             'Nice' => "-${nginx::nice_level}"
         },

@@ -92,8 +92,11 @@ class mysql (
         }
 
         /* Create drop in for nginx service */
-        basic_settings::systemd_drop_in { 'mysql_nice':
+        basic_settings::systemd_drop_in { 'mysql_settings':
             target_unit     => 'mysql.service',
+            unit            => {
+                'OnFailure' => 'notify-failed@%i.service'
+            },
             service         => {
                 'Nice' => '-12'
             },

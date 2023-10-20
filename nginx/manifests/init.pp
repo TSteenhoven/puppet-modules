@@ -45,9 +45,12 @@ class nginx(
     /* Create drop in for nginx service */
     basic_settings::systemd_drop_in { 'nginx_settimgs':
         target_unit     => 'nginx.service',
+        unit            => {
+            'OnFailure' => 'notify-failed@%i.service'
+        },
         service         => {
             'Nice'          => "-${nice_level}",
-            'LimitNOFILE'   => $limit_file
+            'LimitNOFILE'   => $limit_file,
         },
         daemon_reload   => 'nginx_systemd_daemon_reload',
         require         => Package['nginx']
