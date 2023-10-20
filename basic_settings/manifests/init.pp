@@ -728,7 +728,7 @@ class basic_settings(
             require         => Basic_settings::Systemd_target["${cluster_id}-system"]
         }
 
-        /* Create drop in for puppet master service */
+        /* Create drop in for puppet server service */
         basic_settings::systemd_drop_in { 'puppetserver_settings':
             target_unit     => "${puppetserver_package}.service",
              unit            => {
@@ -739,19 +739,19 @@ class basic_settings(
             }
         }
 
-        /* Create systemd service */
-        basic_settings::systemd_service { 'puppet-clena-reports':
+        /* Create systemd puppet server clean reports service */
+        basic_settings::systemd_service { 'puppet-clean-reports':
             description => 'Clean puppetserver reports service',
             service     => {
                 'Type'      => 'oneshot',
                 'User'      => 'puppet',
-                'ExecStart' => '/usr/bin/find /var/lib/puppetserver/reports -type f -name \*.yaml -ctime +1 -delete',
+                'ExecStart' => '/usr/bin/find /var/lib/puppetserver/reports -type f -name /\*.yaml -ctime +1 -delete',
                 'Nice'      => '19',
             },
         }
 
-        /* Create systemd timer */
-        basic_settings::systemd_timer { 'puppet-clena-reports':
+        /* Create systemd puppet server clean reports timer */
+        basic_settings::systemd_timer { 'puppet-clean-reports':
             description => 'Clean puppetserver reports timer',
             timer       => {
                 'OnCalendar' => '*-*-* 10:00'
