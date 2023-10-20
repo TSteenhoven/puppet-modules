@@ -731,8 +731,30 @@ class basic_settings(
         /* Create drop in for puppet master service */
         basic_settings::systemd_drop_in { 'puppetserver_settings':
             target_unit     => "${puppetserver_package}.service",
+             unit            => {
+                'OnFailure' => 'notify-failed@%i.service'
+            },
             service         => {
                 'Nice'          => '-8',
+            }
+        }
+
+        /* Create systemd service */
+        basic_settings::systemd_service { 'puppet-clena-reports':
+            description => 'Clean puppetserver reports service',
+            service     => {
+                'Type'      => 'oneshot',
+                'User'      => 'puppet',
+                'ExecStart' => '/usr/bin/find /var/lib/puppetserver/reports -type f -name \*.yaml -ctime +1 -delete',
+                'Nice'      => '19',
+            },
+        }
+
+        /* Create systemd timer */
+        basic_settings::systemd_timer { 'puppet-clena-reports':
+            description => 'Clean puppetserver reports timer',
+            timer       => {
+                'OnCalendar' => '*-*-* 10:00'
             }
         }
 
