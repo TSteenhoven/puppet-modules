@@ -312,7 +312,7 @@ class basic_settings(
         description => 'Send systemd notifications to mail',
         service     => {
             'Type'      => 'oneshot',
-            'ExecStart' => "/usr/bin/bash -c 'systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${systemd_fdqn}\" -r \"systemd@${systemd_fdqn}\" ${systemd_notify_mail}'",
+            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${systemd_fdqn}\" -r \"systemd@${systemd_fdqn}\" ${systemd_notify_mail}'",
         },
         install => {
             'WantedBy'  => 'multi-user.target'
