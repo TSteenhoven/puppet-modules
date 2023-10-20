@@ -140,7 +140,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
-                $puppetserver_package = 'puppet-master'
+                $puppetserver_package = 'puppetserver'
             } else {
                 $os_name = 'unknown'
                 $backports_allow = false
