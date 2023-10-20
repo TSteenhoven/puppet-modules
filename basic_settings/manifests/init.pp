@@ -745,7 +745,7 @@ class basic_settings(
             service     => {
                 'Type'      => 'oneshot',
                 'User'      => 'puppet',
-                'ExecStart' => "/usr/bin/bash -c '/usr/bin/find /var/lib/puppetserver/reports -type f -name \*.yaml -ctime +1 -delete'",
+                'ExecStart' => '/usr/bin/find /var/lib/puppetserver/reports -type f -name \\*.yaml -ctime +1 -delete',
                 'Nice'      => '19',
             },
         }
