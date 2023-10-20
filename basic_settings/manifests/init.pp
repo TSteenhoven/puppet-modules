@@ -1,31 +1,33 @@
 class basic_settings(
-        $cluster_id             = 'core',
-        $backports              = false,
-        $non_free               = false,
-        $sury_enable            = false,
-        $nginx_enable           = false,
-        $proxmox_enable         = false,
-        $mysql_enable           = false,
-        $mysql_version          = '8.0',
-        $mongodb_enable         = false,
-        $mongodb_version        = '4.4',
-        $nodejs_enable          = false,
-        $nodejs_version         = '20',
-        $openjdk_enable         = false,
-        $openjdk_version        = 'default',
-        $firewall_package       = 'nftables',
-        $brr_enable             = true,
-        $sudoers_dir_enable     = true,
-        $systemd_default_target = 'helpers',
-        $systemd_ntp_extra_pools = [],
-        $unattended_upgrades_block_packages = [
+        $cluster_id                                 = 'core',
+        $backports                                  = false,
+        $non_free                                   = false,
+        $sury_enable                                = false,
+        $nginx_enable                               = false,
+        $proxmox_enable                             = false,
+        $mysql_enable                               = false,
+        $mysql_version                              = '8.0',
+        $mongodb_enable                             = false,
+        $mongodb_version                            = '4.4',
+        $nodejs_enable                              = false,
+        $nodejs_version                             = '20',
+        $openjdk_enable                             = false,
+        $openjdk_version                            = 'default',
+        $firewall_package                           = 'nftables',
+        $brr_enable                                 = true,
+        $sudoers_dir_enable                         = true,
+        $systemd_default_target                     = 'helpers',
+        $systemd_ntp_extra_pools                    = [],
+        $systemd_fdqn                               = $fqdn,
+        $systemd_notify_mail                        = 'root',
+        $unattended_upgrades_block_packages         = [
             'php*',
             'libmysql*',
             'mysql*',
             'nginx',
             'nodejs'
         ],
-        $unattended_upgrades_block_extra_packages = []
+        $unattended_upgrades_block_extra_packages   = []
     ) {
 
     /* Remove unnecessary packages */
@@ -34,7 +36,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -303,6 +305,18 @@ class basic_settings(
         command => 'systemctl daemon-reload',
         refreshonly => true,
         require => Package['systemd']
+    }
+
+    /* Create systemd service for notification */
+    basic_settings::systemd_service { 'notify-failed@.service':
+        description => 'Send systemd notifications to mail',
+        service     => {
+            'Type'      => 'oneshot',
+            'ExecStart' => "/usr/bin/bash -c 'systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${systemd_fdqn}\" -r \"systemd@${systemd_fdqn}\" ${systemd_notify_mail}'",
+        },
+        install => {
+            'WantedBy'  => 'multi-user.target'
+        }
     }
 
     /* Systemd NTP settings */

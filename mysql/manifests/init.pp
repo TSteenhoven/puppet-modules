@@ -2,6 +2,7 @@ class mysql (
         $root_password = '',
         $settings = {},
         $package_name = 'mysql',
+        $automysqlbackup_mail_address = 'root',
         $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
         $automysqlbackup_host_friendly = $fqdn
     ) {
