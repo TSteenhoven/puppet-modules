@@ -308,7 +308,7 @@ class basic_settings(
     }
 
     /* Create systemd service for notification */
-    basic_settings::systemd_service { 'notify-failed@.service':
+    basic_settings::systemd_service { 'notify-failed@':
         description => 'Send systemd notifications to mail',
         service     => {
             'Type'      => 'oneshot',
