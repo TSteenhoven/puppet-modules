@@ -666,6 +666,12 @@ class basic_settings(
         onlyif  => "bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [ $(grep ^vendor_id /proc/cpuinfo | uniq | \"(\$3!='GenuineIntel')\") ]; then exit 1; fi; if [ -f /tmp/kernel_c_states.state ]; then exit 1; else exit 0; fi'"
     }
 
+    /* Improve kernel io */
+    exec { 'kernel_io':
+        command => "bash -c 'echo \"1\" > /tmp/io.state'",
+        onlyif => "bash -c 'for name in $(findmnt --list --output SOURCE --noheadings / | lsblk --list --noheadings --output PKNAME); do if [ $(grep -c \"none\" /sys/block/\$name/queue/scheduler) -eq 0 ]; then exit 0; fi; done; exit 1'"
+    }
+
     /* Create unattended upgrades config  */
     $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
     file { '/etc/apt/apt.conf.d/99unattended-upgrades':
@@ -740,7 +746,7 @@ class basic_settings(
         }
 
         /* Create systemd puppet server clean reports service */
-        basic_settings::systemd_service { 'puppet-clean-reports':
+        basic_settings::systemd_service { 'puppetserver-clean-reports':
             description => 'Clean puppetserver reports service',
             service     => {
                 'Type'      => 'oneshot',
@@ -751,7 +757,7 @@ class basic_settings(
         }
 
         /* Create systemd puppet server clean reports timer */
-        basic_settings::systemd_timer { 'puppet-clean-reports':
+        basic_settings::systemd_timer { 'puppetserver-clean-reports':
             description => 'Clean puppetserver reports timer',
             timer       => {
                 'OnCalendar' => '*-*-* 10:00'
