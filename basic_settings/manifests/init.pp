@@ -669,7 +669,7 @@ class basic_settings(
     /* Improve kernel io */
     exec { 'kernel_io':
         command => "bash -c 'echo \"1\" > /tmp/io.state'",
-        onlyif => "bash -c 'for name in $(findmnt --list --output SOURCE --noheadings / | lsblk --list --noheadings --output PKNAME); do if [ $(grep -c \"none\" /sys/block/\$name/queue/scheduler) -eq 0 ]; then exit 0; fi; done; exit 1'"
+        onlyif => "bash -c 'for name in $(findmnt --list --output SOURCE --noheadings / | lsblk --list --noheadings --output PKNAME); do if [ $(grep -c \"[none]\" /sys/block/\$name/queue/scheduler) -eq 0 ]; then exit 0; fi; done; exit 1'"
     }
 
     /* Create unattended upgrades config  */
