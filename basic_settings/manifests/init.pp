@@ -675,8 +675,14 @@ class basic_settings(
 
     /* Activate transparent hugepage modus */
     exec { 'kernel_transparent_hugepage':
-        command => "bash -c 'echo \"always\" > sys/kernel/mm/transparent_hugepage/enabled'",
-        onlyif  => 'if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1'
+        command => "bash -c 'echo \"always\" > /sys/kernel/mm/transparent_hugepage/enabled'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"'
+    }
+
+    /* Activate transparent hugepage modus */
+    exec { 'kernel_transparent_hugepage_defrag':
+        command => "bash -c 'echo \"always\" > /sys/kernel/mm/transparent_hugepage/defrag'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
     /* Create unattended upgrades config  */
