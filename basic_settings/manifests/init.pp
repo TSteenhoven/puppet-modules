@@ -573,12 +573,6 @@ class basic_settings(
         refreshonly => true
     }
 
-    /* Create group for hugetlb */
-    group { 'hugetlb':
-        ensure      => absent,
-        gid         => '7000'
-    }
-
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
@@ -678,6 +672,12 @@ class basic_settings(
     exec { 'kernel_io':
         command => 'bash -c "dev=$(cat /tmp/kernel_io.state); echo \'none\' > /sys/block/\$dev/queue/scheduler;"',
         onlyif  => 'bash -c "dev=$(eval $(lsblk -oMOUNTPOINT,PKNAME -P -M | grep \'MOUNTPOINT="/"\'); echo $PKNAME | sed \'s/[0-9]*$//\'); echo \$dev > /tmp/kernel_io.state; if [ $(grep -c \'\\[none\\]\' /sys/block/$(cat /tmp/kernel_io.state)/queue/scheduler) -eq 0 ]; then exit 0; fi; exit 1"'
+    }
+
+    /* Activate transparent hugepage modus */
+    exec { 'kernel_transparent_hugepage':
+        command => "bash -c 'echo \"always\" > sys/kernel/mm/transparent_hugepage/enabled'",
+        onlyif  => 'if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1'
     }
 
     /* Create unattended upgrades config  */
