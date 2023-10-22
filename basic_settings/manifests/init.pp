@@ -572,6 +572,12 @@ class basic_settings(
         refreshonly => true
     }
 
+    /* Create group for hugetlb */
+    group { 'hugetlb':
+        ensure      => present,
+        gid         => '7000'
+    }
+
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
@@ -579,7 +585,8 @@ class basic_settings(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload']
+        notify  => Exec['sysctl_reload'],
+        require => Group['hugetlb']
     }
 
     /* Create sysctl config  */
