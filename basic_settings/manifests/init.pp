@@ -580,8 +580,7 @@ class basic_settings(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload'],
-        require => Group['hugetlb']
+        notify  => Exec['sysctl_reload']
     }
 
     /* Create sysctl config  */
