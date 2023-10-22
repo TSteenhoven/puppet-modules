@@ -575,7 +575,7 @@ class basic_settings(
 
     /* Create group for hugetlb */
     group { 'hugetlb':
-        ensure      => present,
+        ensure      => absent,
         gid         => '7000'
     }
 

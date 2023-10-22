@@ -70,13 +70,6 @@ class mysql (
             require     => Package['systemd']
         }
 
-        /* Enable hugepages */
-        exec { 'mysql_hugetlb':
-            unless => '/bin/getent group hugetlb | /bin/cut -d: -f4 | /bin/grep -q mysql',
-            command => '/usr/sbin/usermod -a -G hugetlb mysql',
-            require => [Group['hugetlb'], Package['mysql-server']]
-        }
-
         /* Create drop in for PHP FPM service */
         if (defined(Class['php8::fpm'])) {
             basic_settings::systemd_drop_in { "php8_${$php8::minor_version}_mysql_dependency":
