@@ -17,6 +17,7 @@ class basic_settings(
         $openjdk_version                            = 'default',
         $firewall_package                           = 'nftables',
         $brr_enable                                 = true,
+        $kernel_hugepages                           = '96',
         $sudoers_dir_enable                         = true,
         $systemd_default_target                     = 'helpers',
         $systemd_ntp_extra_pools                    = [],
@@ -675,10 +676,10 @@ class basic_settings(
 
     /* Improve kernel io */
     exec { 'kernel_io':
-        command => "bash -c 'for name in $(findmnt --list --output SOURCE --noheadings / | lsblk --list --noheadings --output PKNAME); do echo \"none\" > /sys/block/\$name/queue/scheduler; done'",
-        onlyif => "bash -c 'for name in $(findmnt --list --output SOURCE --noheadings / | lsblk --list --noheadings --output PKNAME); do if [ $(grep -c \"\[none\]\" /sys/block/\$name/queue/scheduler) -eq 0 ]; then exit 0; fi; done; exit 1'"
+        command => 'bash -c "dev=$(eval $(lsblk -oMOUNTPOINT,PKNAME -P -M | grep\'MOUNTPOINT="/"\'); echo $PKNAME | sed \'s/[0-9]*$//\'); echo \'none\' > /sys/block/$name/queue/scheduler;"',
+        onlyif  => 'bash -c "dev=$(eval $(lsblk -oMOUNTPOINT,PKNAME -P -M | grep\'MOUNTPOINT="/"\'); echo $PKNAME | sed \'s/[0-9]*$//\'); if [ $(grep -c \'\[none\]\' /sys/block/$dev/queue/scheduler) -eq 0 ]; then exit 0; fi; exit 1"'
     }
-
+    
     /* Create unattended upgrades config  */
     $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
     file { '/etc/apt/apt.conf.d/99unattended-upgrades':
