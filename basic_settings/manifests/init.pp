@@ -622,7 +622,7 @@ class basic_settings(
 
         /* Reload sysctl deamon */
         exec { 'sysctl_reload':
-            command => 'bash -c "systemdctl start dev-hugepages-shmmax.service && sysctl --system"',
+            command => 'bash -c "/usr/bin/systemctl start dev-hugepages-shmmax.service && sysctl --system"',
             refreshonly => true
         }
     } else {
