@@ -17,7 +17,7 @@ class basic_settings(
         $openjdk_version                            = 'default',
         $firewall_package                           = 'nftables',
         $brr_enable                                 = true,
-        $kernel_hugepages                           = '96',
+        $kernel_hugepages                           = '0',
         $sudoers_dir_enable                         = true,
         $systemd_default_target                     = 'helpers',
         $systemd_ntp_extra_pools                    = [],
@@ -567,22 +567,28 @@ class basic_settings(
         }
     }
 
-    /* Create group for hugetlb */
-    group { 'hugetlb':
-        ensure      => present,
-        gid         => '7000'
-    }
+    /* Create group for hugetlb only when hugepages is given */
+    if ($kernel_hugepages != '0') {
+        group { 'hugetlb':
+            ensure      => present,
+            gid         => '7000'
+        }
 
-    /* Create drop in for nginx service */
-    basic_settings::systemd_drop_in { 'hugetlb_hugepages':
-        target_unit     => 'dev-hugepages.mount',
-        service         => {
-            'ExecStart' => '/usr/bin/hugeadm --set-recommended-shmmax'
-        },
-        mount         => {
-            'Options' => 'mode=1770,gid=7000'
-        },
-        require         => Group['hugetlb']
+        /* Create drop in for nginx service */
+        basic_settings::systemd_drop_in { 'hugetlb_hugepages':
+            target_unit     => 'dev-hugepages.mount',
+            service         => {
+                'ExecStart' => '/usr/bin/hugeadm --set-recommended-shmmax'
+            },
+            mount         => {
+                'Options' => 'mode=1770,gid=7000'
+            },
+            require         => Group['hugetlb']
+        }
+    } else {
+        group { 'hugetlb':
+            ensure => absent
+        }
     }
 
     /* Reload sysctl deamon */

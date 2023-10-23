@@ -71,10 +71,12 @@ class mysql (
         }
 
         /* Enable hugepages */
-        exec { 'mysql_hugetlb':
-            unless => '/bin/getent group hugetlb | /bin/cut -d: -f4 | /bin/grep -q mysql',
-            command => '/usr/sbin/usermod -a -G hugetlb mysql',
-            require => [Group['hugetlb'], Package['mysql-server']]
+        if ($basic_settings::kernel_hugepages != '0') {
+            exec { 'mysql_hugetlb':
+                unless => '/bin/getent group hugetlb | /bin/cut -d: -f4 | /bin/grep -q mysql',
+                command => '/usr/sbin/usermod -a -G hugetlb mysql',
+                require => [Group['hugetlb'], Package['mysql-server']]
+            }
         }
 
         /* Create drop in for PHP FPM service */
