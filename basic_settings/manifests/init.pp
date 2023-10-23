@@ -38,7 +38,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -576,6 +576,9 @@ class basic_settings(
     /* Create drop in for nginx service */
     basic_settings::systemd_drop_in { 'hugetlb_hugepages':
         target_unit     => 'dev-hugepages.mount',
+        service         => {
+            'ExecStart' => '/usr/bin/hugeadm --set-recommended-shmmax'
+        },
         mount         => {
             'Options' => 'mode=1770,gid=7000'
         },
