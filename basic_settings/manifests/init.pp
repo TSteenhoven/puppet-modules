@@ -421,9 +421,10 @@ class basic_settings(
     }
 
     /* Enable multipathd service */
-    service { ' multipathd':
+    service { 'multipathd':
         ensure  => true,
-        enable  => true
+        enable  => true,
+        require => Package['multipath-tools-boot']
     }
 
     /* Create multipart config */
