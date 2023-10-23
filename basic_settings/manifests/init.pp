@@ -569,7 +569,10 @@ class basic_settings(
 
     /* Create group for hugetlb only when hugepages is given */
     if ($kernel_hugepages != '0') {
+        # Set variable 
         $kernel_hugepages_shm_group = '7000'
+
+        # Remove group 
         group { 'hugetlb':
             ensure      => present,
             gid         => '7000'
@@ -586,10 +589,26 @@ class basic_settings(
             },
             require         => Group['hugetlb']
         }
+
+        /* Enable service */
+        service { 'dev-hugepages.mount':
+            ensure  => true,
+            enable  => true,
+            require => Basic_settings::Systemd_drop_in['hugetlb_hugepages']
+        }
     } else {
+        # Set variable
         $kernel_hugepages_shm_group = '0'
+
+        # Remove group 
         group { 'hugetlb':
             ensure => absent
+        }
+
+        /* Disable service */
+        service { 'dev-hugepages.mount':
+            ensure  => true,
+            enable  => false
         }
     }
 
