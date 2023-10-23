@@ -65,7 +65,7 @@ class mysql (
 
         /* Disable MySQL server service */
         service { 'mysql':
-            ensure  => true,
+            ensure  => undef,
             enable  => false,
             require => Package['mysql-server']
         }

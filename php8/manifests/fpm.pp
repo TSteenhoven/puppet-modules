@@ -29,7 +29,7 @@ class php8::fpm(
 
     /* Disable service */
     service { "php8.${minor_version}-fpm":
-        ensure  => true,
+        ensure  => undef,
         enable  => false,
         require => Package["php8.${minor_version}-fpm"]
     }

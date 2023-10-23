@@ -38,7 +38,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'nano', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -420,6 +420,22 @@ class basic_settings(
         content => "blacklist floppy\n"
     }
 
+    /* Enable multipathd service */
+    service { ' multipathd':
+        ensure  => true,
+        enable  => true
+    }
+
+    /* Create multipart config */
+    file { '/etc/multipath.conf':
+        ensure  => file,
+        source  => 'puppet:///modules/basic_settings/multipath.conf',
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        notify  => Service['multipathd']
+    }
+
     /* Check if we need sury */
     if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
@@ -575,26 +591,38 @@ class basic_settings(
         # Remove group 
         group { 'hugetlb':
             ensure      => present,
-            gid         => '7000'
+            gid         => $kernel_hugepages_shm_group
         }
 
-        /* Create drop in for nginx service */
+        /* Create drop in for dev-hugepages mount */
         basic_settings::systemd_drop_in { 'hugetlb_hugepages':
             target_unit     => 'dev-hugepages.mount',
-            service         => {
-                'ExecStart' => '/usr/bin/hugeadm --set-recommended-shmmax'
-            },
             mount         => {
                 'Options' => 'mode=1770,gid=7000'
             },
             require         => Group['hugetlb']
         }
 
-        /* Enable service */
-        service { 'dev-hugepages.mount':
-            ensure  => true,
-            enable  => true,
-            require => Basic_settings::Systemd_drop_in['hugetlb_hugepages']
+        /* Create systemd service */
+        basic_settings::systemd_service { 'dev-hugepages-shmmax':
+            description => 'Hugespages recommended shmmax service',
+            service     => {
+                'Type'      => 'oneshot',
+                'ExecStart' => '/usr/bin/hugeadm --set-recommended-shmmax'
+            },
+            unit        => {
+                'Requires'  => 'dev-hugepages.mount',
+                'After'     => 'dev-hugepages.mount'
+            },
+            install     => {
+                'WantedBy' => 'dev-hugepages.mount'
+            }
+        }
+
+        /* Reload sysctl deamon */
+        exec { 'sysctl_reload':
+            command => 'bash -c "systemdctl start dev-hugepages-shmmax.service && sysctl --system"',
+            refreshonly => true
         }
     } else {
         # Set variable
@@ -605,17 +633,11 @@ class basic_settings(
             ensure => absent
         }
 
-        /* Disable service */
-        service { 'dev-hugepages.mount':
-            ensure  => true,
-            enable  => false
+        /* Reload sysctl deamon */
+        exec { 'sysctl_reload':
+            command => 'sysctl --system',
+            refreshonly => true
         }
-    }
-
-    /* Reload sysctl deamon */
-    exec { 'sysctl_reload':
-        command => 'sysctl --system',
-        refreshonly => true
     }
 
     /* Create sysctl config  */
@@ -750,7 +772,7 @@ class basic_settings(
 
     /* Disable service */
     service { 'puppet':
-        ensure  => true,
+        ensure  => undef,
         enable  => false
     }
 
@@ -779,7 +801,7 @@ class basic_settings(
     if ($puppetserver_enable) {
         /* Disable service */
         service {  "${puppetserver_package}":
-            ensure  => true,
+            ensure  => undef,
             enable  => false
         }
 
@@ -795,7 +817,7 @@ class basic_settings(
         /* Create drop in for puppet server service */
         basic_settings::systemd_drop_in { 'puppetserver_settings':
             target_unit     => "${puppetserver_package}.service",
-             unit            => {
+            unit            => {
                 'OnFailure' => 'notify-failed@%i.service'
             },
             service         => {
@@ -825,7 +847,7 @@ class basic_settings(
         /* Create drop in for puppet service */
         basic_settings::systemd_drop_in { 'puppet_puppetserver_dependency':
             target_unit     => 'puppet.service',
-            service         => {
+            unit         => {
                 'After'     => "${puppetserver_package}.service",
                 'BindsTo'   => "${puppetserver_package}.service"
             }

@@ -20,7 +20,7 @@ class nginx(
 
     /* Disable service */
     service { 'nginx':
-        ensure  => true,
+        ensure  => undef,
         enable  => false,
         require => Package['nginx']
     }
