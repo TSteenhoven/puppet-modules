@@ -1,35 +1,35 @@
 class basic_settings(
-        $server_fdqn                                = $fqdn,
-        $cluster_id                                 = 'core',
         $backports                                  = false,
-        $non_free                                   = false,
-        $puppetserver_enable                        = false,
-        $sury_enable                                = false,
-        $nginx_enable                               = false,
-        $proxmox_enable                             = false,
-        $mysql_enable                               = false,
-        $mysql_version                              = '8.0',
+        $cluster_id                                 = 'core',
+        $firewall_package                           = 'nftables',
+        $kernel_hugepages                           = '0',
+        $kernel_tcp_congestion_control              = 'brr',
         $mongodb_enable                             = false,
         $mongodb_version                            = '4.4',
+        $mysql_enable                               = false,
+        $mysql_version                              = '8.0',
+        $nginx_enable                               = false,
         $nodejs_enable                              = false,
         $nodejs_version                             = '20',
+        $non_free                                   = false,
         $openjdk_enable                             = false,
         $openjdk_version                            = 'default',
-        $firewall_package                           = 'nftables',
-        $brr_enable                                 = true,
-        $kernel_hugepages                           = '0',
+        $proxmox_enable                             = false,
+        $puppetserver_enable                        = false,
+        $server_fdqn                                = $fqdn,
         $sudoers_dir_enable                         = true,
+        $sury_enable                                = false,
         $systemd_default_target                     = 'helpers',
-        $systemd_ntp_extra_pools                    = [],
         $systemd_notify_mail                        = 'root',
+        $systemd_ntp_extra_pools                    = [],
+        $unattended_upgrades_block_extra_packages   = [],
         $unattended_upgrades_block_packages         = [
-            'php*',
             'libmysql*',
             'mysql*',
             'nginx',
-            'nodejs'
-        ],
-        $unattended_upgrades_block_extra_packages   = []
+            'nodejs',
+            'php*'
+        ]
     ) {
 
     /* Remove unnecessary packages */
@@ -676,17 +676,20 @@ class basic_settings(
         notify  => Exec['sysctl_reload']
     }
 
-    /* Setup TCP BBR */
-    if ($brr_enable) {
-        exec { 'tcp_congestion_control':
-            command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; chmod 600 /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf',
-            onlyif      => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')']
+    /* Setup TCP */
+    case $kernel_tcp_congestion_control {
+        'bbr': {
+            exec { 'tcp_congestion_control':
+                command     => 'printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; chmod 600 /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf',
+                onlyif      => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')']
+            }
         }
-    } else {
-        exec { 'tcp_congestion_control':
-            command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
-            onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
-            notify      => Exec['sysctl_reload']
+        default: {
+            exec { 'tcp_congestion_control':
+                command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
+                onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
+                notify      => Exec['sysctl_reload']
+            }
         }
     }
 
@@ -748,16 +751,16 @@ class basic_settings(
         onlyif  => 'bash -c "dev=$(eval $(lsblk -oMOUNTPOINT,PKNAME -P -M | grep \'MOUNTPOINT="/"\'); echo $PKNAME | sed \'s/[0-9]*$//\'); echo \$dev > /tmp/kernel_io.state; if [ $(grep -c \'\\[none\\]\' /sys/block/$(cat /tmp/kernel_io.state)/queue/scheduler) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Deactivate transparent hugepage modus */
+    /* Activate transparent hugepage modus */
     exec { 'kernel_transparent_hugepage':
-        command => "bash -c 'echo \"never\" > /sys/kernel/mm/transparent_hugepage/enabled'",
-        onlyif  => 'bash -c "if [ $(grep -c \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"'
+        command => "bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/enabled'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Deactivate transparent hugepage modus */
+    /* Activate transparent hugepage modus */
     exec { 'kernel_transparent_hugepage_defrag':
-        command => "bash -c 'echo \"never\" > /sys/kernel/mm/transparent_hugepage/defrag'",
-        onlyif  => 'bash -c "if [ $(grep -c \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
+        command => "bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/defrag'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
     /* Create unattended upgrades config  */
