@@ -599,7 +599,7 @@ class basic_settings(
         basic_settings::systemd_drop_in { 'hugetlb_hugepages':
             target_unit     => 'dev-hugepages.mount',
             mount         => {
-                'Options' => 'mode=1770,gid=7000'
+                'Options' => "mode=1770,gid=${kernel_hugepages_shm_group}"
             },
             require         => Group['hugetlb']
         }
@@ -632,6 +632,13 @@ class basic_settings(
         # Remove group 
         group { 'hugetlb':
             ensure => absent
+        }
+
+        /* Remove drop in for dev-hugepages mount */
+        basic_settings::systemd_drop_in { 'hugetlb_hugepages':
+            ensure          => absent,
+            target_unit     => 'dev-hugepages.mount',
+            require         => Group['hugetlb']
         }
 
         /* Reload sysctl deamon */
