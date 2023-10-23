@@ -593,6 +593,12 @@ class basic_settings(
         }
     }
 
+    /* Reload sysctl deamon */
+    exec { 'sysctl_reload':
+        command => 'sysctl --system',
+        refreshonly => true
+    }
+
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
