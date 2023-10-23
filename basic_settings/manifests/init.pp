@@ -573,6 +573,12 @@ class basic_settings(
         refreshonly => true
     }
 
+    /* Create group for hugetlb */
+    group { 'hugetlb':
+        ensure      => present,
+        gid         => '7000'
+    }
+
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
@@ -580,7 +586,8 @@ class basic_settings(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload']
+        notify  => Exec['sysctl_reload'],
+        require => Group['hugetlb']
     }
 
     /* Create sysctl config  */
@@ -673,16 +680,16 @@ class basic_settings(
         onlyif  => 'bash -c "dev=$(eval $(lsblk -oMOUNTPOINT,PKNAME -P -M | grep \'MOUNTPOINT="/"\'); echo $PKNAME | sed \'s/[0-9]*$//\'); echo \$dev > /tmp/kernel_io.state; if [ $(grep -c \'\\[none\\]\' /sys/block/$(cat /tmp/kernel_io.state)/queue/scheduler) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Activate transparent hugepage modus */
+    /* Deactivate transparent hugepage modus */
     exec { 'kernel_transparent_hugepage':
-        command => "bash -c 'echo \"always\" > /sys/kernel/mm/transparent_hugepage/enabled'",
-        onlyif  => 'bash -c "if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"'
+        command => "bash -c 'echo \"never\" > /sys/kernel/mm/transparent_hugepage/enabled'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Activate transparent hugepage modus */
+    /* Deactivate transparent hugepage modus */
     exec { 'kernel_transparent_hugepage_defrag':
-        command => "bash -c 'echo \"always\" > /sys/kernel/mm/transparent_hugepage/defrag'",
-        onlyif  => 'bash -c "if [ $(grep -c \'\\[always\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
+        command => "bash -c 'echo \"never\" > /sys/kernel/mm/transparent_hugepage/defrag'",
+        onlyif  => 'bash -c "if [ $(grep -c \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
     /* Create unattended upgrades config  */
