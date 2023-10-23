@@ -5,7 +5,8 @@ define basic_settings::systemd_timer(
         $timer          = {},
         $install        = {
             'WantedBy'  => 'timers.target'
-        }
+        },
+        $daemon_reload  = 'systemd_daemon_reload'
     ) {
 
     /* Create timer file */
@@ -13,7 +14,7 @@ define basic_settings::systemd_timer(
         ensure  => $ensure,
         content => template('basic_settings/systemd/timer'),
         mode    => '0644',
-        notify  => Exec['systemd_daemon_reload']
+        notify  => Exec["${daemon_reload}"]
     }
 
     /* Enable timer */

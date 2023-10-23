@@ -46,6 +46,13 @@ class mysql (
         mode    => '0755'
     }
 
+    /* Reload systemd deamon */
+    exec { 'mysql_systemd_daemon_reload':
+        command     => 'systemctl daemon-reload',
+        refreshonly => true,
+        require     => Package['systemd']
+    }
+
     /* Do only the following steps when package name is mysql */
     if ($package_name == 'mysql') {
         /* Default file is different than normal install */
@@ -61,13 +68,6 @@ class mysql (
             ensure  => true,
             enable  => false,
             require => Package['mysql-server']
-        }
-
-        /* Reload systemd deamon */
-        exec { 'mysql_systemd_daemon_reload':
-            command     => 'systemctl daemon-reload',
-            refreshonly => true,
-            require     => Package['systemd']
         }
 
         /* Enable hugepages */
@@ -107,7 +107,8 @@ class mysql (
                 'OnFailure' => 'notify-failed@%i.service'
             },
             service         => {
-                'Nice' => '-12'
+                'LimitMEMLOCK'  => 'infinity',
+                'Nice'          => '-12'
             },
             daemon_reload   => 'mysql_systemd_daemon_reload',
             require         => Package['mysql-server']
@@ -147,15 +148,17 @@ class mysql (
         unit            => {
             'After'     => "${package_name}.service",
             'BindsTo'   => "${package_name}.service"
-        }
+        },
+        daemon_reload   => 'mysql_systemd_daemon_reload',
     }
 
     /* Create systemd timer */
     basic_settings::systemd_timer { 'automysqlbackup':
-        description => 'Automysqlbackup timer',
+        description     => 'Automysqlbackup timer',
         timer       => {
             'OnCalendar' => '*-*-* 5:00'
-        }
+        },
+        daemon_reload   => 'mysql_systemd_daemon_reload',
     }
 
     /* Create mysql cnf */
