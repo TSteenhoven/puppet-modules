@@ -569,6 +569,7 @@ class basic_settings(
 
     /* Create group for hugetlb only when hugepages is given */
     if ($kernel_hugepages != '0') {
+        $kernel_hugepages_shm_group = '7000'
         group { 'hugetlb':
             ensure      => present,
             gid         => '7000'
@@ -586,15 +587,10 @@ class basic_settings(
             require         => Group['hugetlb']
         }
     } else {
+        $kernel_hugepages_shm_group = '0'
         group { 'hugetlb':
             ensure => absent
         }
-    }
-
-    /* Reload sysctl deamon */
-    exec { 'sysctl_reload':
-        command => 'sysctl --system',
-        refreshonly => true
     }
 
     /* Create sysctl config  */
@@ -604,8 +600,7 @@ class basic_settings(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload'],
-        require =>  Basic_settings::Systemd_drop_in['hugetlb_hugepages']
+        notify  => Exec['sysctl_reload']
     }
 
     /* Create sysctl config  */
