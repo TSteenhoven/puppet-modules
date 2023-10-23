@@ -567,16 +567,25 @@ class basic_settings(
         }
     }
 
-    /* Reload sysctl deamon */
-    exec { 'sysctl_reload':
-        command => 'sysctl --system',
-        refreshonly => true
-    }
-
     /* Create group for hugetlb */
     group { 'hugetlb':
         ensure      => present,
         gid         => '7000'
+    }
+
+    /* Create drop in for nginx service */
+    basic_settings::systemd_drop_in { 'hugetlb_hugepages':
+        target_unit     => 'dev-hugepages.mount',
+        mount         => {
+            'Options' => 'mode=1770,gid=7000'
+        },
+        require         => Group['hugetlb']
+    }
+
+    /* Reload sysctl deamon */
+    exec { 'sysctl_reload':
+        command => 'sysctl --system',
+        refreshonly => true
     }
 
     /* Create sysctl config  */
@@ -587,7 +596,7 @@ class basic_settings(
         group   => 'root',
         mode    => '0600',
         notify  => Exec['sysctl_reload'],
-        require => Group['hugetlb']
+        require =>  Basic_settings::Systemd_drop_in['hugetlb_hugepages']
     }
 
     /* Create sysctl config  */
