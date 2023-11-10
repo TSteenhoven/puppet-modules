@@ -72,6 +72,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
@@ -87,6 +88,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
@@ -98,6 +100,7 @@ class basic_settings(
                 $mongodb_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
+                $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             }
 
@@ -141,6 +144,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
             } else {
                 $os_name = 'unknown'
@@ -152,6 +156,7 @@ class basic_settings(
                 $mongodb_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
+                $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             }
         }
@@ -168,6 +173,9 @@ class basic_settings(
             $mysql_allow = false
             $mongodb_allow = false
             $nodejs_allow = false
+            $openjdk_allow = false
+            $puppetserver_dir = ''
+            $puppetserver_package = ''
         }
     }
 
@@ -842,8 +850,8 @@ class basic_settings(
             service     => {
                 'Type'      => 'oneshot',
                 'User'      => 'puppet',
-                'ExecStart' => '/usr/bin/find /var/lib/puppetserver/reports -type f -name \\\*.yaml -ctime +1 -delete',
-                'Nice'      => '19',
+                'ExecStart' => "/usr/bin/find /var/lib/${puppetserver_dir}/reports -type f -name \\\*.yaml -ctime +1 -delete",
+                'Nice'      => '19'
             },
         }
 
