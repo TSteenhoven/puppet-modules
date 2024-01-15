@@ -142,10 +142,11 @@ class mysql (
     basic_settings::systemd_service { 'automysqlbackup':
         description => 'Automysqlbackup service',
         service     => {
-            'Type'      => 'oneshot',
-            'User'      => 'root',
-            'ExecStart' => '/usr/local/sbin/automysqlbackup',
-            'Nice'      => '19',
+            'Type'          => 'oneshot',
+            'User'          => 'root',
+            'PrivateTmp'    => 'true',
+            'ExecStart'     => '/usr/local/sbin/automysqlbackup',
+            'Nice'          => '19',
         },
         unit            => {
             'After'     => "${package_name}.service",
