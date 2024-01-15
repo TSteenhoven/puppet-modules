@@ -72,6 +72,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_jdk = true
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
@@ -88,6 +89,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             } else {
@@ -100,6 +102,7 @@ class basic_settings(
                 $mongodb_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
+                $puppetserver_jdk = true
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             }
@@ -144,6 +147,7 @@ class basic_settings(
                 $mongodb_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
+                $puppetserver_jdk = true
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
             } else {
@@ -156,6 +160,7 @@ class basic_settings(
                 $mongodb_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
+                $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
             }
@@ -702,7 +707,7 @@ class basic_settings(
     }
 
     /* Check if variable openjdk is true; if true, install new package */
-    if ($puppetserver_enable or ($openjdk_enable and $openjdk_allow)) {
+    if (($puppetserver_enable and $puppetserver_jdk) or ($openjdk_enable and $openjdk_allow)) {
         /* Get package name */
         if ($puppetserver_enable or $openjdk_version == 'default') {
             $openjdk_package = 'default-jdk'
