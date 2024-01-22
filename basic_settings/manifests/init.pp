@@ -124,6 +124,12 @@ class basic_settings(
                 command     => 'rm /usr/bin/man',
                 onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
             }
+
+            /* Install netplan.io */
+            package { 'netplan.io':
+                ensure  => installed,
+                require => Package['snapd']
+            }
         }
         'Debian': {
             /* Set some variables */
@@ -163,6 +169,12 @@ class basic_settings(
                 $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
+            }
+
+            /* Remove netplan.io */
+            package { 'netplan.io':
+                ensure  => absent,
+                require => Package['snapd']
             }
         }
         default: {
