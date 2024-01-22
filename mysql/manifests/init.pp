@@ -2,7 +2,8 @@ class mysql (
         $root_password = '',
         $settings = {},
         $package_name = 'mysql',
-        $automysqlbackup_backupdir = '/var/lib/automysqlbackup'
+        $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
+        $nice_level = 12
     ) {
 
     /* Use systemd settings */
@@ -110,7 +111,7 @@ class mysql (
             },
             service         => {
                 'LimitMEMLOCK'  => 'infinity',
-                'Nice'          => '-12'
+                'Nice'          => "-${nice_level}"
             },
             daemon_reload   => 'mysql_systemd_daemon_reload',
             require         => Package['mysql-server']
