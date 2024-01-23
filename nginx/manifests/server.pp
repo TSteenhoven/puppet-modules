@@ -19,6 +19,8 @@ define nginx::server(
     $https_force                        = false,
     $http2_enable                       = false,
 
+    $fastopen                           = 64,
+
     $keepalive_request_file             = undef,
 
     $ssl_protocols                      = undef,
@@ -59,6 +61,13 @@ define nginx::server(
 
     $restart_service                    = true
   ) {
+
+    /* Check if TCP fast open is enabled */
+    if ($basic_settings::kernel_tcp_fastopen == 3 and $fastopen > 0) {
+        $tcp_fastopen = true
+    } else {
+        $tcp_fastopen = false
+    }
 
     /* Split server_name from by space, we need only the first in template to use as a redirect*/
     if ($redirect_from and $redirect_from != '') {

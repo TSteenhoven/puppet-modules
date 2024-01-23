@@ -2,8 +2,9 @@ class basic_settings(
         $backports                                  = false,
         $cluster_id                                 = 'core',
         $firewall_package                           = 'nftables',
-        $kernel_hugepages                           = '0',
+        $kernel_hugepages                           = 0,
         $kernel_tcp_congestion_control              = 'brr',
+        $kernel_tcp_fastopen                        = 3,
         $mongodb_enable                             = false,
         $mongodb_version                            = '4.4',
         $mysql_enable                               = false,
@@ -610,9 +611,9 @@ class basic_settings(
     }
 
     /* Create group for hugetlb only when hugepages is given */
-    if ($kernel_hugepages != '0') {
+    if ($kernel_hugepages > 0) {
         # Set variable 
-        $kernel_hugepages_shm_group = '7000'
+        $kernel_hugepages_shm_group = 7000
 
         # Remove group 
         group { 'hugetlb':
@@ -652,7 +653,7 @@ class basic_settings(
         }
     } else {
         # Set variable
-        $kernel_hugepages_shm_group = '0'
+        $kernel_hugepages_shm_group = 0
 
         # Remove group 
         group { 'hugetlb':
