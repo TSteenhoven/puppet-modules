@@ -19,7 +19,7 @@ define nginx::server(
     $https_force                        = false,
     $http2_enable                       = false,
 
-    $fastopen                           = 64,
+    $fastopen                           = 0,
 
     $keepalive_request_file             = undef,
 
