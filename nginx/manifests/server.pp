@@ -73,7 +73,7 @@ define nginx::server(
     }
 
     /* Check if HTTP/2 or HTTP/3 is allowed */
-    if ($ssl_certificate != undef and $ssl_certificate_key != undef) {
+    if ($https_enable and $ssl_certificate != undef and $ssl_certificate_key != undef) {
         $http2_active = $http2_enable
         if ($ssl_protocols != undef and $ssl_protocols =~ 'TLSv1.3') {
             $http3_active = $http3_enable
@@ -82,6 +82,9 @@ define nginx::server(
         } else {
             $http3_active = false
         }
+    } else {
+        $http2_active = false
+        $http3_active = false
     }
 
     /* Split server_name from by space, we need only the first in template to use as a redirect*/
