@@ -18,8 +18,12 @@ define nginx::server(
 
     $https_force                        = false,
     $http2_enable                       = false,
+    $http3_enable                       = false,
 
+    # Global settings for given ports; This values can only set onces
+    $quic                               = false,
     $fastopen                           = 0,
+    $reuseport                          = false,
 
     $keepalive_request_file             = undef,
 
@@ -67,6 +71,12 @@ define nginx::server(
         $tcp_fastopen = true
     } else {
         $tcp_fastopen = false
+    }
+
+    /* Check if HTTP/2 or HTTP/3 is allowed */
+    if ($ssl_certificate != undef and $ssl_certificate_key != undef) {
+        $http2_active = $http2_enable
+        $http3_active = $http3_enable
     }
 
     /* Split server_name from by space, we need only the first in template to use as a redirect*/
