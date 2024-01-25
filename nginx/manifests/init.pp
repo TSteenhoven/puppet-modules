@@ -49,6 +49,7 @@ class nginx(
             'OnFailure' => 'notify-failed@%i.service'
         },
         service         => {
+            'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
             'Nice'          => "-${nice_level}",
             'LimitNOFILE'   => $limit_file,
         },
