@@ -49,29 +49,23 @@ define basic_settings::system_user(
         if ($home_source) {
             file { $home:
                 ensure  => $ensure ? { absent => undef, default => directory },
-                mode    => $name ? {
-                    root    => '0700',
-                    default => '0755',
-                },
                 owner   => $uid,
                 group   => $gid,
                 force   => $home_force,
                 purge   => $home_purge,
                 recurse => $home_recurse,
-                source  => $home_source
+                source  => $home_source,
+                mode    => '0700'
             }
         } else {
             file { $home:
                 ensure  => $ensure ? { absent => undef, default => directory },
-                mode    => $name ? {
-                    root    => '0700',
-                    default => '0755',
-                },
                 owner   => $uid,
                 group   => $gid,
                 force   => $home_force,
                 purge   => $home_purge,
-                recurse => $home_recurse
+                recurse => $home_recurse,
+                mode    => '0700'
             }
         }
 
