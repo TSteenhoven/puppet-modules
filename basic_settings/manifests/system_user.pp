@@ -11,7 +11,11 @@ define basic_settings::system_user(
     $authorized_keys    = undef,
     $shell              = '/bin/bash',
     $disable_group      = false,
-    $disable_home       = false
+    $home_enable        = true,
+    $home_force         = false,
+    $home_purge         = false,
+    $home_recurse       = false,
+    $home_source        = undef
 ) {
 
     /* Create only user group when group is disabled */
@@ -24,14 +28,14 @@ define basic_settings::system_user(
 
     /* Create user */
     user { $name:
-        ensure		=> $ensure,
-        uid			=> $uid,
-        gid			=> $gid,
-        groups		=> $groups,
-        shell		=> $shell,
-        home		=> $home,
-        managehome	=> false,
-        password	=> $password,
+        ensure      => $ensure,
+        uid         => $uid,
+        gid         => $gid,
+        groups      => $groups,
+        shell       => $shell,
+        home        => $home,
+        managehome  => false,
+        password    => $password
     }
 
     if ($ensure == present) {
@@ -40,67 +44,92 @@ define basic_settings::system_user(
         User[$name] -> Group[$name]
     }
 
-    if (!$disable_home) {
-        file { $home:
-            ensure	=> $ensure ? { absent => undef, default => directory },
-            mode	=> $name ? {
-                root	=> '0700',
-                default	=> '0755',
-            },
-            owner	=> $uid,
-            group	=> $gid,
+    if ($home_enable) {
+        /* Make home dir */
+        if ($home_source) {
+            file { $home:
+                ensure  => $ensure ? { absent => undef, default => directory },
+                mode    => $name ? {
+                    root    => '0700',
+                    default => '0755',
+                },
+                owner   => $uid,
+                group   => $gid,
+                force   => $home_force,
+                purge   => $home_purge,
+                recurse => $home_recurse,
+                source  => $home_source
+            }
+        } else {
+            file { $home:
+                ensure  => $ensure ? { absent => undef, default => directory },
+                mode    => $name ? {
+                    root    => '0700',
+                    default => '0755',
+                },
+                owner   => $uid,
+                group   => $gid,
+                force   => $home_force,
+                purge   => $home_purge,
+                recurse => $home_recurse
+            }
         }
-    }
 
-    /* Create ssh dir */
-    file { "$home/.ssh":
-        ensure	=> $ensure ? { absent => undef, default => directory },
-        owner	=> $uid,
-        group	=> $gid,
-        mode	=> '0700'
-    }
-
-    /* Create authorized_keys file */
-    if ($authorized_keys != undef) {
-        file { "$home/.ssh/authorized_keys":
-            ensure	=> $ensure ? { absent => absent, default => present },
-            content	=> $authorized_keys,
-            mode	=> '0644',
-            owner	=> $uid,
-            group	=> $gid,
+        /* Create ssh dir */
+        file { "${home}/.ssh":
+            ensure  => $ensure ? { absent => undef, default => directory },
+            owner   => $uid,
+            group   => $gid,
+            mode    => '0700',
+            require => File[$home]
         }
-    }
 
-    /* Create profile file */
-    if ($bash_profile != undef) {
-        file { "$home/.profile":
-            ensure	=> $ensure ? { absent => absent, default => present },
-            content	=> $bash_profile,
-            owner	=> $uid,
-            group	=> $gid,
-            mode	=> '0700'
+        /* Create authorized_keys file */
+        if ($authorized_keys != undef) {
+            file { "${home}/.ssh/authorized_keys":
+                ensure  => $ensure ? { absent => absent, default => present },
+                content => $authorized_keys,
+                mode    => '0644',
+                owner   => $uid,
+                group   => $gid,
+                require => File[$home]
+            }
         }
-    }
 
-    /* Create bashrc file */
-    if ($bashrc != undef) {
-        file { "$home/.bashrc":
-            ensure	=> $ensure ? { absent => absent, default => present },
-            content	=> $bashrc,
-            owner	=> $uid,
-            group	=> $gid,
-            mode	=> '0700'
+        /* Create profile file */
+        if ($bash_profile != undef) {
+            file { "${home}/.profile":
+                ensure  => $ensure ? { absent => absent, default => present },
+                content => $bash_profile,
+                owner   => $uid,
+                group   => $gid,
+                mode    => '0700',
+                require => File[$home]
+            }
         }
-    }
 
-    /* Create bash aliases file */
-    if ($bash_aliases != undef) {
-        file { "$home/.bash_aliases":
-            ensure	=> $ensure ? { absent => absent, default => present },
-            content	=> $bash_aliases,
-            owner	=> $uid,
-            group	=> $gid,
-            mode	=> '0700'
+        /* Create bashrc file */
+        if ($bashrc != undef) {
+            file { "${home}/.bashrc":
+                ensure  => $ensure ? { absent => absent, default => present },
+                content => $bashrc,
+                owner   => $uid,
+                group   => $gid,
+                mode    => '0700',
+                require => File[$home]
+            }
+        }
+
+        /* Create bash aliases file */
+        if ($bash_aliases != undef) {
+            file { "${home}/.bash_aliases":
+                ensure  => $ensure ? { absent => absent, default => present },
+                content => $bash_aliases,
+                owner   => $uid,
+                group   => $gid,
+                mode    => '0700',
+                require => File[$home]
+            }
         }
     }
 }
