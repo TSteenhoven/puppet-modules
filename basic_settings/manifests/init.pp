@@ -18,6 +18,7 @@ class basic_settings(
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
         $server_fdqn                                = $fqdn,
+        $smtp_server                                = 'localhost',
         $sudoers_dir_enable                         = true,
         $sury_enable                                = false,
         $systemd_default_target                     = 'helpers',

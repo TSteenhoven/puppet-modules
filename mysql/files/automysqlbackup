@@ -122,7 +122,7 @@ mail_cleanup () {
         if [[ "$CONFIG_mysql_dump_host_friendly" = "" ]]; then
             mail_from=''
         else
-            mail_from=" -r 'systemd@${CONFIG_mysql_dump_host_friendly}'"
+            mail_from=" -r 'automysqlbackup@${CONFIG_mysql_dump_host_friendly}'"
         fi
 
         case "${CONFIG_mailcontent}" in
