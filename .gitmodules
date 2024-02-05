@@ -7,3 +7,6 @@
 [submodule "puppet-timezone"]
 	path = timezone
 	url = https://github.com/saz/puppet-timezone.git
+[submodule "debconf"]
+	path = debconf
+	url = https://github.com/smoeding/puppet-debconf.git
