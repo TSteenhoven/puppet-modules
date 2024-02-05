@@ -1,8 +1,13 @@
 class php8::fpm(
         $pidfile = '',
         $errorlog = '',
-        $ini_settings = []
+        $ini_settings = {}
     ) {
+
+     /* Merge given init settings with default settings */
+    $correct_ini_settings = merge({
+        'date.timezone' => $basic_settings::server_timezone
+    }, $ini_settings)
 
     /* Get minor version from PHP init */
     $minor_version = $php8::minor_version

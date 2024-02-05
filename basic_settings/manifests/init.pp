@@ -18,6 +18,7 @@ class basic_settings(
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
         $server_fdqn                                = $fqdn,
+        $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
         $sudoers_dir_enable                         = true,
         $sury_enable                                = false,
@@ -33,6 +34,11 @@ class basic_settings(
             'php*'
         ]
     ) {
+
+    /* Set timezoen */
+    class { 'timezone':
+        timezone => $server_timezone
+    }
 
     /* Remove unnecessary packages */
     package { ['apport', 'chrony', 'cloud-init', 'ifupdown', 'lxd-installer', 'ntp', 'snapd']:

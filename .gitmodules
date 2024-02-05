@@ -4,3 +4,6 @@
 [submodule "reboot"]
 	path = reboot
 	url = https://github.com/puppetlabs/puppetlabs-reboot.git
+[submodule "puppet-timezone"]
+	path = timezone
+	url = https://github.com/saz/puppet-timezone.git
