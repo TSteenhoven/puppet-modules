@@ -86,7 +86,7 @@ class basic_settings(
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
                 $backports_allow = true
-                $sury_allow = false
+                $sury_allow = true
                 $nginx_allow = true
                 $proxmox_allow = false
                 if ($architecture == 'amd64') {
@@ -473,12 +473,25 @@ class basic_settings(
     /* Check if we need sury */
     if ($sury_enable and $sury_allow) {
         /* Add sury PHP repo */
-        exec { 'source_sury_php':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg",
-            unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            notify      => Exec['source_list_reload'],
-            require     => [Package['curl'], Package['gnupg']]
+        case $os_parent {
+            'ubuntu': {
+                exec { 'source_sury_php':
+                    command     => "printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
+                    unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
+                    notify      => Exec['source_list_reload'],
+                    require     => [Package['curl'], Package['gnupg']]
+                }
+            }
+            default: {
+                exec { 'source_sury_php':
+                    command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg",
+                    unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
+                    notify      => Exec['source_list_reload'],
+                    require     => [Package['curl'], Package['gnupg']]
+                }
+            }
         }
+
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
