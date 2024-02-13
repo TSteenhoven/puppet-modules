@@ -25,7 +25,7 @@ define mysql::user (
                 $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED WITH mysql_native_password BY '${password}';" # use mysql_native_password instead off caching_sha2_password due to old packages non supported
             } else {
                 $password_field = 'password'
-                $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';" # use default method for saving password 
+                $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';" # use default caching_sha2_password method for saving password 
             }
             $unless_field = "bash -c \"if [ `mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql -u ${username} --password=\"${password}\" -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
         }
