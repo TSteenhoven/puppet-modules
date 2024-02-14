@@ -484,7 +484,7 @@ class basic_settings(
             }
             default: {
                 exec { 'source_sury_php':
-                    command     => "printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg",
+                    command     => "curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; dpkg -i /tmp/debsuryorg-archive-keyring.deb; printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
                     notify      => Exec['source_list_reload'],
                     require     => [Package['curl'], Package['gnupg']]

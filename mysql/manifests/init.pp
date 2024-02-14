@@ -12,15 +12,18 @@ class mysql (
 
     /* Set mysqld default values */
     $default_values = {
-        'key_buffer_size'         => '384M',
+        'innodb_buffer_pool_size' => '256M',
+        'innodb_flush_method'     => 1, # O_DSYNC
+        'innodb_redo_log_capacity'=> '200M',
+        'join_buffer_size'        => '2M',
         'max_allowed_packet'      => '128M',
         'max_connections'         => 1000,
-        'table_open_cache'        => 512,
-        'sort_buffer_size'        => '2M',
         'read_buffer_size'        => '2M',
-        'read_rnd_buffer_size'    => '8M',
-        'myisam_sort_buffer_size' => '64M',
-        'thread_cache_size'       => 16
+        'read_rnd_buffer_size'    => '2M',
+        'sort_buffer_size'        => '2M',
+        'table_open_cache'        => 512,
+        'thread_cache_size'       => 16,
+        'thread_stack'            => '2M'
     }
 
     # Merge default settings with user settings
