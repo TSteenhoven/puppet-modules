@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Check if mail bin exists
+MAILX='/usr/bin/mail'
+test -x "$MAILX" || exit 1
+
+# Load notify script
+. /usr/lib/needrestart/notify.d.sh
+
+# Dump text to log
+echo "[$0] Send mail to <%= @server_fdqn %>" 1>&2
+
+# Send mail
+{
+    gettext 'Your host <%= @server_fdqn %> is running obsolete binaries or libraries as listed below.'
+    echo
+    echo
+    gettext "Please consider a restart of the affected processes."
+    echo
+    echo
+    cat
+} | fold -s -w 72 | "$MAILX" -s "Restarts required for outdated binaries or libraries" -r "needrestart@<%= @server_fdqn %>" <%= @systemd_notify_mail %>
