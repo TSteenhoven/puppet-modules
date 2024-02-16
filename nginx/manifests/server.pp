@@ -62,6 +62,8 @@ define nginx::server(
     $redirect_ipv6                      = undef,
     $redirect_http_port                 = undef,
     $redirect_https_port                = undef,
+    $redirect_ssl_protocols             = undef,
+    $redirect_ssl_ciphers               = undef,
     $redirect_certificate               = undef,
     $redirect_certificate_key           = undef,
 
@@ -146,6 +148,20 @@ define nginx::server(
         $redirect_https_options = false
     } else {
         $redirect_https_options = true
+    }
+
+    /* Set SSL protocols */
+    if ($redirect_ssl_protocols == undef) {
+        $redirect_ssl_protocols_correct = $ssl_protocols
+    } else {
+        $redirect_ssl_protocols_correct = $redirect_ssl_protocols
+    }
+
+    /* Set SSL ciphers */
+    if ($redirect_ssl_ciphers == undef) {
+        $redirect_ssl_ciphers_correct = $ssl_ciphers
+    } else {
+        $redirect_ssl_ciphers_correct = $redirect_ssl_ciphers
     }
 
     /* Inform nginx when file is changed or created */
