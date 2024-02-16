@@ -58,7 +58,10 @@ define nginx::server(
     $php_fpm_directives                 = [],
 
     $redirect_from                      = undef,
-    $redirect_ipv6                      = true,
+    $redirect_ip                        = undef,
+    $redirect_ipv6                      = undef,
+    $redirect_http_port                 = undef,
+    $redirect_https_port                = undef,
     $redirect_certificate               = undef,
     $redirect_certificate_key           = undef,
 
@@ -82,14 +85,67 @@ define nginx::server(
         } else {
             $http3_active = false
         }
+
+        /* Check if redirect_certificate is not given */
+        if ($redirect_certificate != undef and $redirect_certificate_key != undef) {
+            $redirect_certificate_correct = $redirect_certificate
+            $redirect_certificate_key_correct = $redirect_certificate_key
+        } else {
+            $redirect_certificate_correct = $ssl_certificate
+            $redirect_certificate_key_correct = $ssl_certificate_key
+        }
     } else {
         $http2_active = false
         $http3_active = false
+        $redirect_certificate_correct = undef
+        $redirect_certificate_key_correct = undef
     }
 
     /* Split server_name from by space, we need only the first in template to use as a redirect*/
     if ($redirect_from and $redirect_from != '') {
         $redirect_to = split($server_name, ' ')[0]
+    }
+
+    /* Set IPv4 */
+    if ($redirect_ip == undef) {
+        $redirect_ip_correct = $ip
+    } else {
+        $redirect_ip_correct = $redirect_ip
+    }
+
+    /* Set IPv6 */
+    if ($redirect_ipv6 == undef) {
+        $redirect_ipv6_correct = $ipv6
+    } else {
+        $redirect_ipv6_correct = $redirect_ipv6
+    }
+
+    /* Set HTTP port */
+    if ($redirect_http_port == undef) {
+        $redirect_http_port_correct = $http_port
+    } else {
+        $redirect_http_port_correct = $redirect_http_port
+    }
+
+    /* Check if the HTTP port are the same */
+    if ($redirect_http_port_correct == $http_port) {
+        $redirect_http_options = false
+    } else {
+        $redirect_http_options = true
+    }
+
+    /* Set HTTP port */
+    if ($redirect_https_port == undef) {
+        $redirect_https_port_correct = $https_port
+    } else {
+        $redirect_https_port_correct = $redirect_https_port
+    }
+
+    /* Check if the HTTP port are the same */
+    if ($redirect_https_port_correct == $https_port) {
+        $redirect_https_options = false
+    } else {
+        $redirect_https_options = true
     }
 
     /* Inform nginx when file is changed or created */
