@@ -7,6 +7,7 @@ class nginx(
         $global_directives          = [],
         $events_directives          = [],
         $http_directives            = [],
+        $target                     = 'services',
         $ssl_protocols              = 'TLSv1.2 TLSv1.3',
         $ssl_prefer_server_ciphers  = false,
         $nice_level                 = 10,
@@ -32,14 +33,14 @@ class nginx(
         require     => Package['systemd']
     }
 
-    /* Create drop in for services target */
+    /* Create drop in for x target */
     basic_settings::systemd_drop_in { 'nginx_dependency':
-        target_unit     => "${basic_settings::cluster_id}-services.target",
+        target_unit     => "${basic_settings::cluster_id}-${target}.target",
         unit            => {
             'BindsTo'   => 'nginx.service'
         },
         daemon_reload   => 'nginx_systemd_daemon_reload',
-        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-${target}"]
     }
 
     /* Create drop in for nginx service */
