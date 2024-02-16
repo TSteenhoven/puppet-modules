@@ -843,20 +843,10 @@ class basic_settings(
     /* Create needrestart config */
     file { '/etc/needrestart/conf.d/99-custom.conf':
         ensure  => file,
-        content  => template('basic_settings/needrestart/needrestart.conf'),
+        content  => template('basic_settings/needrestart.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
-        require => Package['needrestart']
-    }
-
-    /* Create needrestart notify mail */
-    file { '/etc/needrestart/notify.d/600-mail':
-        ensure  => file,
-        content  => template('basic_settings/needrestart/600-mail'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0755',
         require => Package['needrestart']
     }
 
