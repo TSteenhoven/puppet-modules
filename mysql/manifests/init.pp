@@ -119,6 +119,15 @@ class mysql (
             daemon_reload   => 'mysql_systemd_daemon_reload',
             require         => Package['mysql-server']
         }
+
+        /* Create drop in for puppet service */
+        basic_settings::systemd_drop_in { 'puppet_mysql_dependency':
+            target_unit     => 'puppet.service',
+            unit            => {
+                'Wants' => 'mysql.service'
+            },
+            require         => Package['mysql-server']
+        }
     } else {
         /* Default file for normal install */
         $defaults_file = '/etc/mysql/debian.cnf'
