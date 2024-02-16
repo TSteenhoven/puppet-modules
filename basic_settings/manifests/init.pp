@@ -5,6 +5,7 @@ class basic_settings(
         $kernel_hugepages                           = 0,
         $kernel_tcp_congestion_control              = 'brr',
         $kernel_tcp_fastopen                        = 3,
+        $mail_package                               = 'postfix',
         $mongodb_enable                             = false,
         $mongodb_version                            = '4.4',
         $mysql_enable                               = false,
@@ -253,7 +254,7 @@ class basic_settings(
         }
     }
 
-    /* Do special thinks based on firewall package */
+    /* Based on firewall package do special commands */
     case $firewall_package {
         'nftables': {
             $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
@@ -533,6 +534,25 @@ class basic_settings(
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             notify      => Exec['source_list_reload']
         }
+    }
+
+    /* Install mail package */
+    case $mail_package {
+        'postfix': {
+            /* Install package */
+            package { 'postfix':
+                ensure => installed
+            }
+        }
+    }
+
+    /* Create drop in for notify-failed service */
+    basic_settings::systemd_drop_in { "notify-failed_${mail_package}_dependency":
+        target_unit     => 'notify-failed@',
+        unit            => {
+            'Wants' => "${mail_package}.service"
+        },
+        require         => [Package[$mail_package], Basic_settings::Systemd_service['notify-failed@']]
     }
 
     /* Check if variable mysql is true; if true, install new source list and key */
