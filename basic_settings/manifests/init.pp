@@ -123,7 +123,7 @@ class basic_settings(
             }
 
             /* Remove unnecessary snapd files */
-            file { '/etc/xdg/autostart/snap-userd-autostart.desktop':
+            file { ['/etc/xdg/autostart/snap-userd-autostart.desktop', '/etc/apt/apt.conf.d/20snapd.conf']:
                 ensure      => absent,
                 require     => Package['snapd']
             }

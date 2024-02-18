@@ -14,9 +14,15 @@ class nginx(
         $limit_file                 = 10000
     ) {
 
+    /* Remove unnecessary package */
+    package { 'apache2':
+        ensure => absent
+    }
+
     /* Install Nginx */
     package { 'nginx':
-        ensure => installed
+        ensure => installed,
+        require => Package['apache2']
     }
 
     /* Disable service */
