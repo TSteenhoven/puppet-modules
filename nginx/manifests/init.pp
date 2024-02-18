@@ -50,7 +50,7 @@ class nginx(
     }
 
     /* Create drop in for nginx service */
-    basic_settings::systemd_drop_in { 'nginx_settimgs':
+    basic_settings::systemd_drop_in { 'nginx_settings':
         target_unit     => 'nginx.service',
         unit            => {
             'OnFailure' => 'notify-failed@%i.service'
