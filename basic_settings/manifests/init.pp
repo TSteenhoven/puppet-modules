@@ -831,9 +831,19 @@ class basic_settings(
 
     /* Create unattended upgrades config  */
     $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
-    file { '/etc/apt/apt.conf.d/99unattended-upgrades':
+    file { '/etc/apt/apt.conf.d/99-unattended-upgrades':
         ensure  => file,
-        content  => template('basic_settings/unattended-upgrades'),
+        content  => template('basic_settings/apt/unattended-upgrades'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        require => Package['unattended-upgrades']
+    }
+
+    /* Create APT settings */
+    file { '/etc/apt/apt.conf.d/99-settings':
+        ensure  => file,
+        content  => template('basic_settings/apt/settings'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
