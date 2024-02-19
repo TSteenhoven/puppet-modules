@@ -273,18 +273,33 @@ class basic_settings(
         }
     }
 
-    /* Install firewall and git */
+    /* Install last version */
     if ($backports and $allow_backports) {
         package { ['systemd', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure          => installed,
             install_options => ['-t', "${os_name}-backports"],
             require         => Exec['source_backports']
         }
+
+        /* Only for Debian */
+        if ($os_parent == 'debian') {
+            package { 'systemd-cron':
+                ensure          => installed,
+                install_options => ['-t', "${os_name}-backports"],
+                require         => Exec['source_backports']
+            }
+        }
     } else {
-        package { ['systemd', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
+        package { ['systemd', 'systemd-cron', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
             ensure  => installed,
             require => Exec['source_backports']
         }
+    }
+
+    /* Remove unnecessary packages */
+    package { 'cron':
+        ensure  => absent,
+        require => Package['systemd-cron']
     }
 
     /* Systemd storage target */
