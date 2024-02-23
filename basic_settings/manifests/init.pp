@@ -297,7 +297,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { 'cron*':
+    package { ['anacron*', 'cron*']:
         ensure  => absent,
         require => Package['systemd-cron']
     }
