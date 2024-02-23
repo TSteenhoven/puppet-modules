@@ -37,7 +37,11 @@ define nginx::server(
     $fastcgi_read_timeout               = undef,
 
     $php_fpm_enable                     = true,
+    $php_fpm_location                   = '~* \.php$',
+    $php_fpm_location_inc               = '~* \.php.inc$',
     $php_fpm_uri                        = 'unix:/run/php/php-fpm.sock',
+    $php_fpm_directives                 = [],
+
     $allow_directories                  = false,
     $http_options_allow                 = true,
     $http_options_allow_origin          = '*',
@@ -55,7 +59,6 @@ define nginx::server(
     $location_directives                = [],
     $locations                          = [],
     $directives                         = [],
-    $php_fpm_directives                 = [],
 
     $redirect_from                      = undef,
     $redirect_ip                        = undef,
