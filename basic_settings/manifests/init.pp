@@ -12,7 +12,7 @@ class basic_settings(
         $mysql_version                              = '8.0',
         $nginx_enable                               = false,
         $nodejs_enable                              = false,
-        $nodejs_version                             = '20',
+        $nodejsx_version                             = '20',
         $non_free                                   = false,
         $openjdk_enable                             = false,
         $openjdk_version                            = 'default',
@@ -42,8 +42,8 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'lxd-installer', 'ntp', 'snapd', 'xdg-user-dirs']:
-        ensure  => absent
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'installation-report', 'lxd-installer', 'ntp', 'ntpdate', 'ntpsec', 'session-migration', 'snapd', 'xdg-user-dirs']:
+        ensure  => purged
     }
 
     /* Basic system packages */
@@ -122,16 +122,10 @@ class basic_settings(
                 $gcc_version = undef
             }
 
-            /* Remove unminimize files */
-            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize']:
+            /* Remove unnecessary snapd and unminimize files */
+            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize', '/etc/xdg/autostart/snap-userd-autostart.desktop', '/etc/apt/apt.conf.d/20snapd.conf']:
                 ensure      => absent,
-                require     => Package['libpam-modules']
-            }
-
-            /* Remove unnecessary snapd files */
-            file { ['/etc/xdg/autostart/snap-userd-autostart.desktop', '/etc/apt/apt.conf.d/20snapd.conf']:
-                ensure      => absent,
-                require     => Package['snapd']
+                require     => [Package['libpam-modules'], Package['snapd']]
             }
 
             /* Remove man */
@@ -144,6 +138,12 @@ class basic_settings(
             package { ['netplan.io', "linux-image-generic-hwe-${os_version}"]:
                 ensure  => installed,
                 require => Package['snapd']
+            }
+
+            /* Remove old kernels */
+            package { ['linux-image-5*', 'linux-modules-5*', 'linux-modules-extra-5*']:
+                ensure  => purged,
+                require => Package["linux-image-generic-hwe-${os_version}"]
             }
         }
         'Debian': {
@@ -192,7 +192,7 @@ class basic_settings(
 
             /* Remove netplan.io */
             package { 'netplan.io':
-                ensure  => absent,
+                ensure  => purged,
                 require => Package['snapd']
             }
         }
@@ -283,13 +283,13 @@ class basic_settings(
         'nftables': {
             $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
             package { ['iptables', 'firwalld']:
-                ensure => absent
+                ensure => purged
             }
         }
         'iptables': {
             $firewall_command = 'iptables-restore < /etc/firewall.conf'
             package { ['nftables', 'firwalld']:
-                ensure => absent
+                ensure => purged
             }
         }
         'firewalld': {
@@ -322,7 +322,7 @@ class basic_settings(
 
     /* Remove unnecessary packages */
     package { ['anacron*', 'cron*']:
-        ensure  => absent,
+        ensure  => purged,
         require => Package['systemd-cron']
     }
 
@@ -649,7 +649,7 @@ class basic_settings(
     } else {
         /* Remove mongodb-org-server package */
         package { 'mongodb-org-server':
-            ensure  => absent
+            ensure  => purged
         }
 
         /* Remove mongodb repo */
@@ -677,7 +677,7 @@ class basic_settings(
     } else {
         /* Remove nodejs package */
         package { 'nodejs':
-            ensure  => absent
+            ensure  => purged
         }
 
         /* Remove nodejs repo */
@@ -822,12 +822,12 @@ class basic_settings(
         /* Remove openjdk package */
         package { 'openjdk':
             name    => 'openjdk*',
-            ensure  => absent
+            ensure  => purged
         }
 
         /* Remove java extensions */
         package { 'ca-certificates-java':
-            ensure  => absent,
+            ensure  => purged,
             require => Package['openjdk']
         }
     }
