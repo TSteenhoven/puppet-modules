@@ -16,7 +16,7 @@ class nginx(
 
     /* Remove unnecessary package */
     package { 'apache2':
-        ensure => absent
+        ensure => purged
     }
 
     /* Install Nginx */

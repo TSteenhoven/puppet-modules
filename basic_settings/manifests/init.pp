@@ -139,12 +139,6 @@ class basic_settings(
                 ensure  => installed,
                 require => Package['snapd']
             }
-
-            /* Remove old kernels */
-            package { ['linux-image-5*', 'linux-modules-5*', 'linux-modules-extra-5*']:
-                ensure  => purged,
-                require => Package["linux-image-generic-hwe-${os_version}"]
-            }
         }
         'Debian': {
             /* Set some variables */
@@ -321,7 +315,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['anacron*', 'cron*']:
+    package { ['anacron', 'cron']:
         ensure  => purged,
         require => Package['systemd-cron']
     }
