@@ -57,6 +57,13 @@ class php8::fpm(
             daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
             require         => Class['nginx']
         }
+
+        /* Set service */
+        $service = {
+            'Nice' => "-${nginx::nice_level}"
+        }
+    } else {
+        $service = {}
     }
 
     /* Create drop in for PHP FPM service */
@@ -65,9 +72,7 @@ class php8::fpm(
         unit            => {
             'OnFailure' => 'notify-failed@%i.service'
         },
-        service         => {
-            'Nice' => "-${nginx::nice_level}"
-        },
+        service         => $service,
         daemon_reload   => "php8_${minor_version}_systemd_daemon_reload",
         require         => Package["php8.${minor_version}-fpm"]
     }

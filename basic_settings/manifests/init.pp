@@ -42,12 +42,12 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'chrony', 'cloud-init', 'ifupdown', 'lxd-installer', 'ntp', 'snapd']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'lxd-installer', 'ntp', 'snapd', 'xdg-user-dirs']:
         ensure  => absent
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'needrestart', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xdg-user-dirs', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'needrestart', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
