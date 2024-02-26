@@ -166,7 +166,7 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
-                $gcc_version = 0
+                $gcc_version = undef
             } else {
                 $os_name = 'unknown'
                 $os_version = 0
