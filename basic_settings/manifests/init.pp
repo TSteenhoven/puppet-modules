@@ -69,6 +69,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($operatingsystemrelease =~ /^23.04.*/) { # Stable
                 $os_name = 'lunar'
+                $os_version = $::os['release']['major']
                 $backports_allow = false
                 $sury_allow = false
                 $nginx_allow = true
@@ -86,6 +87,7 @@ class basic_settings(
                 $puppetserver_package = 'puppetserver'
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
+                $os_version = $::os['release']['major']
                 $backports_allow = true
                 $sury_allow = true
                 $nginx_allow = true
@@ -103,6 +105,7 @@ class basic_settings(
                 $puppetserver_package = 'puppet-master'
             } else {
                 $os_name = 'unknown'
+                $os_version = 0
                 $backports_allow = false
                 $sury_allow = false
                 $nginx_allow = false
@@ -134,8 +137,8 @@ class basic_settings(
                 onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
             }
 
-            /* Install netplan.io */
-            package { 'netplan.io':
+            /* Install extra packages */
+            package { ['netplan.io', "linux-image-generic-hwe-${os_version}"]:
                 ensure  => installed,
                 require => Package['snapd']
             }
@@ -150,6 +153,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($operatingsystemrelease =~ /^12.*/) {
                 $os_name = 'bookworm'
+                $os_version = 12
                 $backports_allow = false
                 $sury_allow = true
                 $nginx_allow = true
@@ -167,6 +171,7 @@ class basic_settings(
                 $puppetserver_package = 'puppetserver'
             } else {
                 $os_name = 'unknown'
+                $os_version = 0
                 $backports_allow = false
                 $sury_allow = false
                 $nginx_allow = false
