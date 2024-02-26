@@ -4,7 +4,7 @@ class php8::cli(
     ) {
 
     /* Merge given init settings with default settings */
-    $correct_ini_settings = merge({
+    $correct_ini_settings = stdlib::merge({
         'date.timezone' => $basic_settings::server_timezone
     }, $ini_settings)
 

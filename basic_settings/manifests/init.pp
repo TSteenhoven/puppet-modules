@@ -85,6 +85,7 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
+                $gcc_version = 12
             } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
                 $os_version = $::os['release']['major']
@@ -103,6 +104,7 @@ class basic_settings(
                 $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
+                $gcc_version = 12
             } else {
                 $os_name = 'unknown'
                 $os_version = 0
@@ -117,6 +119,7 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
+                $gcc_version = undef
             }
 
             /* Remove unminimize files */
@@ -169,6 +172,7 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_package = 'puppetserver'
+                $gcc_version = 0
             } else {
                 $os_name = 'unknown'
                 $os_version = 0
@@ -183,6 +187,7 @@ class basic_settings(
                 $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_package = 'puppet-master'
+                $gcc_version = undef
             }
 
             /* Remove netplan.io */
@@ -207,6 +212,20 @@ class basic_settings(
             $openjdk_allow = false
             $puppetserver_dir = ''
             $puppetserver_package = ''
+            $gcc_version = undef
+        }
+    }
+
+    /* Install gcc packages */
+    if ($gcc_version == undef) {
+        package { 'gcc':
+            ensure  => installed,
+            require => Package['snapd']
+        }
+    } else {
+         package { ['gcc', "gcc-${gcc_version}"]:
+            ensure  => installed,
+            require => Package['snapd']
         }
     }
 

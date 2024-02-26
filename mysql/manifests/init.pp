@@ -27,7 +27,7 @@ class mysql (
     }
 
     # Merge default settings with user settings
-    $mysqld_default = merge($default_values, $settings)
+    $mysqld_default = stdlib::merge($default_values, $settings)
 
     /* Basic variable */
     $script_dir = '/var/local/puppet-mysql'
