@@ -63,58 +63,58 @@ class basic_settings(
 
             /* Do thing based on version */
             if ($operatingsystemrelease =~ /^23.04.*/) { # Stable
+                $backports_allow = false
+                $gcc_version = 12
+                $mongodb_allow = true
+                if ($architecture == 'amd64') {
+                    $mysql_allow = true
+                } else {
+                    $mysql_allow = false
+                }
+                $nginx_allow = true
+                $nodejs_allow = true
+                $openjdk_allow = true
                 $os_name = 'lunar'
                 $os_version = $::os['release']['major']
-                $backports_allow = false
-                $sury_allow = false
-                $nginx_allow = true
                 $proxmox_allow = false
+                $puppetserver_dir = 'puppetserver'
+                $puppetserver_jdk = true
+                $puppetserver_package = 'puppetserver'
+                $sury_allow = false
+            } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
+                $backports_allow = false
+                $gcc_version = 12
+                $mongodb_allow = true
                 if ($architecture == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
                 }
-                $mongodb_allow = true
+                $nginx_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
-                $puppetserver_jdk = true
-                $puppetserver_dir = 'puppetserver'
-                $puppetserver_package = 'puppetserver'
-                $gcc_version = 12
-            } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
                 $os_name = 'jammy'
                 $os_version = $::os['release']['major']
-                $backports_allow = true
-                $sury_allow = true
-                $nginx_allow = true
                 $proxmox_allow = false
-                if ($architecture == 'amd64') {
-                    $mysql_allow = true
-                } else {
-                    $mysql_allow = false
-                }
-                $mongodb_allow = true
-                $nodejs_allow = true
-                $openjdk_allow = true
-                $puppetserver_jdk = false
                 $puppetserver_dir = 'puppet'
+                $puppetserver_jdk = false
                 $puppetserver_package = 'puppet-master'
-                $gcc_version = 12
+                $sury_allow = true
             } else {
-                $os_name = 'unknown'
-                $os_version = 0
                 $backports_allow = false
-                $sury_allow = false
-                $nginx_allow = false
-                $proxmox_allow = false
-                $mysql_allow = false
+                $gcc_version = undef
                 $mongodb_allow = false
+                $mysql_allow = false
+                $nginx_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
-                $puppetserver_jdk = true
+                $os_name = 'unknown'
+                $os_version = 0
+                $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
+                $puppetserver_jdk = false
                 $puppetserver_package = 'puppet-master'
-                $gcc_version = undef
+                $sury_allow = false
             }
 
             /* Remove unnecessary snapd and unminimize files */
@@ -144,39 +144,39 @@ class basic_settings(
 
             /* Do thing based on version */
             if ($operatingsystemrelease =~ /^12.*/) {
-                $os_name = 'bookworm'
-                $os_version = 12
                 $backports_allow = false
-                $sury_allow = true
-                $nginx_allow = true
-                $proxmox_allow = true
+                $gcc_version = undef
+                $mongodb_allow = true
                 if ($architecture == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
                 }
-                $mongodb_allow = true
+                $nginx_allow = true
                 $nodejs_allow = true
                 $openjdk_allow = true
-                $puppetserver_jdk = true
-                $puppetserver_dir = 'puppetserver'
-                $puppetserver_package = 'puppetserver'
-                $gcc_version = undef
-            } else {
-                $os_name = 'unknown'
-                $os_version = 0
-                $backports_allow = false
-                $sury_allow = false
-                $nginx_allow = false
+                $os_name = 'bookworm'
+                $os_version = 12
                 $proxmox_allow = false
-                $mysql_allow = false
+                $puppetserver_dir = 'puppetserver'
+                $puppetserver_jdk = true
+                $puppetserver_package = 'puppetserver'
+                $sury_allow = true
+            } else {
+                $backports_allow = false
+                $gcc_version = undef
                 $mongodb_allow = false
+                $mysql_allow = false
+                $nginx_allow = false
                 $nodejs_allow = false
                 $openjdk_allow = false
-                $puppetserver_jdk = false
+                $os_name = 'unknown'
+                $os_version = 0
+                $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
+                $puppetserver_jdk = false
                 $puppetserver_package = 'puppet-master'
-                $gcc_version = undef
+                $sury_allow = false
             }
 
             /* Remove netplan.io */
@@ -186,22 +186,20 @@ class basic_settings(
             }
         }
         default: {
-            $os_parent = 'unknown'
-            $os_repo = ''
-            $os_url = ''
-            $os_url_security = ''
-            $os_name = 'unknown'
             $backports_allow = false
-            $sury_allow = false
-            $nginx_allow = false
-            $proxmox_allow = false
-            $mysql_allow = false
+            $gcc_version = undef
             $mongodb_allow = false
+            $mysql_allow = false
+            $nginx_allow = false
             $nodejs_allow = false
             $openjdk_allow = false
-            $puppetserver_dir = ''
-            $puppetserver_package = ''
-            $gcc_version = undef
+            $os_name = 'unknown'
+            $os_version = 0
+            $proxmox_allow = false
+            $puppetserver_dir = 'puppet'
+            $puppetserver_jdk = false
+            $puppetserver_package = 'puppet-master'
+            $sury_allow = false
         }
     }
 
@@ -489,6 +487,12 @@ class basic_settings(
         group   => 'root',
         mode    => '0644',
         notify  => Service['multipathd']
+    }
+
+    /* Ensure that getty is stopped */
+    service { 'getty@tty*':
+        ensure      => stopped,
+        enable      => false
     }
 
     /* Check if we need sury */
