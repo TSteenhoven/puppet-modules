@@ -36,13 +36,8 @@ class basic_settings(
         ]
     ) {
 
-    /* Set timezoen */
-    class { 'timezone':
-        timezone => $server_timezone
-    }
-
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'installation-report', 'lxd-installer', 'ntp', 'ntpdate', 'ntpsec', 'session-migration', 'snapd', 'xdg-user-dirs']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'installation-report', 'lxd-installer', 'ntp', 'ntpdate', 'ntpsec', 'packagekit', 'session-migration', 'snapd', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
@@ -217,7 +212,7 @@ class basic_settings(
             require => Package['snapd']
         }
     } else {
-         package { ['gcc', "gcc-${gcc_version}"]:
+        package { ['gcc', "gcc-${gcc_version}"]:
             ensure  => installed,
             require => Package['snapd']
         }
@@ -259,12 +254,14 @@ class basic_settings(
 
     /* Check if we need backports */
     if ($backports and $backports_allow) {
+        $backports_install_options = ['-t', "${os_name}-backports"]
         exec { 'source_backports':
             command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             notify      => Exec['source_list_reload']
         }
     } else {
+        $backports_install_options = undef
         exec { 'source_backports':
             command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
@@ -291,27 +288,11 @@ class basic_settings(
         }
     }
 
-    /* Install last version */
-    if ($backports and $allow_backports) {
-        package { ['systemd', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
-            ensure          => installed,
-            install_options => ['-t', "${os_name}-backports"],
-            require         => Exec['source_backports']
-        }
-
-        /* Only for Debian */
-        if ($os_parent == 'debian') {
-            package { 'systemd-cron':
-                ensure          => installed,
-                install_options => ['-t', "${os_name}-backports"],
-                require         => Exec['source_backports']
-            }
-        }
-    } else {
-        package { ['systemd', 'systemd-cron', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
-            ensure  => installed,
-            require => Exec['source_backports']
-        }
+    /* Install packages */
+    package { ['systemd', 'systemd-cron', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
+        ensure          => installed,
+        install_options => $backports_install_options,
+        require         => Exec['source_backports']
     }
 
     /* Remove unnecessary packages */
@@ -411,6 +392,12 @@ class basic_settings(
         enable      => true,
         require     => File['/etc/systemd/timesyncd.conf'],
         subscribe   => File['/etc/systemd/timesyncd.conf']
+    }
+
+    /* Set timezoen */
+    class { 'timezone':
+        timezone    => $server_timezone,
+        require     => File['/etc/systemd/timesyncd.conf']
     }
 
     /* Check if OS is Ubuntul For the next step we need systemd package */
