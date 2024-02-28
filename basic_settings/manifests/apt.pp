@@ -12,7 +12,7 @@ class basic_settings::apt(
 ) {
 
     /* Install package */
-    package { 'needrestart':
+    package { ['apt-listchanges', 'needrestart']:
         ensure => installed
     }
 
