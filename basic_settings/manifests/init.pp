@@ -42,7 +42,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'needrestart', 'networkd-dispatcher', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
+    package { ['apt-listchanges', 'apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -267,27 +267,8 @@ class basic_settings(
         }
     }
 
-    /* Based on firewall package do special commands */
-    case $firewall_package {
-        'nftables': {
-            $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
-            package { ['iptables', 'firwalld']:
-                ensure => purged
-            }
-        }
-        'iptables': {
-            $firewall_command = 'iptables-restore < /etc/firewall.conf'
-            package { ['nftables', 'firwalld']:
-                ensure => purged
-            }
-        }
-        'firewalld': {
-            $firewall_command = ''
-        }
-    }
-
     /* Install packages */
-    package { ['systemd', 'systemd-cron', 'systemd-sysv', 'systemd-timesyncd', 'libpam-systemd', 'git', "${firewall_package}"]:
+    package { ['systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd', 'git']:
         ensure          => installed,
         install_options => $backports_install_options,
         require         => Exec['source_backports']
@@ -364,38 +345,19 @@ class basic_settings(
         }
     }
 
-    /* Systemd NTP settings */
-    $systemd_ntp_all_pools = flatten($systemd_ntp_extra_pools, [
-        "0.${os_parent}.pool.ntp.org",
-        "1.${os_parent}.pool.ntp.org",
-        "2.${os_parent}.pool.ntp.org",
-        "3.${os_parent}.pool.ntp.org",
-    ]);
-    $systemd_ntp_list = join($systemd_ntp_all_pools, ' ')
-
-    /* Create systemd timesyncd config  */
-    file { '/etc/systemd/timesyncd.conf':
-        ensure  => file,
-        content  => template('basic_settings/systemd/timesyncd.conf'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        notify  => Exec['systemd_daemon_reload'],
-        require => Package['systemd-timesyncd']
+    /* Set timezone */
+    class { 'basic_settings::timezone':
+        timezone        => $server_timezone,
+        ntp_all_pools   => $systemd_ntp_extra_pools,
+        install_options => $backports_install_options,
+        require         => Exec['source_backports']
     }
 
-    /* Ensure that systemd-timesyncd is always running */
-    service { 'systemd-timesyncd':
-        ensure      => running,
-        enable      => true,
-        require     => File['/etc/systemd/timesyncd.conf'],
-        subscribe   => File['/etc/systemd/timesyncd.conf']
-    }
-
-    /* Set timezoen */
-    class { 'timezone':
-        timezone    => $server_timezone,
-        require     => File['/etc/systemd/timesyncd.conf']
+    /* Set network */
+    class { 'basic_settings::network':
+        firewall_package    => $firewall_package,
+        install_options     => $backports_install_options,
+        require             => Exec['source_backports']
     }
 
     /* Check if OS is Ubuntul For the next step we need systemd package */
@@ -415,52 +377,6 @@ class basic_settings(
             require     => File['/etc/default/motd-news'],
             subscribe   => File['/etc/default/motd-news']
         }
-    }
-
-    /* Start nftables */
-    if ($firewall_package == 'nftables') {
-        service { "${firewall_package}":
-            ensure      => running,
-            enable      => true,
-            require     => Package["${firewall_package}"]
-        }
-    }
-
-    /* Set script that's set the firewall */
-    if ($firewall_command != '') {
-        file { 'firewall_networkd_dispatche':
-            ensure  => file,
-            path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
-            mode    => '0755',
-            content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
-            require => Package["${firewall_package}"]
-        }
-    }
-
-    /* Create RX buffer script */
-    file { '/usr/local/sbin/rxbuffer':
-        ensure  => file,
-        source  => 'puppet:///modules/basic_settings/rxbuffer',
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0755', # High important
-    }
-
-    /* Create RX buffer script */
-    file { '/etc/networkd-dispatcher/routable.d/rxbuffer':
-        ensure  => file,
-        content  => template('basic_settings/network/rxbuffer'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0755', # High important,
-        require => File['/usr/local/sbin/rxbuffer']
-    }
-
-    /* Ensure that networkd services is always running */
-    service { ['systemd-networkd.service', 'networkd-dispatcher.service']:
-        ensure      => running,
-        enable      => true,
-        require     => Package['networkd-dispatcher']
     }
 
     /* Disable floppy */
@@ -853,42 +769,13 @@ class basic_settings(
         onlyif  => 'bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Create unattended upgrades config  */
-    $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
-    file { '/etc/apt/apt.conf.d/99-unattended-upgrades':
-        ensure  => file,
-        content  => template('basic_settings/apt/unattended-upgrades'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        require => Package['unattended-upgrades']
-    }
-
-    /* Create APT settings */
-    file { '/etc/apt/apt.conf.d/99-settings':
-        ensure  => file,
-        content  => template('basic_settings/apt/settings'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        require => Package['unattended-upgrades']
-    }
-
-    /* Create needrestart config */
-    file { '/etc/needrestart/conf.d/99-custom.conf':
-        ensure  => file,
-        content  => template('basic_settings/needrestart.conf'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        require => Package['needrestart']
-    }
-
-    /* Ensure that apt-daily timers is always running */
-    service { ['apt-daily.timer', 'apt-daily-upgrade.timer']:
-        ensure      => running,
-        enable      => true,
-        require     => Package['unattended-upgrades']
+    /* Set APT */
+    class { 'basic_settings::apt':
+        unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
+        unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
+        server_fdqn                                => $server_fdqn,
+        notify_mail                                => $systemd_notify_mail,
+        require                                    => Package['snapd']
     }
 
     /* Disable service */
