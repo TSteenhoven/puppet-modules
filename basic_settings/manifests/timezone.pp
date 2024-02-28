@@ -1,5 +1,5 @@
 class basic_settings::timezone(
-    $server_timezone,
+    $timezone,
     $ntp_extra_pools = [],
     $install_options = undef,
 ) {
