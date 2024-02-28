@@ -348,7 +348,7 @@ class basic_settings(
     /* Set timezone */
     class { 'basic_settings::timezone':
         timezone        => $server_timezone,
-        ntp_all_pools   => $systemd_ntp_extra_pools,
+        ntp_extra_pools => $systemd_ntp_extra_pools,
         install_options => $backports_install_options,
         require         => Exec['source_backports']
     }
