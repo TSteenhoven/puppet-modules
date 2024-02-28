@@ -1,4 +1,5 @@
 class basic_settings::timezone(
+    $os_parent,
     $timezone,
     $ntp_extra_pools = [],
     $install_options = undef,
@@ -47,7 +48,7 @@ class basic_settings::timezone(
 
     /* Set timezoen */
     class { 'timezone':
-        timezone    => $server_timezone,
+        timezone    => $timezone,
         require     => File['/etc/systemd/timesyncd.conf']
     }
 }
