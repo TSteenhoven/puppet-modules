@@ -42,7 +42,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+    package { ['apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mtr', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -336,13 +336,12 @@ class basic_settings(
         require => Package['systemd']
     }
 
-    /* Create systemd service for notification */
-    basic_settings::systemd_service { 'notify-failed@':
-        description => 'Send systemd notifications to mail',
-        service     => {
-            'Type'      => 'oneshot',
-            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${systemd_notify_mail}\"'",
-        }
+    /* Setup message */
+    class { 'basic_settings::message':
+        server_fdqn                                => $server_fdqn,
+        mail_to                                    => $systemd_notify_mail,
+        mail_package                               => $mail_package,
+        require                                    => Package['snapd']
     }
 
     /* Set timezone */
@@ -475,25 +474,6 @@ class basic_settings(
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             notify      => Exec['source_list_reload']
         }
-    }
-
-    /* Install mail package */
-    case $mail_package {
-        'postfix': {
-            /* Install package */
-            package { 'postfix':
-                ensure => installed
-            }
-        }
-    }
-
-    /* Create drop in for notify-failed service */
-    basic_settings::systemd_drop_in { "notify-failed_${mail_package}_dependency":
-        target_unit     => 'notify-failed@',
-        unit            => {
-            'Wants' => "${mail_package}.service"
-        },
-        require         => [Package[$mail_package], Basic_settings::Systemd_service['notify-failed@']]
     }
 
     /* Check if variable mysql is true; if true, install new source list and key */
@@ -775,7 +755,7 @@ class basic_settings(
         unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
         unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
         server_fdqn                                => $server_fdqn,
-        notify_mail                                => $systemd_notify_mail,
+        mail_to                                    => $systemd_notify_mail,
         require                                    => Package['snapd']
     }
 

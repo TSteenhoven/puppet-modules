@@ -7,8 +7,13 @@ class mysql (
     ) {
 
     /* Use systemd settings */
-    $automysqlbackup_host_friendly = $basic_settings::server_fdqn
-    $automysqlbackup_mail_address = $basic_settings::systemd_notify_mail
+    if (defined(Class['basic_settings::message'])) {
+        $automysqlbackup_host_friendly = $basic_settings::message::server_fdqn
+        $automysqlbackup_mail_address = $basic_settings::message::mail_to
+    } else {
+        $automysqlbackup_host_friendly = $fdqn
+        $automysqlbackup_mail_address = 'root'
+    }
 
     /* Set mysqld default values */
     $default_values = {

@@ -8,7 +8,7 @@ class basic_settings::apt(
         'php*'
     ],
     $server_fdqn                                = $fqdn,
-    $notify_mail                                = 'root'
+    $mail_to                                    = 'root'
 ) {
 
     /* Install package */
