@@ -21,7 +21,7 @@ class basic_settings::message(
         description => 'Send systemd notifications to mail',
         service     => {
             'Type'      => 'oneshot',
-            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${notify_mail}\"'",
+            'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${mail_to}\"'",
         },
         require => Package[$mail_package]
     }
