@@ -4,10 +4,14 @@ class php8::fpm(
         $ini_settings = {}
     ) {
 
-     /* Merge given init settings with default settings */
-    $correct_ini_settings = stdlib::merge({
-        'date.timezone' => $basic_settings::server_timezone
-    }, $ini_settings)
+    /* Merge given init settings with default settings */
+    if (defined(Class['basic_settings::timezone'])) {
+        $correct_ini_settings = stdlib::merge({
+            'date.timezone' => $basic_settings::timezone::timezone
+        }, $ini_settings)
+    } else {
+        $correct_ini_settings = $ini_settings
+    }
 
     /* Get minor version from PHP init */
     $minor_version = $php8::minor_version

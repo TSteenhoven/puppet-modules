@@ -42,7 +42,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unattended-upgrades', 'unzip', 'xz-utils']:
+    package { ['apt-transport-https', 'bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'libpam-modules', 'libhugetlbfs-bin', 'libssl-dev', 'lsb-release', 'mailutils', 'mtr', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -779,87 +779,10 @@ class basic_settings(
         require                                    => Package['snapd']
     }
 
-    /* Disable service */
-    service { 'puppet':
-        ensure  => undef,
-        enable  => false
-    }
-
-    /* Create drop in for services target */
-    basic_settings::systemd_drop_in { 'puppet_dependency':
-        target_unit     => "${cluster_id}-system.target",
-        unit            => {
-            'Wants'   => 'puppet.service'
-        },
-        require         => Basic_settings::Systemd_target["${cluster_id}-system"]
-    }
-
-    /* Create drop in for puppet service */
-    basic_settings::systemd_drop_in { 'puppet_settings':
-        target_unit     => 'puppet.service',
-        unit            => {
-            'OnFailure' => 'notify-failed@%i.service'
-        },
-        service         => {
-            'Nice'          => 19,
-            'LimitNOFILE'   => 10000
-        }
-    }
-
-    /* Do only the next steps when we are puppet server */
-    if ($puppetserver_enable) {
-        /* Disable service */
-        service {  "${puppetserver_package}":
-            ensure  => undef,
-            enable  => false
-        }
-
-        /* Create drop in for services target */
-        basic_settings::systemd_drop_in { 'puppetserver_dependency':
-            target_unit     => "${cluster_id}-system.target",
-            unit            => {
-                'Wants'   => "${puppetserver_package}.service"
-            },
-            require         => Basic_settings::Systemd_target["${cluster_id}-system"]
-        }
-
-        /* Create drop in for puppet server service */
-        basic_settings::systemd_drop_in { 'puppetserver_settings':
-            target_unit     => "${puppetserver_package}.service",
-            unit            => {
-                'OnFailure' => 'notify-failed@%i.service'
-            },
-            service         => {
-                'Nice'          => '-8',
-            }
-        }
-
-        /* Create systemd puppet server clean reports service */
-        basic_settings::systemd_service { 'puppetserver-clean-reports':
-            description => 'Clean puppetserver reports service',
-            service     => {
-                'Type'      => 'oneshot',
-                'User'      => 'puppet',
-                'ExecStart' => "/usr/bin/find /var/lib/${puppetserver_dir}/reports -type f -name '*.yaml' -ctime +1 -delete",
-                'Nice'      => '19'
-            },
-        }
-
-        /* Create systemd puppet server clean reports timer */
-        basic_settings::systemd_timer { 'puppetserver-clean-reports':
-            description => 'Clean puppetserver reports timer',
-            timer       => {
-                'OnCalendar' => '*-*-* 10:00'
-            }
-        }
-
-        /* Create drop in for puppet service */
-        basic_settings::systemd_drop_in { 'puppet_puppetserver_dependency':
-            target_unit     => 'puppet.service',
-            unit         => {
-                'After'     => "${puppetserver_package}.service",
-                'BindsTo'   => "${puppetserver_package}.service"
-            }
-        }
+    /* Setup Puppet */
+    class { 'basic_settings::puppet':
+        server_enable  => $puppetserver_enable,
+        server_package => $puppetserver_package,
+        server_dir     => $puppetserver_dir
     }
 }
