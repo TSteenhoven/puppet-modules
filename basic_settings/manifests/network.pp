@@ -34,7 +34,7 @@ class basic_settings::network(
     }
 
     /* Install package */
-    package { ['dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'mtr', 'networkd-dispatcher']:
+    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr', 'networkd-dispatcher']:
         ensure => installed,
         require => Package['ifupdown']
     }
@@ -44,7 +44,7 @@ class basic_settings::network(
         service { "${firewall_package}":
             ensure      => running,
             enable      => true,
-            require     => Package["${firewall_package}"]
+            require     => Package[$firewall_package]
         }
     }
 
