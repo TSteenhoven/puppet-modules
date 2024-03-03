@@ -74,8 +74,12 @@ define nginx::server(
   ) {
 
     /* Check if TCP fast open is enabled */
-    if ($basic_settings::kernel_tcp_fastopen == 3 and $fastopen > 0) {
-        $tcp_fastopen = true
+    if (defined(Class['basic_settings::kernel'])) {
+        if ($basic_settings::kernel::tcp_fastopen == 3 and $fastopen > 0) {
+            $tcp_fastopen = true
+        } else {
+            $tcp_fastopen = false
+        }
     } else {
         $tcp_fastopen = false
     }
