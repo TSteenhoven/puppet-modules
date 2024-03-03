@@ -1,6 +1,7 @@
 class basic_settings::kernel(
-    $hugepages,
-    $tcp_congestion_control
+    $hugepages              = 0,
+    $tcp_congestion_control = 'brr',
+    $tcp_fastopen           = 3
 ) {
 
     /* Create group for hugetlb only when hugepages is given */

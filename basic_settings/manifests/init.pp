@@ -356,7 +356,8 @@ class basic_settings(
     /* Setup kernel */
     class { 'basic_settings::kernel':
         hugepages               => $kernel_hugepages,
-        tcp_congestion_control  => $kernel_tcp_congestion_control
+        tcp_congestion_control  => $kernel_tcp_congestion_control,
+        tcp_fastopen            => $kernel_tcp_fastopen
     }
 
     /* Set network */
