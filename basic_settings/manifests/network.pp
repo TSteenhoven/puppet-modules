@@ -28,9 +28,15 @@ class basic_settings::network(
         install_options => $install_options
     }
 
+    /* Remove unnecessary packages */
+    package { 'ifupdown':
+        ensure  => purged
+    }
+
     /* Install package */
-    package { 'networkd-dispatcher':
-        ensure => installed
+    package { ['dnsutils', 'ethtool', 'gnupg', 'iputils-ping', 'mtr', 'networkd-dispatcher']:
+        ensure => installed,
+        require => Package['ifupdown']
     }
 
     /* Start nftables */
@@ -49,7 +55,7 @@ class basic_settings::network(
             path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
             mode    => '0755',
             content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
-            require => Package["${firewall_package}"]
+            require => Package[$firewall_package]
         }
     }
 

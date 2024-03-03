@@ -12,8 +12,8 @@ class basic_settings::apt(
 ) {
 
     /* Install package */
-    package { ['apt-listchanges', 'needrestart', 'unattended-upgrades']:
-        ensure => installed
+    package { ['apt-listchanges', 'apt-transport-https', 'debian-archive-keyring', 'debian-keyring', 'needrestart', 'unattended-upgrades']:
+        ensure  => installed
     }
 
     /* Create unattended upgrades config  */
