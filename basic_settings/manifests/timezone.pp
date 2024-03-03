@@ -51,4 +51,10 @@ class basic_settings::timezone(
         timezone    => $timezone,
         require     => File['/etc/systemd/timesyncd.conf']
     }
+
+    /* Remove unnecessary packages */
+    package { ['ntp', 'ntpdate', 'ntpsec']:
+        ensure  => purged,
+        require => Package['systemd-timesyncd']
+    }
 }

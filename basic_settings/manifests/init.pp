@@ -37,7 +37,7 @@ class basic_settings(
     ) {
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'ifupdown', 'installation-report', 'lxd-installer', 'ntp', 'ntpdate', 'ntpsec', 'packagekit', 'session-migration', 'snapd', 'xdg-user-dirs', 'x11-utils']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'packagekit', 'session-migration', 'snapd', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
