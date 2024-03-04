@@ -99,7 +99,7 @@ class basic_settings::packages(
 
     if (defined(Class['basic_settings::message'])) {
         /* Reload systemd deamon */
-        exec { 'apt_services_systemd_daemon_reload':
+        exec { 'packages_systemd_daemon_reload':
             command         => 'systemctl daemon-reload',
             refreshonly     => true,
             require         => Package['systemd']
@@ -111,7 +111,7 @@ class basic_settings::packages(
             unit            => {
                 'OnFailure' => 'notify-failed@%i.service'
             },
-            daemon_reload   => 'apt_services_systemd_daemon_reload'
+            daemon_reload   => 'packages_systemd_daemon_reload'
         }
 
         /* Create drop in for APT upgrade service */
@@ -120,7 +120,7 @@ class basic_settings::packages(
             unit            => {
                 'OnFailure' => 'notify-failed@%i.service'
             },
-            daemon_reload   => 'apt_services_systemd_daemon_reload'
+            daemon_reload   => 'packages_systemd_daemon_reload'
         }
     }
 }

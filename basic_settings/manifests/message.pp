@@ -16,6 +16,13 @@ class basic_settings::message(
         require => Package[$mail_package]
     }
 
+    /* Reload systemd deamon */
+    exec { 'message_systemd_daemon_reload':
+        command         => 'systemctl daemon-reload',
+        refreshonly     => true,
+        require         => Package['systemd']
+    }
+
     /* Create systemd service for notification */
     basic_settings::systemd_service { 'notify-failed@':
         description => 'Send systemd notifications to mail',
@@ -23,6 +30,7 @@ class basic_settings::message(
             'Type'      => 'oneshot',
             'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${mail_to}\"'",
         },
+        daemon_reload   => 'message_systemd_daemon_reload'
         require => Package[$mail_package]
     }
 
@@ -32,6 +40,7 @@ class basic_settings::message(
         unit            => {
             'Wants' => "${mail_package}.service"
         },
+        daemon_reload   => 'message_systemd_daemon_reload'
         require         => [Package[$mail_package], Basic_settings::Systemd_service['notify-failed@']]
     }
 }
