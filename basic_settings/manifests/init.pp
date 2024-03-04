@@ -37,17 +37,6 @@ class basic_settings(
         ]
     ) {
 
-    /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'packagekit', 'session-migration', 'snapd', 'xdg-user-dirs', 'x11-utils']:
-        ensure  => purged
-    }
-
-    /* Basic system packages */
-    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
-        ensure  => installed,
-        require => Package['snapd']
-    }
-
     /* Get OS name */
     case $operatingsystem {
         'Ubuntu': {
@@ -132,24 +121,6 @@ class basic_settings(
                 $puppetserver_package = 'puppet-master'
                 $sury_allow = false
             }
-
-            /* Remove unnecessary snapd and unminimize files */
-            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize', '/etc/xdg/autostart/snap-userd-autostart.desktop']:
-                ensure      => absent,
-                require     => [Package['libpam-modules'], Package['snapd']]
-            }
-
-            /* Remove man */
-            exec { 'man_remove':
-                command     => 'rm /usr/bin/man',
-                onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
-            }
-
-            /* Install extra packages */
-            package { ['netplan.io']:
-                ensure  => installed,
-                require => Package['snapd']
-            }
         }
         'Debian': {
             /* Set some variables */
@@ -192,12 +163,6 @@ class basic_settings(
                 $puppetserver_package = 'puppet-master'
                 $sury_allow = false
             }
-
-            /* Remove netplan.io */
-            package { 'netplan.io':
-                ensure  => purged,
-                require => Package['snapd']
-            }
         }
         default: {
             $backports_allow = false
@@ -216,35 +181,21 @@ class basic_settings(
         }
     }
 
-    /* Setup message */
-    class { 'basic_settings::message':
-        server_fdqn     => $server_fdqn,
-        mail_to         => $systemd_notify_mail,
-        mail_package    => $mail_package,
-        require         => Package['snapd']
+    /* Get snap state */
+    if ($pro_enable and !$snap_enable) {
+        $snap_correct = true
+    } else {
+        $snap_correct = $snap_enable
     }
 
-    /* Based on OS parent use correct source list */
-    file { '/etc/apt/sources.list':
-        ensure  => file,
-        mode    => '0644',
-        owner   => 'root',
-        group   => 'root',
-        content => template("basic_settings/source/${os_parent}.list")
+    /* Remove unnecessary packages */
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+        ensure  => purged
     }
 
-    /* Setup APT */
-    class { 'basic_settings::apt':
-        unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
-        unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
-        server_fdqn                                => $server_fdqn,
-        mail_to                                    => $systemd_notify_mail,
-        require                                    => [Package['snapd'], File['/etc/apt/sources.list']]
-    }
-
-    /* Set Pro */
-    class { 'basic_settings::pro':
-        enable => $pro_enable
+    /* Basic system packages */
+    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+        ensure  => installed
     }
 
     /* Reload source list */
@@ -259,16 +210,14 @@ class basic_settings(
         exec { 'basic_settings_source_backports':
             command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Class['basic_settings::apt']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     } else {
         $backports_install_options = undef
         exec { 'basic_settings_source_backports':
             command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Class['basic_settings::apt']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     }
 
@@ -280,9 +229,37 @@ class basic_settings(
         require         => Exec['basic_settings_source_backports']
     }
 
-    /* Set APT services */
-    class { 'basic_settings::apt_services':
-        require => Class['basic_settings::systemd']
+    /* Based on OS parent use correct source list */
+    file { '/etc/apt/sources.list':
+        ensure  => file,
+        mode    => '0644',
+        owner   => 'root',
+        group   => 'root',
+        content => template("basic_settings/source/${os_parent}.list")
+    }
+
+    /* Setup message */
+    class { 'basic_settings::message':
+        server_fdqn     => $server_fdqn,
+        mail_to         => $systemd_notify_mail,
+        mail_package    => $mail_package,
+        require         => Class['basic_settings::systemd']
+    }
+
+    /* Setup APT */
+    class { 'basic_settings::packages':
+        unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
+        unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
+        server_fdqn                                => $server_fdqn,
+        snap_enable                                => $snap_correct,
+        mail_to                                    => $systemd_notify_mail,
+        require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message']]
+    }
+
+    /* Set Pro */
+    class { 'basic_settings::pro':
+        enable  => $pro_enable,
+        require => Class['basic_settings::apt']
     }
 
     /* Set timezone */
@@ -290,7 +267,7 @@ class basic_settings(
         timezone        => $server_timezone,
         ntp_extra_pools => $systemd_ntp_extra_pools,
         install_options => $backports_install_options,
-        require         => Exec['basic_settings_source_backports']
+        require         => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
     }
 
     /* Setup kernel */
@@ -304,7 +281,7 @@ class basic_settings(
     class { 'basic_settings::network':
         firewall_package    => $firewall_package,
         install_options     => $backports_install_options,
-        require             => Exec['basic_settings_source_backports']
+        require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
     }
 
     /* Set IO */

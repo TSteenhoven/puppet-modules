@@ -9,11 +9,18 @@ class basic_settings::pro(
                 ensure => installed
             }
 
+            /* Check snap state */
+            if (defined(Class['basic_settings::message'])) {
+                $snap_enable = $basic_settings::packages::snap_enable
+            } else {
+                $snap_enable = false
+            }
+
             /* Check if pro is enabled */
-            if ($enable) {
+            if ($enable and $snap_enable) {
 
             } else {
-                service { ['ubuntu-advantage.service', 'esm-cache.service']:
+                service { 'ubuntu-advantage.service':
                     ensure      => stopped,
                     enable      => false
                 }

@@ -39,6 +39,20 @@ class basic_settings::network(
         require => Package['ifupdown']
     }
 
+    /* If we need to install netplan */
+    case $operatingsystem {
+        'Ubuntu': {
+            package { 'netplan.io':
+                ensure  => installed
+            }
+        }
+        default: {
+            package { 'netplan.io':
+                ensure  => purged
+            }
+        }
+    }
+
     /* Start nftables */
     if ($firewall_package == 'nftables' or $firewall_package == 'firewalld') {
         service { "${firewall_package}":

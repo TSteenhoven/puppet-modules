@@ -22,7 +22,7 @@ class basic_settings::timezone(
         'Ubuntu': {
             $ntp_all_pools = flatten($ntp_extra_pools, [
                 '0.ubuntu.pool.ntp.org',
-                '1.ubutnu.pool.ntp.org',
+                '1.ubuntu.pool.ntp.org',
                 '2.ubuntu.pool.ntp.org',
                 '3.ubuntu.pool.ntp.org',
             ])
