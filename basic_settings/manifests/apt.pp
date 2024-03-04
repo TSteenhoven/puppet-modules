@@ -16,6 +16,18 @@ class basic_settings::apt(
         ensure  => installed
     }
 
+    /* Install extra packages when Ubuntu */
+    if ($operatingsystem == 'Ubuntu') {
+        package { 'update-manager-core':
+            ensure => installed
+        }
+
+        /* Remove unnecessary snapd and unminimize files */
+        file { '/etc/apt/apt.conf.d/20snapd.conf':
+            ensure => absent
+        }
+    }
+
     /* Create unattended upgrades config  */
     $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
     file { '/etc/apt/apt.conf.d/99-unattended-upgrades':

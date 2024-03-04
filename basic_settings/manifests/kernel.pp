@@ -3,6 +3,13 @@ class basic_settings::kernel(
     $tcp_congestion_control = 'brr',
     $tcp_fastopen           = 3
 ) {
+    /* Install extra packages when Ubuntu */
+    if ($operatingsystem == 'Ubuntu') {
+        $os_version = $::os['release']['major']
+        package { "linux-image-generic-hwe-${os_version}":
+            ensure  => installed
+        }
+    }
 
     /* Create group for hugetlb only when hugepages is given */
     if ($hugepages > 0) {

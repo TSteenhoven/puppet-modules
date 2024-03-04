@@ -12,10 +12,11 @@ class basic_settings(
         $mysql_version                              = '8.0',
         $nginx_enable                               = false,
         $nodejs_enable                              = false,
-        $nodejsx_version                             = '20',
+        $nodejs_version                             = '20',
         $non_free                                   = false,
         $openjdk_enable                             = false,
         $openjdk_version                            = 'default',
+        $pro_enable                                 = false,
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
         $server_fdqn                                = $fqdn,
@@ -62,7 +63,25 @@ class basic_settings(
             }
 
             /* Do thing based on version */
-            if ($operatingsystemrelease =~ /^23.04.*/) { # Stable
+            if ($operatingsystemrelease =~ /^24.04.*/) { # LTS
+                $backports_allow = false
+                $gcc_version = undef
+                $mongodb_allow = true
+                if ($architecture == 'amd64') {
+                    $mysql_allow = true
+                } else {
+                    $mysql_allow = false
+                }
+                $nginx_allow = true
+                $nodejs_allow = true
+                $openjdk_allow = true
+                $os_name = 'noble'
+                $proxmox_allow = false
+                $puppetserver_dir = 'puppetserver'
+                $puppetserver_jdk = true
+                $puppetserver_package = 'puppetserver'
+                $sury_allow = false
+            } elsif ($operatingsystemrelease =~ /^23.04.*/) { # Stable
                 $backports_allow = false
                 $gcc_version = 12
                 $mongodb_allow = true
@@ -75,7 +94,6 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'lunar'
-                $os_version = $::os['release']['major']
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_jdk = true
@@ -94,7 +112,6 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'jammy'
-                $os_version = $::os['release']['major']
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -109,7 +126,6 @@ class basic_settings(
                 $nodejs_allow = false
                 $openjdk_allow = false
                 $os_name = 'unknown'
-                $os_version = 0
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -118,7 +134,7 @@ class basic_settings(
             }
 
             /* Remove unnecessary snapd and unminimize files */
-            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize', '/etc/xdg/autostart/snap-userd-autostart.desktop', '/etc/apt/apt.conf.d/20snapd.conf']:
+            file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize', '/etc/xdg/autostart/snap-userd-autostart.desktop']:
                 ensure      => absent,
                 require     => [Package['libpam-modules'], Package['snapd']]
             }
@@ -130,7 +146,7 @@ class basic_settings(
             }
 
             /* Install extra packages */
-            package { ['netplan.io', "linux-image-generic-hwe-${os_version}", 'update-manager-core']:
+            package { ['netplan.io']:
                 ensure  => installed,
                 require => Package['snapd']
             }
@@ -156,7 +172,6 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'bookworm'
-                $os_version = 12
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_jdk = true
@@ -171,7 +186,6 @@ class basic_settings(
                 $nodejs_allow = false
                 $openjdk_allow = false
                 $os_name = 'unknown'
-                $os_version = 0
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -194,7 +208,6 @@ class basic_settings(
             $nodejs_allow = false
             $openjdk_allow = false
             $os_name = 'unknown'
-            $os_version = 0
             $proxmox_allow = false
             $puppetserver_dir = 'puppet'
             $puppetserver_jdk = false
@@ -227,6 +240,11 @@ class basic_settings(
         server_fdqn                                => $server_fdqn,
         mail_to                                    => $systemd_notify_mail,
         require                                    => [Package['snapd'], File['/etc/apt/sources.list']]
+    }
+
+    /* Set Pro */
+    class { 'basic_settings::pro':
+        enable => $pro_enable
     }
 
     /* Reload source list */
@@ -269,7 +287,6 @@ class basic_settings(
 
     /* Set timezone */
     class { 'basic_settings::timezone':
-        os_parent       => $os_parent,
         timezone        => $server_timezone,
         ntp_extra_pools => $systemd_ntp_extra_pools,
         install_options => $backports_install_options,

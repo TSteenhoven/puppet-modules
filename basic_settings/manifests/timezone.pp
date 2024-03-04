@@ -1,5 +1,4 @@
 class basic_settings::timezone(
-    $os_parent,
     $timezone,
     $ntp_extra_pools = [],
     $install_options = undef,
@@ -19,6 +18,7 @@ class basic_settings::timezone(
     }
 
     /* Systemd NTP settings */
+    $os_parent = downcase($operatingsystem)
     $ntp_all_pools = flatten($ntp_extra_pools, [
         "0.${os_parent}.pool.ntp.org",
         "1.${os_parent}.pool.ntp.org",
