@@ -189,12 +189,12 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'plymouth', 'session-migration', 'sysstat', 'xdg-user-dirs', 'x11-utils']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
