@@ -259,7 +259,7 @@ class basic_settings(
     /* Set Pro */
     class { 'basic_settings::pro':
         enable  => $pro_enable,
-        require => Class['basic_settings::apt']
+        require => Class['basic_settings::message']
     }
 
     /* Set timezone */
