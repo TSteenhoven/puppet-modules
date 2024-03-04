@@ -17,7 +17,7 @@ class basic_settings::apt_services(
         }
 
         /* Create drop in for APT service */
-        basic_settings::systemd_drop_in { 'apt_daily_upgrade_notify_failed':
+        basic_settings::systemd_drop_in { 'apt_daily_notify_failed':
             target_unit     => 'apt-daily.service',
             unit            => {
                 'OnFailure' => 'notify-failed@%i.service'
@@ -27,7 +27,7 @@ class basic_settings::apt_services(
 
         /* Create drop in for APT upgrade service */
         basic_settings::systemd_drop_in { 'apt_daily_upgrade_notify_failed':
-            target_unit     => 'apt-daily.service',
+            target_unit     => 'apt-daily-upgrade.service',
             unit            => {
                 'OnFailure' => 'notify-failed@%i.service'
             },
