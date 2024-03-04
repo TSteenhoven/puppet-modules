@@ -17,14 +17,30 @@ class basic_settings::timezone(
         install_options => $install_options
     }
 
+    /* Get OS name */
+    case $operatingsystem {
+        'Ubuntu': {
+            $ntp_all_pools = flatten($ntp_extra_pools, [
+                '0.ubuntu.pool.ntp.org',
+                '1.ubutnu.pool.ntp.org',
+                '2.ubuntu.pool.ntp.org',
+                '3.ubuntu.pool.ntp.org',
+            ])
+        }
+        'Debian': {
+            $ntp_all_pools = flatten($ntp_extra_pools, [
+                '0.debian.pool.ntp.org',
+                '1.debian.pool.ntp.org',
+                '2.debian.pool.ntp.org',
+                '3.debian.pool.ntp.org',
+            ])
+        }
+        default: {
+            $ntp_all_pools = []
+        }
+    }
+
     /* Systemd NTP settings */
-    $os_parent = downcase($operatingsystem)
-    $ntp_all_pools = flatten($ntp_extra_pools, [
-        "0.${os_parent}.pool.ntp.org",
-        "1.${os_parent}.pool.ntp.org",
-        "2.${os_parent}.pool.ntp.org",
-        "3.${os_parent}.pool.ntp.org",
-    ]);
     $ntp_list = join($ntp_all_pools, ' ')
 
     /* Create systemd timesyncd config  */
