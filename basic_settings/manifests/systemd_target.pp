@@ -13,6 +13,7 @@ define basic_settings::systemd_target(
         ensure  => $ensure,
         content => template('basic_settings/systemd/target'),
         mode    => '0644',
-        notify  => Exec['systemd_daemon_reload']
+        notify  => Exec['systemd_daemon_reload'],
+        require => Package['systemd']
     }
 }

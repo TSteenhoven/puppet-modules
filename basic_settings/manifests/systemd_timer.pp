@@ -14,7 +14,8 @@ define basic_settings::systemd_timer(
         ensure  => $ensure,
         content => template('basic_settings/systemd/timer'),
         mode    => '0644',
-        notify  => Exec["${daemon_reload}"]
+        notify  => Exec["${daemon_reload}"],
+        require => Package['systemd']
     }
 
     /* Enable timer */

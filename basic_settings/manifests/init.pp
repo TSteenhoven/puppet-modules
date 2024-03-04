@@ -42,7 +42,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'bc', 'build-essential', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'multipath-tools-boot', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'unzip', 'xz-utils']:
         ensure  => installed,
         require => Package['snapd']
     }
@@ -124,13 +124,13 @@ class basic_settings(
             }
 
             /* Remove man */
-            exec { 'remove_man':
+            exec { 'man_remove':
                 command     => 'rm /usr/bin/man',
                 onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
             }
 
             /* Install extra packages */
-            package { ['netplan.io', "linux-image-generic-hwe-${os_version}"]:
+            package { ['netplan.io', "linux-image-generic-hwe-${os_version}", 'update-manager-core']:
                 ensure  => installed,
                 require => Package['snapd']
             }
@@ -203,36 +203,12 @@ class basic_settings(
         }
     }
 
-    /* Install gcc packages */
-    if ($gcc_version == undef) {
-        package { 'gcc':
-            ensure  => installed,
-            require => Package['snapd']
-        }
-    } else {
-        package { ['gcc', "gcc-${gcc_version}"]:
-            ensure  => installed,
-            require => Package['snapd']
-        }
-    }
-
-    /* Setup sudoers config file */
-    file { '/etc/sudoers':
-        ensure  => file,
-        mode    => '0440',
-        owner   => 'root',
-        group   => 'root',
-        content => template('basic_settings/sudoers')
-    }
-
-    /* Setup sudoers dir */
-    if ($sudoers_dir_enable) {
-        file { '/etc/sudoers.d':
-            ensure  => directory,
-            purge   => true,
-            recurse => true,
-            force   => true,
-        }
+    /* Setup message */
+    class { 'basic_settings::message':
+        server_fdqn     => $server_fdqn,
+        mail_to         => $systemd_notify_mail,
+        mail_package    => $mail_package,
+        require         => Package['snapd']
     }
 
     /* Based on OS parent use correct source list */
@@ -244,8 +220,17 @@ class basic_settings(
         content => template("basic_settings/source/${os_parent}.list")
     }
 
+    /* Setup APT */
+    class { 'basic_settings::apt':
+        unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
+        unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
+        server_fdqn                                => $server_fdqn,
+        mail_to                                    => $systemd_notify_mail,
+        require                                    => [Package['snapd'], File['/etc/apt/sources.list']]
+    }
+
     /* Reload source list */
-    exec { 'source_list_reload':
+    exec { 'basic_settings_source_list_reload':
         command     => 'apt-get update',
         refreshonly => true
     }
@@ -253,95 +238,33 @@ class basic_settings(
     /* Check if we need backports */
     if ($backports and $backports_allow) {
         $backports_install_options = ['-t', "${os_name}-backports"]
-        exec { 'source_backports':
+        exec { 'basic_settings_source_backports':
             command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload'],
+            require     => Class['basic_settings::apt']
         }
     } else {
         $backports_install_options = undef
-        exec { 'source_backports':
+        exec { 'basic_settings_source_backports':
             command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload'],
+            require     => Class['basic_settings::apt']
         }
     }
 
-    /* Install packages */
-    package { ['systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd', 'git']:
-        ensure          => installed,
+    /* Set systemd */
+    class { 'basic_settings::systemd':
+        cluster_id      => $cluster_id,
+        default_target  => $systemd_default_target,
         install_options => $backports_install_options,
-        require         => Exec['source_backports']
+        require         => Exec['basic_settings_source_backports']
     }
 
-    /* Remove unnecessary packages */
-    package { ['anacron', 'cron']:
-        ensure  => purged,
-        require => Package['systemd-cron']
-    }
-
-    /* Systemd storage target */
-    basic_settings::systemd_target { "${cluster_id}-system":
-        description     => 'System',
-        parent_targets  => ['multi-user'],
-        allow_isolate   => true
-    }
-
-    /* Systemd storage target */
-    basic_settings::systemd_target { "${cluster_id}-storage":
-        description     => 'Storage',
-        parent_targets  => ["${cluster_id}-system"],
-        allow_isolate   => true
-    }
-
-    /* Systemd services target */
-    basic_settings::systemd_target { "${cluster_id}-services":
-        description     => 'Services',
-        parent_targets  => ["${cluster_id}-storage"],
-        allow_isolate   => true
-    }
-
-    /* Systemd production target */
-    basic_settings::systemd_target { "${cluster_id}-production":
-        description     => 'Production',
-        parent_targets  => ["${cluster_id}-services"],
-        allow_isolate   => true
-    }
-
-    /* Systemd helpers target */
-    basic_settings::systemd_target { "${cluster_id}-helpers":
-        description     => 'Helpers',
-        parent_targets  => ["${cluster_id}-production"],
-        allow_isolate   => true
-    }
-
-    /* Systemd require services target */
-    basic_settings::systemd_target { "${cluster_id}-require-services":
-        description     => 'Require services',
-        parent_targets  => ["${cluster_id}-helpers"],
-        allow_isolate   => true
-    }
-
-    /* Set default target */
-    exec { 'set_default_target':
-        command => "systemctl set-default ${cluster_id}-${systemd_default_target}.target",
-        unless  => "test `/bin/systemctl get-default` = '${cluster_id}-${systemd_default_target}.target'",
-        require => [Package['systemd'], File["/etc/systemd/system/${cluster_id}-${systemd_default_target}.target"]]
-    }
-
-    /* Reload systemd deamon */
-    exec { 'systemd_daemon_reload':
-        command         => 'systemctl daemon-reload',
-        refreshonly     => true,
-        require         => Package['systemd']
-    }
-
-    /* Setup message */
-    class { 'basic_settings::message':
-        server_fdqn     => $server_fdqn,
-        mail_to         => $systemd_notify_mail,
-        mail_package    => $mail_package,
-        require         => Package['snapd']
+    /* Set APT services */
+    class { 'basic_settings::apt_services':
+        require => Class['basic_settings::systemd']
     }
 
     /* Set timezone */
@@ -350,7 +273,7 @@ class basic_settings(
         timezone        => $server_timezone,
         ntp_extra_pools => $systemd_ntp_extra_pools,
         install_options => $backports_install_options,
-        require         => Exec['source_backports']
+        require         => Exec['basic_settings_source_backports']
     }
 
     /* Setup kernel */
@@ -364,58 +287,11 @@ class basic_settings(
     class { 'basic_settings::network':
         firewall_package    => $firewall_package,
         install_options     => $backports_install_options,
-        require             => Exec['source_backports']
+        require             => Exec['basic_settings_source_backports']
     }
 
-    /* Check if OS is Ubuntul For the next step we need systemd package */
-    if ($os_parent == 'ubuntu') {
-        /* Disable motd news */
-        file { '/etc/default/motd-news':
-            ensure  => file,
-            mode    => '0644',
-            content => "ENABLED=0\n",
-            require => Package['systemd']
-        }
-
-        /* Ensure that motd-news is stopped */
-        service { 'motd-news.timer':
-            ensure      => stopped,
-            enable      => false,
-            require     => File['/etc/default/motd-news'],
-            subscribe   => File['/etc/default/motd-news']
-        }
-    }
-
-    /* Disable floppy */
-    file { '/etc/modprobe.d/blacklist-floppy.conf':
-        ensure  => file,
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        content => "blacklist floppy\n"
-    }
-
-    /* Enable multipathd service */
-    service { 'multipathd':
-        ensure  => true,
-        enable  => true,
-        require => Package['multipath-tools-boot']
-    }
-
-    /* Create multipart config */
-    file { '/etc/multipath.conf':
-        ensure  => file,
-        source  => 'puppet:///modules/basic_settings/multipath.conf',
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        notify  => Service['multipathd']
-    }
-
-    /* Ensure that getty is stopped */
-    service { 'getty@tty*':
-        ensure      => stopped,
-        enable      => false
+    /* Set IO */
+    class { 'basic_settings::io':
     }
 
     /* Check if we need sury */
@@ -426,7 +302,7 @@ class basic_settings(
                 exec { 'source_sury_php':
                     command     => "printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['source_list_reload'],
+                    notify      => Exec['basic_settings_source_list_reload'],
                     require     => [Package['curl'], Package['gnupg']]
                 }
             }
@@ -434,7 +310,7 @@ class basic_settings(
                 exec { 'source_sury_php':
                     command     => "curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; dpkg -i /tmp/debsuryorg-archive-keyring.deb; printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['source_list_reload'],
+                    notify      => Exec['basic_settings_source_list_reload'],
                     require     => [Package['curl'], Package['gnupg']]
                 }
             }
@@ -445,7 +321,7 @@ class basic_settings(
         exec { 'source_sury_php':
             command     => 'rm /etc/apt/sources.list.d/sury_php.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     }
 
@@ -454,7 +330,7 @@ class basic_settings(
         exec { 'source_nginx':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
     } else {
@@ -462,7 +338,7 @@ class basic_settings(
         exec { 'source_nginx':
             command     => 'rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
         }
     }
 
@@ -471,7 +347,7 @@ class basic_settings(
         exec { 'source_proxmox':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
     } else {
@@ -479,7 +355,7 @@ class basic_settings(
         exec { 'source_proxmox':
             command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     }
 
@@ -509,7 +385,7 @@ class basic_settings(
         exec { 'source_mysql':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg'], File['source_mysql_key']]
         }
     } else {
@@ -517,7 +393,7 @@ class basic_settings(
         exec { 'source_mysql':
             command     => 'rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     }
 
@@ -526,7 +402,7 @@ class basic_settings(
         exec { 'source_mongodb':
             command     => "printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
 
@@ -545,7 +421,7 @@ class basic_settings(
         exec { 'source_mongodb':
             command     => 'rm /etc/apt/sources.list.d/mongodb.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload']
         }
     }
 
@@ -554,7 +430,7 @@ class basic_settings(
         exec { 'source_nodejs':
             command     => "curl -fsSL https://deb.nodesource.com/setup_${nodejs_version}.x | bash - &&\\",
             unless      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => Package['curl']
         }
 
@@ -573,7 +449,7 @@ class basic_settings(
         exec { 'source_nodejs':
             command     => 'rm /etc/apt/sources.list.d/nodesource.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['source_list_reload'],
+            notify      => Exec['basic_settings_source_list_reload'],
             require     => Package['nodejs']
         }
     }
@@ -612,13 +488,55 @@ class basic_settings(
         }
     }
 
-    /* Setup APT */
-    class { 'basic_settings::apt':
-        unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
-        unattended_upgrades_block_packages         => $unattended_upgrades_block_packages,
-        server_fdqn                                => $server_fdqn,
-        mail_to                                    => $systemd_notify_mail,
-        require                                    => Package['snapd']
+    /* Setup sudoers config file */
+    file { '/etc/sudoers':
+        ensure  => file,
+        mode    => '0440',
+        owner   => 'root',
+        group   => 'root',
+        content => template('basic_settings/sudoers')
+    }
+
+    /* Setup sudoers dir */
+    if ($sudoers_dir_enable) {
+        file { '/etc/sudoers.d':
+            ensure  => directory,
+            purge   => true,
+            recurse => true,
+            force   => true,
+        }
+    }
+
+    /* Check if OS is Ubuntul For the next step we need systemd package */
+    if ($os_parent == 'ubuntu') {
+        /* Disable motd news */
+        file { '/etc/default/motd-news':
+            ensure  => file,
+            mode    => '0644',
+            content => "ENABLED=0\n",
+            require => Package['systemd']
+        }
+
+        /* Ensure that motd-news is stopped */
+        service { 'motd-news.timer':
+            ensure      => stopped,
+            enable      => false,
+            require     => File['/etc/default/motd-news'],
+            subscribe   => File['/etc/default/motd-news']
+        }
+    }
+
+    /* Ensure that getty is stopped */
+    service { 'getty@tty*':
+        ensure      => stopped,
+        enable      => false
+    }
+
+    /* Setup development */
+    class { 'basic_settings::development':
+        gcc_version     => $gcc_version,
+        install_options => $backports_install_options,
+        require         => Exec['basic_settings_source_backports']
     }
 
     /* Setup Puppet */

@@ -47,7 +47,7 @@ class basic_settings::kernel(
         }
 
         /* Reload sysctl deamon */
-        exec { 'sysctl_reload':
+        exec { 'kernel_sysctl_reload':
             command => 'bash -c "/usr/bin/systemctl start dev-hugepages-shmmax.service && sysctl --system"',
             refreshonly => true
         }
@@ -74,7 +74,7 @@ class basic_settings::kernel(
         }
 
         /* Reload sysctl deamon */
-        exec { 'sysctl_reload':
+        exec { 'kernel_sysctl_reload':
             command => 'sysctl --system',
             refreshonly => true
         }
@@ -83,11 +83,11 @@ class basic_settings::kernel(
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
         ensure  => file,
-        content  => template('basic_settings/sysctl.conf'),
+        content  => template('basic_settings/kernel/sysctl.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload']
+        notify  => Exec['kernel_sysctl_reload']
     }
 
     /* Create sysctl config  */
@@ -101,11 +101,11 @@ class basic_settings::kernel(
     /* Create sysctl network config  */
     file { '/etc/sysctl.d/20-network-security.conf':
         ensure  => file,
-        content  => template('basic_settings/sysctl/network.conf'),
+        content  => template('basic_settings/kernel/sysctl/network.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Exec['sysctl_reload']
+        notify  => Exec['kernel_sysctl_reload']
     }
 
     /* Setup TCP */
@@ -120,7 +120,7 @@ class basic_settings::kernel(
             exec { 'tcp_congestion_control':
                 command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
                 onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
-                notify      => Exec['sysctl_reload']
+                notify      => Exec['kernel_sysctl_reload']
             }
         }
     }

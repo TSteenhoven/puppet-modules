@@ -40,11 +40,30 @@ class basic_settings::network(
     }
 
     /* Start nftables */
-    if ($firewall_package == 'nftables') {
+    if ($firewall_package == 'nftables' or $firewall_package == 'firewalld') {
         service { "${firewall_package}":
             ensure      => running,
             enable      => true,
             require     => Package[$firewall_package]
+        }
+
+        if (defined(Class['basic_settings::message'])) {
+            /* Reload systemd deamon */
+            exec { 'network_firewall_systemd_daemon_reload':
+                command         => 'systemctl daemon-reload',
+                refreshonly     => true,
+                require         => Package['systemd']
+            }
+
+            /* Create drop in for firewall service */
+            basic_settings::systemd_drop_in { "${firewall_package}_notify_failed":
+                target_unit     => "${firewall_package}.service",
+                unit            => {
+                    'OnFailure' => 'notify-failed@%i.service'
+                },
+                daemon_reload   => 'network_firewall_systemd_daemon_reload',
+                require         => Package[$firewall_package]
+            }
         }
     }
 
@@ -62,7 +81,7 @@ class basic_settings::network(
     /* Create RX buffer script */
     file { '/usr/local/sbin/rxbuffer':
         ensure  => file,
-        source  => 'puppet:///modules/basic_settings/rxbuffer',
+        source  => 'puppet:///modules/basic_settings/network/rxbuffer',
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # High important
