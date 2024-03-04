@@ -20,7 +20,7 @@ class basic_settings::pro(
             if ($enable and $snap_enable) {
 
             } else {
-                service { 'ubuntu-advantage.service':
+                service { ['ubuntu-advantage.service', 'ua-reboot-cmds.service', 'ua-timer.timer']:
                     ensure      => stopped,
                     enable      => false
                 }
