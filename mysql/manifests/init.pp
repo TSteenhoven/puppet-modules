@@ -2,6 +2,7 @@ class mysql (
         $root_password = '',
         $settings = {},
         $package_name = 'mysql',
+        $package_version = '8.0',
         $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
         $nice_level = 12
     ) {
@@ -37,7 +38,13 @@ class mysql (
     /* Basic variable */
     $script_dir = '/var/local/puppet-mysql'
     $script_path = "${script_dir}/grant.sh"
-    $version = $basic_settings::mysql_version
+
+    /* Get version */
+    if (defined(Class['basic_settings::package_mysql'])) {
+        $version = $basic_settings::package_mysql::version
+    } else {
+        $version = $package_version
+    }
 
     /* Create script dir */
     file { $script_dir:

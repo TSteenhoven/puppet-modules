@@ -189,12 +189,12 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'linux-tools-common', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'bc', 'ca-certificates', 'coreutils', 'curl', 'dirmngr', 'gnupg', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'bc', 'coreutils', 'dirmngr', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
@@ -355,39 +355,18 @@ class basic_settings(
 
     /* Check if variable mysql is true; if true, install new source list and key */
     if ($mysql_enable and $mysql_allow) {
-        /* Get source name */
-        case $mysql_version {
-            '8.0': {
-                $mysql_key = 'mysql-8.key'
-            }
-            default: {
-                $mysql_key = 'mysql-7.key'
-            }
-        }
-
-        /* Create MySQL key */
-        file { 'source_mysql_key':
-            ensure  => file,
-            path    => '/usr/share/keyrings/mysql.key',
-            source  => "puppet:///modules/basic_settings/mysql/${mysql_key}",
-            owner   => 'root',
-            group   => 'root',
-            mode    => '0644'
-        }
-
-        /* Set source */
-        exec { 'source_mysql':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${mysql_version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | sudo tee /usr/share/keyrings/mysql.gpg >/dev/null",
-            unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => [Package['curl'], Package['gnupg'], File['source_mysql_key']]
+        class { 'basic_settings::package_mysql':
+            enable      => true,
+            version     => $mysql_version,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
         }
     } else {
-        /* Remove mysql repo */
-        exec { 'source_mysql':
-            command     => 'rm /etc/apt/sources.list.d/mysql.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
-            notify      => Exec['basic_settings_source_list_reload']
+        class { 'basic_settings::package_mysql':
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 
