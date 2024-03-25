@@ -5,7 +5,7 @@ class basic_settings::systemd(
 ) {
 
     /* Install packages */
-    package { ['systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd']:
+    package { ['dbus', 'dbus-user-session', 'systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd']:
         ensure          => installed,
         install_options => $install_options
     }

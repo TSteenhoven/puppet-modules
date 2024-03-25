@@ -34,7 +34,7 @@ class basic_settings::network(
     }
 
     /* Install package */
-    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr', 'networkd-dispatcher']:
+    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr']:
         ensure => installed,
         require => Package['ifupdown']
     }
@@ -81,17 +81,6 @@ class basic_settings::network(
         }
     }
 
-    /* Set script that's set the firewall */
-    if ($firewall_command != '') {
-        file { 'firewall_networkd_dispatche':
-            ensure  => file,
-            path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
-            mode    => '0755',
-            content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
-            require => Package[$firewall_package]
-        }
-    }
-
     /* Create RX buffer script */
     file { '/usr/local/sbin/rxbuffer':
         ensure  => file,
@@ -101,20 +90,46 @@ class basic_settings::network(
         mode    => '0755', # High important
     }
 
-    /* Create RX buffer script */
-    file { '/etc/networkd-dispatcher/routable.d/rxbuffer':
-        ensure  => file,
-        content  => template('basic_settings/network/rxbuffer'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0755', # High important,
-        require => File['/usr/local/sbin/rxbuffer']
-    }
+    if (defined(Class['basic_settings::systemd'])) {
+        /* Install package */
+        package { 'networkd-dispatcher':
+            ensure => installed,
+            require => Package['ifupdown']
+        }
 
-    /* Ensure that networkd services is always running */
-    service { ['systemd-networkd.service', 'networkd-dispatcher.service']:
-        ensure      => running,
-        enable      => true,
-        require     => [Package['systemd'], Package['networkd-dispatcher']]
+        /* Set script that's set the firewall */
+        if ($firewall_command != '') {
+            file { 'firewall_networkd_dispatche':
+                ensure  => file,
+                path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
+                mode    => '0755',
+                content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
+                require => Package[$firewall_package]
+            }
+        }
+
+        /* Create RX buffer script */
+        file { '/etc/networkd-dispatcher/routable.d/rxbuffer':
+            ensure  => file,
+            content  => template('basic_settings/network/rxbuffer'),
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0755', # High important,
+            require => File['/usr/local/sbin/rxbuffer']
+        }
+
+        /* Ensure that networkd services is always running */
+        service { ['systemd-networkd.service', 'networkd-dispatcher.service']:
+            ensure      => running,
+            enable      => true,
+            require     => [Package['systemd'], Package['networkd-dispatcher']]
+        }
+
+        /* Create symlink to network service */
+        file { '/usr/lib/systemd/system/dbus-org.freedesktop.network1.service':
+            ensure  => 'link',
+            target  => '/usr/lib/systemd/system/systemd-networkd.service',
+            require => Package['dbus']
+        }
     }
 }

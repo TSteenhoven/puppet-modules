@@ -6,7 +6,7 @@ class basic_settings::kernel(
     /* Install extra packages when Ubuntu */
     if ($operatingsystem == 'Ubuntu') {
         $os_version = $::os['release']['major']
-        package { "linux-image-generic-hwe-${os_version}":
+        package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
             ensure  => installed
         }
     }
