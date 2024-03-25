@@ -189,7 +189,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'cloud-init', 'installation-report', 'linux-tools-common', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['apport', 'at-spi2-core', 'chrony', 'installation-report', 'linux-tools-common', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 

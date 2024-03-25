@@ -4,6 +4,11 @@ class basic_settings::puppet(
     $server_dir     = 'puppetserver'
 ) {
 
+    /* Remove unnecessary packages */
+    package { 'cloud-init':
+        ensure  => purged
+    }
+
     /* Disable service */
     service { 'puppet':
         ensure  => undef,

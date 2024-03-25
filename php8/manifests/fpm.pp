@@ -52,6 +52,12 @@ class php8::fpm(
 
     /* Create drop in for Nginx service */
     if (defined(Class['nginx'])) {
+        /* Remove unnecessary package */
+        package { "libapache2-mod-php8.${minor_version}":
+            ensure => purged
+        }
+
+        /* Create drop in for nginx service */
         basic_settings::systemd_drop_in { 'nginx_php_dependency':
             target_unit     => 'nginx.service',
             unit            => {
