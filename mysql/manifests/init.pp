@@ -138,6 +138,7 @@ class mysql (
             unit            => {
                 'Wants' => 'mysql.service'
             },
+            daemon_reload   => 'mysql_systemd_daemon_reload',
             require         => Package['mysql-server']
         }
     } else {
