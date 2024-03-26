@@ -193,7 +193,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['dconf-service', 'at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 

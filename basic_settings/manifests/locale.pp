@@ -8,9 +8,22 @@ class basic_settings::locale(
         package { 'locales':
             ensure  => installed
         }
+
+        /* Remove default locale file */
+        file { '/etc/default/locale':
+            ensure  => absent
+        }
     } else {
+        /* Remove packages */
         package { 'locales':
             ensure  => purged
+        }
+
+        /* Install default locale file */
+        file { '/etc/default/locale':
+            ensure  => file,
+            mode    => '0644',
+            content => "LANG=C.UTF-8\n"
         }
     }
 
