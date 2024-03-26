@@ -14,7 +14,7 @@ class basic_settings::kernel(
     }
 
     /* Create group for hugetlb only when hugepages is given */
-    if ($hugepages > 0) {
+    if (defined(Package['systemd']) and $hugepages > 0) {
         # Set variable 
         $hugepages_shm_group = 7000
 
@@ -76,10 +76,12 @@ class basic_settings::kernel(
         }
 
         /* Remove drop in for dev-hugepages mount */
-        basic_settings::systemd_drop_in { 'hugetlb_hugepages':
-            ensure          => absent,
-            target_unit     => 'dev-hugepages.mount',
-            require         => Group['hugetlb']
+        if (defined(Package['systemd'])) {
+            basic_settings::systemd_drop_in { 'hugetlb_hugepages':
+                ensure          => absent,
+                target_unit     => 'dev-hugepages.mount',
+                require         => Group['hugetlb']
+            }
         }
 
         /* Reload sysctl deamon */

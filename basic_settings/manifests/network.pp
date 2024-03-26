@@ -53,6 +53,15 @@ class basic_settings::network(
         }
     }
 
+    /* Reload systemd deamon */
+    if (defined(Class['basic_settings::systemd']) or defined(Class['basic_settings::message'])) {
+        exec { 'network_firewall_systemd_daemon_reload':
+            command         => 'systemctl daemon-reload',
+            refreshonly     => true,
+            require         => Package['systemd']
+        }
+    }
+
     /* Start nftables */
     if ($firewall_package == 'nftables' or $firewall_package == 'firewalld') {
         service { "${firewall_package}":
@@ -62,13 +71,6 @@ class basic_settings::network(
         }
 
         if (defined(Class['basic_settings::message'])) {
-            /* Reload systemd deamon */
-            exec { 'network_firewall_systemd_daemon_reload':
-                command         => 'systemctl daemon-reload',
-                refreshonly     => true,
-                require         => Package['systemd']
-            }
-
             /* Create drop in for firewall service */
             basic_settings::systemd_drop_in { "${firewall_package}_notify_failed":
                 target_unit     => "${firewall_package}.service",
@@ -90,7 +92,7 @@ class basic_settings::network(
         mode    => '0755', # High important
     }
 
-    if (defined(Class['basic_settings::systemd'])) {
+    if (defined(Package['systemd'])) {
         /* Install package */
         package { 'networkd-dispatcher':
             ensure => installed,
@@ -126,11 +128,13 @@ class basic_settings::network(
         }
 
         /* Create symlink to network service */
-        file { '/usr/lib/systemd/system/dbus-org.freedesktop.network1.service':
-            ensure  => 'link',
-            target  => '/usr/lib/systemd/system/systemd-networkd.service',
-            notify  => Exec['network_firewall_systemd_daemon_reload'],
-            require => Package['dbus']
+        if (defined(Package['dbus'])) {
+            file { '/usr/lib/systemd/system/dbus-org.freedesktop.network1.service':
+                ensure  => 'link',
+                target  => '/usr/lib/systemd/system/systemd-networkd.service',
+                notify  => Exec['network_firewall_systemd_daemon_reload'],
+                require => Package['dbus']
+            }
         }
     }
 }
