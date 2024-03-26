@@ -95,7 +95,7 @@ class basic_settings::kernel(
     }
 
     /* Basic system packages */
-    package { [ 'bc', 'coreutils', 'lsb-release']:
+    package { ['bc', 'coreutils', 'lsb-release']:
         ensure  => installed
     }
 

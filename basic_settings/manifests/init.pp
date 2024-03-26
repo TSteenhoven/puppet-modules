@@ -1,10 +1,12 @@
 class basic_settings(
         $backports                                  = false,
         $cluster_id                                 = 'core',
+        $docs_enable                                = false,
         $firewall_package                           = 'nftables',
         $kernel_hugepages                           = 0,
         $kernel_tcp_congestion_control              = 'brr',
         $kernel_tcp_fastopen                        = 3,
+        $locale_enable                              = false,
         $mail_package                               = 'postfix',
         $mongodb_enable                             = false,
         $mongodb_version                            = '4.4',
@@ -19,7 +21,7 @@ class basic_settings(
         $pro_enable                                 = false,
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
-        $samba_client                               = false,
+        $samba_client_enable                        = false,
         $server_fdqn                                = $fqdn,
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
@@ -199,17 +201,6 @@ class basic_settings(
         ensure  => installed
     }
 
-    /* Check if samba client is needed */
-    if ($samba_client)  {
-        package { 'smbclient':
-            ensure  => installed
-        }
-    } else {
-        package { 'smbclient':
-            ensure  => purged
-        }
-    }
-
     /* Reload source list */
     exec { 'basic_settings_source_list_reload':
         command     => 'apt-get update',
@@ -296,8 +287,14 @@ class basic_settings(
         require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
     }
 
+    /* Set timezone */
+    class { 'basic_settings::locale':
+        docs_enable         => $docs_enable
+    }
+
     /* Set IO */
     class { 'basic_settings::io':
+        samba_client_enable => $samba_client_enable
     }
 
     /* Check if we need sury */

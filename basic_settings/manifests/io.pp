@@ -1,10 +1,21 @@
 class basic_settings::io(
-
+    $samba_client_enable = false
 ) {
 
     /* Install default development packages */
     package { 'multipath-tools-boot':
         ensure  => installed
+    }
+
+    /* Check if samba client is needed */
+    if ($samba_client_enable)  {
+        package { 'smbclient':
+            ensure  => installed
+        }
+    } else {
+        package { 'smbclient':
+            ensure  => purged
+        }
     }
 
     /* Disable floppy */
