@@ -1,4 +1,5 @@
 class basic_settings(
+        $adwaita_icon_theme_enable                  = false,
         $backports                                  = false,
         $cluster_id                                 = 'core',
         $docs_enable                                = false,
@@ -192,7 +193,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['adwaita-icon-theme', 'at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
@@ -451,8 +452,8 @@ class basic_settings(
             ensure  => installed
         }
 
-        /* Remove java extensions */
-        package { 'ca-certificates-java':
+        /* Install java extensions */
+        package { [ 'adwaita-icon-theme', 'ca-certificates-java']:
             ensure  => installed,
             require => Package['openjdk']
         }
@@ -461,6 +462,19 @@ class basic_settings(
         package { 'openjdk':
             name    => 'openjdk*',
             ensure  => purged
+        }
+
+        /* Check if we need to install adwaita theme */
+        if ($adwaita_icon_theme_enable) {
+            package { 'adwaita-icon-theme':
+                ensure  => installed,
+                require => Package['openjdk']
+            }
+        } else {
+            package { 'adwaita-icon-theme':
+                ensure  => purged,
+                require => Package['openjdk']
+            }
         }
 
         /* Remove java extensions */
