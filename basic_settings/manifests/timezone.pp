@@ -69,7 +69,7 @@ class basic_settings::timezone(
     }
 
     /* Remove unnecessary packages */
-    package { ['ntp', 'ntpdate', 'ntpsec']:
+    package { ['chrony', 'ntp', 'ntpdate', 'ntpsec']:
         ensure  => purged,
         require => Package['systemd-timesyncd']
     }

@@ -19,6 +19,7 @@ class basic_settings(
         $pro_enable                                 = false,
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
+        $samba_client                               = false,
         $server_fdqn                                = $fqdn,
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
@@ -189,13 +190,24 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'at-spi2-core', 'chrony', 'installation-report', 'linux-tools-common', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['adwaita-icon-theme', 'at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
         ensure  => purged
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'bc', 'coreutils', 'dirmngr', 'libpam-modules', 'libssl-dev', 'lsb-release', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'libpam-modules', 'libssl-dev', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
+    }
+
+    /* Check if samba client is needed */
+    if ($samba_client)  {
+        package { 'smbclient':
+            ensure  => installed
+        }
+    } else {
+        package { 'smbclient':
+            ensure  => purged
+        }
     }
 
     /* Reload source list */

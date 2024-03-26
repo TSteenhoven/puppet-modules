@@ -34,7 +34,7 @@ class basic_settings::network(
     }
 
     /* Install package */
-    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr']:
+    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat']:
         ensure => installed,
         require => Package['ifupdown']
     }
@@ -129,6 +129,7 @@ class basic_settings::network(
         file { '/usr/lib/systemd/system/dbus-org.freedesktop.network1.service':
             ensure  => 'link',
             target  => '/usr/lib/systemd/system/systemd-networkd.service',
+            notify  => Exec['network_firewall_systemd_daemon_reload'],
             require => Package['dbus']
         }
     }

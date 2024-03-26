@@ -6,8 +6,10 @@ class basic_settings::kernel(
     /* Install extra packages when Ubuntu */
     if ($operatingsystem == 'Ubuntu') {
         $os_version = $::os['release']['major']
-        package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
-            ensure  => installed
+        if ($os_version != '24.04') {
+            package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
+                ensure  => installed
+            }
         }
     }
 
@@ -85,6 +87,16 @@ class basic_settings::kernel(
             command => 'sysctl --system',
             refreshonly => true
         }
+    }
+
+    /* Remove unnecessary packages */
+    package { ['apport', 'installation-report', 'linux-tools-common', 'thermald', 'upower']:
+        ensure  => purged
+    }
+
+    /* Basic system packages */
+    package { [ 'bc', 'coreutils', 'lsb-release']:
+        ensure  => installed
     }
 
     /* Create sysctl config  */
