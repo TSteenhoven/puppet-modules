@@ -43,10 +43,6 @@ define nginx::server(
     $php_fpm_directives                 = [],
 
     $allow_directories                  = false,
-    $http_options_allow                 = true,
-    $http_options_allow_origin          = '*',
-    $http_options_allow_methods         = 'GET, POST',
-    $http_options_allow_headers         = 'origin, x-requested-with, content-type, accept, cache-control',
     $try_files_enable                   = true,
     $catch_all_target                   = undef,
 
