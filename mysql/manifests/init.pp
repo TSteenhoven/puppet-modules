@@ -62,13 +62,6 @@ class mysql (
         mode    => '0755'
     }
 
-    /* Reload systemd deamon */
-    exec { 'mysql_systemd_daemon_reload':
-        command     => 'systemctl daemon-reload',
-        refreshonly => true,
-        require     => Package['systemd']
-    }
-
     /* Do only the following steps when package name is mysql */
     if ($package_name == 'mysql') {
         /* Default file is different than normal install */
@@ -79,15 +72,8 @@ class mysql (
             ensure => present
         }
 
-        /* Disable MySQL server service */
-        service { 'mysql':
-            ensure  => undef,
-            enable  => false,
-            require => Package['mysql-server']
-        }
-
         /* Enable hugepages */
-        if ($basic_settings::kernel_hugepages > 0) {
+        if (defined(Class['basic_settings']) and $basic_settings::kernel_hugepages > 0) {
             exec { 'mysql_hugetlb':
                 unless => '/bin/getent group hugetlb | /bin/cut -d: -f4 | /bin/grep -q mysql',
                 command => '/usr/sbin/usermod -a -G hugetlb mysql',
@@ -95,51 +81,74 @@ class mysql (
             }
         }
 
-        /* Create drop in for PHP FPM service */
-        if (defined(Class['php8::fpm'])) {
-            basic_settings::systemd_drop_in { "php8_${$php8::minor_version}_mysql_dependency":
-                target_unit     => "php8.${$php8::minor_version}-fpm.service",
-                unit            => {
-                    'After'     => 'mysql.service',
-                    'BindsTo'   => 'mysql.service'
+        if (defined(Package['systemd'])) {
+            /* Disable MySQL server service */
+            service { 'mysql':
+                ensure  => undef,
+                enable  => false,
+                require => Package['mysql-server']
+            }
+
+            /* Reload systemd deamon */
+            exec { 'mysql_systemd_daemon_reload':
+                command     => 'systemctl daemon-reload',
+                refreshonly => true,
+                require     => Package['systemd']
+            }
+
+            /* Create drop in for PHP FPM service */
+            if (defined(Class['php8::fpm'])) {
+                basic_settings::systemd_drop_in { "php8_${$php8::minor_version}_mysql_dependency":
+                    target_unit     => "php8.${$php8::minor_version}-fpm.service",
+                    unit            => {
+                        'After'     => 'mysql.service',
+                        'BindsTo'   => 'mysql.service'
+                    },
+                    daemon_reload   => 'mysql_systemd_daemon_reload',
+                    require         => Class['php8::fpm']
+                }
+            } elsif (defined(Class['basic_settings'])) {
+                /* Create drop in for services target */
+                basic_settings::systemd_drop_in { 'mysql_dependency':
+                    target_unit     => "${basic_settings::cluster_id}-services.target",
+                    unit            => {
+                        'BindsTo'   => 'mysql.service'
+                    },
+                    daemon_reload   => 'mysql_systemd_daemon_reload',
+                    require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+                }
+            }
+
+            /* Get unit */
+            if (defined(Class['basic_settings::message'])) {
+                $mysql_unit = {
+                    'OnFailure' => 'notify-failed@%i.service'
+                }
+            } else {
+                $mysql_unit = {}
+            }
+
+            /* Create drop in for nginx service */
+            basic_settings::systemd_drop_in { 'mysql_settings':
+                target_unit     => 'mysql.service',
+                unit            => $mysql_unit,
+                service         => {
+                    'LimitMEMLOCK'  => 'infinity',
+                    'Nice'          => "-${nice_level}"
                 },
                 daemon_reload   => 'mysql_systemd_daemon_reload',
-                require         => Class['php8::fpm']
+                require         => Package['mysql-server']
             }
-        } else {
-            /* Create drop in for services target */
-            basic_settings::systemd_drop_in { 'mysql_dependency':
-                target_unit     => "${basic_settings::cluster_id}-services.target",
+
+            /* Create drop in for puppet service */
+            basic_settings::systemd_drop_in { 'puppet_mysql_dependency':
+                target_unit     => 'puppet.service',
                 unit            => {
-                    'BindsTo'   => 'mysql.service'
+                    'Wants' => 'mysql.service'
                 },
                 daemon_reload   => 'mysql_systemd_daemon_reload',
-                require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+                require         => Package['mysql-server']
             }
-        }
-
-        /* Create drop in for nginx service */
-        basic_settings::systemd_drop_in { 'mysql_settings':
-            target_unit     => 'mysql.service',
-            unit            => {
-                'OnFailure' => 'notify-failed@%i.service'
-            },
-            service         => {
-                'LimitMEMLOCK'  => 'infinity',
-                'Nice'          => "-${nice_level}"
-            },
-            daemon_reload   => 'mysql_systemd_daemon_reload',
-            require         => Package['mysql-server']
-        }
-
-        /* Create drop in for puppet service */
-        basic_settings::systemd_drop_in { 'puppet_mysql_dependency':
-            target_unit     => 'puppet.service',
-            unit            => {
-                'Wants' => 'mysql.service'
-            },
-            daemon_reload   => 'mysql_systemd_daemon_reload',
-            require         => Package['mysql-server']
         }
     } else {
         /* Default file for normal install */
@@ -164,30 +173,32 @@ class mysql (
         mode    => '0700', # Only root
     }
 
-    /* Create systemd service */
-    basic_settings::systemd_service { 'automysqlbackup':
-        description => 'Automysqlbackup service',
-        service     => {
-            'Type'          => 'oneshot',
-            'User'          => 'root',
-            'PrivateTmp'    => 'true',
-            'ExecStart'     => '/usr/local/sbin/automysqlbackup',
-            'Nice'          => '19',
-        },
-        unit            => {
-            'After'     => "${package_name}.service",
-            'BindsTo'   => "${package_name}.service"
-        },
-        daemon_reload   => 'mysql_systemd_daemon_reload',
-    }
+    if (defined(Package['systemd'])) {
+        /* Create systemd service */
+        basic_settings::systemd_service { 'automysqlbackup':
+            description => 'Automysqlbackup service',
+            service     => {
+                'Type'          => 'oneshot',
+                'User'          => 'root',
+                'PrivateTmp'    => 'true',
+                'ExecStart'     => '/usr/local/sbin/automysqlbackup',
+                'Nice'          => '19',
+            },
+            unit            => {
+                'After'     => "${package_name}.service",
+                'BindsTo'   => "${package_name}.service"
+            },
+            daemon_reload   => 'mysql_systemd_daemon_reload',
+        }
 
-    /* Create systemd timer */
-    basic_settings::systemd_timer { 'automysqlbackup':
-        description     => 'Automysqlbackup timer',
-        timer       => {
-            'OnCalendar' => '*-*-* 5:00'
-        },
-        daemon_reload   => 'mysql_systemd_daemon_reload',
+        /* Create systemd timer */
+        basic_settings::systemd_timer { 'automysqlbackup':
+            description     => 'Automysqlbackup timer',
+            timer       => {
+                'OnCalendar' => '*-*-* 5:00'
+            },
+            daemon_reload   => 'mysql_systemd_daemon_reload',
+        }
     }
 
     /* Create mysql cnf */

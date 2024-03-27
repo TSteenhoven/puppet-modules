@@ -198,7 +198,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'libpam-modules', 'libssl-dev', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'libpam-modules', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
@@ -290,6 +290,7 @@ class basic_settings(
 
     /* Set timezone */
     class { 'basic_settings::locale':
+        enable              => $locale_enable,
         docs_enable         => $docs_enable
     }
 

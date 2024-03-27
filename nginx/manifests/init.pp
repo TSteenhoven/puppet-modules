@@ -26,42 +26,54 @@ class nginx(
     }
 
     /* Disable service */
-    service { 'nginx':
-        ensure  => undef,
-        enable  => false,
-        require => Package['nginx']
-    }
+    if (defined(Package['systemd'])) {
+        /* Disable service */
+        service { 'nginx':
+            ensure  => undef,
+            enable  => false,
+            require => Package['nginx']
+        }
 
-    /* Reload systemd deamon */
-    exec { 'nginx_systemd_daemon_reload':
-        command     => 'systemctl daemon-reload',
-        refreshonly => true,
-        require     => Package['systemd']
-    }
+        /* Reload systemd deamon */
+        exec { 'nginx_systemd_daemon_reload':
+            command     => 'systemctl daemon-reload',
+            refreshonly => true,
+            require     => Package['systemd']
+        }
 
-    /* Create drop in for x target */
-    basic_settings::systemd_drop_in { 'nginx_dependency':
-        target_unit     => "${basic_settings::cluster_id}-${target}.target",
-        unit            => {
-            'BindsTo'   => 'nginx.service'
-        },
-        daemon_reload   => 'nginx_systemd_daemon_reload',
-        require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-${target}"]
-    }
+        /* Create drop in for x target */
+        if (defined(Class['basic_settings::systemd'])) {
+            basic_settings::systemd_drop_in { 'nginx_dependency':
+                target_unit     => "${basic_settings::systemd::cluster_id}-${target}.target",
+                unit            => {
+                    'BindsTo'   => 'nginx.service'
+                },
+                daemon_reload   => 'nginx_systemd_daemon_reload',
+                require         => Basic_settings::Systemd_target["${basic_settings::systemd::cluster_id}-${target}"]
+            }
+        }
 
-    /* Create drop in for nginx service */
-    basic_settings::systemd_drop_in { 'nginx_settings':
-        target_unit     => 'nginx.service',
-        unit            => {
-            'OnFailure' => 'notify-failed@%i.service'
-        },
-        service         => {
-            'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
-            'Nice'          => "-${nice_level}",
-            'LimitNOFILE'   => $limit_file,
-        },
-        daemon_reload   => 'nginx_systemd_daemon_reload',
-        require         => Package['nginx']
+        /* Get unit */
+        if (defined(Class['basic_settings::message'])) {
+            $nginx_unit = {
+                'OnFailure' => 'notify-failed@%i.service'
+            }
+        } else {
+            $nginx_unit = {}
+        }
+
+        /* Create drop in for nginx service */
+        basic_settings::systemd_drop_in { 'nginx_settings':
+            target_unit     => 'nginx.service',
+            unit            => $nginx_unit,
+            service         => {
+                'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
+                'Nice'          => "-${nice_level}",
+                'LimitNOFILE'   => $limit_file,
+            },
+            daemon_reload   => 'nginx_systemd_daemon_reload',
+            require         => Package['nginx']
+        }
     }
 
     /* Create log file */
