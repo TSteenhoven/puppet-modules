@@ -44,7 +44,7 @@ define nginx::server(
 
     $allow_directories                  = false,
     $try_files_enable                   = true,
-    $catch_all_target                   = undef,
+    $try_files_custom                   = '$uri/ =404',
 
     $client_max_body_size               = undef,
 
