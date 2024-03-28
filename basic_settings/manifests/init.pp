@@ -1,5 +1,6 @@
 class basic_settings(
         $adwaita_icon_theme_enable                  = false,
+        $antivirus_package                          = undef,
         $backports                                  = false,
         $cluster_id                                 = 'core',
         $docs_enable                                = false,
@@ -22,7 +23,6 @@ class basic_settings(
         $pro_enable                                 = false,
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
-        $samba_client_enable                        = false,
         $server_fdqn                                = $fqdn,
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
@@ -283,6 +283,7 @@ class basic_settings(
 
     /* Set network */
     class { 'basic_settings::network':
+        antivirus_package   => $antivirus_package,
         firewall_package    => $firewall_package,
         install_options     => $backports_install_options,
         require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
@@ -296,7 +297,6 @@ class basic_settings(
 
     /* Set IO */
     class { 'basic_settings::io':
-        samba_client_enable => $samba_client_enable
     }
 
     /* Check if we need sury */

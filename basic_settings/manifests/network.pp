@@ -1,5 +1,6 @@
 class basic_settings::network(
     $firewall_package,
+    $antivirus_package = undef,
     $install_options = undef,
 ) {
 
@@ -19,6 +20,18 @@ class basic_settings::network(
         }
         'firewalld': {
             $firewall_command = ''
+            case $antivirus_package {
+                'eset': {
+                    package { 'iptables':
+                        ensure => purged
+                    }
+                }
+                default:  {
+                    package { ['nftables', 'iptables']:
+                        ensure => purged
+                    }
+                }
+            }
         }
     }
 
