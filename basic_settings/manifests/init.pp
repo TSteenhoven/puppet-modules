@@ -5,6 +5,7 @@ class basic_settings(
         $cluster_id                                 = 'core',
         $docs_enable                                = false,
         $firewall_package                           = 'nftables',
+        $kernel_connection_max                      = 4096,
         $kernel_hugepages                           = 0,
         $kernel_tcp_congestion_control              = 'brr',
         $kernel_tcp_fastopen                        = 3,
@@ -277,6 +278,7 @@ class basic_settings(
 
     /* Setup kernel */
     class { 'basic_settings::kernel':
+        connection_max          => $kernel_connection_max,
         hugepages               => $kernel_hugepages,
         tcp_congestion_control  => $kernel_tcp_congestion_control,
         tcp_fastopen            => $kernel_tcp_fastopen

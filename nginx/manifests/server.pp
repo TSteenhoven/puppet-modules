@@ -21,6 +21,7 @@ define nginx::server(
     $http3_enable                       = false,
 
     # Global settings for given ports; This values can only set onces
+    $backlog                            = -1, # -1: Disabled, 0: Kernel; >0: Custom value
     $fastopen                           = 0,
     $reuseport                          = false,
 
@@ -71,12 +72,33 @@ define nginx::server(
 
     /* Check if TCP fast open is enabled */
     if (defined(Class['basic_settings::kernel'])) {
+        /* Check if valid backlog value is given */
+        if ($backlog == 0) {
+            $backlog_active = true
+            $backlog_value = $basic_settings::kernel::max_connections
+        } elsif ($backlog > 0) {
+            $backlog_active = true
+            $backlog_value = $backlog
+        } else {
+            $backlog_active = false
+            $backlog_value = undef
+        }
+
+        /* Check TCP fast open */
         if ($basic_settings::kernel::tcp_fastopen == 3 and $fastopen > 0) {
             $tcp_fastopen = true
         } else {
             $tcp_fastopen = false
         }
     } else {
+        /* Check if valid backlog value is given */
+        if ($backlog > 0) {
+            $backlog_active = true
+            $backlog_value = $backlog
+        } else {
+            $backlog_active = false
+            $backlog_value = undef
+        }
         $tcp_fastopen = false
     }
 

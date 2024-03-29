@@ -1,4 +1,5 @@
 class basic_settings::kernel(
+    $connection_max         = 4096,
     $hugepages              = 0,
     $tcp_congestion_control = 'brr',
     $tcp_fastopen           = 3
