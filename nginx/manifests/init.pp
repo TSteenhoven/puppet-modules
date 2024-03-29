@@ -25,6 +25,9 @@ class nginx(
         require => Package['apache2']
     }
 
+    /* Set PID file */
+    $pid = '/var/run/nginx.pid'
+
     /* Disable service */
     if (defined(Package['systemd'])) {
         /* Disable service */
@@ -55,18 +58,19 @@ class nginx(
 
         /* Get unit */
         if (defined(Class['basic_settings::message'])) {
-            $nginx_unit = {
+            $unit = {
                 'OnFailure' => 'notify-failed@%i.service'
             }
         } else {
-            $nginx_unit = {}
+            $unit = {}
         }
 
         /* Create drop in for nginx service */
         basic_settings::systemd_drop_in { 'nginx_settings':
             target_unit     => 'nginx.service',
-            unit            => $nginx_unit,
+            unit            => $unit,
             service         => {
+                'PIDFile'       => $pid,
                 'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
                 'Nice'          => "-${nice_level}",
                 'LimitNOFILE'   => $limit_file,

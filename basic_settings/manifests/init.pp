@@ -26,6 +26,7 @@ class basic_settings(
         $server_fdqn                                = $fqdn,
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
+        $snap_enable                                = false,
         $sudoers_dir_enable                         = true,
         $sury_enable                                = false,
         $systemd_default_target                     = 'helpers',

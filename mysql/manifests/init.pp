@@ -121,17 +121,17 @@ class mysql (
 
             /* Get unit */
             if (defined(Class['basic_settings::message'])) {
-                $mysql_unit = {
+                $unit = {
                     'OnFailure' => 'notify-failed@%i.service'
                 }
             } else {
-                $mysql_unit = {}
+                $unit = {}
             }
 
             /* Create drop in for nginx service */
             basic_settings::systemd_drop_in { 'mysql_settings':
                 target_unit     => 'mysql.service',
-                unit            => $mysql_unit,
+                unit            => $unit,
                 service         => {
                     'LimitMEMLOCK'  => 'infinity',
                     'Nice'          => "-${nice_level}"
