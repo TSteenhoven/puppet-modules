@@ -75,7 +75,7 @@ define nginx::server(
         /* Check if valid backlog value is given */
         if ($backlog == 0) {
             $backlog_active = true
-            $backlog_value = $basic_settings::kernel::max_connections
+            $backlog_value = $basic_settings::kernel::connection_max
         } elsif ($backlog > 0) {
             $backlog_active = true
             $backlog_value = $backlog
