@@ -2,13 +2,13 @@
 Dit is een uitbreidingsmodule voor jouw Puppet-omgeving, bestaande uit verschillende onderdelen, namelijk `Basic Settings`, `Nginx`, `PHP` en `MySQL`. Deze onderdelen kunnen afzonderlijk worden gebruikt of in combinatie.
 
 ## Installeren ##
-Ga naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando: 
+Navigeer naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando:
 
 ```
 git submodule add https://github.com/DevSysEngineer/puppet-modules.git global-modules
 ```
 
-Voer vervolgens de volgende opdracht uit: 
+Voer vervolgens de volgende opdracht uit:
 
 ```
 git submodule update --init --recursive
@@ -61,6 +61,71 @@ node 'webserver.dev.xxxx.nl' {
         nginx_enable            => true,
         sury_enable             => true,
         systemd_ntp_extra_pools => ['ntp.time.nl']
+    }
+}
+```
+
+## Nginx ##
+Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `basic settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel deze Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`. 
+
+### Voorbeeld ###
+```puppet
+node 'webserver.dev.xxxx.nl' {
+
+    /* Setup Nginx */
+    class { 'nginx':
+        target  => 'helpers',
+        require => Class['basic_settings']
+    }
+
+    /* Create Nginx server for Unifi */
+    nginx::server { 'unifi':
+        docroot                 => undef,
+        server_name             => 'unifi.xxxx.nl',
+        http_enable             => true,
+        http_ipv6               => false,
+        https_enable            => true,
+        https_ipv6              => false,
+        https_force             => true,
+        http2_enable            => true,
+        http3_enable            => true,
+        fastopen                => 64, # Global, works also for other servers
+        reuseport               => true, # Global, works also for other servers
+        ssl_certificate         => '/etc/letsencrypt/live/unifi.xxxx.nl/fullchain.pem',
+        ssl_certificate_key     => '/etc/letsencrypt/live/unifi.xxxx.nl/privkey.pem',
+        php_fpm_enable          => false,
+        try_files_enable        => false,
+        location_directives     => [
+            'proxy_pass https://localhost:8443/; # The Unifi Controller Port',
+            'proxy_set_header Host $host;',
+            'proxy_set_header X-Real-IP $remote_addr;',
+            'proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;',
+        ],
+        access_log              => '/var/log/nginx/unifi_access.log combined buffer=32k flush=1m',
+        error_log               => '/var/log/nginx/unifi_error.log',
+        locations               => [
+            {
+                path                    => '/wss/',
+                location_directives     => [
+                    '# Needed to allow the websockets to forward well.',
+                    '# Information adopted from here: https://community.ubnt.com/t5/EdgeMAX/Access-Edgemax-gui-via-nginx-reverse-proxy-websocket-problem/td-p/1544354',
+                    'proxy_pass https://localhost:8443;',
+                    'proxy_http_version 1.1;',
+                    'proxy_buffering off;',
+                    'proxy_set_header Upgrade $http_upgrade;',
+                    'proxy_set_header Connection "Upgrade";',
+                    'proxy_read_timeout 86400;'
+                ]
+            }
+        ],
+        directives              => [
+            '# Unifi still internally uses its own cert. This was converted to PEM and',
+            '# is trusted for the sake of this proxy. See here for details:',
+            '# https://community.ubnt.com/t5/UniFi-Wireless/Lets-Encrypt-and-UniFi-controller/td-p/1406670',
+            'ssl_trusted_certificate /etc/nginx/ssl/unifi.pem;',
+            '# Managed by Certbot',
+            'include /etc/letsencrypt/options-ssl-nginx.conf;'
+        ]
     }
 }
 ```
