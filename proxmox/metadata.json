@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "author": "DevSysEngineer",
     "summary": "Setup Proxmox",
+    "license": "Apache-2.0",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/proxmox",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",
     "issues_url": "https://github.com/DevSysEngineer/puppet-modules/issues",

@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "author": "DevSysEngineer",
     "summary": "Setup PHP CLI / FPM",
+    "license": "Apache-2.0",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/php8",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",
     "issues_url": "https://github.com/DevSysEngineer/puppet-modules/issues",
