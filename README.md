@@ -4,13 +4,13 @@ Dit is een uitbreidingsmodule voor jouw Puppet-omgeving, bestaande uit verschill
 ## Installeren ##
 Navigeer naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando:
 
-```
+```bash
 git submodule add https://github.com/DevSysEngineer/puppet-modules.git global-modules
 ```
 
 Voer vervolgens de volgende opdracht uit:
 
-```
+```bash
 git submodule update --init --recursive
 ```
 
@@ -34,8 +34,13 @@ De mapstructuur zou er nu zo uit moeten zien:
   - modules
   - .gitmodules
 
+Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met daarbij subonderdelen correct zijn ingeladen:
+```bash
+puppet module list
+```
+
 ## Basic Settings ##
-Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdclass wordt aangesproken, worden de subonderdelen daarin aangesproken en geconfigureerd. Het doel van dit onderdeel is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met zo min mogelijk benodigde GUI-/UI-pakketten, zodat de server zo min mogelijk resources verbruikt. Onnodige pakketten, zoals die voor power management bij laptops, worden verwijderd omdat dit niets te maken heeft met een server. Daarnaast wordt door middel van kernelparameters de server aangepast zodat hij alle benodigde CPU-/powerresources mag benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)). Pakketten zoals mtr en rsync worden wel geïnstalleerd, omdat deze naar mijn mening regelmatig nodig zijn voor systeembeheerders.
+Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdclass wordt aangesproken, worden de subonderdelen daarin aangesproken en geconfigureerd. Het doel van dit onderdeel is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met zo min mogelijk benodigde GUI-/UI-pakketten, zodat de server zo min mogelijk resources verbruikt. Onnodige pakketten, zoals die voor power management bij laptops, worden verwijderd omdat dit niets te maken heeft met een server. Daarnaast wordt door middel van kernelparameters de server aangepast zodat hij alle benodigde CPU-/powerresources mag benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)). Pakketten zoals `mtr` en `rsync` worden wel geïnstalleerd, omdat deze naar mijn mening regelmatig nodig zijn voor systeembeheerders.
 
 Basic Settings bestaat uit de volgende subonderdelen:
 - **Development:** Packages / configuraties die te maken hebben met development
@@ -66,7 +71,7 @@ node 'webserver.dev.xxxx.nl' {
 ```
 
 ## Nginx ##
-Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `basic settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel deze Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`. 
+Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `Basic Settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel deze Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`. 
 
 ### Voorbeeld ###
 ```puppet

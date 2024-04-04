@@ -1,0 +1,38 @@
+{
+    "name": "puppetmodules-nginx",
+    "version": "1.0.0",
+    "summary": "Setup Nginx server",
+    "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/nginx",
+    "project_page": "https://github.com/DevSysEngineer/puppet-modules",
+    "issues_url": "https://github.com/DevSysEngineer/puppet-modules/issues",
+    "dependencies": [
+
+    ],
+    "operatingsystem_support": [
+        {
+            "operatingsystem": "Debian",
+            "operatingsystemrelease": [
+                "11",
+                "12"
+            ]
+        },
+        {
+            "operatingsystem": "Ubuntu",
+            "operatingsystemrelease": [
+                "22.04",
+                "23.04",
+                "24.04"
+            ]
+        }
+    ],
+    "requirements": [
+        {
+            "name": "puppet",
+            "version_requirement": ">= 7.0.0 < 9.0.0"
+        }
+    ],
+    "tags": [
+        "puppet-modules",
+        "nginx"
+    ]
+}
