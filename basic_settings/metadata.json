@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-basic_settings",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup a headless server with associated components.",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/basic_settings",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",

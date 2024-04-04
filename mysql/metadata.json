@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-mysql",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup MySQL server/client",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/mysql",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",

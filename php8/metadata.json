@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-php8",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup PHP CLI / FPM",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/php8",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",

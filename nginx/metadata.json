@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-nginx",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup Nginx server",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/nginx",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",

@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-proxmox",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup Proxmox",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/proxmox",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",

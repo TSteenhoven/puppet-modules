@@ -1,6 +1,7 @@
 {
     "name": "puppetmodules-ssh",
     "version": "1.0.0",
+    "author": "DevSysEngineer",
     "summary": "Setup SSH deamon",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/ssh",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",
