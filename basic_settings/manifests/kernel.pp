@@ -141,7 +141,7 @@ class basic_settings::kernel(
         default: {
             exec { 'tcp_congestion_control':
                 command     => 'rm /etc/sysctl.d/20-tcp_congestion_control.conf',
-                onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf]',
+                onlyif      => '[ -e /etc/sysctl.d/20-tcp_congestion_control.conf ]',
                 notify      => Exec['kernel_sysctl_reload']
             }
         }

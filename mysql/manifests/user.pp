@@ -45,8 +45,8 @@ define mysql::user (
             }
             ->
             exec { "mysql_set_password_${username}@${hostname}":
-                unless => $unless_field,
-                command => "mysql --defaults-file=${mysql::defaults_file} -e \"${password_command} FLUSH PRIVILEGES;\"",
+                unless => Sensitive.new($unless_field),
+                command => Sensitive.new("mysql --defaults-file=${mysql::defaults_file} -e \"${password_command} FLUSH PRIVILEGES;\""),
             }
         }
         absent: {

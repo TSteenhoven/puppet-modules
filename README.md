@@ -1,7 +1,9 @@
-# Puppet-modules #
-Dit is een uitbreidingsmodule voor jouw Puppet-omgeving, bestaande uit verschillende onderdelen, namelijk `Basic Settings`, `Nginx`, `PHP` en `MySQL`. Deze onderdelen kunnen afzonderlijk worden gebruikt of in combinatie.
+# Puppet-modules
 
-## Installeren ##
+Dit is een uitbreidingsmodule voor jouw Puppet-omgeving, bestaande uit verschillende onderdelen, namelijk `Basic Settings`, `Nginx`, `PHP` en `MySQL`. Deze onderdelen kunnen afzonderlijk worden gebruikt of in combinatie. Om deze uitbreidingsmodule mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik via git submodule heb toegevoegd. Ik wil de eigenaren van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun werk.
+
+## Installeren
+
 Navigeer naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando:
 
 ```bash
@@ -34,12 +36,13 @@ De mapstructuur zou er nu zo uit moeten zien:
   - modules
   - .gitmodules
 
-Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met daarbij subonderdelen correct zijn ingeladen:
+Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met daarbij subonderdelen correct is ingeladen:
 ```bash
 puppet module list
 ```
 
-## Basic Settings ##
+## Basic Settings
+
 Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdclass wordt aangesproken, worden de subonderdelen daarin aangesproken en geconfigureerd. Het doel van dit onderdeel is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met zo min mogelijk benodigde GUI-/UI-pakketten, zodat de server zo min mogelijk resources verbruikt. Onnodige pakketten, zoals die voor power management bij laptops, worden verwijderd omdat dit niets te maken heeft met een server. Daarnaast wordt door middel van kernelparameters de server aangepast zodat hij alle benodigde CPU-/powerresources mag benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)). Pakketten zoals `mtr` en `rsync` worden wel geïnstalleerd, omdat deze naar mijn mening regelmatig nodig zijn voor systeembeheerders.
 
 Basic Settings bestaat uit de volgende subonderdelen:
@@ -55,7 +58,8 @@ Basic Settings bestaat uit de volgende subonderdelen:
 - **Systemd:** Installeert systemd en zorgt ervoor dat de juiste system target geconfigureerd wordt
 - **Timezone:** Configureert tijd / datum
 
-### Voorbeeld ###
+### Voorbeeld
+
 ```puppet
 node 'webserver.dev.xxxx.nl' {
 
@@ -70,10 +74,12 @@ node 'webserver.dev.xxxx.nl' {
 }
 ```
 
-## Nginx ##
-Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `Basic Settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel deze Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`. 
+## Nginx
 
-### Voorbeeld ###
+Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `Basic Settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel laatste Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`.
+
+### Voorbeeld
+
 ```puppet
 node 'webserver.dev.xxxx.nl' {
 
