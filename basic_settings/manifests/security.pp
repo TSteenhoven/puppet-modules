@@ -23,7 +23,7 @@ class basic_settings::security(
     # Create default audit file */
     file { '/etc/audit/rules.d/audit.rules':
         ensure  => file,
-        content => template('security/audit.rules'),
+        content => template('basic_settings/security/audit.rules'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
