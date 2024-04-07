@@ -1,11 +1,6 @@
-#
-# This file MUST be edited with the 'visudo' command as root.
-#
-# Please consider adding local content in /etc/sudoers.d/ instead of
-# directly modifying this file.
-#
-# See the man page for details on how to write a sudoers file.
-#
+# Managed by puppet
+
+# Default settings
 Defaults	env_reset
 Defaults	mail_badpass
 Defaults    env_keep += SSH_AUTH_SOCK

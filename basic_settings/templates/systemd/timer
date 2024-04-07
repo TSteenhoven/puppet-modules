@@ -1,3 +1,4 @@
+# Managed by puppet
 [Unit]
 Description=<%= @description %>
 <% @unit.sort.map do |key,value| -%>

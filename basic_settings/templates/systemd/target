@@ -1,3 +1,4 @@
+# Managed by puppet
 [Unit]
 Description=<%= @description %>
 After=<% @parent_targets.each do |targetname| %><%= targetname %>.target <% end %>

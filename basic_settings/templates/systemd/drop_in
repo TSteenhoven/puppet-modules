@@ -1,3 +1,4 @@
+# Managed by puppet
 <% if ! @unit.empty? -%>
 [Unit]
 <% @unit.sort.map do |key,value| -%>

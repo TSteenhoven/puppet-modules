@@ -262,6 +262,11 @@ class basic_settings(
         require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message']]
     }
 
+    /* Set security */
+    class { 'basic_settings::security':
+        require => Class['basic_settings::message']
+    }
+
     /* Set Pro */
     class { 'basic_settings::pro':
         enable  => $pro_enable,

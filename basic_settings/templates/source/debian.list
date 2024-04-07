@@ -1,3 +1,4 @@
+# Managed by puppet
 <% if @non_free -%>
 deb <%= @os_url %> <%= @os_name %> <%= @os_repo %> non-free
 deb-src <%= @os_url %> <%= @os_name %> <%= @os_repo %> non-free
