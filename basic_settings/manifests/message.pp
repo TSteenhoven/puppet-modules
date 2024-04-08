@@ -5,7 +5,7 @@ class basic_settings::message(
 ) {
 
     /* Install package */
-    package { ["${mail_package}", 'mailutils', 'sendmail']:
+    package { ["${mail_package}", 'mailutils']:
         ensure => installed
     }
 
