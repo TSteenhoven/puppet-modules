@@ -11,55 +11,49 @@
 # Possible values are 0 (silent), 1 (printk, print a failure message) and 2 (panic, halt the system).
 -f 1
 
+# Make login UID immutable once it is set
+--loginuid-immutable 1
+
 # Audit the audit logs.
 # Successful and unsuccessful attempts to read information from the audit records; all modifications to the audit trail
--w /var/log/audit/ -k auditlog
+-w /var/log/audit -k audit_log
 
 # Auditd configuration modifications to audit configuration that occur while the audit collection functions are operating
--w /etc/audit/ -p wa -k auditconfig
--w /etc/libaudit.conf -p wa -k auditconfig
+-w /etc/audit -p wa -k audit_config
+-w /etc/libaudit.conf -p wa -k audit_config
 
 # Monitor for use of audit management tools
--w /sbin/auditctl -p x -k audittools
--w /sbin/auditd -p x -k audittools
+-w /sbin/auditctl -p x -k audit_tools
+-w /sbin/auditd -p x -k audit_tools
 
 # Special files
--a exit,always -S mknod -S mknodat -k specialfiles
+-a exit,always -S mknod -S mknodat -k special_files
 
 # Mount operations
 -a exit,always -S mount -S umount -S umount2 -k mount
 
 # Changes to the time
--a exit,always -S adjtimex -S settimeofday -S clock_settime -k time
+-a always,exit -S adjtimex -S settimeofday -k time
+-w /etc/localtime -p wa -k time
+-w /etc/timezone -p wa -k time
 
-# Cron configuration & scheduled jobs
+# Cron configuration and scheduled jobs
 -w /etc/cron.allow -p wa -k cron
 -w /etc/cron.deny -p wa -k cron
--w /etc/cron.d/ -p wa -k cron
--w /etc/cron.daily/ -p wa -k cron
--w /etc/cron.hourly/ -p wa -k cron
--w /etc/cron.monthly/ -p wa -k cron
--w /etc/cron.weekly/ -p wa -k cron
+-w /etc/cron.d -p wa -k cron
+-w /etc/cron.daily -p wa -k cron
+-w /etc/cron.hourly -p wa -k cron
+-w /etc/cron.monthly -p wa -k cron
+-w /etc/cron.weekly -p wa -k cron
 -w /etc/crontab -p wa -k cron
--w /var/spool/cron/crontabs/ -k cron
+-w /var/spool/cron/crontabs -k cron
 
-# User, group, password databases
--w /etc/group -p wa -k etcgroup
--w /etc/passwd -p wa -k etcpasswd
--w /etc/gshadow -k etcgroup
--w /etc/shadow -k etcpasswd
--w /etc/security/opasswd -k opasswd
-
-# Monitor usage of passwd
--w /usr/bin/passwd -p x -k passwd_modification
-
-# Monitor for use of tools to change group identifiers
--w /usr/sbin/groupadd -p x -k group_modification
--w /usr/sbin/groupmod -p x -k group_modification
--w /usr/sbin/addgroup -p x -k group_modification
--w /usr/sbin/useradd -p x -k user_modification
--w /usr/sbin/usermod -p x -k user_modification
--w /usr/sbin/adduser -p x -k user_modification
+# Monitor modifation on a user/group 
+-w /etc/group -p wa -k identity
+-w /etc/passwd -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
 
 # Login configuration and information
 -w /etc/login.defs -p wa -k login
@@ -68,26 +62,28 @@
 
 # Network configuration
 -w /etc/hosts -p wa -k hosts
--w /etc/network/ -p wa -k network
+-w /etc/network -p wa -k network
+-w /etc/networkd-dispatcher -p wa -k network
 
 # System startup scripts
--w /etc/init/ -p wa -k init
+-w /etc/init -p wa -k init
 
 # Library search paths
--w /etc/ld.so.conf -p wa -k libpath
--w /etc/ld.so.conf.d/ -p wa -k libpath
-
-# Local time zone
--w /etc/localtime -p wa -k localtime
+-w /etc/ld.so.conf -p wa -k lib_path
+-w /etc/ld.so.conf.d -p wa -k lib_path
 
 # Kernel parameters
+-w /usr/sbin/sysctl -p x -k sysctl
 -w /etc/sysctl.conf -p wa -k sysctl
 
 # Modprobe configuration
--w /etc/modprobe.conf -p wa -k modprobe
+-a always,exit -S init_module -S delete_module -k modules
+-w /usr/sbin/insmod -p x -k modules
+-w /usr/sbin/rmmod -p x -k modules
+-w /usr/sbin/modprobe -p x -k modules
 
 # PAM configuration
--w /etc/pam.d/ -p wa -k pam
+-w /etc/pam.d -p wa -k pam
 -w /etc/security/limits.conf -p wa  -k pam
 -w /etc/security/pam_env.conf -p wa -k pam
 -w /etc/security/namespace.conf -p wa -k pam
@@ -100,36 +96,40 @@
 -w /etc/ssh/sshd_config -k sshd
 
 # Changes to hostname
--a exit,always -S sethostname -k hostname
+-a always,exit -S sethostname -S setdomainname -k hostname
+-w /etc/hostname -p wa -k hostname
 
 # Changes to issue
--w /etc/issue -p wa -k etcissue
--w /etc/issue.net -p wa -k etcissue
+-w /etc/issue -p wa -k issue
+-w /etc/issue.net -p wa -k issue
 
-# This was to noisy currently.
-# Log all commands executed by an effective id of 0 aka root.
+# Log all commands executed by an effective id of 0 aka root
 -a exit,always -F euid=0 -S execve -k rootcmd
 
 # Capture all failures to access on critical elements
--a exit,always -S open -F dir=/etc -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/bin -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/sbin -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/usr/bin -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/usr/sbin -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/var -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/home -F success=0 -k unauthedfileacess
--a exit,always -S open -F dir=/srv -F success=0 -k unauthedfileacess
+-a exit,always -S open -F dir=/etc -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/bin -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/var -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/home -F success=0 -k unauthed_file_acess
+-a exit,always -S open -F dir=/srv -F success=0 -k unauthed_file_acess
 
 # Monitor for use of process ID change (switching accounts) applications
 -w /bin/su -p x -k priv_esc
 -w /usr/bin/sudo -p x -k priv_esc
 -w /etc/sudoers -p rw -k priv_esc
+-w /etc/sudoers.d -p wa -k priv_esc
+
+# Process ID change log files 
+-w /var/log/sudo.log -p wa -k priv_log
 
 # Monitor usage of commands to change power state
--w /sbin/shutdown -p x -k power
--w /sbin/poweroff -p x -k power
--w /sbin/reboot -p x -k power
--w /sbin/halt -p x -k power
+-w /usr/sbin/shutdown -p x -k power
+-w /usr/sbin/poweroff -p x -k power
+-w /usr/sbin/reboot -p x -k power
+-w /usr/sbin/halt -p x -k power
 
 # Make the configuration immutable
 -e 2

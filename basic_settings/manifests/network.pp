@@ -42,7 +42,7 @@ class basic_settings::network(
     }
 
     /* Remove unnecessary packages */
-    package { 'ifupdown':
+    package { ['ifupdown', 'wpasupplicant']:
         ensure  => purged
     }
 
