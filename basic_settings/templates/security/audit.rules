@@ -11,6 +11,10 @@
 # Possible values are 0 (silent), 1 (printk, print a failure message) and 2 (panic, halt the system).
 -f 1
 
+# Ignore errors
+# e.g. caused by users or files not found in the local environment
+-i
+
 # Make login UID immutable once it is set
 --loginuid-immutable 1
 
@@ -29,13 +33,18 @@
 # Kernel parameters
 -w /usr/sbin/sysctl -p x -k sysctl
 -w /etc/sysctl.conf -p wa -k sysctl
+-w /etc/sysctl.d -p wa -k sysctl
 
-# Modprobe configuration
+# Kernel modules
 -a always,exit -F arch=b32 -S init_module -S delete_module -k modules
 -a always,exit -F arch=b64 -S init_module -S delete_module -k modules
 -w /usr/sbin/insmod -p x -k modules
 -w /usr/sbin/rmmod -p x -k modules
 -w /usr/sbin/modprobe -p x -k modules
+
+# Modprobe configuration
+-w /etc/modprobe.conf -p wa -k modprobe
+-w /etc/modprobe.d -p wa -k modprobe
 
 # Special files
 -a exit,always -F arch=b32 -S mknod -S mknodat -F auid!=unset -k special_files
@@ -89,7 +98,8 @@
 -w /var/log/auth.log -p wa -k login
 
 # SSH configuration
--w /etc/ssh/sshd_config -k sshd
+-w /etc/ssh/sshd_config -F comm!=puppet -k sshd
+-w /etc/ssh/sshd_config.d -F comm!=puppet -k sshd
 
 # PAM configuration
 -w /etc/pam.d -p wa -k pam
@@ -101,8 +111,8 @@
 # Monitor for use of process ID change (switching accounts) applications
 -w /bin/su -p x -k priv_esc
 -w /usr/bin/sudo -p x -k priv_esc
--w /etc/sudoers -p rw -k priv_esc
--w /etc/sudoers.d -p wa -k priv_esc
+-w /etc/sudoers -F comm!=puppet -k priv_esc
+-w /etc/sudoers.d -F comm!=puppet -k priv_esc
 
 # Systemd configuration
 -w /etc/systemd -p wa -k systemd
@@ -140,8 +150,13 @@
 -w /etc/crontab -p wa -k cron
 -w /var/spool/cron/crontabs -k cron
 
-# GDS specific secrets
+# Puppet SSL
 -w /etc/puppet/ssl -p wa -k puppet_ssl
+<% if @puppet_server -%>
+
+# Puppet code
+-w /etc/puppet/code -p wa -k puppet_code
+<% end -%>
 
 # Monitor usage of commands to change power state
 -w /usr/sbin/shutdown -p x -k power
