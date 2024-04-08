@@ -98,8 +98,10 @@
 -w /var/log/auth.log -p wa -k login
 
 # SSH configuration
--w /etc/ssh/sshd_config -F comm!=puppet -k sshd
--w /etc/ssh/sshd_config.d -F comm!=puppet -k sshd
+-w /etc/ssh/sshd_config -p r -F auid!=unset -k sshd
+-w /etc/ssh/sshd_config.d -p r -F auid!=unset -k sshd
+-w /etc/ssh/sshd_config -p wa -k sshd
+-w /etc/ssh/sshd_config.d -p wa -k sshd
 
 # PAM configuration
 -w /etc/pam.d -p wa -k pam
@@ -111,11 +113,19 @@
 # Monitor for use of process ID change (switching accounts) applications
 -w /bin/su -p x -k priv_esc
 -w /usr/bin/sudo -p x -k priv_esc
--w /etc/sudoers -F comm!=puppet -k priv_esc
--w /etc/sudoers.d -F comm!=puppet -k priv_esc
+-w /etc/sudoers -p r -F auid!=unset -k priv_esc
+-w /etc/sudoers.d -p r -F auid!=unset -k priv_esc
+-w /etc/sudoers -p wa -k priv_esc
+-w /etc/sudoers.d -p wa -k priv_esc
+
+# Detect Remote Shell Use
+-a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k "remote_shell"
+-a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k "remote_shell"
 
 # Systemd configuration
--w /etc/systemd -p wa -k systemd
+-w /bin/systemctl -p x -k systemd
+-w /etc/systemd/ -p wa -k systemd
+-w /usr/lib/systemd -p wa -k systemd
 
 # Log all commands executed by an effective id of 0 aka root
 -a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -k root_cmd
