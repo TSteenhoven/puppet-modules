@@ -83,7 +83,7 @@ class basic_settings::network(
             require     => Package[$firewall_package]
         }
 
-        if (defined(Class['basic_settings::message'])) {
+        if (defined(Package['systemd']) and defined(Class['basic_settings::message'])) {
             /* Create drop in for firewall service */
             basic_settings::systemd_drop_in { "${firewall_package}_notify_failed":
                 target_unit     => "${firewall_package}.service",

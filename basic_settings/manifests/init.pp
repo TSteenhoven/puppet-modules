@@ -264,6 +264,8 @@ class basic_settings(
 
     /* Set security */
     class { 'basic_settings::security':
+        mail_to         => $basic_settings::puppet::server_enable,
+        puppet_server   => $puppetserver_enable,
         require => Class['basic_settings::message']
     }
 
