@@ -20,6 +20,13 @@ class basic_settings::security(
         require => Package['auditd']
     }
 
+    /* Do extra steps when Ubuntu */
+    if ($operatingsystem == 'Ubuntu') {
+        $network_interface = 'netplan'
+    } else {
+        $network_interface = 'systemd'
+    }
+
     # Create default audit file */
     file { '/etc/audit/rules.d/audit.rules':
         ensure  => file,

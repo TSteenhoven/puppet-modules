@@ -1,4 +1,4 @@
-## Managed by puppet
+# Managed by puppet
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Download-Upgradeable-Packages "1";
 APT::Periodic::Unattended-Upgrade "1";

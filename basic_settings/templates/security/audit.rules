@@ -60,6 +60,9 @@
 -w /etc/hosts -p wa -k hosts
 -w /etc/network -p wa -k network
 -w /etc/networkd-dispatcher -p wa -k network
+<% if @network_interface == 'netplan' -%>
+-w /etc/netplan -p wa -k network
+<% end -%>
 
 # System startup scripts
 -w /etc/init -p wa -k init
@@ -83,6 +86,7 @@
 -w /etc/login.defs -p wa -k login
 -w /var/log/faillog -p wa -k login
 -w /var/log/lastlog -p wa -k login
+-w /var/log/auth.log -p wa -k login
 
 # SSH configuration
 -w /etc/ssh/sshd_config -k sshd
@@ -99,9 +103,6 @@
 -w /usr/bin/sudo -p x -k priv_esc
 -w /etc/sudoers -p rw -k priv_esc
 -w /etc/sudoers.d -p wa -k priv_esc
-
-# Process ID change log files 
--w /var/log/sudo.log -p wa -k priv_log
 
 # Systemd configuration
 -w /etc/systemd -p wa -k systemd
