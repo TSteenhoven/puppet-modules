@@ -16,7 +16,7 @@
 
 # Audit the audit logs.
 # Successful and unsuccessful attempts to read information from the audit records; all modifications to the audit trail
--w /var/log/audit -k audit_log
+-w /var/log/audit -F auid!=unset -k audit_log
 
 # Auditd configuration modifications to audit configuration that occur while the audit collection functions are operating
 -w /etc/audit -p wa -k audit_config
@@ -107,17 +107,25 @@
 -w /etc/systemd -p wa -k systemd
 
 # Log all commands executed by an effective id of 0 aka root
--a exit,always -F arch=b64 -F euid=0 -S execve -k rootcmd
--a exit,always -F arch=b32 -F euid=0 -S execve -k rootcmd
+-a exit,always -F arch=b64 -F euid=0 -S execve -k -F auid!=unset root_cmd
+-a exit,always -F arch=b32 -F euid=0 -S execve -k -F auid!=unset root_cmd
 
 # Capture all failures to access on critical elements
+-a exit,always -F arch=b32 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/bin -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/var -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/home -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/srv -F success=0 -k unauthed_file_acess
 -a exit,always -F arch=b64 -S open -F dir=/srv -F success=0 -k unauthed_file_acess
 
 # Cron configuration and scheduled jobs
