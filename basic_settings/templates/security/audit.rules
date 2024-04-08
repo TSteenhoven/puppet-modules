@@ -118,14 +118,19 @@
 -w /etc/sudoers -p wa -k priv_esc
 -w /etc/sudoers.d -p wa -k priv_esc
 
-# Detect Remote Shell Use
--a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k "remote_shell"
--a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k "remote_shell"
+# Detect remote shell use
+-a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b32 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
 
 # Systemd configuration
--w /bin/systemctl -p x -k systemd
--w /etc/systemd/ -p wa -k systemd
+-w /bin/systemctl -p x -F auid!=unset -k systemd
+-w /etc/systemd -p wa -k systemd
 -w /usr/lib/systemd -p wa -k systemd
+
+# Detect journalctl use
+-w /bin/journalctl -p x -k journalctl
 
 # Log all commands executed by an effective id of 0 aka root
 -a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -k root_cmd
