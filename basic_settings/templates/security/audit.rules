@@ -31,24 +31,29 @@
 -w /etc/sysctl.conf -p wa -k sysctl
 
 # Modprobe configuration
--a always,exit -S init_module -S delete_module -k modules
+-a always,exit -F arch=b32 -S init_module -S delete_module -k modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -k modules
 -w /usr/sbin/insmod -p x -k modules
 -w /usr/sbin/rmmod -p x -k modules
 -w /usr/sbin/modprobe -p x -k modules
 
 # Special files
--a exit,always -S mknod -S mknodat -k special_files
+-a exit,always -F arch=b32 -S mknod -S mknodat -k special_files
+-a exit,always -F arch=b64 -S mknod -S mknodat -k special_files
 
 # Mount operations
--a exit,always -S mount -S umount -S umount2 -k mount
+-a exit,always -F arch=b32 -S mount -S umount -S umount2 -k mount
+-a exit,always -F arch=b64 -S mount -S umount2 -k mount
 
 # Changes to the time
--a always,exit -S adjtimex -S settimeofday -k time
+-a always,exit -F arch=b32 -S adjtimex -S settimeofday -k time
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time
 -w /etc/localtime -p wa -k time
 -w /etc/timezone -p wa -k time
 
 # Changes to hostname
--a always,exit -S sethostname -S setdomainname -k hostname
+-a always,exit -F arch=b32 -S sethostname -S setdomainname -k hostname
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k hostname
 -w /etc/hostname -p wa -k hostname
 
 # Network configuration
@@ -102,17 +107,18 @@
 -w /etc/systemd -p wa -k systemd
 
 # Log all commands executed by an effective id of 0 aka root
--a exit,always -F euid=0 -S execve -k rootcmd
+-a exit,always -F arch=b64 -F euid=0 -S execve -k rootcmd
+-a exit,always -F arch=b32 -F euid=0 -S execve -k rootcmd
 
 # Capture all failures to access on critical elements
--a exit,always -S open -F dir=/etc -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/bin -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/var -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/home -F success=0 -k unauthed_file_acess
--a exit,always -S open -F dir=/srv -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/srv -F success=0 -k unauthed_file_acess
 
 # Cron configuration and scheduled jobs
 -w /etc/cron.allow -p wa -k cron
