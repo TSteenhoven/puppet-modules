@@ -38,12 +38,12 @@
 -w /usr/sbin/modprobe -p x -k modules
 
 # Special files
--a exit,always -F arch=b32 -S mknod -S mknodat -k special_files
--a exit,always -F arch=b64 -S mknod -S mknodat -k special_files
+-a exit,always -F arch=b32 -S mknod -S mknodat -F auid!=unset -k special_files
+-a exit,always -F arch=b64 -S mknod -S mknodat -F auid!=unset -k special_files
 
 # Mount operations
--a exit,always -F arch=b32 -S mount -S umount -S umount2 -k mount
--a exit,always -F arch=b64 -S mount -S umount2 -k mount
+-a exit,always -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -k mount
+-a exit,always -F arch=b64 -S mount -S umount2 -F auid!=unset -k mount
 
 # Changes to the time
 -a always,exit -F arch=b32 -S adjtimex -S settimeofday -k time
@@ -107,8 +107,8 @@
 -w /etc/systemd -p wa -k systemd
 
 # Log all commands executed by an effective id of 0 aka root
--a exit,always -F arch=b64 -F euid=0 -S execve -k -F auid!=unset root_cmd
--a exit,always -F arch=b32 -F euid=0 -S execve -k -F auid!=unset root_cmd
+-a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -k root_cmd
+-a exit,always -F arch=b32 -F euid=0 -S execve -F auid!=unset -k root_cmd
 
 # Capture all failures to access on critical elements
 -a exit,always -F arch=b32 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
