@@ -1,5 +1,19 @@
-#!bin/bash
-output=$(/usr/sbin/aureport -k -ts yesterday 00:00:00 -te yesterday 23:59:59)
-if [ -z "$(grep "no events of interest were found" "$output")" ]; then
-    echo $output | /usr/bin/mail -s "Audit report" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+#!/bin/sh
+
+# Managed by puppet
+
+# Check if aureport is available
+AUREPORTTOOL=/usr/sbin/aureport
+test -x $AUREPORTTOOL || exit 0
+
+# Check if aureport is available
+MAIL=/usr/bin/mail
+test -x $MAIL || exit 0
+
+# Try to get aureport
+OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59)
+
+# Check if wwe have valid report
+if [ -z "$(echo $OUTPUT | grep "no events of interest were found")" ]; then
+    echo $OUTPUT | $MAIL -s "Audit report" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 fi
