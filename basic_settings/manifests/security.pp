@@ -88,5 +88,27 @@ class basic_settings::security(
             daemon_reload   => 'security_systemd_daemon_reload',
             require         => Package['auditd']
         }
+
+        /* Create systemd service */
+        basic_settings::systemd_service { 'auditmail':
+            description => 'Audit mail service',
+            service     => {
+                'Type'          => 'oneshot',
+                'User'          => 'root',
+                'PrivateTmp'    => 'true',
+                'ExecStart'     => '/usr/local/sbin/auditmail',
+                'Nice'          => '-20', # Important process
+            },
+            daemon_reload   => 'security_systemd_daemon_reload',
+        }
+
+        /* Create systemd timer */
+        basic_settings::systemd_timer { 'auditmail':
+            description     => 'Audit mail timer',
+            timer       => {
+                'OnCalendar' => '*-*-* 0:30'
+            },
+            daemon_reload   => 'security_systemd_daemon_reload',
+        }
     }
 }
