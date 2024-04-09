@@ -34,11 +34,10 @@
 -w /usr/sbin/augenrules -p x -k audit_tools
 -w /usr/sbin/aureport -p x -F auid!=unset -k audit_tools
 -w /usr/sbin/ausearch -p x -k audit_tools
-
 <% if @antivirus_package == 'eset' -%>
 
 # ESET exclude
--a never,exclude -F exe=/opt/eset/efs/lib/odfeeder
+-a never,exclude -F exe=/opt/eset/efs/lib/utild
 <% end -%>
 
 # Kernel parameters
