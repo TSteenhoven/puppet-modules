@@ -265,7 +265,7 @@ class basic_settings(
     /* Set security */
     class { 'basic_settings::security':
         antivirus_package   => $antivirus_package,
-        mail_to             => $basic_settings::puppet::server_enable,
+        mail_to             => $systemd_notify_mail,
         puppet_server       => $puppetserver_enable,
         server_fdqn         => $server_fdqn,
         require => Class['basic_settings::message']

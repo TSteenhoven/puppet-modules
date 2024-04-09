@@ -201,6 +201,7 @@
 <% if @puppet_server -%>
 
 # Puppet code
+-w /etc/puppet/code -p r -F uid!=puppet -k puppet_code
 -w /etc/puppet/code -p wa -k puppet_code
 <% end -%>
 
