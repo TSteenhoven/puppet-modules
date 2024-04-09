@@ -1,0 +1,5 @@
+#!bin/bash
+output=$(/usr/sbin/aureport -k -ts yesterday 00:00:00 -te yesterday 23:59:59)
+if [ -z "$(grep "no events of interest were found" "$output")" ]; then
+    echo $output | /usr/bin/mail -s "Audit report" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+fi

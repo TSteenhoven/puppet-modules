@@ -1,6 +1,8 @@
 class basic_settings::security(
+    $antivirus_package = undef,
     $mail_to        = 'root',
-    $puppet_server  = false
+    $puppet_server  = false,
+    $server_fdqn    = $fdqn
 ) {
 
     /* Install default security packages */
@@ -46,6 +48,16 @@ class basic_settings::security(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
+        notify  => Service['auditd']
+    }
+
+    # Create default audit file */
+    file { '/usr/local/sbin/auditmail':
+        ensure  => file,
+        content => template('basic_settings/security/auditmail'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0700', # Only root
         notify  => Service['auditd']
     }
 
