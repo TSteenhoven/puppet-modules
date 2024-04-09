@@ -4,7 +4,7 @@
 
 # Check if RX buffer tool is available
 RXBUFFERTOOL=/usr/local/sbin/rxbuffer
-test -x $RXBUFFERTOOL || exit 0
+test -x $RXBUFFERTOOL || exit 1
 
 # Check if interface is not lo
 [ "$IFACE" != "lo" ] || exit 0

@@ -4,11 +4,11 @@
 
 # Check if aureport is available
 AUREPORTTOOL=/usr/sbin/aureport
-test -x $AUREPORTTOOL || exit 0
+test -x $AUREPORTTOOL || exit 1
 
 # Check if aureport is available
 MAIL=/usr/bin/mail
-test -x $MAIL || exit 0
+test -x $MAIL || exit 1
 
 # Try to get aureport
 OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59)
