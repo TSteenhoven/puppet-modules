@@ -267,6 +267,7 @@ class basic_settings(
         antivirus_package   => $antivirus_package,
         mail_to             => $basic_settings::puppet::server_enable,
         puppet_server       => $puppetserver_enable,
+        server_fdqn         => $server_fdqn,
         require => Class['basic_settings::message']
     }
 
