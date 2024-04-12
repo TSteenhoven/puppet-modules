@@ -26,7 +26,7 @@ class nginx(
     }
 
     /* Set PID file */
-    $pid = '/var/run/nginx.pid'
+    $pid = '/run/nginx.pid'
 
     /* Disable service */
     if (defined(Package['systemd'])) {
