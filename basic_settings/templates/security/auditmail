@@ -15,5 +15,5 @@ OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59)
 
 # Check if wwe have valid report
 if [ -z "$(echo $OUTPUT | grep "no events of interest were found")" ]; then
-    echo $OUTPUT | $MAIL -s "Audit report" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+    echo -e $OUTPUT | $MAIL -s "Audit report" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 fi

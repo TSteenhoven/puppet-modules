@@ -37,6 +37,7 @@
 <% if @antivirus_package == 'eset' -%>
 
 # ESET exclude
+-a never,exclude -F exe=/opt/eset/efs/lib/odfeeder
 -a never,exclude -F exe=/opt/eset/efs/lib/utild
 <% end -%>
 
@@ -200,14 +201,14 @@
 <% if @puppet_server -%>
 
 # Puppet code
--w /etc/puppet/code -p r -F uid!=puppet -k puppet_code
+-w /etc/puppet/code -p r -F auid!=unset -k puppet_code
 -w /etc/puppet/code -p wa -k puppet_code
 <% end -%>
 
 # DPKG / APT-GET (Debian/Ubuntu)
--w /usr/bin/dpkg -p x -k software_mgmt
--w /usr/bin/apt -p x -k software_mgmt
--w /usr/bin/apt-get -p x -k software_mgmt
+-w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt
+-w /usr/bin/apt -p x -F auid!=unset -k software_mgmt
+-w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt
 
 # Monitor usage of commands to change power state
 -w /usr/sbin/shutdown -p x -k power
