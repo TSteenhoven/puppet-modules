@@ -29,7 +29,7 @@ class basic_settings::development(
 
     /* Setup audit */
     if (defined(Package['auditd'])) {
-        basic_settings::security_audit { 'ssh':
+        basic_settings::security_audit { 'development':
             rule_suspicious_packages => $suspicious_packages
         }
     }
