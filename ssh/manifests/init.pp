@@ -46,14 +46,14 @@ class ssh(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'ssh':
             rules => [
-                '# SSH configuration',
                 '-w /etc/ssh/sshd_config -p r -F auid!=unset -k sshd',
                 '-w /etc/ssh/sshd_config.d -p r -F auid!=unset -k sshd',
                 '-w /etc/ssh/sshd_config -p wa -k sshd',
                 '-w /etc/ssh/sshd_config.d -p wa -k sshd',
-                '-w /root/.ssh -p wa -k sshd',
-                '# Suspicious activity',
-                '/usr/bin/ssh -p x -k susp_activity'
+                '-w /root/.ssh -p wa -k sshd'
+            ],
+            rule_suspicious_packages => [
+                '/usr/bin/ssh'
             ]
         }
     }

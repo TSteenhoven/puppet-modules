@@ -51,6 +51,22 @@ class basic_settings::network(
         install_options => $install_options
     }
 
+    /* Setup audit */
+    if (defined(Package['auditd'])) {
+        case $antivirus_package {
+            'eset': {
+                basic_settings::security_audit { 'eset':
+                    rules  => [
+                        '-a never,exclude -F exe=/opt/eset/efs/lib/odfeeder',
+                        '-a never,exclude -F exe=/opt/eset/efs/lib/utild',
+                    ],
+                    order  => 1
+                }
+            }
+        }
+    }
+
+
     /* Remove unnecessary packages */
     package { ['ifupdown', 'wpasupplicant']:
         ensure  => purged
@@ -65,11 +81,13 @@ class basic_settings::network(
     /* If we need to install netplan */
     case $operatingsystem {
         'Ubuntu': {
+            $netplan_rules = [' -w /etc/netplan -p wa -k network']
             package { 'netplan.io':
                 ensure  => installed
             }
         }
         default: {
+            $netplan_rules = []
             package { 'netplan.io':
                 ensure  => purged
             }
@@ -116,6 +134,9 @@ class basic_settings::network(
     }
 
     if (defined(Package['systemd'])) {
+        /* Set networkd rules */
+        $networkd_rules = ['-w /etc/networkd-dispatcher -p wa -k network']
+
         /* Install package */
         package { 'networkd-dispatcher':
             ensure => installed,
@@ -158,6 +179,16 @@ class basic_settings::network(
                 notify  => Exec['network_firewall_systemd_daemon_reload'],
                 require => Package['dbus']
             }
+        }
+    } else {
+        $networkd_rules = []
+    }
+
+    /* Setup audit */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'network':
+            rules                       => flatten($netplan_rules, $networkd_rules),
+            rule_suspicious_packages    => $suspicious_packages
         }
     }
 }

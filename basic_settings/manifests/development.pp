@@ -26,4 +26,11 @@ class basic_settings::development(
         ensure          => installed,
         install_options => $install_options
     }
+
+    /* Setup audit */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'ssh':
+            rule_suspicious_packages => $suspicious_packages
+        }
+    }
 }

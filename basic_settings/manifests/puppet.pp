@@ -99,5 +99,20 @@ class basic_settings::puppet(
                 }
             }
         }
+
+        /* Setup audit */
+        if (defined(Package['auditd'])) {
+            basic_settings::security_audit { 'puppet':
+                rules => [
+                    '-w /etc/puppet/ssl -p wa -k puppet_ssl',
+                    '-w /etc/puppet/code -p r -F auid!=unset -k puppet_code',
+                    '-w /etc/puppet/code -p wa -k puppet_code'
+                ]
+            }
+        }
+    } elsif (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'puppet':
+            rules => ['-w /etc/puppet/ssl -p wa -k puppet_ssl']
+        }
     }
 }

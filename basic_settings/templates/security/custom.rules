@@ -1,5 +1,16 @@
 # Managed by puppet
 
+<% if ! @rules.empty? -%>
+# Custom rules
+
 <% @rules.each do |rule| -%>
 <%= rule %>
+<% end -%>
+<% end -%>
+<% if ! @install.empty? -%>
+
+# Suspicious activity
+<% @rule_suspicious_packages.each do |rule_suspicious_package| -%>
+<%= rule_suspicious_packages %> -p x -k susp_activity
+<% end -%>
 <% end -%>

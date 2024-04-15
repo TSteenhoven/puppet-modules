@@ -5,7 +5,7 @@ class basic_settings::io(
     $suspicious_packages = ['/usr/bin/rsync']
 
     /* Install default development packages */
-    package { ['fuse', 'multipath-tools-boot', 'rsync']:
+    package { ['fuse', 'logrotate', 'multipath-tools-boot', 'rsync']:
         ensure  => installed
     }
 
@@ -38,5 +38,16 @@ class basic_settings::io(
         group   => 'root',
         mode    => '0644',
         notify  => Service['multipathd']
+    }
+
+    /* Setup audit */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'logrotate':
+            rules => ['-a never,exclude -F auid=unset -F /usr/sbin/logrotate'],
+            order => 1
+        }
+        basic_settings::security_audit { 'io':
+            rule_suspicious_packages    => $suspicious_packages
+        }
     }
 }

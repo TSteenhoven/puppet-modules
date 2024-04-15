@@ -252,6 +252,13 @@ class basic_settings(
         require         => Class['basic_settings::systemd']
     }
 
+    /* Setup security */
+    class { 'basic_settings::security':
+        mail_to         => $systemd_notify_mail,
+        server_fdqn     => $server_fdqn,
+        require         => Class['basic_settings::message']
+    }
+
     /* Setup APT */
     class { 'basic_settings::packages':
         unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
@@ -544,24 +551,5 @@ class basic_settings(
         server_enable  => $puppetserver_enable,
         server_package => $puppetserver_package,
         server_dir     => $puppetserver_dir
-    }
-
-    /* Setup security */
-    class { 'basic_settings::security':
-        antivirus_package   => $antivirus_package,
-        mail_to             => $systemd_notify_mail,
-        puppet_server       => $puppetserver_enable,
-        server_fdqn         => $server_fdqn,
-        suspicious_packages => flatten(
-            $basic_settings::development::suspicious_packages,
-            $basic_settings::io::suspicious_packages,
-            $basic_settings::network::suspicious_packages
-        ),
-        require             => [
-            Class['basic_settings::development'],
-            Class['basic_settings::io'],
-            Class['basic_settings::network'],
-            Class['basic_settings::message']
-        ]
     }
 }

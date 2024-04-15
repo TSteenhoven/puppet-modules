@@ -16,15 +16,6 @@
 -w /usr/sbin/augenrules -p x -k audit_tools
 -w /usr/sbin/aureport -p x -F auid!=unset -k audit_tools
 -w /usr/sbin/ausearch -p x -k audit_tools
-<% if @antivirus_package == 'eset' -%>
-
-# ESET exclude
--a never,exclude -F exe=/opt/eset/efs/lib/odfeeder
--a never,exclude -F exe=/opt/eset/efs/lib/utild
-<% end -%>
-
-# Logrotate exclude when running as root
--a never,exclude -F auid=unset -F /usr/sbin/logrotate
 
 # Kernel parameters
 -w /usr/sbin/sysctl -p x -k sysctl
@@ -64,10 +55,6 @@
 # Network configuration
 -w /etc/hosts -p wa -k hosts
 -w /etc/network -p wa -k network
--w /etc/networkd-dispatcher -p wa -k network
-<% if @network_interface == 'netplan' -%>
--w /etc/netplan -p wa -k network
-<% end -%>
 
 # Injection
 # These rules watch for code injection by the ptrace facility.
@@ -94,6 +81,7 @@
 # Changes to issue
 -w /etc/issue -p wa -k issue
 -w /etc/issue.net -p wa -k issue
+<% if @systemd_enable -%>
 
 # Systemd configuration
 -w /bin/systemctl -p x -F auid!=unset -k systemd
@@ -102,6 +90,7 @@
 
 # Detect journalctl use
 -w /bin/journalctl -p x -k journalctl
+<% end -%>
 
 # Monitor modifation on a user/group 
 -w /etc/group -p wa -k identity
@@ -175,24 +164,10 @@
 -w /etc/crontab -p wa -k cron
 -w /var/spool/cron/crontabs -k cron
 
-# Puppet SSL
--w /etc/puppet/ssl -p wa -k puppet_ssl
-<% if @puppet_server -%>
-
-# Puppet code
--w /etc/puppet/code -p r -F auid!=unset -k puppet_code
--w /etc/puppet/code -p wa -k puppet_code
-<% end -%>
-
-# DPKG / APT-GET (Debian/Ubuntu)
+# Software manager
 -w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt
 -w /usr/bin/apt -p x -F auid!=unset -k software_mgmt
 -w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt
-
-# Suspicious activity
-<% @suspicious_packages.each do |suspicious_package| -%>
-<%= suspicious_package %> -p x -k susp_activity
-<% end -%>
 
 # Monitor usage of commands to change power state
 -w /usr/sbin/shutdown -p x -k power

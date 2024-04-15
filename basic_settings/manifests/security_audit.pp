@@ -1,6 +1,7 @@
 
 define basic_settings::security_audit(
     $rules,
+    $rule_suspicious_packages = [],
     $order = 20
 ) {
 

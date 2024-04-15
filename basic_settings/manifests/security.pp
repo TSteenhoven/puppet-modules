@@ -1,9 +1,6 @@
 class basic_settings::security(
-    $antivirus_package      = undef,
     $mail_to                = 'root',
-    $puppet_server          = false,
-    $server_fdqn            = $fdqn,
-    $suspicious_packages    = []
+    $server_fdqn            = $fdqn
 ) {
 
     /* Install default security packages */
@@ -23,13 +20,6 @@ class basic_settings::security(
         ensure  => true,
         enable  => true,
         require => Package['auditd']
-    }
-
-    /* Do extra steps when Ubuntu */
-    if ($operatingsystem == 'Ubuntu') {
-        $network_interface = 'netplan'
-    } else {
-        $network_interface = 'systemd'
     }
 
     # Create auditd config file */
@@ -52,6 +42,13 @@ class basic_settings::security(
         notify  => Service['auditd']
     }
 
+    /* Check if we have systemd */
+    if (defined(Package['systemd'])) {
+        $systemd_enable = true
+    } else {
+        $systemd_enable = false
+    }
+
     # Create main audit rule file */
     file { '/etc/audit/rules.d/99-main.rules':
         ensure  => file,
@@ -72,7 +69,7 @@ class basic_settings::security(
         notify  => Service['auditd']
     }
 
-    if (defined(Package['systemd']) and defined(Class['basic_settings::message'])) {
+    if ($systemd_enable and defined(Class['basic_settings::message'])) {
         /* Create systemctl daemon reload */
         exec { 'security_systemd_daemon_reload':
             command         => 'systemctl daemon-reload',
