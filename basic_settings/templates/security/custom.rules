@@ -11,6 +11,6 @@
 
 # Suspicious activity
 <% @rule_suspicious_packages.each do |rule_suspicious_package| -%>
-<%= rule_suspicious_package %> -p x -k susp_activity
+-w <%= rule_suspicious_package %> -p x -k susp_activity
 <% end -%>
 <% end -%>
