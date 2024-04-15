@@ -13,7 +13,7 @@ class basic_settings::packages(
 ) {
 
     /* Install package */
-    package { ['apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'unattended-upgrades']:
+    package { ['apt', 'apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'unattended-upgrades']:
         ensure  => installed
     }
 

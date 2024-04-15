@@ -42,10 +42,20 @@ class basic_settings::security(
         notify  => Service['auditd']
     }
 
-    # Create default audit file */
+    # Create default audit rule file */
     file { '/etc/audit/rules.d/audit.rules':
         ensure  => file,
         content => template('basic_settings/security/audit.rules'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Service['auditd']
+    }
+
+    # Create main audit rule file */
+    file { '/etc/audit/rules.d/99-main.rules':
+        ensure  => file,
+        content => template('basic_settings/security/main.rules'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',

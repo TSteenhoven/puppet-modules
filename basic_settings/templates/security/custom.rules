@@ -1,0 +1,5 @@
+# Managed by puppet
+
+<% @rules.each do |rule| -%>
+<%= rule %>
+<% end -%>
