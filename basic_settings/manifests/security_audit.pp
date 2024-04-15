@@ -5,7 +5,7 @@ define basic_settings::security_audit(
 ) {
 
     /* Enable auditd service */
-    if (defined(Service['auditd'])) {
+    if (!defined(Service['auditd'])) {
         service { 'auditd':
             ensure  => true,
             enable  => true,
@@ -14,7 +14,7 @@ define basic_settings::security_audit(
     }
 
     /* Create rule file */
-    file { "/etc/audit/rules.d/${order}-${title}.target":
+    file { "/etc/audit/rules.d/${order}-${title}.rules":
         ensure  => $ensure,
         content => template('basic_settings/security/custom.rules'),
         owner   => 'root',
