@@ -219,9 +219,17 @@
 /usr/bin/netcat -p x -k susp_activity
 /usr/bin/netstat -p x -k susp_activity
 /usr/bin/ping -p x -k susp_activity
+/usr/bin/ping6 -p x -k susp_activity
 /usr/bin/rsync -p x -k susp_activity
 /usr/bin/scp -p x -k susp_activity
 /usr/bin/ssh -p x -k susp_activity
+/usr/bin/ssh -p x -k susp_activity
+/usr/bin/telnet -p x -k susp_activity
+/usr/sbin/arp -p x -k susp_activity
+/usr/sbin/ip -p x -k susp_activity
+/usr/sbin/route -p x -k susp_activity
+/usr/sbin/tcptraceroute  -p x -k susp_activity
+/usr/sbin/traceroute -p x -k susp_activity
 
 # Monitor usage of commands to change power state
 -w /usr/sbin/shutdown -p x -k power
