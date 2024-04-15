@@ -41,6 +41,9 @@
 -a never,exclude -F exe=/opt/eset/efs/lib/utild
 <% end -%>
 
+# Logrotate exclude when running as root
+-a never,exclude -F auid=unset -F /usr/sbin/logrotate
+
 # Kernel parameters
 -w /usr/sbin/sysctl -p x -k sysctl
 -w /etc/sysctl.conf -p wa -k sysctl
