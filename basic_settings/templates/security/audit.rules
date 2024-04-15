@@ -219,6 +219,7 @@
 /usr/bin/netcat -p x -k susp_activity
 /usr/bin/netstat -p x -k susp_activity
 /usr/bin/ping -p x -k susp_activity
+/usr/bin/rsync -p x -k susp_activity
 /usr/bin/scp -p x -k susp_activity
 /usr/bin/ssh -p x -k susp_activity
 
