@@ -43,7 +43,7 @@ class basic_settings::io(
     /* Setup audit */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'logrotate':
-            rules => ['-a never,exclude -F auid=unset -F /usr/sbin/logrotate'],
+            rules => ['-a never,exclude -F auid=unset -F exe=/usr/sbin/logrotate'],
             order => 1
         }
         basic_settings::security_audit { 'io':
