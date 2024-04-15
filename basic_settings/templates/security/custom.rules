@@ -7,7 +7,7 @@
 <%= rule %>
 <% end -%>
 <% end -%>
-<% if ! @install.empty? -%>
+<% if ! @rule_suspicious_packages.empty? -%>
 
 # Suspicious activity
 <% @rule_suspicious_packages.each do |rule_suspicious_package| -%>
