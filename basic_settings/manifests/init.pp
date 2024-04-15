@@ -200,7 +200,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'libpam-modules', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'rsync', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['bash-completion', 'libpam-modules', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
@@ -260,15 +260,6 @@ class basic_settings(
         snap_enable                                => $snap_correct,
         mail_to                                    => $systemd_notify_mail,
         require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message']]
-    }
-
-    /* Set security */
-    class { 'basic_settings::security':
-        antivirus_package   => $antivirus_package,
-        mail_to             => $systemd_notify_mail,
-        puppet_server       => $puppetserver_enable,
-        server_fdqn         => $server_fdqn,
-        require => Class['basic_settings::message']
     }
 
     /* Set Pro */
@@ -553,5 +544,24 @@ class basic_settings(
         server_enable  => $puppetserver_enable,
         server_package => $puppetserver_package,
         server_dir     => $puppetserver_dir
+    }
+
+    /* Setup security */
+    class { 'basic_settings::security':
+        antivirus_package   => $antivirus_package,
+        mail_to             => $systemd_notify_mail,
+        puppet_server       => $puppetserver_enable,
+        server_fdqn         => $server_fdqn,
+        suspicious_packages => flatten(
+            $basic_settings::development::suspicious_packages,
+            $basic_settings::io::suspicious_packages,
+            $basic_settings::network::suspicious_packages
+        ),
+        require             => [
+            Class['basic_settings::development'],
+            Class['basic_settings::io'],
+            Class['basic_settings::network'],
+            Class['basic_settings::message']
+        ]
     }
 }

@@ -1,8 +1,9 @@
 class basic_settings::security(
-    $antivirus_package = undef,
-    $mail_to        = 'root',
-    $puppet_server  = false,
-    $server_fdqn    = $fdqn
+    $antivirus_package      = undef,
+    $mail_to                = 'root',
+    $puppet_server          = false,
+    $server_fdqn            = $fdqn,
+    $suspicious_packages    = []
 ) {
 
     /* Install default security packages */

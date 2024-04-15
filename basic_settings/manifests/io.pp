@@ -1,8 +1,11 @@
 class basic_settings::io(
 ) {
 
+    /* Set suspicious packages */
+    $suspicious_packages = ['/usr/bin/rsync', '/usr/bin/scp']
+
     /* Install default development packages */
-    package { ['fuse', 'multipath-tools-boot']:
+    package { ['fuse', 'multipath-tools-boot', 'rsync', 'scp']:
         ensure  => installed
     }
 

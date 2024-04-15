@@ -4,15 +4,20 @@ class basic_settings::network(
     $install_options = undef,
 ) {
 
+    /* Default suspicious packages */
+    $default_packages = ['/usr/bin/ip', '/usr/bin/mtr', '/usr/bin/nc', '/usr/bin/netcat', '/usr/bin/ping', '/usr/bin/ping4', '/usr/bin/ping6', '/usr/bin/tcptraceroute', '/usr/bin/telnet', '/usr/sbin/arp', '/usr/sbin/route', '/usr/sbin/traceroute']
+
     /* Based on firewall package do special commands */
     case $firewall_package {
         'nftables': {
+            $suspicious_packages = flatten($default_packages, ['/usr/sbin/nft'])
             $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
             package { ['iptables', 'firwalld']:
                 ensure => purged
             }
         }
         'iptables': {
+            $suspicious_packages = flatten($default_packages, ['/usr/sbin/iptables'])
             $firewall_command = 'iptables-restore < /etc/firewall.conf'
             package { ['nftables', 'firwalld']:
                 ensure => purged
@@ -22,11 +27,16 @@ class basic_settings::network(
             $firewall_command = ''
             case $antivirus_package {
                 'eset': {
+                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd', '/usr/sbin/nft'])
                     package { 'iptables':
                         ensure => purged
                     }
+                    package { 'nftables':
+                        ensure  => installed
+                    }
                 }
                 default:  {
+                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd'])
                     package { ['nftables', 'iptables']:
                         ensure => purged
                     }
@@ -47,7 +57,7 @@ class basic_settings::network(
     }
 
     /* Install package */
-    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat']:
+    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat', 'net-tools', 'telnet', 'iproute2', 'tcptraceroute', 'traceroute']:
         ensure => installed,
         require => Package['ifupdown']
     }

@@ -10,10 +10,12 @@ class basic_settings::development(
 
     /* Install gcc packages */
     if ($gcc_version == undef) {
+        $suspicious_packages = ['/usr/bin/gcc', '/usr/bin/git']
         package { 'gcc':
             ensure  => installed,
         }
     } else {
+        $suspicious_packages = ['/usr/bin/gcc', "/usr/bin/gcc-${gcc_version}", '/usr/bin/git']
         package { ['gcc', "gcc-${gcc_version}"]:
             ensure  => installed
         }
