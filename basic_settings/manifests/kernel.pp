@@ -182,4 +182,23 @@ class basic_settings::kernel(
         command => "bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/defrag'",
         onlyif  => 'bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
+
+    /* Setup audit */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'kernel':
+            rules    => [
+                '# Injection',
+                '# These rules watch for code injection by the ptrace facility.',
+                '# This could indicate someone trying to do something bad or just debugging',
+                '-a always,exit -F arch=b64 -S ptrace -F a0=0x4 -k code_injection',
+                '-a always,exit -F arch=b32 -S ptrace -F a0=0x4 -k code_injection',
+                '-a always,exit -F arch=b64 -S ptrace -F a0=0x5 -k data_injection',
+                '-a always,exit -F arch=b32 -S ptrace -F a0=0x5 -k data_injection',
+                '-a always,exit -F arch=b64 -S ptrace -F a0=0x6 -k register_injection',
+                '-a always,exit -F arch=b32 -S ptrace -F a0=0x6 -k register_injection',
+                '-a always,exit -F arch=b64 -S ptrace -k tracing',
+                '-a always,exit -F arch=b32 -S ptrace -k tracing'
+            ]
+        }
+    }
 }

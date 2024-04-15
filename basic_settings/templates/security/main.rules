@@ -56,18 +56,6 @@
 -w /etc/hosts -p wa -k hosts
 -w /etc/network -p wa -k network
 
-# Injection
-# These rules watch for code injection by the ptrace facility.
-# This could indicate someone trying to do something bad or just debugging
--a always,exit -F arch=b64 -S ptrace -F a0=0x4 -k code_injection
--a always,exit -F arch=b32 -S ptrace -F a0=0x4 -k code_injection
--a always,exit -F arch=b64 -S ptrace -F a0=0x5 -k data_injection
--a always,exit -F arch=b32 -S ptrace -F a0=0x5 -k data_injection
--a always,exit -F arch=b64 -S ptrace -F a0=0x6 -k register_injection
--a always,exit -F arch=b32 -S ptrace -F a0=0x6 -k register_injection
--a always,exit -F arch=b64 -S ptrace -k tracing
--a always,exit -F arch=b32 -S ptrace -k tracing
-
 # System startup scripts
 -w /etc/init -p wa -k init
 

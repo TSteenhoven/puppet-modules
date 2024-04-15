@@ -69,6 +69,7 @@ class basic_settings::security(
         notify  => Service['auditd']
     }
 
+    /* Check if systemd and message class exists */
     if ($systemd_enable and defined(Class['basic_settings::message'])) {
         /* Create systemctl daemon reload */
         exec { 'security_systemd_daemon_reload':
