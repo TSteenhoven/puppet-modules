@@ -60,7 +60,7 @@ class basic_settings::network(
                         '-a never,exclude -F exe=/opt/eset/efs/lib/odfeeder',
                         '-a never,exclude -F exe=/opt/eset/efs/lib/utild',
                     ],
-                    order  => 1
+                    order  => '01'
                 }
             }
         }
@@ -189,7 +189,7 @@ class basic_settings::network(
         basic_settings::security_audit { 'network':
             rules                       => flatten($netplan_rules, $networkd_rules),
             rule_suspicious_packages    => $suspicious_packages,
-            order                       => 15
+            order                       => 20
         }
     }
 }

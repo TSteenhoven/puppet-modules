@@ -199,7 +199,7 @@ class basic_settings::kernel(
                 '-a always,exit -F arch=b64 -S ptrace -k tracing',
                 '-a always,exit -F arch=b32 -S ptrace -k tracing'
             ],
-            order   => 5
+            order   => 15
         }
     }
 }

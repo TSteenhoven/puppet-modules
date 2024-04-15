@@ -44,7 +44,7 @@ class basic_settings::io(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'logrotate':
             rules => ['-a never,exclude -F auid=unset -F exe=/usr/sbin/logrotate'],
-            order => 1
+            order => '01'
         }
         basic_settings::security_audit { 'io':
             rule_suspicious_packages    => $suspicious_packages
