@@ -152,11 +152,6 @@
 -w /etc/crontab -p wa -k cron
 -w /var/spool/cron/crontabs -k cron
 
-# Software manager
--w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt
--w /usr/bin/apt -p x -F auid!=unset -k software_mgmt
--w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt
-
 # Monitor usage of commands to change power state
 -w /usr/sbin/shutdown -p x -k power
 -w /usr/sbin/poweroff -p x -k power

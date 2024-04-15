@@ -266,7 +266,7 @@ class basic_settings(
         server_fdqn                                => $server_fdqn,
         snap_enable                                => $snap_correct,
         mail_to                                    => $systemd_notify_mail,
-        require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message']]
+        require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message'], Class['basic_settings::security']]
     }
 
     /* Set Pro */
@@ -288,7 +288,8 @@ class basic_settings(
         connection_max          => $kernel_connection_max,
         hugepages               => $kernel_hugepages,
         tcp_congestion_control  => $kernel_tcp_congestion_control,
-        tcp_fastopen            => $kernel_tcp_fastopen
+        tcp_fastopen            => $kernel_tcp_fastopen,
+        require                 => Class['basic_settings::security']
     }
 
     /* Set network */
@@ -296,7 +297,7 @@ class basic_settings(
         antivirus_package   => $antivirus_package,
         firewall_package    => $firewall_package,
         install_options     => $backports_install_options,
-        require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
+        require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message'], Class['basic_settings::security']]
     }
 
     /* Set timezone */
@@ -307,6 +308,7 @@ class basic_settings(
 
     /* Set IO */
     class { 'basic_settings::io':
+        require => Class['basic_settings::security']
     }
 
     /* Check if we need sury */
@@ -543,13 +545,14 @@ class basic_settings(
     class { 'basic_settings::development':
         gcc_version     => $gcc_version,
         install_options => $backports_install_options,
-        require         => Exec['basic_settings_source_backports']
+        require         => [Exec['basic_settings_source_backports'], Class['basic_settings::security']]
     }
 
     /* Setup Puppet */
     class { 'basic_settings::puppet':
         server_enable  => $puppetserver_enable,
         server_package => $puppetserver_package,
-        server_dir     => $puppetserver_dir
+        server_dir     => $puppetserver_dir,
+        require        => Class['basic_settings::security']
     }
 }

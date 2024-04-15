@@ -32,6 +32,15 @@ class basic_settings::security(
         notify  => Service['auditd']
     }
 
+    /* Create rules dir */
+    file { '/etc/audit/rules.d':
+        ensure  => directory,
+        recurse => true,
+        force   => true,
+        purge   => true,
+        mode    => '0750'
+    }
+
     # Create default audit rule file */
     file { '/etc/audit/rules.d/audit.rules':
         ensure  => file,
@@ -39,7 +48,8 @@ class basic_settings::security(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Service['auditd']
+        notify  => Service['auditd'],
+        require => File['/etc/audit/rules.d']
     }
 
     /* Check if we have systemd */
@@ -50,13 +60,14 @@ class basic_settings::security(
     }
 
     # Create main audit rule file */
-    file { '/etc/audit/rules.d/99-main.rules':
+    file { '/etc/audit/rules.d/10-main.rules':
         ensure  => file,
         content => template('basic_settings/security/main.rules'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Service['auditd']
+        notify  => Service['auditd'],
+        require => File['/etc/audit/rules.d']
     }
 
     # Create default audit file */

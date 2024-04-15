@@ -188,7 +188,8 @@ class basic_settings::network(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'network':
             rules                       => flatten($netplan_rules, $networkd_rules),
-            rule_suspicious_packages    => $suspicious_packages
+            rule_suspicious_packages    => $suspicious_packages,
+            order                       => 15
         }
     }
 }

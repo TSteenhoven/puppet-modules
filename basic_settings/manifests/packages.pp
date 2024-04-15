@@ -17,9 +17,19 @@ class basic_settings::packages(
         ensure  => installed
     }
 
+    /* Set default rules */
+    $default_rules = [
+        '# Software manager',
+        '-w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt',
+        '-w /usr/bin/apt -p x -F auid!=unset -k software_mgmt',
+        '-w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt',
+        '-w /usr/bin/snap -p x -F auid!=unset -k software_mgmt'
+    ]
+
     /* Check if we need snap */
     if (!$snap_enable) {
         /* Remove snap */
+        $snap_rules = []
         package { 'snapd':
             ensure => purged
         }
@@ -30,6 +40,10 @@ class basic_settings::packages(
             require => Package['snapd']
         }
     } else {
+        $snap_rules = [
+            '-w snap -p x -F auid!=unset -k software_mgmt',
+            '-w snapctl -p x -F auid!=unset -k software_mgmt',
+        ]
         package { 'snapd':
             ensure => installed
         }
@@ -56,6 +70,21 @@ class basic_settings::packages(
         exec { 'packages_man_remove':
             command     => 'rm /usr/bin/man',
             onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
+        }
+
+        /* Setup audit */
+        if (defined(Package['auditd'])) {
+            basic_settings::security_audit { 'packages':
+                rules                       => flatten($default_rules, $snap_rules),
+                rule_suspicious_packages    => ['/usr/bin/do-release-upgrade']
+            }
+        }
+    } else {
+        /* Setup audit */
+        if (defined(Package['auditd'])) {
+            basic_settings::security_audit { 'packages':
+                rules => flatten($default_rules, $snap_rules)
+            }
         }
     }
 
