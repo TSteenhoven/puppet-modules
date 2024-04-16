@@ -1,7 +1,7 @@
 class basic_settings::io(
 ) {
 
-    /* Set suspicious packages */
+    /* Create list of packages that is suspicious */
     $suspicious_packages = ['/usr/bin/rsync']
 
     /* Install default development packages */

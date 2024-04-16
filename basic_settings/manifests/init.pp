@@ -421,30 +421,15 @@ class basic_settings(
 
     /* Check if variable nodejs is true; if true, install new source list and key */
     if ($nodejs_enable and $nodejs_allow) {
-        exec { 'source_nodejs':
-            command     => "curl -fsSL https://deb.nodesource.com/setup_${nodejs_version}.x | bash - &&\\",
-            unless      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Package['curl']
-        }
-
-        /* Install nodejs package */
-        package { 'nodejs':
-            ensure  => installed,
-            require => Exec['source_nodejs']
+        class { 'basic_settings::package_node':
+            enable      => true,
+            version     => $nodejs_version,
+            require     => Class['basic_settings::packages']
         }
     } else {
-        /* Remove nodejs package */
-        package { 'nodejs':
-            ensure  => purged
-        }
-
-        /* Remove nodejs repo */
-        exec { 'source_nodejs':
-            command     => 'rm /etc/apt/sources.list.d/nodesource.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Package['nodejs']
+        class { 'basic_settings::package_node':
+            enable      => false,
+            require     => Class['basic_settings::packages']
         }
     }
 

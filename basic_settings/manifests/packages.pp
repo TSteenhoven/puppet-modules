@@ -22,8 +22,7 @@ class basic_settings::packages(
         '# Software manager',
         '-w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt',
         '-w /usr/bin/apt -p x -F auid!=unset -k software_mgmt',
-        '-w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt',
-        '-w /usr/bin/snap -p x -F auid!=unset -k software_mgmt'
+        '-w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt'
     ]
 
     /* Check if we need snap */
@@ -72,14 +71,20 @@ class basic_settings::packages(
             onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
         }
 
+        /* Create list of packages that is suspicious */
+        $suspicious_packages =  ['/usr/bin/do-release-upgrade']
+
         /* Setup audit */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'packages':
                 rules                       => flatten($default_rules, $snap_rules),
-                rule_suspicious_packages    => ['/usr/bin/do-release-upgrade']
+                rule_suspicious_packages    => $suspicious_packages
             }
         }
     } else {
+        /* Create list of packages that is suspicious */
+        $suspicious_packages =  []
+
         /* Setup audit */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'packages':

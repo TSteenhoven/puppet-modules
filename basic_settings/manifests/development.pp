@@ -8,17 +8,24 @@ class basic_settings::development(
         ensure  => installed
     }
 
+    /* Set default rules */
+    $default_rules = ['/usr/bin/gcc', '/usr/bin/git', '/usr/bin/gmake', '/usr/bin/make']
+
     /* Install gcc packages */
     if ($gcc_version == undef) {
-        $suspicious_packages = ['/usr/bin/gcc', '/usr/bin/git']
         package { 'gcc':
             ensure  => installed,
         }
+
+        /* Create list of packages that is suspicious */
+        $suspicious_packages = $default_rules
     } else {
-        $suspicious_packages = ['/usr/bin/gcc', "/usr/bin/gcc-${gcc_version}", '/usr/bin/git']
         package { ['gcc', "gcc-${gcc_version}"]:
             ensure  => installed
         }
+
+        /* Create list of packages that is suspicious */
+        $suspicious_packages = flatten($default_rules, ["/usr/bin/gcc-${gcc_version}"])
     }
 
     /* Install packages */

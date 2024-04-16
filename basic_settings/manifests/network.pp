@@ -10,36 +10,44 @@ class basic_settings::network(
     /* Based on firewall package do special commands */
     case $firewall_package {
         'nftables': {
-            $suspicious_packages = flatten($default_packages, ['/usr/sbin/nft'])
             $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
             package { ['iptables', 'firwalld']:
                 ensure => purged
             }
+
+            /* Create list of packages that is suspicious */
+            $suspicious_packages = flatten($default_packages, ['/usr/sbin/nft'])
         }
         'iptables': {
-            $suspicious_packages = flatten($default_packages, ['/usr/sbin/iptables'])
             $firewall_command = 'iptables-restore < /etc/firewall.conf'
             package { ['nftables', 'firwalld']:
                 ensure => purged
             }
+
+            /* Create list of packages that is suspicious */
+            $suspicious_packages = flatten($default_packages, ['/usr/sbin/iptables'])
         }
         'firewalld': {
             $firewall_command = ''
             case $antivirus_package {
                 'eset': {
-                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd', '/usr/sbin/nft'])
                     package { 'iptables':
                         ensure => purged
                     }
                     package { 'nftables':
                         ensure  => installed
                     }
+
+                    /* Create list of packages that is suspicious */
+                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd', '/usr/sbin/nft'])
                 }
                 default:  {
-                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd'])
                     package { ['nftables', 'iptables']:
                         ensure => purged
                     }
+
+                    /* Create list of packages that is suspicious */
+                    $suspicious_packages = flatten($default_packages, ['/usr/bin/firewall-cmd'])
                 }
             }
         }
@@ -65,7 +73,6 @@ class basic_settings::network(
             }
         }
     }
-
 
     /* Remove unnecessary packages */
     package { ['ifupdown', 'wpasupplicant']:

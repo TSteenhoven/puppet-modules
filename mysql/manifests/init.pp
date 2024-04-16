@@ -67,9 +67,19 @@ class mysql (
         /* Default file is different than normal install */
         $defaults_file = '/etc/mysql/mysql.conf.d/mysqld.cnf'
 
+        /* Create list of packages that is suspicious */
+        $suspicious_packages = ['/usr/bin/mysql']
+
         /* Install MySQL server */
         package { 'mysql-server':
             ensure => present
+        }
+
+        /* Setup audit */
+        if (defined(Package['auditd'])) {
+            basic_settings::security_audit { 'mysql':
+                rule_suspicious_packages => $suspicious_packages
+            }
         }
 
         /* Enable hugepages */
@@ -153,6 +163,7 @@ class mysql (
     } else {
         /* Default file for normal install */
         $defaults_file = '/etc/mysql/debian.cnf'
+        $suspicious_packages = undef
     }
 
     /* Set config file */
