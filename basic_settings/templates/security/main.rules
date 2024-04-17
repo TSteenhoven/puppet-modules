@@ -93,21 +93,6 @@
 -w /var/log/lastlog -p wa -k login
 -w /var/log/auth.log -p wa -k login
 
-# PAM configuration
--w /etc/pam.d -p wa -k pam
--w /etc/security/limits.conf -p wa  -k pam
--w /etc/security/pam_env.conf -p wa -k pam
--w /etc/security/namespace.conf -p wa -k pam
--w /etc/security/namespace.init -p wa -k pam
-
-# Monitor for use of process ID change (switching accounts) applications
--w /bin/su -p x -k priv_esc
--w /usr/bin/sudo -p x -k priv_esc
--w /etc/sudoers -p r -F auid!=unset -k priv_esc
--w /etc/sudoers.d -p r -F auid!=unset -k priv_esc
--w /etc/sudoers -p wa -k priv_esc
--w /etc/sudoers.d -p wa -k priv_esc
-
 # Shell/profile configurations
 -w /etc/profile.d -p wa -k shell_profiles
 -w /etc/profile -p wa -k shell_profiles

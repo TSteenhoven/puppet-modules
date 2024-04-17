@@ -75,7 +75,7 @@ class mysql (
             ensure => present
         }
 
-        /* Setup audit */
+        /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'mysql':
                 rule_suspicious_packages => $suspicious_packages

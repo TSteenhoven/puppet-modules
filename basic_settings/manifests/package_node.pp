@@ -26,7 +26,7 @@ class basic_settings::package_node(
         /* Create list of packages that is suspicious */
         $suspicious_packages = ['/usr/local/npm']
 
-        /* Setup audit */
+        /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'node':
                 rule_suspicious_packages => $suspicious_packages

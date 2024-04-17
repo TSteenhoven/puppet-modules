@@ -7,6 +7,9 @@
 # Feel free to increase this if the machine panic's
 -b 8192
 
+# This determine how long to wait in burst of events
+--backlog_wait_time 60000
+
 # Failure Mode
 # Possible values are 0 (silent), 1 (printk, print a failure message) and 2 (panic, halt the system).
 -f 1

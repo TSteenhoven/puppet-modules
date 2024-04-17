@@ -4,7 +4,7 @@ class basic_settings::development(
 ) {
 
     /* Install default development packages */
-    package { 'build-essential':
+    package { ['build-essential', 'python-is-python3', 'python3', 'ruby', 'screen']:
         ensure  => installed
     }
 
@@ -34,7 +34,7 @@ class basic_settings::development(
         install_options => $install_options
     }
 
-    /* Setup audit */
+    /* Setup audit rules */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'development':
             rule_suspicious_packages => $suspicious_packages

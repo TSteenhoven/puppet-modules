@@ -98,9 +98,12 @@ class basic_settings::kernel(
     }
 
     /* Basic system packages */
-    package { ['bc', 'coreutils', 'lsb-release']:
+    package { ['bc', 'coreutils', 'lsb-release', 'util-linux']:
         ensure  => installed
     }
+
+    /* Create list of packages that is suspicious */
+    $suspicious_packages = ['/bin/su'];
 
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
@@ -183,10 +186,11 @@ class basic_settings::kernel(
         onlyif  => 'bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
     }
 
-    /* Setup audit */
+    /* Setup audit rules */
     if (defined(Package['auditd'])) {
+        /* Create kernel rules */
         basic_settings::security_audit { 'kernel':
-            rules    => [
+            rules                   => [
                 '# Injection',
                 '# These rules watch for code injection by the ptrace facility.',
                 '# This could indicate someone trying to do something bad or just debugging',
@@ -199,7 +203,14 @@ class basic_settings::kernel(
                 '-a always,exit -F arch=b64 -S ptrace -k tracing',
                 '-a always,exit -F arch=b32 -S ptrace -k tracing'
             ],
+            rule_suspicious_packages => $suspicious_packages,
             order   => 15
+        }
+
+        /* Ignore current working directory records */
+        basic_settings::security_audit { 'kernel-cwd':
+            rules => ['-a always,exclude -F msgtype=CWD'],
+            order => 1
         }
     }
 }

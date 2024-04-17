@@ -4,7 +4,7 @@ class basic_settings::security(
 ) {
 
     /* Install default security packages */
-    package { ['apparmor', 'auditd']:
+    package { ['apparmor', 'auditd', 'pwgen']:
         ensure  => installed
     }
 

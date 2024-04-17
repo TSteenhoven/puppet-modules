@@ -74,7 +74,7 @@ class basic_settings::packages(
         /* Create list of packages that is suspicious */
         $suspicious_packages =  ['/usr/bin/do-release-upgrade']
 
-        /* Setup audit */
+        /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'packages':
                 rules                       => flatten($default_rules, $snap_rules),
@@ -85,7 +85,7 @@ class basic_settings::packages(
         /* Create list of packages that is suspicious */
         $suspicious_packages =  []
 
-        /* Setup audit */
+        /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'packages':
                 rules => flatten($default_rules, $snap_rules)
@@ -97,7 +97,7 @@ class basic_settings::packages(
     $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
     file { '/etc/apt/apt.conf.d/99-unattended-upgrades':
         ensure  => file,
-        content  => template('basic_settings/apt/unattended-upgrades'),
+        content  => template('basic_settings/packages/unattended-upgrades'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
@@ -107,7 +107,7 @@ class basic_settings::packages(
     /* Create APT settings */
     file { '/etc/apt/apt.conf.d/99-settings':
         ensure  => file,
-        content  => template('basic_settings/apt/settings'),
+        content  => template('basic_settings/packages/settings'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
@@ -117,7 +117,7 @@ class basic_settings::packages(
     /* Create needrestart config */
     file { '/etc/needrestart/conf.d/99-custom.conf':
         ensure  => file,
-        content  => template('basic_settings/apt/needrestart.conf'),
+        content  => template('basic_settings/packages/needrestart.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',

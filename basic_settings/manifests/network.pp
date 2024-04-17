@@ -59,7 +59,7 @@ class basic_settings::network(
         install_options => $install_options
     }
 
-    /* Setup audit */
+    /* Setup audit rules */
     if (defined(Package['auditd'])) {
         case $antivirus_package {
             'eset': {
@@ -191,7 +191,7 @@ class basic_settings::network(
         $networkd_rules = []
     }
 
-    /* Setup audit */
+    /* Setup audit rules */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'network':
             rules                       => flatten($netplan_rules, $networkd_rules),

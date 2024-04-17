@@ -40,7 +40,7 @@ class basic_settings::io(
         notify  => Service['multipathd']
     }
 
-    /* Setup audit */
+    /* Setup audit rules */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'logrotate':
             rules => ['-a never,exclude -F auid=unset -F exe=/usr/sbin/logrotate'],

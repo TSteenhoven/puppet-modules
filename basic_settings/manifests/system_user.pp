@@ -125,5 +125,15 @@ define basic_settings::system_user(
                 require => File[$home]
             }
         }
+
+        /* Create audit rules */
+        if ($ensure and defined(Package['auditd'])) {
+            basic_settings::security_audit { "${name}-ssh":
+                rules => [
+                    "-w ${home}/.ssh -p r -F auid!=unset -k ssh",
+                    "-w ${home}/.ssh -p wa -k ssh"
+                ]
+            }
+        }
     }
 }

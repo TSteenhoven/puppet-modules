@@ -53,11 +53,13 @@ Basic Settings bestaat uit de volgende subonderdelen:
 - **Netwerk:** Pakketen / configuraties die te maken hebben met netwerk en deze optimaal configureren voor HPC gebruik.
 - **Packages:** Installeren van package manager en overige package manager deinstalleren indien dat mogelijk is.
     - **Packages MySQL:** APT repo voor MySQL configureren met bijbehorende key.
+    - **Packages Node:** APT repo voor Node configureren en te installeren.
 - **Pro:** Bij Ubuntu is het mogelijk om een Pro abonnement af te nemen, dit subonderdeel zorgt ervoor dat alle benodigde packages zijn geïnstalleerd.
 - **Puppet:** Configureert Puppet op de juiste manier.
 - **Security:** Installeert benodigde security pakketen om de server te monitoren.
 - **Systemd:** Installeert systemd en zorgt ervoor dat de juiste system target geconfigureerd wordt.
 - **Timezone:** Configureert tijd / datum.
+- **User:** Pakketen / configuraties die te maken hebben met user gedeelte.
 
 ### Voorbeeld
 

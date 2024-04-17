@@ -100,7 +100,7 @@ class basic_settings::puppet(
             }
         }
 
-        /* Setup audit */
+        /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'puppet':
                 rules => [

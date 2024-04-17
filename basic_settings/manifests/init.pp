@@ -195,12 +195,12 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['dconf-service', 'at-spi2-core', 'lxd-installer', 'plymouth', 'session-migration', 'xdg-user-dirs', 'x11-utils']:
+    package { ['dconf-service', 'at-spi2-core', 'lxd-installer', 'plymouth', 'x11-utils']:
         ensure  => purged
     }
 
     /* Basic system packages */
-    package { ['bash-completion', 'libpam-modules', 'nano', 'pbzip2', 'pigz', 'pwgen', 'python-is-python3', 'python3', 'ruby', 'screen', 'sudo', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['nano', 'pbzip2', 'pigz', 'sysstat', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 
@@ -480,25 +480,6 @@ class basic_settings(
         }
     }
 
-    /* Setup sudoers config file */
-    file { '/etc/sudoers':
-        ensure  => file,
-        mode    => '0440',
-        owner   => 'root',
-        group   => 'root',
-        content => template('basic_settings/sudoers')
-    }
-
-    /* Setup sudoers dir */
-    if ($sudoers_dir_enable) {
-        file { '/etc/sudoers.d':
-            ensure  => directory,
-            purge   => true,
-            recurse => true,
-            force   => true,
-        }
-    }
-
     /* Check if OS is Ubuntul For the next step we need systemd package */
     if ($os_parent == 'ubuntu') {
         /* Disable motd news */
@@ -536,5 +517,10 @@ class basic_settings(
         server_enable  => $puppetserver_enable,
         server_package => $puppetserver_package,
         server_dir     => $puppetserver_dir
+    }
+
+    /* Setup user */
+    class { 'basic_settings::user':
+        sudoers_dir_enable => $sudoers_dir_enable
     }
 }

@@ -1,6 +1,6 @@
 {
     "name": "puppetmodules-basic_settings",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": "DevSysEngineer",
     "summary": "Setup a headless server with associated components.",
     "license": "Apache-2.0",
