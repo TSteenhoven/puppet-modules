@@ -1,1 +1,2 @@
+# Managed by puppet
 DPkg::Pre-Install-Pkgs {"[ -d '/etc/php/mods-available' ] && unlink /etc/php/mods-available || true";};
