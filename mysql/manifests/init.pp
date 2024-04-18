@@ -78,7 +78,8 @@ class mysql (
         /* Setup audit rules */
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'mysql':
-                rule_suspicious_packages => $suspicious_packages
+                rules            => $suspicious_packages,
+                rules_options    => ['-F auid!=unset']
             }
         }
 

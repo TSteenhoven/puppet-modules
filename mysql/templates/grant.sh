@@ -1,4 +1,5 @@
 #!/bin/bash
+# Managed by puppet
 
 arg_action="$1"
 arg_username="$2"

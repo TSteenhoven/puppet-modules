@@ -11,6 +11,12 @@
 
 # Suspicious activity
 <% @rule_suspicious_packages.each do |rule_suspicious_package| -%>
--w <%= rule_suspicious_package %> -p x -k susp_activity
+<% if @rule_options.empty? -%>
+-a always,exit -F arch=b32 -F perm=x -F path=<%= rule_suspicious_package %> -F key=susp_activity
+-a always,exit -F arch=b64 -F perm=x -F path=<%= rule_suspicious_package %> -F key=susp_activity
+<% else -%>
+-a always,exit -F arch=b32 -F perm=x -F path=<%= rule_suspicious_package %> <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
+-a always,exit -F arch=b64 -F perm=x -F path=<%= rule_suspicious_package %> <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
+<% end -%>
 <% end -%>
 <% end -%>

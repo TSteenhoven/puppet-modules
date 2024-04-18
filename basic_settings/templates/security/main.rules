@@ -2,143 +2,209 @@
 
 # Audit the audit logs.
 # Successful and unsuccessful attempts to read information from the audit records; all modifications to the audit trail
--w /var/log/audit -F auid!=unset -k audit_log
+-a always,exit -F arch=b32 -F path=/var/log/audit -F auid!=unset -F key=audit_log
+-a always,exit -F arch=b64 -F path=/var/log/audit -F auid!=unset -F key=audit_log
 
 # Auditd configuration modifications to audit configuration that occur while the audit collection functions are operating
--w /etc/audit -p wa -k audit_config
--w /etc/libaudit.conf -p wa -k audit_config
+-a always,exit -F arch=b32 -F path=/etc/audit -F perm=wa -F key=audit_config
+-a always,exit -F arch=b64 -F path=/etc/audit -F perm=wa -F key=audit_config
+-a always,exit -F arch=b32 -F path=/etc/libaudit.conf -F perm=wa -F key=audit_config
+-a always,exit -F arch=b64 -F path=/etc/libaudit.conf -F perm=wa -F key=audit_config
 
 # Monitor for use of audit management tools
--w /usr/bin/aulast -p x -k audit_tools
--w /usr/bin/auvirt -p x -k audit_tools
--w /usr/sbin/auditctl -p x -k audit_tools
--w /usr/sbin/auditd -p x -k audit_tools
--w /usr/sbin/augenrules -p x -k audit_tools
--w /usr/sbin/aureport -p x -F auid!=unset -k audit_tools
--w /usr/sbin/ausearch -p x -k audit_tools
+-a always,exit -F arch=b32 -F path=/usr/bin/aulast -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/bin/aulast -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/bin/auvirt -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/bin/auvirt -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/auditctl -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/auditctl -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/auditd -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/auditd -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/augenrules -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/augenrules -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aulastlog -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aulastlog -F perm=x -F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aureport -F perm=x -F auid!=unset-F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aureport -F perm=x -F auid!=unset-F key=audit_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/ausearch -F perm=x -F key=audit_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/ausearch -F perm=x -F key=audit_tools
 
 # Kernel parameters
--w /usr/sbin/sysctl -p x -k sysctl
--w /etc/sysctl.conf -p wa -k sysctl
--w /etc/sysctl.d -p wa -k sysctl
+-a always,exit -F arch=b32 -F path=/usr/sbin/sysctl -F perm=x -F key=sysctl
+-a always,exit -F arch=b64 -F path=/usr/sbin/sysctl -F perm=x -F key=sysctl
+-a always,exit -F arch=b32 -F path=/etc/sysctl.conf -F perm=wa -F key=sysctl
+-a always,exit -F arch=b64 -F path=/etc/sysctl.conf -F perm=wa -F key=sysctl
+-a always,exit -F arch=b32 -F path=/etc/sysctl.d -F perm=wa -F key=sysctl
+-a always,exit -F arch=b64 -F path=/etc/sysctl.d -F perm=wa -F key=sysctl
 
 # Kernel modules
--a always,exit -F arch=b32 -S init_module -S delete_module -k modules
--a always,exit -F arch=b64 -S init_module -S delete_module -k modules
--w /usr/sbin/insmod -p x -k modules
--w /usr/sbin/rmmod -p x -k modules
--w /usr/sbin/modprobe -p x -k modules
+-a always,exit -F arch=b32 -S init_module -S delete_module -F key=modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -F key=modules
+-a always,exit -F arch=b32 -F path=/usr/sbin/insmod -F perm=x -F key=modules
+-a always,exit -F arch=b64 -F path=/usr/sbin/insmod -F perm=x -F key=modules
+-a always,exit -F arch=b32 -F path=/usr/sbin/rmmod -F perm=x -F key=modules
+-a always,exit -F arch=b64 -F path=/usr/sbin/rmmod -F perm=x -F key=modules
+-a always,exit -F arch=b32 -F path=/usr/sbin/modprobe -F perm=x -F key=modules
+-a always,exit -F arch=b64 -F path=/usr/sbin/modprobe -F perm=x -F key=modules
 
 # Modprobe configuration
--w /etc/modprobe.conf -p wa -k modprobe
--w /etc/modprobe.d -p wa -k modprobe
+-a always,exit -F arch=b32 -F path=/etc/modprobe.conf -F perm=wa -F key=modprobe
+-a always,exit -F arch=b64 -F path=/etc/modprobe.conf -F perm=wa -F key=modprobe
+-a always,exit -F arch=b32 -F path=/etc/modprobe.d -F perm=wa -F key=modprobe
+-a always,exit -F arch=b64 -F path=/etc/modprobe.d -F perm=wa -F key=modprobe
 
 # Special files
--a exit,always -F arch=b32 -S mknod -S mknodat -F auid!=unset -k special_files
--a exit,always -F arch=b64 -S mknod -S mknodat -F auid!=unset -k special_files
+-a exit,always -F arch=b32 -S mknod -S mknodat -F auid!=unset -F key=special_files
+-a exit,always -F arch=b64 -S mknod -S mknodat -F auid!=unset -F key=special_files
 
 # Mount operations
--a exit,always -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -k mount
--a exit,always -F arch=b64 -S mount -S umount2 -F auid!=unset -k mount
+-a exit,always -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -F key=mount
+-a exit,always -F arch=b64 -S mount -S umount2 -F auid!=unset -F key=mount
 
 # Changes to the time
--a always,exit -F arch=b32 -S adjtimex -S settimeofday -k time
--a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time
--w /etc/localtime -p wa -k time
--w /etc/timezone -p wa -k time
+-a always,exit -F arch=b32 -S adjtimex -S settimeofday -F key=time
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -F key=time
+-a always,exit -F arch=b32 -F path=/etc/localtime -F perm=wa -F key=time
+-a always,exit -F arch=b64 -F path=/etc/localtime -F perm=wa -F key=time
+-a always,exit -F arch=b32 -F path=/etc/timezone -F perm=wa -F key=time
+-a always,exit -F arch=b64 -F path=/etc/timezone -F perm=wa -F key=time
 
 # Changes to hostname
--a always,exit -F arch=b32 -S sethostname -S setdomainname -k hostname
--a always,exit -F arch=b64 -S sethostname -S setdomainname -k hostname
--w /etc/hostname -p wa -k hostname
+-a always,exit -F arch=b32 -S sethostname -S setdomainname -F key=hostname
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -F key=hostname
+-a always,exit -F arch=b32 -F path=/etc/hostname -F perm=wa -F key=hostname
+-a always,exit -F arch=b64 -F path=/etc/hostname -F perm=wa -F key=hostname
 
 # Network configuration
--w /etc/hosts -p wa -k hosts
--w /etc/network -p wa -k network
+-a always,exit -F arch=b32 -F path=/etc/hosts -F perm=wa -F key=hosts
+-a always,exit -F arch=b64 -F path=/etc/hosts -F perm=wa -F key=hosts
+-a always,exit -F arch=b32 -F path=/etc/network -F perm=wa -F key=network
+-a always,exit -F arch=b64 -F path=/etc/network -F perm=wa -F key=network
 
 # System startup scripts
--w /etc/init -p wa -k init
+-a always,exit -F arch=b32 -F path=/etc/init -F perm=wa -F key=init
+-a always,exit -F arch=b64 -F path=/etc/init -F perm=wa -F key=init
 
 # Library search paths
--w /etc/ld.so.conf -p wa -k lib_path
--w /etc/ld.so.conf.d -p wa -k lib_path
+-a always,exit -F arch=b32 -F path=/etc/ld.so.conf -F perm=wa -F key=lib_path
+-a always,exit -F arch=b64 -F path=/etc/ld.so.conf -F perm=wa -F key=lib_path
+-a always,exit -F arch=b32 -F path=/etc/ld.so.conf.d -F perm=wa -F key=lib_path
+-a always,exit -F arch=b64 -F path=/etc/ld.so.conf.d -F perm=wa -F key=lib_path
 
 ## Systemwide library preloads (LD_PRELOAD)
--w /etc/ld.so.preload -p wa -k system_wide_preloads
+-a always,exit -F arch=b32 -F path=/etc/ld.so.preload -F perm=wa -F key=system_wide_preloads
+-a always,exit -F arch=b64 -F path=/etc/ld.so.preload -F perm=wa -F key=system_wide_preloads
 
 # Changes to issue
--w /etc/issue -p wa -k issue
--w /etc/issue.net -p wa -k issue
+-a always,exit -F arch=b32 -F path=/etc/issue -F perm=wa -F key=issue
+-a always,exit -F arch=b64 -F path=/etc/issue -F perm=wa -F key=issue
+-a always,exit -F arch=b32 -F path=/etc/issue.net -F perm=wa -F key=issue
+-a always,exit -F arch=b64 -F path=/etc/issue.net -F perm=wa -F key=issue
 <% if @systemd_enable -%>
 
+# Apparmor configuration
+-a always,exit -F arch=b32 -F path=/etc/apparmor -F perm=wa -F key=apparmor
+-a always,exit -F arch=b64 -F path=/etc/apparmor -F perm=wa -F key=apparmor
+-a always,exit -F arch=b32 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
+-a always,exit -F arch=b64 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
+
 # Systemd configuration
--w /bin/systemctl -p x -F auid!=unset -k systemd
--w /etc/systemd -p wa -k systemd
--w /usr/lib/systemd -p wa -k systemd
+-a always,exit -F arch=b32 -F path=/bin/systemctl -F perm=x -F auid!=unset -F key=systemd
+-a always,exit -F arch=b64 -F path=/bin/systemctl -F perm=x -F auid!=unset -F key=systemd
+-a always,exit -F arch=b32 -F path=/etc/systemd -F perm=wa -F key=systemd
+-a always,exit -F arch=b64 -F path=/etc/systemd -F perm=wa -F key=systemd
+-a always,exit -F arch=b32 -F path=/usr/lib/systemd -F perm=wa -F key=systemd
+-a always,exit -F arch=b64 -F path=/usr/lib/systemd -F perm=wa -F key=systemd
 
 # Detect journalctl use
--w /bin/journalctl -p x -k journalctl
+-a always,exit -F arch=b32 -F path=/bin/journalctl -F perm=x -F key=journalctl
+-a always,exit -F arch=b64 -F path=/bin/journalctl -F perm=x -F key=journalctl
 <% end -%>
 
 # Monitor modifation on a user/group 
--w /etc/group -p wa -k identity
--w /etc/passwd -p wa -k identity
--w /etc/gshadow -p wa -k identity
--w /etc/shadow -p wa -k identity
--w /etc/security/opasswd -p wa -k identity
+-a always,exit -F arch=b32 -F path=/etc/group -F perm=wa -F key=identity
+-a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -F key=identity
+-a always,exit -F arch=b32 -F path=/etc/passwd -F perm=wa -F key=identity
+-a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -F key=identity
+-a always,exit -F arch=b32 -F path=/etc/gshadow -F perm=wa -F key=identity
+-a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -F key=identity
+-a always,exit -F arch=b32 -F path=/etc/shadow -F perm=wa -F key=identity
+-a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -F key=identity
+-a always,exit -F arch=b32 -F path=/etc/security/opasswd -F perm=wa -F key=identity
+-a always,exit -F arch=b64 -F path=/etc/security/opasswd -F perm=wa -F key=identity
 
 # Login configuration and information
--w /etc/login.defs -p wa -k login
--w /var/log/faillog -p wa -k login
--w /var/log/lastlog -p wa -k login
--w /var/log/auth.log -p wa -k login
+-a always,exit -F arch=b32 -F path=/etc/login.defs -F perm=wa -F key=login
+-a always,exit -F arch=b64 -F path=/etc/login.defs -F perm=wa -F key=login
+-a always,exit -F arch=b32 -F path=/var/log/faillog -F perm=wa -F key=login
+-a always,exit -F arch=b64 -F path=/var/log/faillog -F perm=wa -F key=login
+-a always,exit -F arch=b32 -F path=/var/log/lastlog -F perm=wa -F key=login
+-a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -F key=login
+-a always,exit -F arch=b32 -F path=/var/log/auth.log -F perm=wa -F key=login
+-a always,exit -F arch=b64 -F path=/var/log/auth.log -F perm=wa -F key=login
 
 # Shell/profile configurations
--w /etc/profile.d -p wa -k shell_profiles
--w /etc/profile -p wa -k shell_profiles
--w /etc/shells -p wa -k shell_profiles
+-a always,exit -F arch=b32 -F path=/etc/profile.d -F perm=wa -F key=shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/profile.d -F perm=wa -F key=shell_profiles
+-a always,exit -F arch=b32 -F path=/etc/profile -F perm=wa -F key=shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/profile -F perm=wa -F key=shell_profiles
+-a always,exit -F arch=b32 -F path=/etc/shells -F perm=wa -F key=shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/shells -F perm=wa -F key=shell_profiles
 
 # Detect remote shell use
--a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
--a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
--a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
--a always,exit -F arch=b32 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -F key=remote_shell
+-a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -F key=remote_shell
+-a always,exit -F arch=b32 -F exe=/usr/bin/bash -F success=1 -S connect -F key=remote_shell
+-a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -F key=remote_shell
 
 # Log all commands executed by an effective id of 0 aka root
--a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -k root_cmd
--a exit,always -F arch=b32 -F euid=0 -S execve -F auid!=unset -k root_cmd
+-a exit,always -F arch=b32 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
+-a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
 
 # Capture all failures to access on critical elements
--a exit,always -F arch=b32 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/bin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/var -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/home -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/srv -F success=0 -k unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/srv -F success=0 -k unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b32 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
+-a exit,always -F arch=b64 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
 
 # Cron configuration and scheduled jobs
--w /etc/cron.allow -p wa -k cron
--w /etc/cron.deny -p wa -k cron
--w /etc/cron.d -p wa -k cron
--w /etc/cron.daily -p wa -k cron
--w /etc/cron.hourly -p wa -k cron
--w /etc/cron.monthly -p wa -k cron
--w /etc/cron.weekly -p wa -k cron
--w /etc/crontab -p wa -k cron
--w /var/spool/cron/crontabs -k cron
+-a always,exit -F arch=b32 -F path=/etc/cron.allow -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.allow -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.deny -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.deny -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.d -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.d -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.daily -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.daily -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.hourly -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.hourly -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.monthly -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.monthly -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/cron.weekly -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/cron.weekly -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/etc/crontab -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/etc/crontab -F perm=wa -F key=cron
+-a always,exit -F arch=b32 -F path=/var/spool/cron/crontabs -F key=cron
+-a always,exit -F arch=b64 -F path=/var/spool/cron/crontabs -F key=cron
 
 # Monitor usage of commands to change power state
--w /usr/sbin/shutdown -p x -k power
--w /usr/sbin/poweroff -p x -k power
--w /usr/sbin/reboot -p x -k power
--w /usr/sbin/halt -p x -k power
+-a always,exit -F arch=b32 -F path=/usr/sbin/shutdown -F perm=x -F key=power
+-a always,exit -F arch=b64 -F path=/usr/sbin/shutdown -F perm=x -F key=power
+-a always,exit -F arch=b32 -F path=/usr/sbin/poweroff -F perm=x -F key=power
+-a always,exit -F arch=b64 -F path=/usr/sbin/poweroff -F perm=x -F key=power
+-a always,exit -F arch=b32 -F path=/usr/sbin/reboot -F perm=x -F key=power
+-a always,exit -F arch=b64 -F path=/usr/sbin/reboot -F perm=x -F key=power
+-a always,exit -F arch=b32 -F path=/usr/sbin/halt -F perm=x -F key=power
+-a always,exit -F arch=b64 -F path=/usr/sbin/halt -F perm=x -F key=power

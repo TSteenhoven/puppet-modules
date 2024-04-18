@@ -20,9 +20,12 @@ class basic_settings::packages(
     /* Set default rules */
     $default_rules = [
         '# Software manager',
-        '-w /usr/bin/dpkg -p x -F auid!=unset -k software_mgmt',
-        '-w /usr/bin/apt -p x -F auid!=unset -k software_mgmt',
-        '-w /usr/bin/apt-get -p x -F auid!=unset -k software_mgmt'
+        '-a always,exit -F arch=b32 -F path=/usr/bin/dpkg -F perm=x -F auid!=unset -F key=software_mgmt',
+        '-a always,exit -F arch=b64 -F path=/usr/bin/dpkg -F perm=x -F auid!=unset -F key=software_mgmt',
+        '-a always,exit -F arch=b32 -F path=/usr/bin/apt -F perm=x -F auid!=unset -F key=software_mgmt',
+        '-a always,exit -F arch=b64 -F path=/usr/bin/apt -F perm=x -F auid!=unset -F key=software_mgmt',
+        '-a always,exit -F arch=b32 -F path=/usr/bin/apt-get -F perm=x -F auid!=unset -F key=software_mgmt',
+        '-a always,exit -F arch=b64 -F path=/usr/bin/apt-get -F perm=x -F auid!=unset -F key=software_mgmt'
     ]
 
     /* Check if we need snap */
@@ -40,8 +43,10 @@ class basic_settings::packages(
         }
     } else {
         $snap_rules = [
-            '-w snap -p x -F auid!=unset -k software_mgmt',
-            '-w snapctl -p x -F auid!=unset -k software_mgmt',
+            '-a always,exit -F arch=b32 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
+            '-a always,exit -F arch=b64 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
+            '-a always,exit -F arch=b32 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
+            '-a always,exit -F arch=b64 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
         ]
         package { 'snapd':
             ensure => installed

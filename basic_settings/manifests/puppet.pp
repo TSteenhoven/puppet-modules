@@ -104,15 +104,21 @@ class basic_settings::puppet(
         if (defined(Package['auditd'])) {
             basic_settings::security_audit { 'puppet':
                 rules => [
-                    '-w /etc/puppet/ssl -p wa -k puppet_ssl',
-                    '-w /etc/puppet/code -p r -F auid!=unset -k puppet_code',
-                    '-w /etc/puppet/code -p wa -k puppet_code'
+                    '-a always,exit -F arch=b32 -F path=/etc/puppet/ssl -F perm=wa -F key=puppet_ssl',
+                    '-a always,exit -F arch=b64 -F path=/etc/puppet/ssl -F perm=wa -F key=puppet_ssl',
+                    '-a always,exit -F arch=b32 -F path=/etc/puppet/code -F perm=r -F auid!=unset -F key=puppet_code',
+                    '-a always,exit -F arch=b64 -F path=/etc/puppet/code -F perm=r -F auid!=unset -F key=puppet_code',
+                    '-a always,exit -F arch=b32 -F path=/etc/puppet/code -F perm=wa -F key=puppet_code',
+                    '-a always,exit -F arch=b64 -F path=/etc/puppet/code -F perm=wa -F key=puppet_code'
                 ]
             }
         }
     } elsif (defined(Package['auditd'])) {
         basic_settings::security_audit { 'puppet':
-            rules => ['-w /etc/puppet/ssl -p wa -k puppet_ssl']
+            rules => [
+                '-a always,exit -F arch=b32 -F path=/etc/puppet/ssl -F perm=wa -F key=puppet_ssl',
+                '-a always,exit -F arch=b64 -F path=/etc/puppet/ssl -F perm=wa -F key=puppet_ssl'
+            ]
         }
     }
 }

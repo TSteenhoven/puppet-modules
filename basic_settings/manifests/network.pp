@@ -88,7 +88,10 @@ class basic_settings::network(
     /* If we need to install netplan */
     case $operatingsystem {
         'Ubuntu': {
-            $netplan_rules = [' -w /etc/netplan -p wa -k network']
+            $netplan_rules = [
+                '-a always,exit -F arch=b32 -F path=/etc/netplan -F perm=wa -F key=network',
+                '-a always,exit -F arch=b64 -F path=/etc/netplan -F perm=wa -F key=network'
+            ]
             package { 'netplan.io':
                 ensure  => installed
             }
@@ -142,7 +145,10 @@ class basic_settings::network(
 
     if (defined(Package['systemd'])) {
         /* Set networkd rules */
-        $networkd_rules = ['-w /etc/networkd-dispatcher -p wa -k network']
+        $networkd_rules = [
+            '-a always,exit -F arch=b32 -F path=/etc/networkd-dispatcher -F perm=wa -F key=network',
+            '-a always,exit -F arch=b64 -F path=/etc/networkd-dispatcher -F perm=wa -F key=network'
+        ]
 
         /* Install package */
         package { 'networkd-dispatcher':

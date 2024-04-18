@@ -46,10 +46,14 @@ class ssh(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'ssh':
             rules => [
-                '-w /etc/ssh/sshd_config -p r -F auid!=unset -k sshd',
-                '-w /etc/ssh/sshd_config.d -p r -F auid!=unset -k sshd',
-                '-w /etc/ssh/sshd_config -p wa -k sshd',
-                '-w /etc/ssh/sshd_config.d -p wa -k sshd'
+                '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config -F perm=r -F auid!=unset -F key=sshd',
+                '-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config -F perm=r -F auid!=unset -F key=sshd',
+                '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config.d -F perm=r -F auid!=unset -F key=sshd',
+                '-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config.d -F perm=r -F auid!=unset -F key=sshd',
+                '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config -F perm=wa -F key=sshd',
+                '-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config -F perm=wa -F key=sshd',
+                '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config.d -F perm=wa -F key=sshd'
+                '-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config.d -F perm=wa -F key=sshd'
             ],
             rule_suspicious_packages => [
                 '/usr/bin/ssh'

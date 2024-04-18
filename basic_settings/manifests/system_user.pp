@@ -130,8 +130,10 @@ define basic_settings::system_user(
         if ($ensure and defined(Package['auditd'])) {
             basic_settings::security_audit { "${name}-ssh":
                 rules => [
-                    "-w ${home}/.ssh -p r -F auid!=unset -k ssh",
-                    "-w ${home}/.ssh -p wa -k ssh"
+                    "-a always,exit -F arch=b32 -F path=${home}/.ssh -F perm=r -F auid!=unset -F key=ssh",
+                    "-a always,exit -F arch=b64 -F path=${home}/.ssh -F perm=r -F auid!=unset -F key=ssh",
+                    "-a always,exit -F arch=b32 -F path=${home}/.ssh -F perm=wa -F key=ssh",
+                    "-a always,exit -F arch=b64 -F path=${home}/.ssh -F perm=wa -F key=ssh"
                 ]
             }
         }

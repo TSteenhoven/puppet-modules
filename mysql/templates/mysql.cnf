@@ -1,2 +1,3 @@
+# Managed by puppet
 !includedir /etc/mysql/conf.d/
 !includedir /etc/mysql/mysql.conf.d/
