@@ -1,5 +1,8 @@
 # Managed by puppet
 
+# This rule will detect any use of the 32 bit syscalls because this might be a sign of someone exploiting a hole in the 32bit ABI.
+-a always,exit -F arch=b32 -S all -F key=32bit-abi
+
 # Audit the audit logs.
 # Successful and unsuccessful attempts to read information from the audit records; all modifications to the audit trail
 -a always,exit -F arch=b32 -F path=/var/log/audit -F auid!=unset -F key=audit_log

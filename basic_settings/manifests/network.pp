@@ -65,8 +65,8 @@ class basic_settings::network(
             'eset': {
                 basic_settings::security_audit { 'eset':
                     rules  => [
-                        '-a never,exclude -F exe=/opt/eset/efs/lib/odfeeder',
-                        '-a never,exclude -F exe=/opt/eset/efs/lib/utild',
+                        '-a always,exclude -F exe=/opt/eset/efs/lib/odfeeder',
+                        '-a always,exclude -F exe=/opt/eset/efs/lib/utild',
                     ],
                     order  => '01'
                 }
