@@ -81,7 +81,7 @@ class basic_settings::security(
     }
 
     /* Check if systemd and message class exists */
-    if ($systemd_enable and defined(Class['basic_settings::message'])) {
+    if ($systemd_enable) {
         /* Create systemctl daemon reload */
         exec { 'security_systemd_daemon_reload':
             command         => 'systemctl daemon-reload',
@@ -89,21 +89,29 @@ class basic_settings::security(
             require         => Package['systemd']
         }
 
-        /* Create drop in for apparmor service */
-        basic_settings::systemd_drop_in { 'apparmor_notify_failed':
-            target_unit     => 'apparmor.service',
-            unit            => {
+        /* Create unit */
+        if (defined(Class['basic_settings::message'])) {
+            $unit = {
                 'OnFailure' => 'notify-failed@%i.service'
-            },
-            daemon_reload   => 'security_systemd_daemon_reload',
-            require         => Package['apparmor']
+            }
+
+            /* Create drop in for apparmor service */
+            basic_settings::systemd_drop_in { 'apparmor_notify_failed':
+                target_unit     => 'apparmor.service',
+                unit            => $unit,
+                daemon_reload   => 'security_systemd_daemon_reload',
+                require         => Package['apparmor']
+            }
+        } else {
+            $unit = {}
         }
 
         /* Create drop in for auditd service */
-        basic_settings::systemd_drop_in { 'auditd_notify_failed':
+        basic_settings::systemd_drop_in { 'auditd_settings':
             target_unit     => 'auditd.service',
-            unit            => {
-                'OnFailure' => 'notify-failed@%i.service'
+            unit            => $unit,
+            service         => {
+                'ProtectHome'   => 'false'
             },
             daemon_reload   => 'security_systemd_daemon_reload',
             require         => Package['auditd']
@@ -112,6 +120,7 @@ class basic_settings::security(
         /* Create systemd service */
         basic_settings::systemd_service { 'auditmail':
             description => 'Audit mail service',
+            unit        => $unit,
             service     => {
                 'Type'          => 'oneshot',
                 'User'          => 'root',

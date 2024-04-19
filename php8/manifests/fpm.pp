@@ -50,7 +50,13 @@ class php8::fpm(
         require     => Package['systemd']
     }
 
-    /* Create drop in for Nginx service */
+    /* Set service */
+    $default_service = {
+        'ProtectHome'   => 'true',
+        'ProtectSystem' => 'true'
+    }
+
+    /* Check if nginx class exists */
     if (defined(Class['nginx'])) {
         /* Remove unnecessary package */
         package { "libapache2-mod-php8.${minor_version}":
@@ -69,11 +75,11 @@ class php8::fpm(
         }
 
         /* Set service */
-        $service = {
+        $service = stdlib::merge({
             'Nice' => "-${nginx::nice_level}"
-        }
+        }, $default_service)
     } else {
-        $service = {}
+        $default = $default_service
     }
 
     /* Create drop in for PHP FPM service */

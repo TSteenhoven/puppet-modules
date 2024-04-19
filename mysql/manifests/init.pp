@@ -145,7 +145,9 @@ class mysql (
                 unit            => $unit,
                 service         => {
                     'LimitMEMLOCK'  => 'infinity',
-                    'Nice'          => "-${nice_level}"
+                    'Nice'          => "-${nice_level}",
+                    'ProtectHome'   => 'true',
+                    'ProtectSystem' => 'true'
                 },
                 daemon_reload   => 'mysql_systemd_daemon_reload',
                 require         => Package['mysql-server']

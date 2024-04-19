@@ -70,10 +70,12 @@ class nginx(
             target_unit     => 'nginx.service',
             unit            => $unit,
             service         => {
-                'PIDFile'       => $pid,
                 'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
-                'Nice'          => "-${nice_level}",
                 'LimitNOFILE'   => $limit_file,
+                'Nice'          => "-${nice_level}",
+                'PIDFile'       => $pid,
+                'ProtectHome'   => 'true',
+                'ProtectSystem' => 'true'
             },
             daemon_reload   => 'nginx_systemd_daemon_reload',
             require         => Package['nginx']
