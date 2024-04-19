@@ -36,7 +36,7 @@ class mysql (
     $mysqld_default = stdlib::merge($default_values, $settings)
 
     /* Basic variable */
-    $script_dir = '/var/local/puppet-mysql'
+    $script_dir = '/usr/local/lib/puppet-mysql'
     $script_path = "${script_dir}/grant.sh"
 
     /* Get version */
