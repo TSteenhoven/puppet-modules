@@ -1,9 +1,10 @@
 
 define basic_settings::security_audit(
-    $rules = [],
-    $rule_suspicious_packages = [],
-    $rule_options = [],
-    $order = 25
+    $ensure                     = present,
+    $order                      = 25,
+    $rule_options               = [],
+    $rule_suspicious_packages   = [],
+    $rules                      = []
 ) {
 
     /* Enable auditd service */

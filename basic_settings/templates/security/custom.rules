@@ -12,11 +12,11 @@
 # Suspicious activity
 <% @rule_suspicious_packages.each do |rule_suspicious_package| -%>
 <% if @rule_options.empty? -%>
--a always,exit -F arch=b32 -F perm=x -F path=<%= rule_suspicious_package %> -F key=susp_activity
--a always,exit -F arch=b64 -F perm=x -F path=<%= rule_suspicious_package %> -F key=susp_activity
+-a always,exit -F arch=b32 -F path=<%= rule_suspicious_package %> -F perm=x -F key=susp_activity
+-a always,exit -F arch=b64 -F path=<%= rule_suspicious_package %> -F perm=x -F key=susp_activity
 <% else -%>
--a always,exit -F arch=b32 -F perm=x -F path=<%= rule_suspicious_package %> <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
--a always,exit -F arch=b64 -F perm=x -F path=<%= rule_suspicious_package %> <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
+-a always,exit -F arch=b32 -F path=<%= rule_suspicious_package %> -F perm=x <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
+-a always,exit -F arch=b64 -F path=<%= rule_suspicious_package %> -F perm=x <% @rule_options.each do |rule_option| -%><%= rule_option %><% end -%> -F key=susp_activity
 <% end -%>
 <% end -%>
 <% end -%>
