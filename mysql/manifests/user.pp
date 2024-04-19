@@ -28,7 +28,7 @@ define mysql::user (
                 $password_field = 'password'
                 $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';" # use default caching_sha2_password method for saving password 
             }
-            $unless_field = "bash -c \"printf '%b' '[client]\\\npassword=${password}' > /tmp/mysql.cnf; if [ `mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql -u ${username} --password=\"${password}\" -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
+            $unless_field = "bash -c \"touch /tmp/mysql.cnf && chmod 600 /tmp/mysql.cnf && printf '%b' '[client]\\\npassword=${password}' > /tmp/mysql.cnf; if [ `mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql --defaults-file=/tmp/mysql.cnf -u ${username} -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
         }
         default: {
             $password_field = 'password'
