@@ -52,8 +52,9 @@ class php8::fpm(
 
     /* Set service */
     $default_service = {
+        'PrivateTmp'    => 'true',
         'ProtectHome'   => 'true',
-        'ProtectSystem' => 'true'
+        'ProtectSystem' => 'full'
     }
 
     /* Check if nginx class exists */

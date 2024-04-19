@@ -74,8 +74,9 @@ class nginx(
                 'LimitNOFILE'   => $limit_file,
                 'Nice'          => "-${nice_level}",
                 'PIDFile'       => $pid,
+                'PrivateTmp'    => 'true',
                 'ProtectHome'   => 'true',
-                'ProtectSystem' => 'true'
+                'ProtectSystem' => 'full'
             },
             daemon_reload   => 'nginx_systemd_daemon_reload',
             require         => Package['nginx']

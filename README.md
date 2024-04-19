@@ -1,8 +1,11 @@
 # Puppet-modules
 
-Dit is een uitbreidingsmodule voor jouw Puppet-omgeving, bestaande uit verschillende onderdelen: `Basic Settings`, `Nginx`, `PHP` en `MySQL`. Deze onderdelen kunnen afzonderlijk worden gebruikt of in combinatie. Om deze uitbreidingsmodule mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik via git submodule heb toegevoegd. Ik wil de eigenaren van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun werk.
+Dit is een uitbreidingsmodule voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basic Settings`, `Nginx`, `PHP` en `MySQL`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt. Om deze uitbreidingsmodule mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik als git submodule heb toegevoegd. Ik wil de eigenaren van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun werk.
 
-## Installeren
+[!IMPORTANT]  
+Deze uitbreidingsmodule is afhankelijk van een 64-bits architectuur.
+
+## Installatie
 
 Navigeer naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando:
 
@@ -16,7 +19,7 @@ Voer vervolgens de volgende opdracht uit:
 git submodule update --init --recursive
 ```
 
-Als alles goed gaat, wordt de uitbreidingsmodule nu correct ingeladen in jouw Puppet Git-project. Nu moet alleen de Puppetserver nog weten dat deze map bestaat. Ga naar de `environments` map, kies de betreffende omgeving (bijvoorbeeld `development`). In deze omgeving bevindt zich een `manifests` map. Maak naast deze map een bestand genaamd `environment.conf` aan en plak daarin de onderstaande configuratie:
+Als alles goed gaat, wordt de uitbreidingsmodule nu correct ingeladen in je Puppet Git-project. Nu moet alleen de Puppetserver nog weten dat deze map bestaat. Ga naar de `environments` map, kies de betreffende omgeving (bijvoorbeeld `development`). In deze omgeving bevindt zich een `manifests` map. Maak naast deze map een bestand met de naam `environment.conf` aan en plak de onderstaande configuratie:
 
 ```
 modulepath=$codedir/global-modules:$codedir/modules:$basemodulepath
@@ -36,30 +39,31 @@ De mapstructuur zou er nu zo uit moeten zien:
   - modules
   - .gitmodules
 
-Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met daarbij subonderdelen correct is ingeladen:
+Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met submodules correct is ingeladen:
+
 ```bash
 puppet module list
 ```
 
 ## Basic Settings
 
-Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdclass wordt aangesproken, worden de subonderdelen daarin aangesproken en geconfigureerd. Het doel van dit onderdeel is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met zo min mogelijk benodigde GUI-/UI-pakketten, zodat de server zo min mogelijk resources verbruikt. Onnodige pakketten, zoals die voor power management bij laptops, worden verwijderd omdat dit niets te maken heeft met een server. Daarnaast wordt door middel van kernelparameters de server aangepast zodat hij alle benodigde CPU-/powerresources mag benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)). Pakketten zoals `mtr` en `rsync` worden wel geïnstalleerd, omdat deze naar mijn mening regelmatig nodig zijn voor systeembeheerders. Daarnaast worden er ook security pakketen geïnstalleerd zoals `apparmor` en `auditd` om de server te beveiligen en te kunnen monitoren op verdachte activiteiten.
+Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdclass wordt aangesproken, worden de subonderdelen daarin aangesproken en geconfigureerd. Het doel van dit onderdeel is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met zo min mogelijk benodigde GUI-/UI-pakketten, zodat de server zo min mogelijk resources verbruikt. Onnodige pakketten, zoals die voor power management bij laptops, worden verwijderd omdat dit niets te maken heeft met een server. Daarnaast wordt door middel van kernelparameters de server aangepast zodat hij alle benodigde CPU-/powerresources mag benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)). Pakketten zoals `mtr` en `rsync` worden wel geïnstalleerd, omdat deze naar mijn mening regelmatig nodig zijn voor systeembeheerders. Daarnaast worden er ook securitypakketten geïnstalleerd zoals `apparmor` en `auditd` om de server te beveiligen en te kunnen monitoren op verdachte activiteiten, maar daarnaast configureren wij softwarepakketten via systemd met opties zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`.
 
 Basic Settings bestaat uit de volgende subonderdelen:
-- **Development:** Pakketen / configuraties die te maken hebben met development
-- **IO:** Pakketen / configuraties die te maken hebben met opslag, het uitschakelen van floppy etc.
-- **Kernel:** Pakketen / configuraties die te maken hebben met de kernel en de kernel/sysctl optimaal configureren voor HPC gebruik.
-- **Locale:** Pakketen / configuraties die te maken hebben met taal. Mijn voorkeur heeft het om standaard dit te verwijderen.
-- **Netwerk:** Pakketen / configuraties die te maken hebben met netwerk en deze optimaal configureren voor HPC gebruik.
-- **Packages:** Installeren van package manager en overige package manager deinstalleren indien dat mogelijk is.
-    - **Packages MySQL:** APT repo voor MySQL configureren met bijbehorende key.
-    - **Packages Node:** APT repo voor Node configureren en te installeren.
-- **Pro:** Bij Ubuntu is het mogelijk om een Pro abonnement af te nemen, dit subonderdeel zorgt ervoor dat alle benodigde packages zijn geïnstalleerd.
+- **Development:** Pakketten / configuraties die te maken hebben met development.
+- **IO:** Pakketten / configuraties die te maken hebben met opslag, het uitschakelen van floppy's, etc.
+- **Kernel:** Pakketten / configuraties die te maken hebben met de kernel en de kernel/sysctl optimaal configureren voor HPC-gebruik.
+- **Locale:** Pakketten / configuraties die te maken hebben met taal. Mijn voorkeur heeft het om standaard dit te verwijderen.
+- **Netwerk:** Pakketten / configuraties die te maken hebben met het netwerk en deze optimaal configureren voor HPC-gebruik.
+- **Packages:** Installeren van een package manager en overige package managers deïnstalleren indien mogelijk.
+    - **Packages MySQL:** APT-repo voor MySQL configureren met bijbehorende key.
+    - **Packages Node:** APT-repo voor Node configureren en installeren.
+- **Pro:** Bij Ubuntu is het mogelijk om een Pro-abonnement af te nemen. Dit subonderdeel zorgt ervoor dat alle benodigde packages zijn geïnstalleerd.
 - **Puppet:** Configureert Puppet op de juiste manier.
-- **Security:** Installeert benodigde security pakketen om de server te monitoren.
-- **Systemd:** Installeert systemd en zorgt ervoor dat de juiste system target geconfigureerd wordt.
-- **Timezone:** Configureert tijd / datum.
-- **User:** Pakketen / configuraties die te maken hebben met user gedeelte.
+- **Security:** Installeert benodigde securitypakketten om de server te monitoren.
+- **Systemd:** Installeert systemd en zorgt ervoor dat de juiste systeemtarget geconfigureerd wordt.
+- **Timezone:** Configureert tijd/datum.
+- **User:** Pakketten / configuraties die te maken hebben met het gebruikersgedeelte.
 
 ### Voorbeeld
 
@@ -79,7 +83,7 @@ node 'webserver.dev.xxxx.nl' {
 
 ## Nginx
 
-Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `Basic Settings` de Nginx APT repo is geactiveerd, probeert dit onderdeel laatste Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat het onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`.
+Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van de Nginx package. Wanneer in `Basic Settings` de Nginx APT-repo is geactiveerd, probeert dit onderdeel de laatste Nginx-versie te installeren in plaats van de standaard Nginx-versie die wordt aangeboden vanuit het besturingssysteem. Ik raad aan om juist de nieuwste versie te gebruiken, omdat dit onderdeel is gebouwd met het idee om nieuwe technologieën te ondersteunen zoals `IPv6` en `HTTP3`.
 
 ### Voorbeeld
 

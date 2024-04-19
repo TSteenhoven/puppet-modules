@@ -111,7 +111,8 @@ class basic_settings::security(
             target_unit     => 'auditd.service',
             unit            => $unit,
             service         => {
-                'ProtectHome'   => 'false'
+                'PrivateTmp'    => 'true',
+                'ProtectHome'   => 'false' # Important for monitoring home dirs
             },
             daemon_reload   => 'security_systemd_daemon_reload',
             require         => Package['auditd']
@@ -124,9 +125,11 @@ class basic_settings::security(
             service     => {
                 'Type'          => 'oneshot',
                 'User'          => 'root',
-                'PrivateTmp'    => 'true',
                 'ExecStart'     => '/usr/local/sbin/auditmail',
                 'Nice'          => '-20', # Important process
+                'PrivateTmp'    => 'true',
+                'ProtectHome'   => 'true',
+                'ProtectSystem' => 'full'
             },
             daemon_reload   => 'security_systemd_daemon_reload',
         }
