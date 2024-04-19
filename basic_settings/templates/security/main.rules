@@ -57,12 +57,12 @@
 -a always,exit -F arch=b64 -F path=/etc/modprobe.d -F perm=wa -F key=modprobe
 
 # Special files
--a exit,always -F arch=b32 -S mknod -S mknodat -F auid!=unset -F key=special_files
--a exit,always -F arch=b64 -S mknod -S mknodat -F auid!=unset -F key=special_files
+-a always,exit -F arch=b32 -S mknod -S mknodat -F auid!=unset -F key=special_files
+-a always,exit -F arch=b64 -S mknod -S mknodat -F auid!=unset -F key=special_files
 
 # Mount operations
--a exit,always -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -F key=mount
--a exit,always -F arch=b64 -S mount -S umount2 -F auid!=unset -F key=mount
+-a always,exit -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -F key=mount
+-a always,exit -F arch=b64 -S mount -S umount2 -F auid!=unset -F key=mount
 
 # Changes to the time
 -a always,exit -F arch=b32 -S adjtimex -S settimeofday -F key=time
@@ -161,26 +161,26 @@
 -a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -F key=remote_shell
 
 # Log all commands executed by an effective id of 0 aka root
--a exit,always -F arch=b32 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
--a exit,always -F arch=b64 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
+-a always,exit -F arch=b32 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
+-a always,exit -F arch=b64 -F euid=0 -S execve -F auid!=unset -F key=root_cmd
 
 # Capture all failures to access on critical elements
--a exit,always -F arch=b32 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b32 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
--a exit,always -F arch=b64 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/etc -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/bin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/sbin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/usr/bin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/var -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/home -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b32 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
+-a always,exit -F arch=b64 -S open -F dir=/srv -F success=0 -F key=unauthed_file_acess
 
 # Cron configuration and scheduled jobs
 -a always,exit -F arch=b32 -F path=/etc/cron.allow -F perm=wa -F key=cron
