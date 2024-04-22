@@ -14,10 +14,10 @@ test -x $MAIL || exit 1
 OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59 2>&1)
 
 # Check if we have valid report
-if [ -z "$(echo $OUTPUT | grep "no events of interest were found")" ]; then
-    if [ -z "$(echo $OUTPUT | grep -i 'error')" ]; then
+if [ -z "$(echo $OUTPUT | grep 'no events of interest were found')" ]; then
+    if [ -n "$(echo $OUTPUT | grep -i 'error')" ]; then
         SUBJECT='Audit report with ERROR'
-    elif [ -z "$(echo $OUTPUT | grep -i 'susp_activity')" ]; then
+    elif [ -n "$(echo $OUTPUT | grep -i 'susp_activity')" ]; then
         SUBJECT='Audit report with suspicious activity'
     else
         SUBJECT='Audit report'

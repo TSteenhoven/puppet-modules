@@ -7,7 +7,7 @@ class basic_settings::user(
     }
 
     /* Install packages */
-    package { ['bash-completion', 'libpam-modules', 'sudo']:
+    package { ['bash-completion', 'sudo']:
         ensure  => installed
     }
 
@@ -37,13 +37,9 @@ class basic_settings::user(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'user':
             rules                       => [
-                '# PAM configuration',
-                '-a always,exit -F arch=b32 -F path=/etc/pam.d -F perm=wa -F key=pam',
-                '-a always,exit -F arch=b64 -F path=/etc/pam.d -F perm=wa -F key=pam',
+                '# User configuration',
                 '-a always,exit -F arch=b32 -F path=/etc/security/limits.conf -F perm=wa  -F key=pam',
                 '-a always,exit -F arch=b64 -F path=/etc/security/limits.conf -F perm=wa  -F key=pam',
-                '-a always,exit -F arch=b32 -F path=/etc/security/pam_env.conf -F perm=wa -F key=pam',
-                '-a always,exit -F arch=b64 -F path=/etc/security/pam_env.conf -F perm=wa -F key=pam',
                 '-a always,exit -F arch=b32 -F path=/etc/security/namespace.conf -F perm=wa -F key=pam',
                 '-a always,exit -F arch=b64 -F path=/etc/security/namespace.conf -F perm=wa -F key=pam',
                 '-a always,exit -F arch=b32 -F path=/etc/security/namespace.init -F perm=wa -F key=pam',

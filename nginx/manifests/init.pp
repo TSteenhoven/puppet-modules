@@ -70,13 +70,14 @@ class nginx(
             target_unit     => 'nginx.service',
             unit            => $unit,
             service         => {
-                'ExecStartPre'  => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
-                'LimitNOFILE'   => $limit_file,
-                'Nice'          => "-${nice_level}",
-                'PIDFile'       => $pid,
-                'PrivateTmp'    => 'true',
-                'ProtectHome'   => 'true',
-                'ProtectSystem' => 'full'
+                'ExecStartPre'      => "/usr/bin/chown -R ${run_user}:${run_group} /var/cache/nginx",
+                'LimitNOFILE'       => $limit_file,
+                'Nice'              => "-${nice_level}",
+                'PIDFile'           => $pid,
+                'PrivateDevices'    => 'true',
+                'PrivateTmp'        => 'true',
+                'ProtectHome'       => 'true',
+                'ProtectSystem'     => 'full',
             },
             daemon_reload   => 'nginx_systemd_daemon_reload',
             require         => Package['nginx']
