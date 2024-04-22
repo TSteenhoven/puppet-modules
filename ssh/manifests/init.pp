@@ -29,7 +29,7 @@ class ssh(
     file { '/etc/issue.net':
         ensure  => file,
         mode    => '0644',
-        content => "${banner_text}\n"
+        content => $banner_text
     }
 
     /* Create SSHD custom config */
