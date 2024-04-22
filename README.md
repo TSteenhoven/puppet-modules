@@ -2,7 +2,9 @@
 
 Welkom bij mijn Puppet-modules project. Dit is een uitbreiding module voor je Puppet-omgeving, die bestaande uit verschillende onderdelen: `Basisinstellingen`, `Nginx`, `PHP`, `MySQL` en `SSH`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
 
-Het is belangrijk op te merken dat ik binnen deze modules verschillende beveiligingsverbeteringen heb geïmplementeerd, wat kan leiden tot verschillende gedragingen van softwarepakketten dan oorspronkelijk verwacht. Zo krijgen sommige softwarepakketten nu via systemd extra opties, zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst. Mocht je problemen ondervinden, aarzel dan niet om contact met ons op te nemen.
+Het is belangrijk op te merken dat ik binnen verschillende onderdelen verschillende beveiligingsverbeteringen heb geïmplementeerd. Dit kan leiden tot afwijkend gedrag van softwarepakketten ten opzichte van de oorspronkelijke verwachtingen. Bijvoorbeeld, sommige softwarepakketten krijgen nu via systemd extra opties zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst.
+
+Ik ben me ervan bewust dat zowel vanuit softwareleveranciers als vanuit Linux-distributies (zoals Fedora[Fedora](https://discussion.fedoraproject.org/t/f40-change-proposal-systemd-security-hardening-system-wide/96423/11)) vergelijkbare maatregelen worden toegepast. In theorie hoeft dit dus niet in Puppet te worden opgenomen. Echter, aangezien niet alle distributies altijd de meest recente versie van de software gebruiken, bestaat er altijd een kans dat een specifieke beveiligingsaanpassing niet is doorgevoerd. Om deze reden kies ik ervoor om dubbele registratie toe te passen, zowel vanuit de softwareleverancier als vanuit Puppet.
 
 :warning: **64-bits**: Deze uitbreidingsmodule gaat ervan uit dat je besturingssysteem 64-bits is.
 
@@ -46,13 +48,13 @@ Via de onderstaande opdracht kun je controleren of de uitbreidingsmodule met sub
 puppet module list
 ```
 
-## Basisinstellingen
+## Basic settings
 
 Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdklasse wordt aangeroepen, worden deze subonderdelen daarin aangesproken en geconfigureerd. Het doel van deze sectie is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met minimale GUI/UI-pakketten, om zo het verbruik van resources te minimaliseren. Bovendien wordt de server aangepast door middel van kernelparameters om alle benodigde CPU-/powerresources te benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing))
 
 Onnodige pakketten, zoals die voor energiebeheer op laptops, worden verwijderd omdat ze niet relevant zijn voor een serveromgeving. Pakketten zoals `mtr` en `rsync` worden daarintegen wel geïnstalleerd omdat ze vaak nodig zijn voor systeembeheerders. Daarnaast worden beveiligingspakketten zoals `apparmor` en `auditd` geïnstalleerd om de server te beveiligen en te monitoren op verdachte activiteiten.
 
-Basisinstellingen omvatten de volgende subonderdelen:
+Basic settings omvatten de volgende subonderdelen:
 - **Development:** Pakketten/configuraties gerelateerd aan ontwikkeling.
 - **IO:** Pakketten/configuraties gerelateerd aan opslag, uitschakelen van floppy's, etc.
 - **Kernel:** Pakketten/configuraties gerelateerd aan de kernel en optimalisatie ervan voor HPC-gebruik.
