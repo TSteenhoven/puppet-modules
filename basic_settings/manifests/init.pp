@@ -246,9 +246,9 @@ class basic_settings(
 
     /* Setup message */
     class { 'basic_settings::message':
-        server_fdqn     => $server_fdqn,
         mail_to         => $systemd_notify_mail,
         mail_package    => $mail_package,
+        server_fdqn     => $server_fdqn,
         require         => Class['basic_settings::systemd']
     }
 
@@ -480,31 +480,6 @@ class basic_settings(
         }
     }
 
-    /* Check if OS is Ubuntul For the next step we need systemd package */
-    if ($os_parent == 'ubuntu') {
-        /* Disable motd news */
-        file { '/etc/default/motd-news':
-            ensure  => file,
-            mode    => '0644',
-            content => "ENABLED=0\n",
-            require => Package['systemd']
-        }
-
-        /* Ensure that motd-news is stopped */
-        service { 'motd-news.timer':
-            ensure      => stopped,
-            enable      => false,
-            require     => File['/etc/default/motd-news'],
-            subscribe   => File['/etc/default/motd-news']
-        }
-    }
-
-    /* Ensure that getty is stopped */
-    service { 'getty@tty*':
-        ensure      => stopped,
-        enable      => false
-    }
-
     /* Setup development */
     class { 'basic_settings::development':
         gcc_version     => $gcc_version,
@@ -519,8 +494,10 @@ class basic_settings(
         server_dir     => $puppetserver_dir
     }
 
-    /* Setup user */
-    class { 'basic_settings::user':
-        sudoers_dir_enable => $sudoers_dir_enable
+    /* Setup login */
+    class { 'basic_settings::login':
+        mail_to             => $systemd_notify_mail,
+        server_fdqn         => $server_fdqn,
+        sudoers_dir_enable  => $sudoers_dir_enable
     }
 }

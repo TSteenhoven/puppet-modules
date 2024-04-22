@@ -6,7 +6,7 @@
 AUREPORTTOOL=/usr/sbin/aureport
 test -x $AUREPORTTOOL || exit 1
 
-# Check if aureport is available
+# Check if mail is available
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
 

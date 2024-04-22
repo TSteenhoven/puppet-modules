@@ -1,4 +1,4 @@
-define basic_settings::user_sudo(
+define basic_settings::login_sudo(
         $rule,
     ) {
 

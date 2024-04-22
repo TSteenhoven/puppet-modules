@@ -59,6 +59,7 @@ Basic settings omvatten de volgende subonderdelen:
 - **IO:** Pakketten/configuraties gerelateerd aan opslag, uitschakelen van floppy's, etc.
 - **Kernel:** Pakketten/configuraties gerelateerd aan de kernel en optimalisatie ervan voor HPC-gebruik.
 - **Locale:** Pakketten/configuraties gerelateerd aan taalinstellingen. Mijn voorkeur gaat uit naar het standaard verwijderen hiervan.
+- **Login:** Pakketten/configuraties gerelateerd aan login en gebruikersbeheer.
 - **Netwerk:** Pakketten/configuraties gerelateerd aan netwerken en optimalisatie ervan voor HPC-gebruik.
 - **Packages:** Installeren van een pakketbeheerder en het verwijderen van andere pakketbeheerders indien mogelijk.
     - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
@@ -68,7 +69,6 @@ Basic settings omvatten de volgende subonderdelen:
 - **Security:** Installeren van benodigde beveiligingspakketten om de server te monitoren.
 - **Systemd:** Installeren van systemd en zorgen voor de juiste systeemdoelconfiguratie.
 - **Timezone:** Configureren van tijd/datum.
-- **User:** Pakketten/configuraties gerelateerd aan gebruikersbeheer.
 
 ### Voorbeeld
 

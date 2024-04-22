@@ -1,7 +1,7 @@
 class basic_settings::message(
-    $server_fdqn    = $fdqn,
     $mail_to        = 'root',
-    $mail_package   = 'postfix'
+    $mail_package   = 'postfix',
+    $server_fdqn    = $fdqn
 ) {
 
     /* Install package */

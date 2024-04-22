@@ -1,14 +1,14 @@
 
 class ssh(
     $allow_users                    = [],
-    $banner_text                    = "WARNING! You are entering a secure area! Your IP, login time and username have been registered and sent to the server administrator!\nThis service is only accessible to authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access is fully investigated and reported to law enforcement authorities.",
+    $banner_text                    = "WARNING! You are entering a managed service!\nThis service should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access is fully investigated and reported to law enforcement authorities.",
     $password_authentication_users  = [],
     $permit_root_login              = false,
     $port                           = 22
 ) {
 
     /* Required packages for SSHD */
-    package { ['openssh-server', 'openssh-client', 'libpam-modules']:
+    package { ['openssh-server', 'openssh-client']:
         ensure => installed
     }
 
@@ -71,12 +71,6 @@ class ssh(
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'ssh':
             rules => [
-                '# PAM configuration',
-                '-a always,exit -F arch=b32 -F path=/etc/pam.d -F perm=wa -F key=pam',
-                '-a always,exit -F arch=b64 -F path=/etc/pam.d -F perm=wa -F key=pam',
-                '-a always,exit -F arch=b32 -F path=/etc/security/pam_env.conf -F perm=wa -F key=pam',
-                '-a always,exit -F arch=b64 -F path=/etc/security/pam_env.conf -F perm=wa -F key=pam',
-                '# SSH configuration',
                 '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config -F perm=r -F auid!=unset -F key=sshd',
                 '-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config -F perm=r -F auid!=unset -F key=sshd',
                 '-a always,exit -F arch=b32 -F path=/etc/ssh/sshd_config.d -F perm=r -F auid!=unset -F key=sshd',
