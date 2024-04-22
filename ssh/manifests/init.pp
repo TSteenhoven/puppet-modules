@@ -1,7 +1,7 @@
 
 class ssh(
     $allow_users                    = [],
-    $banner_text                    = "WARNING! You are entering a managed service!\nThis service should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access is fully investigated and reported to law enforcement authorities.",
+    $banner_text                    = "WARNING! You are entering a managed service!\nThis service should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
     $password_authentication_users  = [],
     $permit_root_login              = false,
     $port                           = 22
@@ -29,7 +29,7 @@ class ssh(
     file { '/etc/issue.net':
         ensure  => file,
         mode    => '0644',
-        content => "${banner_text}\n"
+        content => "${banner_text}\n\n"
     }
 
     /* Create SSHD custom config */

@@ -58,13 +58,13 @@ class basic_settings::login(
         }
     }
 
-    # Create motd trigger */
-    file { '/etc/update-motd.d/92-login-notify':
+    # Create profile trigger */
+    file { '/etc/profile.d/99-login-notify.sh':
         ensure  => file,
-        content => template('basic_settings/login/login-notify'),
+        content => template('basic_settings/login/login-notify.sh'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0755',
+        mode    => '0644',
     }
 
     /* Setup audit rules */
