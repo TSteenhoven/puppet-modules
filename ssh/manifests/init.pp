@@ -50,24 +50,6 @@ class ssh(
         subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
     }
 
-    /* Set SSH settings */
-    if (defined(Package['systemd'])) {
-        /* Reload systemd deamon */
-        exec { 'ssh_systemd_daemon_reload':
-            command     => 'systemctl daemon-reload',
-            refreshonly => true,
-            require     => Package['systemd']
-        }
-
-        /* Create drop in for ssh service */
-        basic_settings::systemd_drop_in { 'ssh_settings':
-            ensure          => absent,
-            target_unit     => 'ssh.service',
-            daemon_reload   => 'ssh_systemd_daemon_reload',
-            require         => Package['nginx']
-        }
-    }
-
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'ssh':
             rules => [

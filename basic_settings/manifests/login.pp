@@ -69,7 +69,7 @@ class basic_settings::login(
 
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
-        basic_settings::security_audit { 'user':
+        basic_settings::security_audit { 'login':
             rules                       => [
                 '# User configuration',
                 '-a always,exit -F arch=b32 -F path=/etc/security/limits.conf -F perm=wa  -F key=limits',
