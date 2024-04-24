@@ -205,9 +205,15 @@ class basic_settings::network(
 
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
+        $suspicious_filter = delete($suspicious_packages, '/usr/bin/ip')
         basic_settings::security_audit { 'network':
             rules                       => flatten($netplan_rules, $networkd_rules),
-            rule_suspicious_packages    => $suspicious_packages,
+            rule_suspicious_packages    => $suspicious_filter,
+            order                       => 20
+        }
+        basic_settings::security_audit { 'network-root':
+            rule_suspicious_packages    => delete($suspicious_packages, $suspicious_filter),
+            rule_options                => ['-F auid!=unset'],
             order                       => 20
         }
     }
