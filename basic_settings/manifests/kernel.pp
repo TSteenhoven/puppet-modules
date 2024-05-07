@@ -163,9 +163,9 @@ class basic_settings::kernel(
             }
 
             /* Create custom grub config  */
-            file { '/etc/default/grub.d/99-custom':
+            file { '/etc/default/grub.d/99-custom.cfg':
                 ensure  => file,
-                content  => template('basic_settings/kernel/grub'),
+                content  => template('basic_settings/kernel/grub.cfg'),
                 owner   => 'root',
                 group   => 'root',
                 mode    => '0644',
