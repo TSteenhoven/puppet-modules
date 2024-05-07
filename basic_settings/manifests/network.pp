@@ -197,12 +197,6 @@ class basic_settings::network(
         $networkd_rules = []
     }
 
-    /* Ensure that getty is stopped */
-    service { 'getty@tty*':
-        ensure      => stopped,
-        enable      => false
-    }
-
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
         $suspicious_filter = delete($suspicious_packages, '/usr/bin/ip')

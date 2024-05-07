@@ -1,4 +1,5 @@
 class basic_settings::kernel(
+    $bootloader             = 'grub',
     $connection_max         = 4096,
     $hugepages              = 0,
     $tcp_congestion_control = 'brr',
@@ -58,7 +59,7 @@ class basic_settings::kernel(
 
         /* Reload sysctl deamon */
         exec { 'kernel_sysctl_reload':
-            command => 'bash -c "/usr/bin/systemctl start dev-hugepages-shmmax.service && sysctl --system"',
+            command => 'bash -c "/usr/bin/systemctl start dev-hugepages-shmmax.service && /usr/sbin/sysctl --system"',
             refreshonly => true
         }
     } else {
@@ -87,7 +88,7 @@ class basic_settings::kernel(
 
         /* Reload sysctl deamon */
         exec { 'kernel_sysctl_reload':
-            command => 'sysctl --system',
+            command => '/usr/sbin/sysctl --system',
             refreshonly => true
         }
     }
@@ -101,9 +102,6 @@ class basic_settings::kernel(
     package { ['bc', 'coreutils', 'lsb-release', 'util-linux']:
         ensure  => installed
     }
-
-    /* Create list of packages that is suspicious */
-    $suspicious_packages = ['/bin/su'];
 
     /* Create sysctl config  */
     file { '/etc/sysctl.conf':
@@ -132,6 +130,55 @@ class basic_settings::kernel(
         mode    => '0600',
         notify  => Exec['kernel_sysctl_reload']
     }
+
+    /* Setup TCP */
+    case $bootloader {
+        'grub': {
+            /* Set boot loader packages */
+            $bootloader_packages = ['/usr/sbin/update-grub']
+
+            /* Install package */
+            package { 'grub2-common':
+                ensure => installed
+            }
+
+            /* Remove unnecessary packages */
+            package { 'systemd-boot':
+                ensure  => purged,
+                require => Package['grub2-common']
+            }
+
+            /* Reload sysctl deamon */
+            exec { 'kernel_grub_update':
+                command => '/usr/sbin/update-grub',
+                refreshonly => true
+            }
+
+            /* Create grub config  */
+            file { '/etc/default/grub.d':
+                ensure  => directory,
+                owner   => 'root',
+                group   => 'root',
+                mode    => '0755'
+            }
+
+            /* Create custom grub config  */
+            file { '/etc/default/grub.d/99-custom':
+                ensure  => file,
+                content  => template('basic_settings/kernel/grub'),
+                owner   => 'root',
+                group   => 'root',
+                mode    => '0644',
+                notify  => Exec['kernel_grub_update']
+            }
+        }
+        default: {
+            $bootloader_packages = []
+        }
+    }
+
+    /* Create list of packages that is suspicious */
+    $suspicious_packages = flatten($bootloader_packages, ['/bin/su']);
 
     /* Setup TCP */
     case $tcp_congestion_control {

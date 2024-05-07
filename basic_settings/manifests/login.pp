@@ -1,7 +1,8 @@
 class basic_settings::login(
     $mail_to                = 'root',
     $server_fdqn            = $fdqn,
-    $sudoers_dir_enable     = false
+    $sudoers_dir_enable     = false,
+    $getty_enable           = false
 ) {
     /* Remove unnecessary packages */
     package { ['session-migration', 'xdg-user-dirs']:
@@ -65,6 +66,19 @@ class basic_settings::login(
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
+    }
+
+    /* Ensure that getty is stopped or running */
+    if ($getty_enable) {
+        service { 'getty@tty*':
+            ensure      => stopped,
+            enable      => false
+        }
+    } else {
+        service { 'getty@tty*':
+            ensure      => running,
+            enable      => true
+        }
     }
 
     /* Setup audit rules */

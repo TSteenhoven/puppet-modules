@@ -1,0 +1,34 @@
+# Managed by puppet
+
+# Time in seconds to wait for keyboard input before booting
+GRUB_TIMEOUT=10
+
+# Disable graphical terminal
+GRUB_TERMINAL=console
+
+# Always create recovery mode menu entries
+GRUB_DISABLE_RECOVERY="false"
+
+# Disable debug information during boot
+GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=0"
+
+# Disable the merging of slabs of similar sizes
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT slab_nomerge"
+
+# Enable zeroing of memory during allocation and free time
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT init_on_alloc=1 init_on_free=1"
+
+# Enable Kernel Page Table Isolation
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT pti=on"
+
+# Disable vsyscalls
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT vsyscall=none"
+
+# Enable page allocator freelist randomization.
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT page_alloc.shuffle=1"
+
+# Enable randomisation of the kernel stack offset
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT randomize_kstack_offset=on"
+
+# Restrict access to debugfs
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT debugfs=off"
