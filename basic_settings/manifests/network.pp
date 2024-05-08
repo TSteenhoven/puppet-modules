@@ -10,7 +10,7 @@ class basic_settings::network(
     /* Based on firewall package do special commands */
     case $firewall_package {
         'nftables': {
-            $firewall_command = 'systemctl is-active --quiet nftables.service && nft --file /etc/firewall.conf'
+            $firewall_command = ''
             package { ['iptables', 'firwalld']:
                 ensure => purged
             }
@@ -158,11 +158,17 @@ class basic_settings::network(
 
         /* Set script that's set the firewall */
         if ($firewall_command != '') {
-            file { 'firewall_networkd_dispatche':
+            file { 'firewall_networkd_dispatcher':
                 ensure  => file,
                 path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
                 mode    => '0755',
                 content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
+                require => Package[$firewall_package]
+            }
+        } else {
+            file { 'firewall_networkd_dispatcher':
+                ensure  => absent,
+                path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
                 require => Package[$firewall_package]
             }
         }
