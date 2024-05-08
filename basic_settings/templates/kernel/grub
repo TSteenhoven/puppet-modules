@@ -1,13 +1,16 @@
 # Managed by puppet
 
-# Time in seconds to wait for keyboard input before booting
-GRUB_TIMEOUT=10
+# The default menu entry
+GRUB_DEFAULT=0
 
-# Disable graphical terminal
-GRUB_TERMINAL=console
+# Set by distributors of GRUB to their identifying name
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo <%= @operatingsystem %>`
 
 # Always create recovery mode menu entries
 GRUB_DISABLE_RECOVERY="false"
+
+# Empty cmd lien for recovery mode
+GRUB_CMDLINE_LINUX=""
 
 # Disable debug information during boot
 GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=0"
@@ -32,3 +35,12 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT randomize_kstack_offset=
 
 # Restrict access to debugfs
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT debugfs=off"
+
+# Disable graphical terminal
+GRUB_TERMINAL=console
+
+# Time in seconds to wait for keyboard input before booting
+GRUB_TIMEOUT=10
+
+# Show always menu during timeout
+GRUB_TIMEOUT_STYLE=menu

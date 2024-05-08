@@ -154,18 +154,10 @@ class basic_settings::kernel(
                 refreshonly => true
             }
 
-            /* Create grub config  */
-            file { '/etc/default/grub.d':
-                ensure  => directory,
-                owner   => 'root',
-                group   => 'root',
-                mode    => '0755'
-            }
-
-            /* Create custom grub config  */
-            file { '/etc/default/grub.d/99-custom.cfg':
+            /* Create custom grub config */
+            file { '/etc/default/grub':
                 ensure  => file,
-                content  => template('basic_settings/kernel/grub.cfg'),
+                content  => template('basic_settings/kernel/grub'),
                 owner   => 'root',
                 group   => 'root',
                 mode    => '0644',
