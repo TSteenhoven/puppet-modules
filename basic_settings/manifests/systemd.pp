@@ -18,7 +18,7 @@ class basic_settings::systemd(
 
     /* Reload systemd deamon */
     exec { 'systemd_daemon_reload':
-        command         => 'systemctl daemon-reload',
+        command         => '/usr/bin/systemctl daemon-reload',
         refreshonly     => true,
         require         => Package['systemd']
     }

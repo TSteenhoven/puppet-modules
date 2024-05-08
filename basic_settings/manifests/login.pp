@@ -37,7 +37,7 @@ class basic_settings::login(
     }
 
     /* Check if OS is Ubuntu */
-    if ($os_parent == 'ubuntu') {
+    if ($operatingsystem == 'Ubuntu') {
         /* Install packages */
         package { 'update-motd':
             ensure  => installed
@@ -78,6 +78,25 @@ class basic_settings::login(
         service { 'getty@tty*':
             ensure      => running,
             enable      => true
+        }
+    }
+
+    /* Check if we have systemd */
+    if (defined(Package['systemd'])) {
+        /* Reload systemd deamon */
+        exec { 'login_systemd_daemon_reload':
+            command         => '/usr/bin/systemctl daemon-reload',
+            refreshonly     => true,
+            require         => Package['systemd']
+        }
+
+        /* Create drop in for getty service */
+        basic_settings::systemd_drop_in { 'getty_settings':
+            target_unit     => 'getty@.service',
+            unit            => {
+                'ConditionPathExists' => '/dev/%I'
+            },
+            daemon_reload   => 'login_systemd_daemon_reload'
         }
     }
 

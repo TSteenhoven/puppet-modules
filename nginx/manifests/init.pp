@@ -39,7 +39,7 @@ class nginx(
 
         /* Reload systemd deamon */
         exec { 'nginx_systemd_daemon_reload':
-            command     => 'systemctl daemon-reload',
+            command     => '/usr/bin/systemctl daemon-reload',
             refreshonly => true,
             require     => Package['systemd']
         }

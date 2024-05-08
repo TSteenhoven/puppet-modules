@@ -102,7 +102,7 @@ class mysql (
 
             /* Reload systemd deamon */
             exec { 'mysql_systemd_daemon_reload':
-                command     => 'systemctl daemon-reload',
+                command     => '/usr/bin/systemctl daemon-reload',
                 refreshonly => true,
                 require     => Package['systemd']
             }

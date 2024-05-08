@@ -45,7 +45,7 @@ class php8::fpm(
 
     /* Reload systemd deamon */
     exec { "php8_${minor_version}_systemd_daemon_reload":
-        command     => 'systemctl daemon-reload',
+        command     => '/usr/bin/systemctl daemon-reload',
         refreshonly => true,
         require     => Package['systemd']
     }

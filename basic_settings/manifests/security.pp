@@ -84,7 +84,7 @@ class basic_settings::security(
     if ($systemd_enable) {
         /* Create systemctl daemon reload */
         exec { 'security_systemd_daemon_reload':
-            command         => 'systemctl daemon-reload',
+            command         => '/usr/bin/systemctl daemon-reload',
             refreshonly     => true,
             require         => Package['systemd']
         }

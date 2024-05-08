@@ -107,7 +107,7 @@ class basic_settings::network(
     /* Reload systemd deamon */
     if (defined(Class['basic_settings::systemd']) or defined(Class['basic_settings::message'])) {
         exec { 'network_firewall_systemd_daemon_reload':
-            command         => 'systemctl daemon-reload',
+            command         => '/usr/bin/systemctl daemon-reload',
             refreshonly     => true,
             require         => Package['systemd']
         }

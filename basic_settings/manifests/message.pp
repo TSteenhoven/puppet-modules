@@ -19,7 +19,7 @@ class basic_settings::message(
     if (defined(Package['systemd'])) {
         /* Reload systemd deamon */
         exec { 'message_systemd_daemon_reload':
-            command         => 'systemctl daemon-reload',
+            command         => '/usr/bin/systemctl daemon-reload',
             refreshonly     => true,
             require         => Package['systemd']
         }
