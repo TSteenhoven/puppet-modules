@@ -11,7 +11,7 @@ class basic_settings::network(
     case $firewall_package {
         'nftables': {
             $firewall_command = ''
-            package { ['iptables', 'firwalld']:
+            package { ['iptables', 'firewalld']:
                 ensure => purged
             }
 
@@ -20,7 +20,7 @@ class basic_settings::network(
         }
         'iptables': {
             $firewall_command = 'iptables-restore < /etc/firewall.conf'
-            package { ['nftables', 'firwalld']:
+            package { ['nftables', 'firewalld']:
                 ensure => purged
             }
 
