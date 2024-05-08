@@ -36,6 +36,11 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT randomize_kstack_offset=
 # Restrict access to debugfs
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT debugfs=off"
 
+<% if @apparmor_enable -%>
+# Enable apparmor
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT apparmor=1 security=apparmor"
+<% end -%>
+
 # Disable graphical terminal
 GRUB_TERMINAL=console
 

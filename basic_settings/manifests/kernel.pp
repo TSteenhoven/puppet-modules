@@ -131,6 +131,13 @@ class basic_settings::kernel(
         notify  => Exec['kernel_sysctl_reload']
     }
 
+    /* Set apparmor state */
+    if (defined(Package['apparmor'])) {
+        $apparmor_enable = true
+    } else {
+        $apparmor_enable = false
+    }
+
     /* Setup TCP */
     case $bootloader {
         'grub': {
