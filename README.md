@@ -1,16 +1,18 @@
 # Puppet-modules
 
-Welkom bij mijn Puppet-modules project. Dit is een uitbreiding module voor je Puppet-omgeving, die bestaande uit verschillende onderdelen: `Basisinstellingen`, `Nginx`, `PHP`, `MySQL` en `SSH`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
+Welkom bij mijn Puppet-modules project. Dit is een uitgebreide module voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basisinstellingen`, `Nginx`, `PHP`, `MySQL` en `SSH`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil graag de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
 
-Het is belangrijk op te merken dat ik binnen verschillende onderdelen verschillende beveiligingsverbeteringen heb geïmplementeerd. Dit kan leiden tot afwijkend gedrag van softwarepakketten ten opzichte van de oorspronkelijke verwachtingen. Bijvoorbeeld, sommige softwarepakketten krijgen nu via systemd extra opties zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst.
+## Beveiligingsaanpassingen
 
-Ik ben me ervan bewust dat zowel vanuit softwareleveranciers als vanuit Linux-distributies (zoals Fedora[Fedora](https://discussion.fedoraproject.org/t/f40-change-proposal-systemd-security-hardening-system-wide/96423/11)) vergelijkbare maatregelen worden toegepast. In theorie hoeft dit dus niet in Puppet te worden opgenomen. Echter, aangezien niet alle distributies altijd de meest recente versie van de software gebruiken, bestaat er altijd een kans dat een specifieke beveiligingsaanpassing niet is doorgevoerd. Om deze reden kies ik ervoor om dubbele registratie toe te passen, zowel vanuit de softwareleverancier als vanuit Puppet.
+Het is belangrijk op te merken dat ik binnen verschillende onderdelen verschillende beveiligingsverbeteringen heb geïmplementeerd. Dit kan leiden tot afwijkend gedrag van softwarepakketten ten opzichte van de oorspronkelijke verwachtingen. Zo krijgen sommige softwarepakketten nu extra opties via systemd, zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst. Daarnaast wordt GRUB aangepast, zodat de kernel bij het opstarten in een veiligere modus draait. Ik wil madaidan en zijn pagina [linux-hardening](https://madaidans-insecurities.github.io/guides/linux-hardening.html) bedanken voor de tips; een groot deel van zijn informatie heb ik als inspiratie gebruikt.
+
+Ik ben me ervan bewust dat zowel vanuit softwareleveranciers als vanuit Linux-distributies (zoals [Fedora](https://discussion.fedoraproject.org/t/f40-change-proposal-systemd-security-hardening-system-wide/96423/11)) vergelijkbare maatregelen worden toegepast. In theorie hoeft dit dus niet in Puppet te worden opgenomen. Echter, aangezien niet alle distributies altijd de meest recente versie van de software gebruiken, bestaat er altijd een kans dat een specifieke beveiligingsaanpassing niet is doorgevoerd. Om deze reden kies ik ervoor om dubbele registratie toe te passen, zowel vanuit de softwareleverancier als vanuit Puppet.
 
 :warning: **64-bits**: Deze uitbreidingsmodule gaat ervan uit dat je besturingssysteem 64-bits is.
 
 ## Installatie
 
-Navigeer naar de hoofdmap van je Git Puppet-omgeving en voeg de submodule toe met het volgende commando:
+Navigeer naar de hoofdmap van je Puppet-omgeving en voeg de submodule toe met het volgende commando:
 
 ```bash
 git submodule add https://github.com/DevSysEngineer/puppet-modules.git global-modules
@@ -50,11 +52,12 @@ puppet module list
 
 ## Basic settings
 
-Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdclass te gebruiken. Wanneer de hoofdklasse wordt aangeroepen, worden deze subonderdelen daarin aangesproken en geconfigureerd. Het doel van deze sectie is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met minimale GUI/UI-pakketten, om zo het verbruik van resources te minimaliseren. Bovendien wordt de server aangepast door middel van kernelparameters om alle benodigde CPU-/powerresources te benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing))
+Dit onderdeel bestaat uit subonderdelen die kunnen worden toegepast zonder de hoofdklasse te gebruiken. Wanneer de hoofdklasse wordt aangeroepen, worden deze subonderdelen daarin aangesproken en geconfigureerd. Het doel van deze sectie is om een [headless server](https://en.wikipedia.org/wiki/Headless_computer) op te zetten met minimale GUI/UI-pakketten, om zo het verbruik van resources te minimaliseren. Bovendien wordt de server aangepast door middel van kernelparameters om alle benodigde CPU-/powerresources te benutten voor High-performance computing ([HPC](https://en.wikipedia.org/wiki/High-performance_computing)).
 
-Onnodige pakketten, zoals die voor energiebeheer op laptops, worden verwijderd omdat ze niet relevant zijn voor een serveromgeving. Pakketten zoals `mtr` en `rsync` worden daarintegen wel geïnstalleerd omdat ze vaak nodig zijn voor systeembeheerders. Daarnaast worden beveiligingspakketten zoals `apparmor` en `auditd` geïnstalleerd om de server te beveiligen en te monitoren op verdachte activiteiten.
+Onnodige pakketten, zoals die voor energiebeheer op laptops, worden verwijderd omdat ze niet relevant zijn voor een serveromgeving. Pakketten zoals `mtr` en `rsync` worden daarentegen wel geïnstalleerd omdat ze vaak nodig zijn voor systeembeheerders. Daarnaast worden beveiligingspakketten zoals `apparmor` en `auditd` geïnstalleerd om de server te beveiligen en te monitoren op verdachte activiteiten.
 
 Basic settings omvatten de volgende subonderdelen:
+
 - **Development:** Pakketten/configuraties gerelateerd aan ontwikkeling.
 - **IO:** Pakketten/configuraties gerelateerd aan opslag, uitschakelen van floppy's, etc.
 - **Kernel:** Pakketten/configuraties gerelateerd aan de kernel en optimalisatie ervan voor HPC-gebruik.
@@ -62,15 +65,19 @@ Basic settings omvatten de volgende subonderdelen:
 - **Login:** Pakketten/configuraties gerelateerd aan login en gebruikersbeheer.
 - **Netwerk:** Pakketten/configuraties gerelateerd aan netwerken en optimalisatie ervan voor HPC-gebruik.
 - **Packages:** Installeren van een pakketbeheerder en het verwijderen van andere pakketbeheerders indien mogelijk.
-    - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
-    - **Packages Node:** Configureren en installeren van APT-repo voor Node.
-- **Pro:** Voor Ubuntu is het mogelijk om een Pro-abonnement af te nemen. Dit subonderdeel zorgt ervoor dat alle benodigde pakketten zijn geïnstalleerd.
+  - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
+  - **Packages Node:** Configureren en installeren van APT-repo voor Node.
+- **Pro:** Voor Ubuntu is het mogelijk om een Pro-abonnement af te nemen.
+
+ Dit subonderdeel zorgt ervoor dat alle benodigde pakketten zijn geïnstalleerd.
 - **Puppet:** Configureren van Puppet op de juiste manier.
 - **Security:** Installeren van benodigde beveiligingspakketten om de server te monitoren.
 - **Systemd:** Installeren van systemd en zorgen voor de juiste systeemdoelconfiguratie.
 - **Timezone:** Configureren van tijd/datum.
 
-### Voorbeeld
+### Voorbeelden
+
+In het onderstaande voorbeeld zie je hoe `basic settings` kan worden aangeroepen:
 
 ```puppet
 node 'webserver.dev.xxxx.nl' {
@@ -84,6 +91,25 @@ node 'webserver.dev.xxxx.nl' {
         systemd_ntp_extra_pools => ['ntp.time.nl']
     }
 }
+```
+
+Zoals eerder vermeld, bevat `basic settings` ook een login subonderdeel. In het onderstaande voorbeeld laat ik zien hoe je een gebruiker kunt toevoegen. Wanneer de gebruiker aan de groep `wheel` wordt toegevoegd, mag de gebruiker `su` gebruiken.
+
+```puppet
+    /* Maak gebruiker */
+    basic_settings::login_user { 'naam':
+        ensure          => $ensure,
+        home            => "/home/[naam]",
+        uid             => $number,
+        gid             => $number,
+        password        => Sensitive($password),
+        bash_profile    => template('accounts/bash-profile'), # Indien van toepassing
+        bashrc          => template('accounts/bashrc'), # Indien van toepassing
+        bash_aliases    => template('accounts/bash-aliases'), # Indien van toepassing
+        authorized_keys => $authorized_keys,
+        groups          => ['wheel'] # Gebruik groep 'wheel' alleen als gebruiker ook moet kunnen 'su'en
+    }   
+
 ```
 
 ## Nginx
@@ -101,7 +127,7 @@ node 'webserver.dev.xxxx.nl' {
         require => Class['basic_settings']
     }
 
-    /* Create Nginx server for Unifi */
+    /* Creëer Nginx-server voor Unifi */
     nginx::server { 'unifi':
         docroot                 => undef,
         server_name             => 'unifi.xxxx.nl',
@@ -112,14 +138,14 @@ node 'webserver.dev.xxxx.nl' {
         https_force             => true,
         http2_enable            => true,
         http3_enable            => true,
-        fastopen                => 64, # Global, works also for other servers
-        reuseport               => true, # Global, works also for other servers
+        fastopen                => 64, # Globaal, werkt ook voor andere servers
+        reuseport               => true, # Globaal, werkt ook voor andere servers
         ssl_certificate         => '/etc/letsencrypt/live/unifi.xxxx.nl/fullchain.pem',
         ssl_certificate_key     => '/etc/letsencrypt/live/unifi.xxxx.nl/privkey.pem',
         php_fpm_enable          => false,
         try_files_enable        => false,
         location_directives     => [
-            'proxy_pass https://localhost:8443/; # The Unifi Controller Port',
+            'proxy_pass https://localhost:8443/; # De Unifi Controller-poort',
             'proxy_set_header Host $host;',
             'proxy_set_header X-Real-IP $remote_addr;',
             'proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;',
@@ -130,8 +156,8 @@ node 'webserver.dev.xxxx.nl' {
             {
                 path                    => '/wss/',
                 location_directives     => [
-                    '# Needed to allow the websockets to forward well.',
-                    '# Information adopted from here: https://community.ubnt.com/t5/EdgeMAX/Access-Edgemax-gui-via-nginx-reverse-proxy-websocket-problem/td-p/1544354',
+                    '# Nodig om de websockets goed door te sturen.',
+                    '# Informatie overgenomen van hier: https://community.ubnt.com/t5/EdgeMAX/Access-Edgemax-gui-via-nginx-reverse-proxy-websocket-problem/td-p/1544354',
                     'proxy_pass https://localhost:8443;',
                     'proxy_http_version 1.1;',
                     'proxy_buffering off;',
@@ -142,11 +168,11 @@ node 'webserver.dev.xxxx.nl' {
             }
         ],
         directives              => [
-            '# Unifi still internally uses its own cert. This was converted to PEM and',
-            '# is trusted for the sake of this proxy. See here for details:',
+            '# Unifi gebruikt intern nog steeds zijn eigen certificaat. Dit is omgezet naar PEM en',
+            '# wordt vertrouwd voor dit proxydoel. Zie hier voor details:',
             '# https://community.ubnt.com/t5/UniFi-Wireless/Lets-Encrypt-and-UniFi-controller/td-p/1406670',
             'ssl_trusted_certificate /etc/nginx/ssl/unifi.pem;',
-            '# Managed by Certbot',
+            '# Beheerd door Certbot',
             'include /etc/letsencrypt/options-ssl-nginx.conf;'
         ]
     }
