@@ -68,8 +68,6 @@ Basic settings omvatten de volgende subonderdelen:
   - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
   - **Packages Node:** Configureren en installeren van APT-repo voor Node.
 - **Pro:** Voor Ubuntu is het mogelijk om een Pro-abonnement af te nemen.
-
- Dit subonderdeel zorgt ervoor dat alle benodigde pakketten zijn geïnstalleerd.
 - **Puppet:** Configureren van Puppet op de juiste manier.
 - **Security:** Installeren van benodigde beveiligingspakketten om de server te monitoren.
 - **Systemd:** Installeren van systemd en zorgen voor de juiste systeemdoelconfiguratie.
@@ -96,6 +94,13 @@ node 'webserver.dev.xxxx.nl' {
 Zoals eerder vermeld, bevat `basic settings` ook een login subonderdeel. In het onderstaande voorbeeld laat ik zien hoe je een gebruiker kunt toevoegen. Wanneer de gebruiker aan de groep `wheel` wordt toegevoegd, mag de gebruiker `su` gebruiken.
 
 ```puppet
+    /* Uncomment dit stukje code wanneer je hoofdclass basic settings niet gebruikt */
+    <!-- class { 'basic_settings::login':
+        mail_to             => $systemd_notify_mail,
+        server_fdqn         => $server_fdqn,
+        sudoers_dir_enable  => $sudoers_dir_enable
+    } -->
+
     /* Maak gebruiker */
     basic_settings::login_user { 'naam':
         ensure          => $ensure,
