@@ -1,4 +1,4 @@
-define basic_settings::system_user(
+define basic_settings::login_user(
     $home,
     $uid,
     $gid,

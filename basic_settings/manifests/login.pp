@@ -14,6 +14,20 @@ class basic_settings::login(
         ensure  => installed
     }
 
+    /* Create group wheel */
+    group { 'wheel':
+        system => true
+    }
+
+    /* Setup su pam config file */
+    file { '/etc/pam.d/su':
+        ensure  => file,
+        mode    => '0664',
+        owner   => 'root',
+        group   => 'root',
+        content => template('basic_settings/login/pam/su')
+    }
+
     /* Create list of packages that is suspicious */
     $suspicious_packages = ['/usr/bin/sudo'];
 
