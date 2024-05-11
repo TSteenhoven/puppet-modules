@@ -1,20 +1,14 @@
 # Managed by puppet
 
 # Default settings
-Defaults	env_reset
-Defaults	mail_badpass
-Defaults    env_keep += SSH_AUTH_SOCK
-Defaults	secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Defaults	use_pty
+Defaults env_reset
+Defaults mail_badpass
+Defaults env_keep += SSH_AUTH_SOCK
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Defaults use_pty
 
 # User privilege specification
-root	ALL=(ALL:ALL) ALL
-
-# Members of the admin group may gain root privileges
-%admin ALL=(ALL) ALL
-
-# Allow members of group sudo to execute any command
-%sudo	ALL=(ALL:ALL) ALL
+root ALL=(ALL:ALL) ALL
 
 # See sudoers(5) for more information on "@include" directives:
 @includedir /etc/sudoers.d

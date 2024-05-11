@@ -19,6 +19,26 @@ class basic_settings::login(
         system => true
     }
 
+    /* Create list of packages that is suspicious */
+    $suspicious_packages = ['/usr/bin/sudo', '/usr/sbin/pam-auth-update'];
+
+    /* Run command when PAM file is changed */
+    exec { 'login_pam_auth_update':
+        command         => '/usr/sbin/pam-auth-update --package',
+        refreshonly     => true,
+        require         => Package['systemd']
+    }
+
+    /* Setup pam common-session file */
+    file { '/usr/share/pam-configs/custom':
+        ensure  => file,
+        mode    => '0664',
+        owner   => 'root',
+        group   => 'root',
+        content => template('basic_settings/login/pam/custom'),
+        notify  => Exec['login_pam_auth_update'],
+    }
+
     /* Setup su pam config file */
     file { '/etc/pam.d/su':
         ensure  => file,
@@ -27,9 +47,6 @@ class basic_settings::login(
         group   => 'root',
         content => template('basic_settings/login/pam/su')
     }
-
-    /* Create list of packages that is suspicious */
-    $suspicious_packages = ['/usr/bin/sudo'];
 
     /* Setup sudoers config file */
     file { '/etc/sudoers':

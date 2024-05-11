@@ -1,7 +1,7 @@
 
 class ssh(
     $allow_users                    = [],
-    $banner_text                    = "WARNING! You are entering a managed service!\nThis service should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
+    $banner_text                    = "WARNING! You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
     $password_authentication_users  = [],
     $permit_root_login              = false,
     $port                           = 22
