@@ -129,12 +129,12 @@ class { 'mysql':
     root_password   => 'mypassword'
 }
 
- /* Create database for this site */
+/* Maak database www aan */
 mysql::database { 'www':
     ensure => present
 }
 
-/* Create database user and grant all permissions to database */
+/* Maak een databasegebruiker aan en verleen alle machtigingen aan de database */
 mysql::user { 'www':
     ensure  => present,
     username  => 'www',
@@ -224,7 +224,7 @@ Dit onderdeel maakt het mogelijk om een backend server op te zetten op basis van
 Hieronder een voorbeeld hoe je PHP-FPM server opzet in productoe omgeving.
 
 ```puppet
-/* Default PHP settings */
+/* Standaard PHP instellingen */
 $php_settings = {
     'opcache.enable'                    => 1,
     'opcache.enable_cli'                => 0,
@@ -243,7 +243,7 @@ $php_settings = {
     'date.timezone'                     => $timezone
 }
 
-/* Default PHP-FPM settings */
+/* Standaard PHP-FPM instellingen */
 $php_fpm_settings = {
     'request_terminate_timeout' => $fastcgi_read_timeout
 }
@@ -281,7 +281,7 @@ php8::fpm_pool { 'wwww':
 
 Dit onderdeel zorgt ervoor dat SSH server wordt opgezet en dat er aantal security maatregelen worden toegepast. Zo mogen alleen gebruikers die mee gegeven zijn in de configuratie inloggen met SSH. Indien basic settings of security package van basic package wordt gebruikt, worden verdachte commando's gemonitord door auditd. 
 
-:warning: **64-bits**: Dit onderdeel ondersteunt inloggen met alleen wachtwoord, maar ik raad dat sterk af om deze methode nog te gebruiken.
+:warning: **Wachtwoord**: Dit onderdeel ondersteunt inloggen met alleen wachtwoord, maar ik raad dat sterk af om deze methode nog te gebruiken.
 
 ### Voorbeeld
 Pas deze configuratie toe op de plek waar je gebruikers aanmaakt. 
