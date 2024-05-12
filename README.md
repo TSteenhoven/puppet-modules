@@ -1,14 +1,14 @@
 # Puppet-modules
 
-Welkom bij mijn Puppet-modules project. Dit is een uitgebreide module voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basisinstellingen`, `Nginx`, `PHP`, `MySQL` en `SSH`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil graag de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
+Welkom bij mijn Puppet-modules project. Dit is een uitgebreide module voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basic settings`, `Nginx`, `PHP`, `MySQL` en `SSH`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil graag de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
 
-:warning: **64-bits**: Deze uitbreidingsmodule gaat ervan uit dat je besturingssysteem 64-bits is.
+:warning: **Compatibiliteit**: Deze uitbreidingsmodule is ontworpen voor 64-bits besturingssystemen.
 
 ## Beveiligingsaanpassingen
 
-Het is belangrijk op te merken dat ik binnen verschillende onderdelen verschillende beveiligingsverbeteringen heb geïmplementeerd. Dit kan leiden tot afwijkend gedrag van softwarepakketten ten opzichte van de oorspronkelijke verwachtingen. Zo krijgen sommige softwarepakketten nu extra opties via systemd, zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst. Daarnaast wordt GRUB aangepast, zodat de kernel bij het opstarten in een veiligere modus draait. Ik wil madaidan en zijn pagina [linux-hardening](https://madaidans-insecurities.github.io/guides/linux-hardening.html) bedanken voor de tips; een groot deel van zijn informatie heb ik als inspiratie gebruikt.
+Het is belangrijk op te merken dat ik binnen verschillende onderdelen verschillende beveiligingsverbeteringen heb geïmplementeerd, ook wel bekend als [hardening](https://en.wikipedia.org/wiki/Hardening_(computing)). Dit kan leiden tot afwijkend gedrag van softwarepakketten ten opzichte van de oorspronkelijke verwachtingen. Zo krijgen sommige softwarepakketten nu extra opties via systemd, zoals `PrivateTmp: true`, `ProtectHome: true` en `ProtectSystem: full`, waardoor ze in een sandboxomgeving worden geplaatst. Daarnaast wordt GRUB aangepast, zodat de kernel bij het opstarten in een `hardening` modus draait. Een ander voorbeeld is dat PAM zo is ingesteld dat bestanden via unmask 0077 worden aangemaakt. Ik wil madaidan en zijn pagina [linux-hardening](https://madaidans-insecurities.github.io/guides/linux-hardening.html) bedanken voor de tips; een groot deel van zijn informatie heb ik als inspiratie gebruikt.
 
-Ik ben me ervan bewust dat zowel vanuit softwareleveranciers als vanuit Linux-distributies (zoals [Fedora](https://discussion.fedoraproject.org/t/f40-change-proposal-systemd-security-hardening-system-wide/96423/11)) vergelijkbare maatregelen worden toegepast. In theorie hoeft dit dus niet in Puppet te worden opgenomen. Echter, aangezien niet alle distributies altijd de meest recente versie van de software gebruiken, bestaat er altijd een kans dat een specifieke beveiligingsaanpassing niet is doorgevoerd. Om deze reden kies ik ervoor om dubbele registratie toe te passen, zowel vanuit de softwareleverancier als vanuit Puppet.
+Ik ben me ervan bewust dat zowel softwareleveranciers als Linux-distributies (zoals [Fedora](https://discussion.fedoraproject.org/t/f40-change-proposal-systemd-security-hardening-system-wide/96423/11)) vergelijkbare maatregelen toepassen. In theorie hoeft dit dus niet in Puppet te worden opgenomen. Echter, aangezien niet alle distributies altijd de meest recente versie van de software gebruiken, bestaat er altijd een kans dat een specifieke beveiligingsaanpassing niet is doorgevoerd. Om deze reden kies ik ervoor om dubbele registratie toe te passen, zowel vanuit de softwareleverancier als vanuit Puppet.
 
 ## Installatie
 
@@ -117,11 +117,43 @@ Zoals eerder vermeld, bevat `basic settings` ook een login subonderdeel. In het 
 
 ```
 
-## Nginx
+## MySQL
 
-Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van het Nginx-pakket. Wanneer in `Basisinstellingen` de Nginx APT-repo is geactiveerd, probeert deze sectie de nieuwste Nginx-versie te installeren in plaats van de standaardversie die wordt aangeboden door het besturingssysteem. Ik raad aan om de nieuwste versie te gebruiken om nieuwe technologieën zoals `IPv6` en `HTTP3` te ondersteunen.
+Dit onderdeel maakt het mogelijk om een database server op te zetten op basis van het MySQL-pakket. Wanneer in `basic settings` de MySQL APT-repo is geactiveerd, probeert dit onderdeel de geselecteerde MySQL-versie te installeren in plaats van de standaardversie of database variant zoals MariaDB die vanuit het besturingssysteem wordt aangeboden. Indien basic settings of security package van basic package wordt gebruikt, worden verdachte commando's gemonitord door auditd.
 
 ### Voorbeeld
+Hieronder een voorbeeld hoe je MySQL database opzet in je Puppet omgeving:
+```puppet
+/* Setup MySQL */
+class { 'mysql':
+    root_password   => 'mypassword'
+}
+
+ /* Create database for this site */
+mysql::database { 'www':
+    ensure => present
+}
+
+/* Create database user and grant all permissions to database */
+mysql::user { 'www':
+    ensure  => present,
+    username  => 'www',
+    password  => 'mypassword'
+}
+->
+mysql::grant { 'www':
+    ensure  => present,
+    username  => 'www',
+    database  => 'www'
+}
+```
+
+## Nginx
+
+Dit onderdeel maakt het mogelijk om een webserver op te zetten op basis van het Nginx-pakket. Dit onderdeel wordt vaak in combinatie met PHP en/of MySQL onderdeel gebruikt. Wanneer in `basic settings` de Nginx APT-repo is geactiveerd, probeert dit onderdeel de nieuwste Nginx-versie te installeren in plaats van de standaardversie die wordt aangeboden door het besturingssysteem. Ik raad aan om de nieuwste versie te gebruiken om nieuwe technologieën zoals `IPv6` en `HTTP3` te ondersteunen.
+
+### Voorbeeld
+Hieronder een voorbeeld hoe je UniFi proxy server opzet met behulp van Nginx:
 
 ```puppet
 node 'webserver.dev.xxxx.nl' {
@@ -129,7 +161,7 @@ node 'webserver.dev.xxxx.nl' {
     /* Setup Nginx */
     class { 'nginx':
         target  => 'helpers',
-        require => Class['basic_settings']
+        require => Class['mysql'] # Indien MySQL ook geïnstalleerd is op de server
     }
 
     /* Creëer Nginx-server voor Unifi */
@@ -181,5 +213,82 @@ node 'webserver.dev.xxxx.nl' {
             'include /etc/letsencrypt/options-ssl-nginx.conf;'
         ]
     }
+}
+```
+
+## PHP
+
+Dit onderdeel maakt het mogelijk om een backend server op te zetten op basis van het PHP-pakket. Dit onderdeel wordt vaak in combinatie met PHP en/of MySQL onderdeel gebruikt. Wanneer in `basic settings` de PHP APT-repo is geactiveerd, probeert dit onderdeel de nieuwste PHP-versie te installeren in plaats van de standaardversie die wordt aangeboden door het besturingssysteem. Ik raad aan om de nieuwste versie te gebruiken om nieuwe technologieën.
+
+### Voorbeeld
+Hieronder een voorbeeld hoe je PHP-FPM server opzet in productoe omgeving.
+
+```puppet
+/* Default PHP settings */
+$php_settings = {
+    'opcache.enable'                    => 1,
+    'opcache.enable_cli'                => 0,
+    'opcache.memory_consumption'        => 1024,
+    'opcache.interned_strings_buffer'   => 64,
+    'opcache.max_accelerated_files'     => 100000,
+    'opcache.max_wasted_percentage'     => 30,
+    'opcache.fast_shutdown'             => 1,
+    'opcache.validate_timestamps'       => 1,
+    'opcache.revalidate_freq'           => 60,
+    'opcache.save_comments'             => 0,
+    'max_execution_time'                => $fastcgi_read_timeout,
+    'post_max_size'                     => '20M',
+    'upload_max_filesize'               => '20M',
+    'memory_limit'                      => '128M',
+    'date.timezone'                     => $timezone
+}
+
+/* Default PHP-FPM settings */
+$php_fpm_settings = {
+    'request_terminate_timeout' => $fastcgi_read_timeout
+}
+
+/* Setup PHP8 */
+class { 'php8':
+    curl            => true,
+    gd              => true,
+    mbstring        => true,
+    mysql           => true,
+    xml             => true,
+    minor_version   => '3',
+    require         => Class['basic_settings']
+}
+
+/* PHP 8 cli */
+class {'php8::cli':
+    ini_settings    => $php_settings,
+    require         => Class['basic_settings']
+}
+
+/* PHP 8 fpm */
+class {'php8::fpm':
+    ini_settings    => stdlib::merge($php_settings, $php_fpm_settings),
+    require         => Class['nginx'] # Indien Nginx ook geïnstalleerd is op de server
+}
+
+/* Setup www pool */
+php8::fpm_pool { 'wwww':
+
+}
+```
+
+## SSH daemon (SSHD)
+
+Dit onderdeel zorgt ervoor dat SSH server wordt opgezet en dat er aantal security maatregelen worden toegepast. Zo mogen alleen gebruikers die mee gegeven zijn in de configuratie inloggen met SSH. Indien basic settings of security package van basic package wordt gebruikt, worden verdachte commando's gemonitord door auditd. 
+
+:warning: **64-bits**: Dit onderdeel ondersteunt inloggen met alleen wachtwoord, maar ik raad dat sterk af om deze methode nog te gebruiken.
+
+### Voorbeeld
+Pas deze configuratie toe op de plek waar je gebruikers aanmaakt. 
+
+```puppet
+class { 'ssh':
+    password_authentication_users   => $users_external,
+    allow_users                     => $allow_ssh,
 }
 ```
