@@ -189,31 +189,65 @@ class basic_settings::network(
             require => File['/usr/local/sbin/rxbuffer']
         }
 
-        /* Install package */
-        package { 'systemd-resolved':
-            ensure          => installed,
-            install_options => $install_options
+        /* Check if systemd resolved package exists  */
+        case $operatingsystem {
+            'Ubuntu': {
+                $os_version = $::os['release']['major']
+                if ($os_version == '24.04') {
+                    $systemd_resolved_package = true
+                } else {
+                    $systemd_resolved_package = false
+                }
+            }
+            default: {
+                $systemd_resolved_package = true
+            }
         }
 
-        /* Ensure that networkd services is always running */
-        service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
-            ensure      => running,
-            enable      => true,
-            require     => [Package['systemd'], Package['systemd-resolved'], Package['networkd-dispatcher']]
+        /* Set settings */
+        $systemd_resolved_settings = {
+            'Cache'         => 'yes',
+            'DNSOverTLS'    => 'opportunistic',
+            'DNSSEC'        => 'allow-downgrade',
+            'FallbackDNS'   => join($fallback_dns, ' '),
+            'ReadEtcHosts'  => 'yes'
         }
 
-        /* Create drop in for systemd resolved service */
-        basic_settings::systemd_drop_in { 'resolved_settings':
-            target_unit     => 'systemd-resolved.service',
-            resolve            => {
-                'Cache'         => 'yes',
-                'DNSOverTLS'    => 'opportunistic',
-                'DNSSEC'        => 'allow-downgrade',
-                'FallbackDNS'   => join($fallback_dns, ' '),
-                'ReadEtcHosts'  => 'yes'
-            },
-            daemon_reload   => 'network_firewall_systemd_daemon_reload',
-            require         => Package['systemd-resolved']
+        /* Check if we need to install a systemd resolved package or if it's all built-in */
+        if ($systemd_resolved_package) {
+            package { 'systemd-resolved':
+                ensure          => installed,
+                install_options => $install_options
+            }
+
+            /* Ensure that networkd services is always running */
+            service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
+                ensure      => running,
+                enable      => true,
+                require     => [Package['systemd'], Package['systemd-resolved'], Package['networkd-dispatcher']]
+            }
+
+            /* Create drop in for systemd resolved service */
+            basic_settings::systemd_drop_in { 'resolved_settings':
+                target_unit     => 'systemd-resolved.service',
+                resolve         => $systemd_resolved_settings,
+                daemon_reload   => 'network_firewall_systemd_daemon_reload',
+                require         => Package['systemd-resolved']
+            }
+        } else {
+            /* Ensure that networkd services is always running */
+            service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
+                ensure      => running,
+                enable      => true,
+                require     => [Package['systemd'], Package['networkd-dispatcher']]
+            }
+
+            /* Create drop in for systemd resolved service */
+            basic_settings::systemd_drop_in { 'resolved_settings':
+                target_unit     => 'systemd-resolved.service',
+                resolve         => $systemd_resolved_settings,
+                daemon_reload   => 'network_firewall_systemd_daemon_reload'
+            }
         }
 
         /* Create symlink to network service */
