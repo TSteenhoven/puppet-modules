@@ -1,7 +1,13 @@
 class basic_settings::network(
     $firewall_package,
+    $fallback_dns = [
+        '8.8.8.8',
+        '8.8.4.4',
+        '2001:4860:4860::8888',
+        '2001:4860:4860::8844'
+    ],
     $antivirus_package = undef,
-    $install_options = undef,
+    $install_options = undef
 ) {
 
     /* Default suspicious packages */
@@ -183,11 +189,31 @@ class basic_settings::network(
             require => File['/usr/local/sbin/rxbuffer']
         }
 
+        /* Install package */
+        package { 'systemd-resolved':
+            ensure          => installed,
+            install_options => $install_options
+        }
+
         /* Ensure that networkd services is always running */
-        service { ['systemd-networkd.service', 'networkd-dispatcher.service']:
+        service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
             ensure      => running,
             enable      => true,
-            require     => [Package['systemd'], Package['networkd-dispatcher']]
+            require     => [Package['systemd'], Package['systemd-resolved'], Package['networkd-dispatcher']]
+        }
+
+        /* Create drop in for systemd resolved service */
+        basic_settings::systemd_drop_in { 'resolved_settings':
+            target_unit     => 'systemd-resolved.service',
+            resolve            => {
+                'Cache'         => 'yes',
+                'DNSOverTLS'    => 'opportunistic',
+                'DNSSEC'        => 'allow-downgrade',
+                'FallbackDNS'   => join($fallback_dns, ' '),
+                'ReadEtcHosts'  => 'yes'
+            },
+            daemon_reload   => 'network_firewall_systemd_daemon_reload',
+            require         => Package['systemd-resolved']
         }
 
         /* Create symlink to network service */

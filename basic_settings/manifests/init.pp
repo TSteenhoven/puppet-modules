@@ -7,6 +7,7 @@ class basic_settings(
         $firewall_package                           = 'nftables',
         $kernel_connection_max                      = 4096,
         $kernel_hugepages                           = 0,
+        $kernel_network_mode                        = 'strict',
         $kernel_tcp_congestion_control              = 'brr',
         $kernel_tcp_fastopen                        = 3,
         $locale_enable                              = false,
@@ -287,6 +288,7 @@ class basic_settings(
     class { 'basic_settings::kernel':
         connection_max          => $kernel_connection_max,
         hugepages               => $kernel_hugepages,
+        network_mode            => $kernel_network_mode,
         tcp_congestion_control  => $kernel_tcp_congestion_control,
         tcp_fastopen            => $kernel_tcp_fastopen
     }

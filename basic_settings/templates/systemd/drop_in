@@ -37,6 +37,19 @@
 <% end -%>
 <% end -%>
 <% end -%>
+<% if ! @resolve.empty? -%>
+
+[Resolve]
+<% @resolve.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+<% end -%>
 <% if ! @timer.empty? -%>
 
 [Timer]

@@ -4,6 +4,7 @@ define basic_settings::systemd_drop_in(
     $unit               = {},
     $service            = {},
     $mount              = {},
+    $resolve            = {},
     $timer              = {},
     $daemon_reload      = 'systemd_daemon_reload'
 ) {

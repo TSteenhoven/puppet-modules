@@ -1,9 +1,10 @@
 class basic_settings::kernel(
-    $bootloader             = 'grub',
-    $connection_max         = 4096,
-    $hugepages              = 0,
-    $tcp_congestion_control = 'brr',
-    $tcp_fastopen           = 3
+    $bootloader                 = 'grub',
+    $connection_max             = 4096,
+    $hugepages                  = 0,
+    $network_mode               = 'strict',
+    $tcp_congestion_control     = 'brr',
+    $tcp_fastopen               = 3
 ) {
     /* Install extra packages when Ubuntu */
     if ($operatingsystem == 'Ubuntu') {
