@@ -229,7 +229,8 @@ class basic_settings::network(
 
             /* Create drop in for systemd resolved service */
             basic_settings::systemd_drop_in { 'resolved_settings':
-                target_unit     => 'systemd-resolved.service',
+                target_unit     => 'resolved.conf',
+                path            => '/etc/systemd/',
                 resolve         => $systemd_resolved_settings,
                 daemon_reload   => 'network_firewall_systemd_daemon_reload',
                 require         => Package['systemd-resolved']
@@ -244,7 +245,8 @@ class basic_settings::network(
 
             /* Create drop in for systemd resolved service */
             basic_settings::systemd_drop_in { 'resolved_settings':
-                target_unit     => 'systemd-resolved.service',
+                target_unit     => 'resolved.conf',
+                path            => '/etc/systemd/',
                 resolve         => $systemd_resolved_settings,
                 daemon_reload   => 'network_firewall_systemd_daemon_reload'
             }
