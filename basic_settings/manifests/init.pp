@@ -25,6 +25,7 @@ class basic_settings(
         $pro_enable                                 = false,
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
+        $rabbitmq_enable                            = false,
         $server_fdqn                                = $fqdn,
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
@@ -72,6 +73,7 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'noble'
+                $rabbitmq_allow = true
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_jdk = true
@@ -90,6 +92,7 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'lunar'
+                $rabbitmq_allow = true
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_jdk = true
@@ -108,6 +111,7 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'jammy'
+                $rabbitmq_allow = true
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -122,6 +126,7 @@ class basic_settings(
                 $nodejs_allow = false
                 $openjdk_allow = false
                 $os_name = 'unknown'
+                $rabbitmq_allow = false
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -150,6 +155,7 @@ class basic_settings(
                 $nodejs_allow = true
                 $openjdk_allow = true
                 $os_name = 'bookworm'
+                $rabbitmq_allow = true
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppetserver'
                 $puppetserver_jdk = true
@@ -164,6 +170,7 @@ class basic_settings(
                 $nodejs_allow = false
                 $openjdk_allow = false
                 $os_name = 'unknown'
+                $rabbitmq_allow = false
                 $proxmox_allow = false
                 $puppetserver_dir = 'puppet'
                 $puppetserver_jdk = false
@@ -180,6 +187,7 @@ class basic_settings(
             $nodejs_allow = false
             $openjdk_allow = false
             $os_name = 'unknown'
+            $rabbitmq_allow = false
             $proxmox_allow = false
             $puppetserver_dir = 'puppet'
             $puppetserver_jdk = false
@@ -356,6 +364,22 @@ class basic_settings(
             command     => 'rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
+        }
+    }
+
+    /* Check if variable rabbitmq is true; if true, install new source list and key */
+    if ($rabbitmq_enable and $rabbitmq_allow) {
+        class { 'basic_settings::package_rabbitmq':
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_rabbitmq':
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 
