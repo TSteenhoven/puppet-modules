@@ -15,6 +15,7 @@ class basic_settings::package_rabbitmq(
             case $os_name {
                 'noble', 'lunar', 'jammy': {
                     $distribution = 'jammy'
+                    $allow = true
                 }
                 default: {
                     $distribution = ''
@@ -26,6 +27,7 @@ class basic_settings::package_rabbitmq(
             case $os_name {
                 'buster', 'bullseye': {
                     $distribution = 'buster'
+                    $allow = true
                 }
                 default: {
                     $distribution = ''
