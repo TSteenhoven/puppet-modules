@@ -41,7 +41,8 @@ class basic_settings(
             'mysql*',
             'nginx',
             'nodejs',
-            'php*'
+            'php*',
+            'rabbitmq-server'
         ]
     ) {
 
