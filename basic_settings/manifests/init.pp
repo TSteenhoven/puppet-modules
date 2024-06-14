@@ -353,7 +353,7 @@ class basic_settings(
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null",
+            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
