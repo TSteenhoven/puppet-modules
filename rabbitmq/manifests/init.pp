@@ -60,7 +60,7 @@ class rabbitmq(
                 'PrivateDevices'    => 'true',
                 'PrivateTmp'        => 'true',
                 'ProtectHome'       => 'true',
-                'ProtectSystem'     => 'full',
+                'ProtectSystem'     => 'true', # Rabbitmq need acces to /etc dir
             },
             daemon_reload   => 'rabbitmq_systemd_daemon_reload',
             require         => Package['rabbitmq-server']
