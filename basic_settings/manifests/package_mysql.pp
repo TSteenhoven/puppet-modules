@@ -1,4 +1,4 @@
-class basic_settings::package_mysql(
+class basic_settings::package::mysql(
     $enable,
     $os_parent,
     $os_name,

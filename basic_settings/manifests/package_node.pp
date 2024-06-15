@@ -1,4 +1,4 @@
-class basic_settings::package_node(
+class basic_settings::packages::node(
     $enable,
     $version = '20'
 ) {
