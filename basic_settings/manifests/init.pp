@@ -370,14 +370,14 @@ class basic_settings(
 
     /* Check if variable rabbitmq is true; if true, install new source list and key */
     if ($rabbitmq_enable and $rabbitmq_allow) {
-        class { 'basic_settings::package::rabbitmq':
+        class { 'basic_settings::package_rabbitmq':
             enable      => true,
             os_parent   => $os_parent,
             os_name     => $os_name,
             require     => Class['basic_settings::packages']
         }
     } else {
-        class { 'basic_settings::package::rabbitmq':
+        class { 'basic_settings::package_rabbitmq':
             enable      => false,
             os_parent   => $os_parent,
             os_name     => $os_name
@@ -403,7 +403,7 @@ class basic_settings(
 
     /* Check if variable mysql is true; if true, install new source list and key */
     if ($mysql_enable and $mysql_allow) {
-        class { 'basic_settings::package::mysql':
+        class { 'basic_settings::package_mysql':
             enable      => true,
             version     => $mysql_version,
             os_parent   => $os_parent,
@@ -411,7 +411,7 @@ class basic_settings(
             require     => Class['basic_settings::packages']
         }
     } else {
-        class { 'basic_settings::package::mysql':
+        class { 'basic_settings::package_mysql':
             enable      => false,
             os_parent   => $os_parent,
             os_name     => $os_name
@@ -448,13 +448,13 @@ class basic_settings(
 
     /* Check if variable nodejs is true; if true, install new source list and key */
     if ($nodejs_enable and $nodejs_allow) {
-        class { 'basic_settings::package::node':
+        class { 'basic_settings::package_node':
             enable      => true,
             version     => $nodejs_version,
             require     => Class['basic_settings::packages']
         }
     } else {
-        class { 'basic_settings::package::node':
+        class { 'basic_settings::package_node':
             enable      => false,
             require     => Class['basic_settings::packages']
         }

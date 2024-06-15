@@ -1,4 +1,4 @@
-class basic_settings::package::rabbitmq(
+class basic_settings::package_rabbitmq(
     $enable,
     $os_parent,
     $os_name
