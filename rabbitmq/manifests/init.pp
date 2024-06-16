@@ -1,6 +1,7 @@
 class rabbitmq(
         $target     = 'services',
         $nice_level = 12,
+        $limit_file = 10000
     ) {
 
     /* Install erlang */
@@ -56,14 +57,27 @@ class rabbitmq(
             target_unit     => 'rabbitmq-server.service',
             unit            => $unit,
             service         => {
+                'LimitNOFILE'       => $limit_file,
                 'Nice'              => "-${nice_level}",
                 'PrivateDevices'    => 'true',
                 'PrivateTmp'        => 'true',
                 'ProtectHome'       => 'true',
-                'ProtectSystem'     => 'true', # Rabbitmq need acces to /etc dir
+                'ProtectSystem'     => 'full',
             },
             daemon_reload   => 'rabbitmq_systemd_daemon_reload',
             require         => Package['rabbitmq-server']
         }
+    }
+
+    /* Create config directory */
+    file { '/etc/rabbitmq/conf.d':
+        ensure  => directory,
+        purge   => true,
+        force   => true,
+        recurse => true,
+        owner   => 'rabbitmq',
+        group   => 'rabbitmq',
+        mode    => '0770',
+        require => Package['rabbitmq-server']
     }
 }

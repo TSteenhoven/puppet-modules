@@ -99,7 +99,7 @@ class nginx(
         require => Package['nginx']
     }
 
-    /* Create sites connfig directory */
+    /* Create sites config directory */
     file { '/etc/nginx/conf.d':
         ensure  => directory,
         purge   => true,
