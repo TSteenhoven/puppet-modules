@@ -70,11 +70,22 @@ class rabbitmq(
     }
 
     /* Create config directory */
-    file { '/etc/rabbitmq/conf.d':
+    file { 'rabbitmq_config_dir':
+        path    => '/etc/rabbitmq/conf.d',
         ensure  => directory,
         purge   => true,
         force   => true,
         recurse => true,
+        owner   => 'rabbitmq',
+        group   => 'rabbitmq',
+        mode    => '0770',
+        require => Package['rabbitmq-server']
+    }
+
+    /* Create ssl directory */
+    file { 'rabbitmq_ssl':
+        path    => '/etc/rabbitmq/ssl',
+        ensure  => directory,
         owner   => 'rabbitmq',
         group   => 'rabbitmq',
         mode    => '0770',

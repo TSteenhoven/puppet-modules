@@ -25,6 +25,7 @@ class rabbitmq::management(
         owner   => 'rabbitmq',
         group   => 'rabbitmq',
         mode    => '0600',
-        notify  => Service['rabbitmq-server']
+        notify  => Service['rabbitmq-server'],
+        require => File['rabbitmq_config_dir']
     }
 }
