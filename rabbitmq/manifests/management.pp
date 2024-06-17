@@ -3,6 +3,7 @@ class rabbitmq::management(
         $ssl_certificate        = undef,
         $ssl_certificate_key    = undef,
         $ssl_port               = 15671,
+        $ssl_protocols          = undef
     ) {
 
     /* Setup the plugin */
@@ -28,6 +29,17 @@ class rabbitmq::management(
         $ssl_ca_certificate_correct = undef
         $ssl_certificate_correct = undef
         $ssl_certificate_key_correct = undef
+    }
+
+    /* Set SSL protocols */
+    if ($ssl_protocols == undef) {
+        if ($rabbitmq::tcp::ssl_protocols == undef) {
+            $ssl_protocols_correct = []
+        } else {
+            $ssl_protocols_correct = $rabbitmq::tcp::ssl_protocols
+        }
+    } else {
+        $ssl_protocols_correct = $ssl_protocols
     }
 
     /* Create management config file */
