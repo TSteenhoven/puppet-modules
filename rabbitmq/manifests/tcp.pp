@@ -1,4 +1,4 @@
-class rabbitmq::management(
+class rabbitmq::tcp(
         $tcp_enable             = false,
         $tcp_port               = 5672,
         $ssl_ca_certificate     = undef,
@@ -17,9 +17,9 @@ class rabbitmq::management(
     }
 
     /* Create management config file */
-    file { '/etc/rabbitmq/conf.d/tls.conf':
+    file { '/etc/rabbitmq/conf.d/tcp.conf':
         ensure  => file,
-        content => template('rabbitmq/tls.conf'),
+        content => template('rabbitmq/tcp.conf'),
         owner   => 'rabbitmq',
         group   => 'rabbitmq',
         mode    => '0600',
