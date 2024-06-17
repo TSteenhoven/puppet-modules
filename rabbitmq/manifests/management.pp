@@ -3,7 +3,8 @@ class rabbitmq::management(
         $ssl_certificate        = undef,
         $ssl_certificate_key    = undef,
         $ssl_port               = 15671,
-        $ssl_protocols          = undef
+        $ssl_protocols          = undef,
+        $ssl_ciphers            = undef
     ) {
 
     /* Setup the plugin */
@@ -31,15 +32,31 @@ class rabbitmq::management(
         $ssl_certificate_key_correct = undef
     }
 
-    /* Set SSL protocols */
-    if ($ssl_protocols == undef) {
-        if ($rabbitmq::tcp::ssl_protocols == undef) {
-            $ssl_protocols_correct = []
+    /* Check if https is active */
+    if ($https_allow) {
+        /* Set SSL protocols */
+        if ($ssl_protocols == undef) {
+            if ($rabbitmq::tcp::ssl_protocols == undef) {
+                $ssl_protocols_correct = []
+            } else {
+                $ssl_protocols_correct = $rabbitmq::tcp::ssl_protocols
+            }
         } else {
-            $ssl_protocols_correct = $rabbitmq::tcp::ssl_protocols
+            $ssl_protocols_correct = $ssl_protocols
+        }
+
+        /* Set SSL ciphers */
+        if ($ssl_ciphers == undef) {
+            if ($rabbitmq::tcp::ssl_ciphers == undef) {
+                $ssl_ciphers_correct = []
+            } else {
+                $ssl_ciphers_correct = $rabbitmq::tcp::ssl_ciphers
+            }
+        } else {
+            $ssl_ciphers_correct = $ssl_ciphers
         }
     } else {
-        $ssl_protocols_correct = $ssl_protocols
+        $ssl_ciphers_correct = []
     }
 
     /* Create management config file */
