@@ -99,9 +99,39 @@ class basic_settings::kernel(
         ensure  => purged
     }
 
-    /* Basic system packages */
-    package { ['bc', 'coreutils', 'lsb-release', 'util-linux']:
-        ensure  => installed
+    /* Install system package */
+    if (!defined(Package['bc'])) {
+        package { 'bc':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
+    if (!defined(Package['coreutils'])) {
+        package { 'coreutils':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
+    if (!defined(Package['grep'])) {
+        package { 'grep':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
+    if (!defined(Package['lsb-release'])) {
+        package { 'lsb-release':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
+    if (!defined(Package['util-linux'])) {
+        package { 'util-linux':
+            ensure  => installed
+        }
     }
 
     /* Create sysctl config  */

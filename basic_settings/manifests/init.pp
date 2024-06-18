@@ -210,7 +210,12 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['nano', 'pbzip2', 'pigz', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['pbzip2', 'pigz', 'sysstat', 'unzip', 'xz-utils']:
+        ensure  => installed
+    }
+
+    /* Basic system packages; This packages needed to be installed first */
+    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'util-linux']:
         ensure  => installed
     }
 
@@ -226,14 +231,16 @@ class basic_settings(
         exec { 'basic_settings_source_backports':
             command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload'],
+            require     => Package['coreutils']
         }
     } else {
         $backports_install_options = undef
         exec { 'basic_settings_source_backports':
             command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload']
+            notify      => Exec['basic_settings_source_list_reload'],
+            require     => Package['coreutils']
         }
     }
 
@@ -251,7 +258,8 @@ class basic_settings(
         mode    => '0644',
         owner   => 'root',
         group   => 'root',
-        content => template("basic_settings/source/${os_parent}.list")
+        content => template("basic_settings/source/${os_parent}.list"),
+        require => Package['apt']
     }
 
     /* Setup message */

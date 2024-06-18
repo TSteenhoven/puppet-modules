@@ -11,10 +11,17 @@ class basic_settings::packages(
     $snap_enable                                = false,
     $mail_to                                    = 'root'
 ) {
+    /* Install apt package */
+    if (!defined(Package['apt'])) {
+        package { 'apt':
+            ensure  => installed
+        }
+    }
 
     /* Install package */
-    package { ['apt', 'apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'unattended-upgrades']:
-        ensure  => installed
+    package { ['apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'unattended-upgrades']:
+        ensure  => installed,
+        require => Package['apt']
     }
 
     /* Set default rules */
@@ -72,7 +79,7 @@ class basic_settings::packages(
 
         /* Remove man */
         exec { 'packages_man_remove':
-            command     => 'rm /usr/bin/man',
+            command     => '/usr/bin/rm /usr/bin/man',
             onlyif      => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]']
         }
 

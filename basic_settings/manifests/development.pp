@@ -4,7 +4,7 @@ class basic_settings::development(
 ) {
 
     /* Install default development packages */
-    package { ['build-essential', 'python-is-python3', 'python3', 'ruby', 'screen']:
+    package { ['build-essential', 'python-is-python3', 'python3', 'nano', 'ruby', 'screen']:
         ensure  => installed
     }
 
