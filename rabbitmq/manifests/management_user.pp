@@ -8,7 +8,7 @@ define rabbitmq::management_user(
         present: {
             /* When password is not given; Create random passowrd */
             if ($password == undef) {
-                if (defined(User[$name])) {
+                if (defined(Resource['basic_settings::login_user', $name])) {
                     $user_addd = "TMPPASS=`/usr/bin/pwgen -s 26 1`; echo \$TMPPASS > /home/${name}/.rabbitmq.password; chown ${name}:${name} /home/${name}/.rabbitmq.password; chmod 600 /home/${name}/.rabbitmq.password; echo \$TMPPASS | /usr/sbin/rabbitmqctl add_user ${name}"
                 } else {
                     fail("User ${name} not present")
