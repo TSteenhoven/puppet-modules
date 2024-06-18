@@ -16,6 +16,6 @@ define rabbitmq::management_user_permissions(
     exec { "rabbitmq_management_user_${user}_permissions_${exec_name}":
         command => "/usr/sbin/rabbitmqctl --quiet set_permissions -p ${vhost} ${user} '${configure}' '${write}' '${read}'",
         unless  => "/usr/sbin/rabbitmqctl --quiet list_user_permissions --no-table-headers ${user} | /usr/bin/tr -d '\t' | /usr/bin/grep '${vhost}${configure}${write}${read}'",
-        require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${name}"]]
+        require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${user}"]]
     }
 }
