@@ -69,4 +69,9 @@ class rabbitmq::management(
         notify  => Service['rabbitmq-server'],
         require => File['rabbitmq_config_dir']
     }
+
+    /* Remove guest account */
+    rabbitmq::management_user { 'guest':
+        ensure => absent
+    }
 }
