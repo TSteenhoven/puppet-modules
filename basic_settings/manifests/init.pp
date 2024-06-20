@@ -3,6 +3,7 @@ class basic_settings(
         $antivirus_package                          = undef,
         $backports                                  = false,
         $cluster_id                                 = 'core',
+        $dconf_service_enable                       = false,
         $docs_enable                                = false,
         $firewall_package                           = 'nftables',
         $kernel_connection_max                      = 4096,
@@ -484,7 +485,7 @@ class basic_settings(
         }
 
         /* Install java extensions */
-        package { [ 'adwaita-icon-theme', 'ca-certificates-java']:
+        package { [ 'adwaita-icon-theme', 'ca-certificates-java', 'dconf-service']:
             ensure  => installed,
             require => Package['openjdk']
         }
@@ -508,8 +509,21 @@ class basic_settings(
             }
         }
 
+        /* Check if we need to install dconf-service */
+        if ($dconf_service_enable) {
+            package { 'dconf-service':
+                ensure  => installed,
+                require => Package['openjdk']
+            }
+        } else {
+            package { 'dconf-service':
+                ensure  => purged,
+                require => Package['openjdk']
+            }
+        }
+
         /* Remove java extensions */
-        package { 'ca-certificates-java':
+        package { ['ca-certificates-java', 'dconf-service']:
             ensure  => purged,
             require => Package['openjdk']
         }
