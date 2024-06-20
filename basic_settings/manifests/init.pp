@@ -215,7 +215,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['pbzip2', 'pigz', 'sysstat', 'unzip', 'xz-utils']:
+    package { ['sysstat']:
         ensure  => installed
     }
 
