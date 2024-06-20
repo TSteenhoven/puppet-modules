@@ -65,7 +65,7 @@ class basic_settings::puppet(
             path    => "/var/log/${server_dir}/reports",
             owner   => 'puppet',
             group   => 'puppet',
-            mode    => '0644'
+            mode    => '0750'
         }
 
         /* Create symlink */

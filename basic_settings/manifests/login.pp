@@ -10,7 +10,7 @@ class basic_settings::login(
     }
 
     /* Install packages */
-    package { ['/usr/bin/bash-completion', 'sudo', 'libpam-modules']:
+    package { ['bash-completion', 'sudo', 'libpam-modules']:
         ensure  => installed
     }
 
