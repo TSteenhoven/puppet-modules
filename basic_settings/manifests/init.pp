@@ -204,6 +204,11 @@ class basic_settings(
         $snap_correct = $snap_enable
     }
 
+    /* Basic system packages; This packages needed to be installed first */
+    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'util-linux']:
+        ensure  => installed
+    }
+
     /* Remove unnecessary packages */
     package { ['dconf-service', 'at-spi2-core', 'lxd-installer', 'plymouth', 'x11-utils']:
         ensure  => purged
@@ -211,11 +216,6 @@ class basic_settings(
 
     /* Basic system packages */
     package { ['pbzip2', 'pigz', 'sysstat', 'unzip', 'xz-utils']:
-        ensure  => installed
-    }
-
-    /* Basic system packages; This packages needed to be installed first */
-    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'util-linux']:
         ensure  => installed
     }
 
@@ -229,7 +229,7 @@ class basic_settings(
     if ($backports and $backports_allow) {
         $backports_install_options = ['-t', "${os_name}-backports"]
         exec { 'basic_settings_source_backports':
-            command     => "printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
+            command     => "/usr/bin/printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
             unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             notify      => Exec['basic_settings_source_list_reload'],
             require     => Package['coreutils']
@@ -237,7 +237,7 @@ class basic_settings(
     } else {
         $backports_install_options = undef
         exec { 'basic_settings_source_backports':
-            command     => "rm /etc/apt/sources.list.d/${os_name}-backports.list",
+            command     => "/usr/bin/rm /etc/apt/sources.list.d/${os_name}-backports.list",
             onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
             notify      => Exec['basic_settings_source_list_reload'],
             require     => Package['coreutils']
@@ -334,7 +334,7 @@ class basic_settings(
         case $os_parent {
             'ubuntu': {
                 exec { 'source_sury_php':
-                    command     => "printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
+                    command     => "/usr/bin/printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
                     notify      => Exec['basic_settings_source_list_reload'],
                     require     => [Package['curl'], Package['gnupg']]
@@ -353,7 +353,7 @@ class basic_settings(
     } else {
         /* Remove sury php repo */
         exec { 'source_sury_php':
-            command     => 'rm /etc/apt/sources.list.d/sury_php.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/sury_php.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
             notify      => Exec['basic_settings_source_list_reload']
         }
@@ -362,7 +362,7 @@ class basic_settings(
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
         exec { 'source_nginx':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
+            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
@@ -370,7 +370,7 @@ class basic_settings(
     } else {
         /* Remove nginx repo */
         exec { 'source_nginx':
-            command     => 'rm /etc/apt/sources.list.d/nginx.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
         }
@@ -395,7 +395,7 @@ class basic_settings(
     /* Check if variable proxmox is true; if true, install new source list and key */
     if ($proxmox_enable and $proxmox_allow) {
         exec { 'source_proxmox':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
+            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
@@ -403,7 +403,7 @@ class basic_settings(
     } else {
         /* Remove proxmox repo */
         exec { 'source_proxmox':
-            command     => 'rm /etc/apt/sources.list.d/pve-install-repo.list.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/pve-install-repo.list.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
             notify      => Exec['basic_settings_source_list_reload']
         }
@@ -429,7 +429,7 @@ class basic_settings(
     /* Check if variable mongodb is true; if true, install new source list and key */
     if ($mongodb_enable and $mongodb_allow) {
         exec { 'source_mongodb':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
+            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
             notify      => Exec['basic_settings_source_list_reload'],
             require     => [Package['curl'], Package['gnupg']]
@@ -448,7 +448,7 @@ class basic_settings(
 
         /* Remove mongodb repo */
         exec { 'source_mongodb':
-            command     => 'rm /etc/apt/sources.list.d/mongodb.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/mongodb.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
             notify      => Exec['basic_settings_source_list_reload']
         }

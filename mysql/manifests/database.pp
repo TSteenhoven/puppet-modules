@@ -14,14 +14,14 @@ define mysql::database (
     case $ensure {
         present: {
             exec { "mysql_create_database_${title}":
-                unless => "bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SHOW DATABASES;' | grep -qx '${title}'\"",
+                unless => "/usr/bin/bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SHOW DATABASES;' | grep -qx '${title}'\"",
                 command => "mysql --defaults-file=${mysql::defaults_file} -e \"CREATE DATABASE \\`${title}\\` DEFAULT CHARACTER SET = '${charset}' DEFAULT COLLATE = '${collate}';\"",
             }
         }
         absent: {
             if ($destroy) {
                 exec { "mysql_drop_database_${title}":
-                    onlyif => "bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SHOW DATABASES;' | grep -qx '${title}'\"",
+                    onlyif => "/usr/bin/bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SHOW DATABASES;' | grep -qx '${title}'\"",
                     command => "mysql --defaults-file=${mysql::defaults_file} -e \"DROP DATABASE \\`${title}\\`;\""
                 }
             } else {

@@ -9,7 +9,7 @@ class rabbitmq::management(
 
     /* Setup the plugin */
     exec { 'rabbitmq_management_plugin':
-        command =>  'bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
+        command =>  '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
         unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
         require => Package['rabbitmq-server']
     }

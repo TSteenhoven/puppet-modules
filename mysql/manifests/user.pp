@@ -17,7 +17,7 @@ define mysql::user (
         '5.7': /* non-LTS */ {
             $password_field = 'authentication_string'
             $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';"
-            $unless_field = "bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
+            $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
         }
         '8.0', /* non-LTS */
         '8.4': /* LTS */ {
@@ -28,12 +28,12 @@ define mysql::user (
                 $password_field = 'password'
                 $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';" # use default caching_sha2_password method for saving password 
             }
-            $unless_field = "bash -c \"if [ `touch /tmp/mysql.cnf && chmod 600 /tmp/mysql.cnf && printf '%b' '[client]\\npassword=${password}' > /tmp/mysql.cnf; mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql --defaults-file=/tmp/mysql.cnf -u ${username} -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; rm /tmp/mysql.cnf; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
+            $unless_field = "/usr/bin/bash -c \"if [ `touch /tmp/mysql.cnf && chmod 600 /tmp/mysql.cnf && printf '%b' '[client]\\npassword=${password}' > /tmp/mysql.cnf; mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql --defaults-file=/tmp/mysql.cnf -u ${username} -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; rm /tmp/mysql.cnf; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
         }
         default: {
             $password_field = 'password'
             $password_command = "SET PASSWORD FOR '${username}'@'${hostname}' = PASSWORD('${password}');"
-            $unless_field = "bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
+            $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
         }
     }
 
@@ -41,7 +41,7 @@ define mysql::user (
     case $ensure {
         present: {
             exec { "mysql_create_user_${username}@${hostname}":
-                unless => "bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SELECT user,host from mysql.user;' | grep -qx '${username}\\s${hostname}'\"",
+                unless => "/usr/bin/bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SELECT user,host from mysql.user;' | grep -qx '${username}\\s${hostname}'\"",
                 command => "mysql --defaults-file=${mysql::defaults_file} -e \"CREATE USER '${username}'@'${hostname}';\"",
             }
             ->
@@ -52,7 +52,7 @@ define mysql::user (
         }
         absent: {
             exec { "mysql_drop_user_${username}@${hostname}":
-                onlyif => "bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SELECT user,host from mysql.user;' | grep -qx '${username}\\s${hostname}'\"",
+                onlyif => "/usr/bin/bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SELECT user,host from mysql.user;' | grep -qx '${username}\\s${hostname}'\"",
                 command => "mysql --defaults-file=${mysql::defaults_file} -e \"DROP USER '${username}'@'${hostname}'; FLUSH PRIVILEGES;\"",
             }
         }

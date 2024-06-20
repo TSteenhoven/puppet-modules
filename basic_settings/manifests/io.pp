@@ -5,7 +5,7 @@ class basic_settings::io(
     $suspicious_packages = ['/usr/bin/rsync']
 
     /* Install default development packages */
-    package { ['fuse', 'logrotate', 'multipath-tools-boot', 'rsync']:
+    package { ['fuse', 'logrotate', 'multipath-tools-boot', 'pbzip2', 'pigz', 'rsync', 'unzip', 'xz-utils']:
         ensure  => installed
     }
 

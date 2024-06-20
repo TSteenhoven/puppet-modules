@@ -74,7 +74,7 @@ class basic_settings::packages(
 
         /* Remove unnecessary snapd and unminimize files */
         file { ['/usr/local/sbin/unminimize', '/etc/update-motd.d/60-unminimize']:
-            ensure      => absent
+            ensure => absent
         }
 
         /* Remove man */

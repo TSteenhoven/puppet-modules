@@ -59,6 +59,22 @@ class basic_settings::puppet(
             }
         }
 
+        /* Create log dir */
+        file { 'puppet_reports':
+            ensure  => directory,
+            path    => "/var/log/${server_dir}/reports",
+            owner   => 'puppet',
+            group   => 'puppet',
+            mode    => '0644'
+        }
+
+        /* Create symlink */
+        file { "/var/lib/${server_dir}/reports":
+            ensure => 'link',
+            target => "/var/log/${server_dir}/reports",
+            require => File['puppet_reports']
+        }
+
         if (defined(Package['systemd'])) {
             /* Create drop in for puppet server service */
             basic_settings::systemd_drop_in { 'puppetserver_settings':

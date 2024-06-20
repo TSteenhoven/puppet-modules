@@ -33,7 +33,7 @@ class basic_settings::package_mysql(
 
         /* Set source */
         exec { 'package_mysql_source':
-            command     => "printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg",
+            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             notify      => Exec['package_mysql_source_list_reload'],
             require     => [Package['curl'], Package['gnupg'], File['package_mysql_key']]
@@ -41,7 +41,7 @@ class basic_settings::package_mysql(
     } else {
         /* Remove mysql repo */
         exec { 'package_mysql_source':
-            command     => 'rm /etc/apt/sources.list.d/mysql.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/mysql.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
             notify      => Exec['package_mysql_source_list_reload']
         }

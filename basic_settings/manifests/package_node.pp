@@ -40,7 +40,7 @@ class basic_settings::package_node(
 
         /* Remove nodejs repo */
         exec { 'source_nodejs':
-            command     => 'rm /etc/apt/sources.list.d/nodesource.list',
+            command     => '/usr/bin/rm /etc/apt/sources.list.d/nodesource.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
             notify      => Exec['package_node_source_list_reload'],
             require     => Package['nodejs']
