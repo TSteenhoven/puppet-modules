@@ -211,7 +211,7 @@ class basic_settings(
     }
 
     /* Remove unnecessary packages */
-    package { ['dconf-service', 'at-spi2-core', 'lxd-installer', 'plymouth', 'x11-utils']:
+    package { ['at-spi2-core', 'lxd-installer', 'plymouth', 'x11-utils']:
         ensure  => purged
     }
 
