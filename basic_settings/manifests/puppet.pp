@@ -72,6 +72,7 @@ class basic_settings::puppet(
         file { "/var/lib/${server_dir}/reports":
             ensure => 'link',
             target => "/var/log/${server_dir}/reports",
+            force  => true,
             require => File['puppet_reports']
         }
 

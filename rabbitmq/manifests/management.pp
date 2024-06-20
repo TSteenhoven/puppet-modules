@@ -7,11 +7,22 @@ class rabbitmq::management(
         $ssl_ciphers            = undef
     ) {
 
+    /* Create list of packages that is suspicious */
+    $suspicious_packages = ['/usr/sbin/rabbitmqctl']
+
     /* Setup the plugin */
     exec { 'rabbitmq_management_plugin':
         command =>  '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
         unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
         require => Package['rabbitmq-server']
+    }
+
+    /* Setup audit rules */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'rabbitmq_management':
+            rule_suspicious_packages    => $suspicious_packages,
+            rule_options                => ['-F auid!=unset']
+        }
     }
 
     /* Check if all cert variables are given */
