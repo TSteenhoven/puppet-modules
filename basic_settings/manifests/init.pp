@@ -523,7 +523,7 @@ class basic_settings(
         }
 
         /* Remove java extensions */
-        package { ['ca-certificates-java', 'dconf-service']:
+        package { ['ca-certificates-java']:
             ensure  => purged,
             require => Package['openjdk']
         }
