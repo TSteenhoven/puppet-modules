@@ -7,7 +7,7 @@ class basic_settings::kernel(
     $tcp_fastopen               = 3
 ) {
     /* Install extra packages when Ubuntu */
-    if ($operatingsystem == 'Ubuntu') {
+    if ($::os['name'] == 'Ubuntu') {
         $os_version = $::os['release']['major']
         if ($os_version != '24.04') {
             package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:

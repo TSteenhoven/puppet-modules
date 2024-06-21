@@ -92,7 +92,7 @@ class basic_settings::network(
     }
 
     /* If we need to install netplan */
-    case $operatingsystem {
+    case $::os['name'] {
         'Ubuntu': {
             $netplan_rules = [
                 '-a always,exit -F arch=b32 -F path=/etc/netplan -F perm=wa -F key=network',
@@ -190,7 +190,7 @@ class basic_settings::network(
         }
 
         /* Check if systemd resolved package exists  */
-        case $operatingsystem {
+        case $::os['name'] {
             'Ubuntu': {
                 $os_version = $::os['release']['major']
                 if ($os_version == '24.04') {

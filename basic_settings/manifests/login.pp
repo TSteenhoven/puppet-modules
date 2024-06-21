@@ -68,7 +68,7 @@ class basic_settings::login(
     }
 
     /* Check if OS is Ubuntu */
-    if ($operatingsystem == 'Ubuntu') {
+    if ($::os['name'] == 'Ubuntu') {
         /* Install packages */
         package { 'update-motd':
             ensure  => installed

@@ -27,7 +27,7 @@ class basic_settings(
         $proxmox_enable                             = false,
         $puppetserver_enable                        = false,
         $rabbitmq_enable                            = false,
-        $server_fdqn                                = $fqdn,
+        $server_fdqn                                = $::networking['fqdn'],
         $server_timezone                            = 'UTC',
         $smtp_server                                = 'localhost',
         $snap_enable                                = false,
@@ -48,12 +48,12 @@ class basic_settings(
     ) {
 
     /* Get OS name */
-    case $operatingsystem {
+    case $::os['name'] {
         'Ubuntu': {
             /* Set some variables */
             $os_parent = 'ubuntu'
             $os_repo = 'main universe restricted'
-            if ($architecture == 'amd64') {
+            if ($::os['architecture'] == 'amd64') {
                 $os_url = 'http://archive.ubuntu.com/ubuntu/'
                 $os_url_security = 'http://security.ubuntu.com/ubuntu'
             } else {
@@ -62,11 +62,11 @@ class basic_settings(
             }
 
             /* Do thing based on version */
-            if ($operatingsystemrelease =~ /^24.04.*/) { # LTS
+            if ($::os['release']['major'] == '24.04') { # LTS
                 $backports_allow = false
                 $gcc_version = undef
                 $mongodb_allow = true
-                if ($architecture == 'amd64') {
+                if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -81,11 +81,11 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_package = 'puppetserver'
                 $sury_allow = false
-            } elsif ($operatingsystemrelease =~ /^23.04.*/) { # Stable
+            } elsif ($::os['release']['major'] == '23.04') { # Stable
                 $backports_allow = false
                 $gcc_version = 12
                 $mongodb_allow = true
-                if ($architecture == 'amd64') {
+                if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -100,11 +100,11 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_package = 'puppetserver'
                 $sury_allow = false
-            } elsif ($operatingsystemrelease =~ /^22.04.*/) { # LTS
+            } elsif ($::os['release']['major'] == '22.04') { # LTS
                 $backports_allow = false
                 $gcc_version = 12
                 $mongodb_allow = true
-                if ($architecture == 'amd64') {
+                if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -144,11 +144,11 @@ class basic_settings(
             $os_url_security = 'http://deb.debian.org/debian-security/'
 
             /* Do thing based on version */
-            if ($operatingsystemrelease =~ /^12.*/) {
+            if ($::os['release']['major'] == '12') {
                 $backports_allow = false
                 $gcc_version = undef
                 $mongodb_allow = true
-                if ($architecture == 'amd64') {
+                if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
