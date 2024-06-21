@@ -26,8 +26,8 @@ class basic_settings::puppet(
         }
     }
 
-    /* Create drop in for puppet service */
     if (defined(Package['systemd'])) {
+        /* Create drop in for puppet service */
         basic_settings::systemd_drop_in { 'puppet_settings':
             target_unit     => 'puppet.service',
             unit            => {
@@ -36,6 +36,25 @@ class basic_settings::puppet(
             service         => {
                 'Nice'          => 19,
                 'LimitNOFILE'   => 10000
+            }
+        }
+
+        /* Create systemd puppet clean bucket service */
+        basic_settings::systemd_service { 'puppet-clean-filebucket':
+            description => 'Clean puppet filebucket service',
+            service     => {
+                'Type'      => 'oneshot',
+                'User'      => 'puppet',
+                'ExecStart' => "/usr/bin/find /var/cache/${server_dir}/clientbucket -type f -mtime +14 -atime +14 -delete",
+                'Nice'      => '19'
+            }
+        }
+
+        /* Create systemd puppet server clean reports timer */
+        basic_settings::systemd_timer { 'puppet-clean-filebucket':
+            description => 'Clean puppet filebucket timer',
+            timer       => {
+                'OnCalendar' => '*-*-* 10:00'
             }
         }
     }
