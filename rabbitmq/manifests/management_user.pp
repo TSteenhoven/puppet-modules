@@ -1,7 +1,7 @@
 define rabbitmq::management_user(
     $ensure                 = present,
     $password               = undef,
-    $tags                   = ['administrator']
+    $tags                   = ['monitoring']
 ) {
     /* Run user */
     case $ensure {
@@ -28,12 +28,14 @@ define rabbitmq::management_user(
             }
 
             /* Set tags */
-            $user_tags_join = join($tags, ' ')
-            $user_tags_search = join($tags, ' | grep ')
-            exec { "rabbitmq_management_user_${name}_tags":
-                command => "/usr/sbin/rabbitmqctl --quiet set_user_tags ${name} ${user_tags_join}",
-                unless  => "/usr/sbin/rabbitmqctl --quiet list_users --no-table-headers | /usr/bin/grep ${name} | /usr/bin/cut -f2 | /usr/bin/grep ${user_tags_search}",
-                require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${name}"]]
+            if ($tags != undef) {
+                $user_tags_join = join($tags, ' ')
+                $user_tags_search = join($tags, ' | grep ')
+                exec { "rabbitmq_management_user_${name}_tags":
+                    command => "/usr/sbin/rabbitmqctl --quiet set_user_tags ${name} ${user_tags_join}",
+                    unless  => "/usr/sbin/rabbitmqctl --quiet list_users --no-table-headers | /usr/bin/grep ${name} | /usr/bin/cut -f2 | /usr/bin/grep ${user_tags_search}",
+                    require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${name}"]]
+                }
             }
         }
         absent: {

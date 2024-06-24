@@ -1,4 +1,5 @@
 class rabbitmq::management(
+        $admin_plugin_enable    = true,
         $ssl_ca_certificate     = undef,
         $ssl_certificate        = undef,
         $ssl_certificate_key    = undef,
@@ -7,22 +8,11 @@ class rabbitmq::management(
         $ssl_ciphers            = undef
     ) {
 
-    /* Create list of packages that is suspicious */
-    $suspicious_packages = ['/usr/sbin/rabbitmqctl']
-
     /* Setup the plugin */
     exec { 'rabbitmq_management_plugin':
         command =>  '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
         unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
         require => Package['rabbitmq-server']
-    }
-
-    /* Setup audit rules */
-    if (defined(Package['auditd'])) {
-        basic_settings::security_audit { 'rabbitmq_management':
-            rule_suspicious_packages    => $suspicious_packages,
-            rule_options                => ['-F auid!=unset']
-        }
     }
 
     /* Check if all cert variables are given */
@@ -31,7 +21,7 @@ class rabbitmq::management(
         $ssl_ca_certificate_correct = $ssl_ca_certificate
         $ssl_certificate_correct = $ssl_certificate
         $ssl_certificate_key_correct = $ssl_certificate_key
-    } elsif ($rabbitmq::tcp::ssl_ca_certificate != undef and $rabbitmq::tcp::ssl_certificate != undef and $rabbitmq::tcp::ssl_certificate_key != undef) {
+    } elsif (defined(Class['rabbitmq::tcp']) and $rabbitmq::tcp::ssl_ca_certificate != undef and $rabbitmq::tcp::ssl_certificate != undef and $rabbitmq::tcp::ssl_certificate_key != undef) {
         $https_allow = true
         $ssl_ca_certificate_correct = $rabbitmq::tcp::ssl_ca_certificate
         $ssl_certificate_correct = $rabbitmq::tcp::ssl_certificate
@@ -67,6 +57,7 @@ class rabbitmq::management(
             $ssl_ciphers_correct = $ssl_ciphers
         }
     } else {
+        /* Empty SSL ciphers */
         $ssl_ciphers_correct = []
     }
 
@@ -84,5 +75,35 @@ class rabbitmq::management(
     /* Remove guest account */
     rabbitmq::management_user { 'guest':
         ensure => absent
+    }
+
+    /* Try to get admin plugin url  */
+    if ($admin_plugin_enable) {
+        if (defined(Class['rabbitmq::tcp']) and $rabbitmq::tcp::tcp_port != undef) {
+            $admin_plugin_url = "http://localhost:${rabbitmq::tcp::tcp_port}/cli/rabbitmqadmin"
+        } else {
+            $admin_plugin_url = 'http://localhost:15672/cli/rabbitmqadmin'
+        }
+
+        /* Install admin plugin */
+        exec { 'rabbitmq_management_admin':
+            command => "/usr/bin/curl -s -L ${admin_plugin_url} -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
+            unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
+            require =>  Package['curl']
+        }
+
+        /* Create list of packages that is suspicious */
+        $suspicious_packages = ['/usr/sbin/rabbitmqctl', '/usr/sbin/rabbitmqadmin']
+    } else {
+        /* Create list of packages that is suspicious */
+        $suspicious_packages = ['/usr/sbin/rabbitmqctl']
+    }
+
+    /* Setup audit rules */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'rabbitmq_management':
+            rule_suspicious_packages    => $suspicious_packages,
+            rule_options                => ['-F auid!=unset']
+        }
     }
 }
