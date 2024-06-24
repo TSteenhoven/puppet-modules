@@ -1,5 +1,6 @@
 class rabbitmq::management(
         $admin_plugin_enable    = true,
+        $port                   = 15672,
         $ssl_ca_certificate     = undef,
         $ssl_certificate        = undef,
         $ssl_certificate_key    = undef,
@@ -79,18 +80,11 @@ class rabbitmq::management(
 
     /* Check if we need to install admin plugin */
     if ($admin_plugin_enable) {
-        /* Try to get admin plugin url  */
-        if (defined(Class['rabbitmq::tcp']) and $rabbitmq::tcp::tcp_port != undef) {
-            $admin_plugin_url = "http://localhost:${rabbitmq::tcp::tcp_port}/cli/rabbitmqadmin"
-        } else {
-            $admin_plugin_url = 'http://localhost:15672/cli/rabbitmqadmin'
-        }
-
         /* Install admin plugin */
         exec { 'rabbitmq_management_admin':
-            command => "/usr/bin/curl -s -L ${admin_plugin_url} -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
+            command => "/usr/bin/curl -s -L http://127.0.0.1:${port}/cli/rabbitmqadmin -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
             unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
-            require =>  Package['curl']
+            require =>  [Package['curl'], File['/etc/rabbitmq/conf.d/management.conf']]
         }
 
         /* Create list of packages that is suspicious */
