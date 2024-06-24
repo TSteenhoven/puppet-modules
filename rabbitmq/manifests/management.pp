@@ -77,8 +77,9 @@ class rabbitmq::management(
         ensure => absent
     }
 
-    /* Try to get admin plugin url  */
+    /* Check if we need to install admin plugin */
     if ($admin_plugin_enable) {
+        /* Try to get admin plugin url  */
         if (defined(Class['rabbitmq::tcp']) and $rabbitmq::tcp::tcp_port != undef) {
             $admin_plugin_url = "http://localhost:${rabbitmq::tcp::tcp_port}/cli/rabbitmqadmin"
         } else {
@@ -97,6 +98,11 @@ class rabbitmq::management(
     } else {
         /* Create list of packages that is suspicious */
         $suspicious_packages = ['/usr/sbin/rabbitmqctl']
+
+        /* Remove unnecessary files */
+        file { '/usr/sbin/rabbitmqadmin':
+            ensure => absent
+        }
     }
 
     /* Setup audit rules */
