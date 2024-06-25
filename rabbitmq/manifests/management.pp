@@ -1,5 +1,6 @@
 class rabbitmq::management(
-        $admin_plugin_enable    = true,
+        $admin_enable           = true,
+        $admin_password         = 'guest',
         $port                   = 15672,
         $ssl_ca_certificate     = undef,
         $ssl_certificate        = undef,
@@ -73,18 +74,32 @@ class rabbitmq::management(
         require => File['rabbitmq_config_dir']
     }
 
-    /* Remove guest account */
-    rabbitmq::management_user { 'guest':
-        ensure => absent
-    }
-
     /* Check if we need to install admin plugin */
-    if ($admin_plugin_enable) {
+    if ($admin_enable) {
+        /* Enable guest account */
+        rabbitmq::management_user { 'guest':
+            password    => $admin_password,
+            tags        => 'administrator'
+        }
+        rabbitmq::management_user_permissions { 'guest_default':
+            user => 'guest'
+        }
+
+        /* Create admin config file */
+        file { 'rabbitmq_management_admin_config':
+            path    => '/etc/rabbitmq/rabbitmqadmin.conf',
+            ensure  => file,
+            content => template('rabbitmq/rabbitmqadmin.conf'),
+            owner   => 'rabbitmq',
+            group   => 'rabbitmq',
+            mode    => '0600'
+        }
+
         /* Install admin plugin */
-        exec { 'rabbitmq_management_admin':
+        exec { 'rabbitmq_management_admin_cli':
             command => "/usr/bin/curl -s -L http://127.0.0.1:${port}/cli/rabbitmqadmin -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
             unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
-            require =>  [Package['curl'], File['/etc/rabbitmq/conf.d/management.conf']]
+            require =>  [Package['curl'], File['rabbitmq_management_admin_config']]
         }
 
         /* Create list of packages that is suspicious */
@@ -95,6 +110,11 @@ class rabbitmq::management(
 
         /* Remove unnecessary files */
         file { '/usr/sbin/rabbitmqadmin':
+            ensure => absent
+        }
+
+        /* Remove guest account */
+        rabbitmq::management_user { 'guest':
             ensure => absent
         }
     }

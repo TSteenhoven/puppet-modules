@@ -3,7 +3,6 @@ define rabbitmq::management_user(
     $password               = undef,
     $tags                   = ['monitoring']
 ) {
-    /* Run user */
     case $ensure {
         present: {
             /* When password is not given; Create random passowrd */
