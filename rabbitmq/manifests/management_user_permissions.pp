@@ -1,9 +1,9 @@
 define rabbitmq::management_user_permissions(
-    $user,
-    $vhost       = '/',
-    $configure   = '.*',
-    $write       = '.*',
-    $read        = '.*'
+    String              $user,
+    Optional[String]    $vhost       = '/',
+    Optional[String]    $configure   = '.*',
+    Optional[String]    $write       = '.*',
+    Optional[String]    $read        = '.*'
 ) {
     /* Get exec name */
     if ($vhost == '/') {

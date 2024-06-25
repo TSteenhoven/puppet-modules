@@ -1,7 +1,7 @@
 define rabbitmq::management_user(
-    $ensure                 = present,
-    $password               = undef,
-    $tags                   = ['monitoring']
+    Enum['present','absent']    $ensure     = present,
+    Optional[String]            $password   = undef,
+    Optional[Array]             $tags       = ['monitoring']
 ) {
     case $ensure {
         present: {

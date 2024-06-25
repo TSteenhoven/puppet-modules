@@ -1,13 +1,13 @@
 class rabbitmq::management(
-        $admin_enable           = true,
-        $admin_password         = 'guest',
-        $port                   = 15672,
-        $ssl_ca_certificate     = undef,
-        $ssl_certificate        = undef,
-        $ssl_certificate_key    = undef,
-        $ssl_port               = 15671,
-        $ssl_protocols          = undef,
-        $ssl_ciphers            = undef
+        Optional[Boolean]   $admin_enable           = true,
+        Optional[String]    $admin_password         = 'guest',
+        Optional[Integer]   $port                   = 15672,
+        Optional[String]    $ssl_ca_certificate     = undef,
+        Optional[String]    $ssl_certificate        = undef,
+        Optional[String]    $ssl_certificate_key    = undef,
+        Optional[Integer]   $ssl_port               = 15671,
+        Optional[String]    $ssl_protocols          = undef,
+        Optional[String]    $ssl_ciphers            = undef
     ) {
 
     /* Setup the plugin */
@@ -79,7 +79,7 @@ class rabbitmq::management(
         /* Enable guest account */
         rabbitmq::management_user { 'guest':
             password    => $admin_password,
-            tags        => 'administrator'
+            tags        => ['administrator']
         }
         rabbitmq::management_user_permissions { 'guest_default':
             user => 'guest'

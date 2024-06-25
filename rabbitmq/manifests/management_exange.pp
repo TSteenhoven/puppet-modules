@@ -1,5 +1,5 @@
 define rabbitmq::management_exange(
-    $ensure                 = present,
+    Enum['present','absent']    $ensure     = present
 ) {
     case $ensure {
         present: {

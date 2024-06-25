@@ -1,7 +1,7 @@
 class rabbitmq(
-        $target     = 'services',
-        $nice_level = 12,
-        $limit_file = 10000
+        Optional[String]    $target     = 'services',
+        Optional[Integer]   $nice_level = 12,
+        Optional[Integer]   $limit_file = 10000
     ) {
 
     /* Install erlang */
