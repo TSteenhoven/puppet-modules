@@ -65,11 +65,9 @@ define rabbitmq::management_queue(
             /* Check if arguments of the exange is the same */
             exec { "rabbitmq_management_queue_${name}_arguments":
                 command => "${delete} && ${create_correct}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
+                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
                 require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]]
             }
-
-            notify { "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'": }
         }
 
         absent: {
