@@ -33,12 +33,21 @@ define rabbitmq::management_queue(
             }
 
             /* Check if arguments is not given */
-            if ($arguments_correct == undef) {
+            if ($arguments_correct != undef) {
+                /* Convert de hash to array */
+                $arguments_pairs = $arguments_correct.keys.map |$key| { [$key, $arguments_correct[$key]] }
+
+                /* Sort array on key value */
+                $arguments_sorted_array = stdlib::sort_by($hash_pairs) |$pair| { $pair[0] }
+
+                /* Convert aray back to json */
+                $arguments_json = stdlib::to_json($arguments_sorted_array.reduce({}) |$result, $pair| {
+                    $result + { $pair[0] => $pair[1] }
+                })
+                $create_correct = "${create} arguments='${arguments_json}'"
+            } else {
                 $arguments_json = '{}'
                 $create_correct = $create
-            } else {
-                $arguments_json = stdlib::to_json(stdlib::sort_by($arguments_correct) |$result, $pair| { $pair })
-                $create_correct = "${create} arguments='${arguments_json}'"
             }
 
             /* Create queue */
