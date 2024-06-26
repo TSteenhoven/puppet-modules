@@ -1,12 +1,12 @@
 class rabbitmq::tcp(
-        $tcp_enable             = false,
-        $tcp_port               = 5672,
-        $ssl_ca_certificate     = undef,
-        $ssl_certificate        = undef,
-        $ssl_certificate_key    = undef,
-        $ssl_port               = 5671,
-        $ssl_protocols          = ['tlsv1.3', 'tlsv1.2'],
-        $ssl_ciphers = [
+        Optional[Boolean]   $tcp_enable             = false,
+        Optional[Integer]   $tcp_port               = 5672,
+        Optional[String]    $ssl_ca_certificate     = undef,
+        Optional[String]    $ssl_certificate        = undef,
+        Optional[String]    $ssl_certificate_key    = undef,
+        Optional[Integer]   $ssl_port               = 5671,
+        Optional[Array]     $ssl_protocols          = ['tlsv1.3', 'tlsv1.2'],
+        Optional[Array]     $ssl_ciphers            = [
             'TLS_AES_256_GCM_SHA384',
             'TLS_AES_128_GCM_SHA256',
             'TLS_CHACHA20_POLY1305_SHA256',
