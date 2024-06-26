@@ -17,7 +17,7 @@ define rabbitmq::management_exange(
                 require => Exec['rabbitmq_management_admin_cli']
             }
 
-            /* Check if tpye of the exange exists */
+            /* Check if type of the exange is the same */
             exec { "rabbitmq_management_exange_${name}_type":
                 command => "${delete} && ${create}",
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'",
@@ -28,7 +28,8 @@ define rabbitmq::management_exange(
             /* Delete exange */
             exec { "rabbitmq_management_exange_${name}":
                 onlyif => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list exchanges | /usr/bin/grep ${name}",
-                command => $delete
+                command => $delete,
+                require => Exec['rabbitmq_management_admin_cli']
             }
         }
         default: {
