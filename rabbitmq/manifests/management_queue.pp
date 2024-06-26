@@ -43,8 +43,6 @@ define rabbitmq::management_queue(
                     $result + { $pair[0] => $pair[1] }
                 })
                 $create_correct = "${create} arguments='${arguments_json}'"
-
-                notify { "TEST: ${$create_correct}": }
             } else {
                 $arguments_json = '{}'
                 $create_correct = $create
@@ -70,6 +68,8 @@ define rabbitmq::management_queue(
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\n{'/g' | /usr/bin/grep grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
                 require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]]
             }
+
+            notify { "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\n{'/g' | /usr/bin/grep grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'": }
         }
 
         absent: {
