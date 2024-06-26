@@ -38,10 +38,10 @@ define rabbitmq::management_queue(
                 $arguments_pairs = $arguments_correct.keys.map |$key| { [$key, $arguments_correct[$key]] }
 
                 /* Sort array on key value */
-                $arguments_sorted_array = stdlib::sort_by($hash_pairs) |$pair| { $pair[0] }
+                $arguments_sorted = stdlib::sort_by($arguments_pairs) |$pair| { $pair[0] }
 
                 /* Convert aray back to json */
-                $arguments_json = stdlib::to_json($arguments_sorted_array.reduce({}) |$result, $pair| {
+                $arguments_json = stdlib::to_json($arguments_sorted.reduce({}) |$result, $pair| {
                     $result + { $pair[0] => $pair[1] }
                 })
                 $create_correct = "${create} arguments='${arguments_json}'"
