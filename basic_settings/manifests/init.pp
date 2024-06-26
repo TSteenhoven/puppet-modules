@@ -206,7 +206,7 @@ class basic_settings(
     }
 
     /* Basic system packages; This packages needed to be installed first */
-    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'util-linux']:
+    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'sed', 'util-linux']:
         ensure  => installed
     }
 

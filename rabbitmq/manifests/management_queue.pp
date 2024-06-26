@@ -22,7 +22,7 @@ define rabbitmq::management_queue(
             /* Set create command */
             $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare queue --vhost=${vhost} name=${name} durable=${durable_value}"
             if ($arguments == undef) {
-                $arguments_json = ''
+                $arguments_json = '{}'
                 $create_correct = $create
             } else {
                 $arguments_json = stdlib::to_json($arguments)
@@ -39,10 +39,18 @@ define rabbitmq::management_queue(
             /* Check if durable of the exange is the same */
             exec { "rabbitmq_management_queue_${name}_durable":
                 command => "${delete} && ${create_correct}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list queue name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
+                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list queues name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
                 require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]]
             }
+
+            /* Check if arguments of the exange is the same */
+            exec { "rabbitmq_management_queue_${name}_arguments":
+                command => "${delete} && ${create_correct}",
+                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf -f raw_json list queues name arguments | sed 's/},{/'\\},\\\n{'/g' | /usr/bin/grep ${name} | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
+                require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]]
+            }
         }
+
         absent: {
             /* Delete queue */
             exec { "rabbitmq_management_queue_${name}":

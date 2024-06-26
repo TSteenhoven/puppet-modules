@@ -128,6 +128,13 @@ class basic_settings::kernel(
     }
 
     /* Install system package */
+    if (!defined(Package['sed'])) {
+        package { 'sed':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
     if (!defined(Package['util-linux'])) {
         package { 'util-linux':
             ensure  => installed
