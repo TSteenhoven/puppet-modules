@@ -37,7 +37,7 @@ define rabbitmq::management_queue(
                 $arguments_json = '{}'
                 $create_correct = $create
             } else {
-                $arguments_json = stdlib::to_json($arguments_correct.stdlib::sort_by |$result, $pair| { $pair })
+                $arguments_json = stdlib::to_json(stdlib::sort_by($arguments_correct) |$result, $pair| { $pair })
                 $create_correct = "${create} arguments='${arguments_json}'"
             }
 
