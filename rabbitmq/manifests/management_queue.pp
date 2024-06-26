@@ -26,6 +26,8 @@ define rabbitmq::management_queue(
             /* Set type */
             if ($type == undef) {
                 $arguments_correct = $arguments
+            } elsif ($arguments == undef) {
+                $arguments_correct = { 'x-queue-type' => $type }
             } else {
                 $arguments_correct = stdlib::merge({ 'x-queue-type' => $type }, $arguments)
             }
@@ -35,7 +37,8 @@ define rabbitmq::management_queue(
                 $arguments_json = '{}'
                 $create_correct = $create
             } else {
-                $arguments_json = stdlib::to_json($arguments_correct)
+                $arguments_array = sort(Array($arguments_correct)) # Convert back to array for sorting
+                $arguments_json = stdlib::to_json(Hash($arguments_array))
                 $create_correct = "${create} arguments='${arguments_json}'"
             }
 
