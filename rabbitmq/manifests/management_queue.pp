@@ -40,7 +40,7 @@ define rabbitmq::management_queue(
             exec { "rabbitmq_management_queue_${name}_durable":
                 command => "${delete} && ${create_correct}",
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list queue name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
-                require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exange_${name}"]]
+                require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]]
             }
         }
         absent: {
