@@ -10,7 +10,7 @@ define rabbitmq::management_exange(
     case $ensure {
         present: {
             /* Set create command */
-            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare exchange --vhost=${vhost} name=${name} type=${type}"
+            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --vhost=${vhost} declare exchange name=${name} type=${type}"
 
             /* Create exange */
             exec { "rabbitmq_management_exange_${name}":

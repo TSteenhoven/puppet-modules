@@ -1,8 +1,9 @@
 define rabbitmq::management_queue(
     Enum['present','absent']    $ensure     = present,
-    Optional[String]            $vhost      = '/',
+    Optional[Data]              $arguments  = undef,
     Optional[Boolean]           $durable    = true,
-    Optional[Data]              $arguments  = undef
+    Optional[String]            $type       = undef,
+    Optional[String]            $vhost      = '/'
 ) {
 
     /* Set delete command */
@@ -20,12 +21,21 @@ define rabbitmq::management_queue(
             }
 
             /* Set create command */
-            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare queue --vhost=${vhost} name=${name} durable=${durable_value}"
-            if ($arguments == undef) {
+            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --vhost=${vhost} declare queue name=${name} durable=${durable_value}"
+
+            /* Set type */
+            if ($type == undef) {
+                $arguments_correct = $arguments
+            } else {
+                $arguments_correct = stdlib::merge({ 'x-queue-type' => $type }, $arguments)
+            }
+
+            /* Check if arguments is not given */
+            if ($arguments_correct == undef) {
                 $arguments_json = '{}'
                 $create_correct = $create
             } else {
-                $arguments_json = stdlib::to_json($arguments)
+                $arguments_json = stdlib::to_json($arguments_correct)
                 $create_correct = "${create} arguments='${arguments_json}'"
             }
 
@@ -46,7 +56,7 @@ define rabbitmq::management_queue(
             /* Check if arguments of the exange is the same */
             exec { "rabbitmq_management_queue_${name}_arguments":
                 command => "${delete} && ${create_correct}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf -f raw_json list queues name arguments | sed 's/},{/'\\},\\\n{'/g' | /usr/bin/grep ${name} | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
+                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\n{'/g' | /usr/bin/grep grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
                 require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]]
             }
         }
