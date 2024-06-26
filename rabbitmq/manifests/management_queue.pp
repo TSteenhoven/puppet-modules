@@ -17,7 +17,7 @@ define rabbitmq::management_queue(
             exec { "rabbitmq_management_queue_${name}":
                 command => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare queue --vhost=${vhost} name=${name} durable=${durable_value}",
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list queues | /usr/bin/grep ${name}",
-                require => File['rabbitmq_management_admin_cli']
+                require => Exec['rabbitmq_management_admin_cli']
             }
         }
         absent: {

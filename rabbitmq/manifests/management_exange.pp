@@ -14,7 +14,7 @@ define rabbitmq::management_exange(
             exec { "rabbitmq_management_exange_${name}":
                 command => $create,
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list exchanges | /usr/bin/grep ${name}",
-                require => File['rabbitmq_management_admin_cli']
+                require => Exec['rabbitmq_management_admin_cli']
             }
 
             /* Check if tpye of the exange exists */
