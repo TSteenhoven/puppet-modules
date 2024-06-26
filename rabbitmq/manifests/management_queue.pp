@@ -5,16 +5,6 @@ define rabbitmq::management_queue(
     Optional[Data]              $arguments  = undef
 ) {
 
-    /* Set create command */
-    $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare queue --vhost=${vhost} name=${name} durable=${durable_value}"
-    if ($arguments == undef) {
-        $arguments_json = ''
-        $create_correct = $create
-    } else {
-        $arguments_json = stdlib::to_json($arguments)
-        $create_correct = "${create} arguments='${arguments_json}'"
-    }
-
     /* Set delete command */
     $delete = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf delete queue name=${name}"
 
@@ -27,6 +17,16 @@ define rabbitmq::management_queue(
             } else {
                 $durable_value = 'false'
                 $durable_ucfirstvalue = 'False'
+            }
+
+            /* Set create command */
+            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare queue --vhost=${vhost} name=${name} durable=${durable_value}"
+            if ($arguments == undef) {
+                $arguments_json = ''
+                $create_correct = $create
+            } else {
+                $arguments_json = stdlib::to_json($arguments)
+                $create_correct = "${create} arguments='${arguments_json}'"
             }
 
             /* Create queue */

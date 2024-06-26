@@ -4,12 +4,14 @@ define rabbitmq::management_exange(
     Optional[String]            $type       = 'direct'
 ) {
 
-    /* Commands */
-    $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare exchange --vhost=${vhost} name=${name} type=${type}"
+    /* Set delete command */
     $delete = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf delete exchange name=${name}"
 
     case $ensure {
         present: {
+            /* Set create command */
+            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf declare exchange --vhost=${vhost} name=${name} type=${type}"
+
             /* Create exange */
             exec { "rabbitmq_management_exange_${name}":
                 command => $create,
