@@ -22,12 +22,12 @@ define rabbitmq::management_vhost(
             exec { "rabbitmq_management_vhost_${exec_name}_type":
                 command => "/usr/sbin/rabbitmqctl update_vhost_metadata ${name} --default-queue-type ${type}",
                 unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep '${name}|${type}'",
-                require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${name}"]]
+                require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${exec_name}"]]
             }
         }
         absent: {
             /* Delete vhost */
-            exec { "rabbitmq_management_vhost_${name}":
+            exec { "rabbitmq_management_vhost_${exec_name}":
                 onlyif => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name | /usr/bin/grep ${name}",
                 command => "/usr/sbin/rabbitmqctl --quiet delete_vhost ${name}",
                 require => [Package['grep'], Exec['rabbitmq_management_plugin']]
