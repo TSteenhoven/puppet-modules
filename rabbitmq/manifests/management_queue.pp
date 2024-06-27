@@ -20,6 +20,13 @@ define rabbitmq::management_queue(
                 $durable_ucfirstvalue = 'False'
             }
 
+            /* Get vhost name */
+            if ($vhost == '/') {
+                $vhost_name = 'default'
+            } else {
+                $vhost_name = $vhost
+            }
+
             /* Set create command */
             $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --vhost=${vhost} declare queue name=${name} durable=${durable_value}"
 
@@ -52,7 +59,7 @@ define rabbitmq::management_queue(
             exec { "rabbitmq_management_queue_${name}":
                 command => $create_correct,
                 unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list queues | /usr/bin/grep ${name}",
-                require => Exec['rabbitmq_management_admin_cli']
+                require => [Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]]
             }
 
             /* Check if durable of the exange is the same */

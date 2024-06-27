@@ -1,6 +1,7 @@
 class rabbitmq::management(
         Optional[Boolean]   $admin_enable           = true,
         Optional[String]    $admin_password         = 'guest',
+        Optional[String]    $default_queue_type     = 'classic',
         Optional[Integer]   $port                   = 15672,
         Optional[String]    $ssl_ca_certificate     = undef,
         Optional[String]    $ssl_certificate        = undef,
@@ -72,6 +73,11 @@ class rabbitmq::management(
         mode    => '0600',
         notify  => Service['rabbitmq-server'],
         require => File['rabbitmq_config_dir']
+    }
+
+    /* Create default vost */
+    rabbitmq::management_vhost { '/':
+        type => $default_queue_type
     }
 
     /* Check if we need to install admin plugin */
