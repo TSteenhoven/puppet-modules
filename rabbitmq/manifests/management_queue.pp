@@ -7,7 +7,8 @@ define rabbitmq::management_queue(
 ) {
 
     /* Set delete command */
-    $delete = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf delete queue name=${name}"
+    $find = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --format bash list queues | /usr/bin/grep ${name}"
+    $delete = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} delete queue name=${name}"
 
     case $ensure {
         present: {
@@ -28,7 +29,7 @@ define rabbitmq::management_queue(
             }
 
             /* Set create command */
-            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --vhost=${vhost} declare queue name=${name} durable=${durable_value}"
+            $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare queue name=${name} durable=${durable_value}"
 
             /* Set type */
             if ($type == undef) {
@@ -58,21 +59,21 @@ define rabbitmq::management_queue(
             /* Create queue */
             exec { "rabbitmq_management_queue_${name}":
                 command => $create_correct,
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list queues | /usr/bin/grep ${name}",
-                require => [Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]]
+                unless  => $find,
+                require => [Package['grep'], Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]]
             }
 
             /* Check if durable of the exange is the same */
             exec { "rabbitmq_management_queue_${name}_durable":
                 command => "${delete} && ${create_correct}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list queues name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
+                unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list queues name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
                 require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]]
             }
 
             /* Check if arguments of the exange is the same */
             exec { "rabbitmq_management_queue_${name}_arguments":
                 command => "${delete} && ${create_correct}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
+                unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
                 require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]]
             }
         }
@@ -80,9 +81,9 @@ define rabbitmq::management_queue(
         absent: {
             /* Delete queue */
             exec { "rabbitmq_management_queue_${name}":
-                onlyif => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list queues | /usr/bin/grep ${name}",
+                onlyif => $find,
                 command => $delete,
-                require => Exec['rabbitmq_management_admin_cli']
+                require => [Package['grep'], Exec['rabbitmq_management_admin_cli']]
             }
         }
         default: {

@@ -1,5 +1,6 @@
 class rabbitmq::management(
         Optional[Boolean]   $admin_enable           = true,
+        Optional[String]    $admin_config_path      = '/etc/rabbitmq/rabbitmqadmin.conf',
         Optional[String]    $admin_password         = 'guest',
         Optional[String]    $default_queue_type     = 'classic',
         Optional[Integer]   $port                   = 15672,
@@ -93,7 +94,7 @@ class rabbitmq::management(
 
         /* Create admin config file */
         file { 'rabbitmq_management_admin_config':
-            path    => '/etc/rabbitmq/rabbitmqadmin.conf',
+            path    => $admin_config_path,
             ensure  => file,
             content => template('rabbitmq/rabbitmqadmin.conf'),
             owner   => 'rabbitmq',

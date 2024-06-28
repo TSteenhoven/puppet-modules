@@ -9,12 +9,15 @@ define rabbitmq::management_vhost(
         $exec_name = $vhost
     }
 
+    /* Set commands */
+    $find = "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name | /usr/bin/grep ${name}"
+
     case $ensure {
         present: {
             /* Check if vhost exists */
             exec { "rabbitmq_management_vhost_${exec_name}":
                 command => "/usr/sbin/rabbitmqctl add_vhost ${name} --default-queue-type ${type}",
-                unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name | /usr/bin/grep ${name}",
+                unless  => $find,
                 require => [Package['grep'], Exec['rabbitmq_management_plugin']]
             }
 
@@ -28,7 +31,7 @@ define rabbitmq::management_vhost(
         absent: {
             /* Delete vhost */
             exec { "rabbitmq_management_vhost_${exec_name}":
-                onlyif => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name | /usr/bin/grep ${name}",
+                onlyif => $find,
                 command => "/usr/sbin/rabbitmqctl --quiet delete_vhost ${name}",
                 require => [Package['grep'], Exec['rabbitmq_management_plugin']]
             }

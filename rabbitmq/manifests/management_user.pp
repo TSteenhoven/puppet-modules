@@ -3,6 +3,9 @@ define rabbitmq::management_user(
     Optional[String]            $password   = undef,
     Optional[Array]             $tags       = ['monitoring']
 ) {
+    /* Set commands */
+    $find = "/usr/sbin/rabbitmqctl --quiet list_user_limits --user ${name}"
+
     case $ensure {
         present: {
             /* When password is not given; Create random passowrd */
@@ -22,7 +25,7 @@ define rabbitmq::management_user(
             /* Create user */
             exec { "rabbitmq_management_user_${name}":
                 command => $user_addd,
-                unless  => "/usr/sbin/rabbitmqctl --quiet list_user_limits --user ${name}",
+                unless  => $find,
                 require => $user_require
             }
 
@@ -40,7 +43,7 @@ define rabbitmq::management_user(
         absent: {
             /* Delete user */
             exec { "rabbitmq_management_user_${name}":
-                onlyif => "/usr/sbin/rabbitmqctl --quiet list_user_limits --user ${name}",
+                onlyif => $find,
                 command => "/usr/sbin/rabbitmqctl --quiet delete_user ${name}",
             }
         }

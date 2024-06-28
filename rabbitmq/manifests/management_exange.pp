@@ -4,8 +4,9 @@ define rabbitmq::management_exange(
     Optional[String]            $type       = 'direct'
 ) {
 
-    /* Set delete command */
-    $delete = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf delete exchange name=${name}"
+    /* Set commands */
+    $find = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --format bash list exchanges | /usr/bin/grep ${name}"
+    $delete = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} delete exchange name=${name}"
 
     case $ensure {
         present: {
@@ -17,28 +18,28 @@ define rabbitmq::management_exange(
             }
 
             /* Set create command */
-            $create = "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --vhost=${vhost} declare exchange name=${name} type=${type}"
+            $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare exchange name=${name} type=${type}"
 
             /* Create exange */
             exec { "rabbitmq_management_exange_${name}":
                 command => $create,
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list exchanges | /usr/bin/grep ${name}",
-                require => [Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]]
+                unless  => $find,
+                require => [Package['grep'], Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]]
             }
 
             /* Check if type of the exange is the same */
             exec { "rabbitmq_management_exange_${name}_type":
                 command => "${delete} && ${create}",
-                unless  => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'",
+                unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'",
                 require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exange_${name}"]]
             }
         }
         absent: {
             /* Delete exange */
             exec { "rabbitmq_management_exange_${name}":
-                onlyif => "/usr/sbin/rabbitmqadmin --config /etc/rabbitmq/rabbitmqadmin.conf --format bash list exchanges | /usr/bin/grep ${name}",
+                onlyif => $find,
                 command => $delete,
-                require => Exec['rabbitmq_management_admin_cli']
+                require => [Package['grep'], Exec['rabbitmq_management_admin_cli']]
             }
         }
         default: {
