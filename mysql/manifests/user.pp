@@ -13,7 +13,7 @@ define mysql::user (
     }
 
     /* Check if mysql version is 5.7 or 8.0 */
-    case $basic_settings::mysql_version {
+    case $mysql::version {
         '5.7': /* non-LTS */ {
             $password_field = 'authentication_string'
             $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';"

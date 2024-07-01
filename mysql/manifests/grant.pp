@@ -18,7 +18,7 @@ define mysql::grant (
     $grant_option_num = $grant_option ? { true => '1', default => '0' }
 
     /* Change SQL queries based on version */
-    if (($basic_settings::mysql_version == '8.0' or $basic_settings::mysql_version == '8.4') and $priv_str == 'ALL PRIVILEGES') {
+    if (($mysql::version == '8.0' or $mysql::version == '8.4') and $priv_str == 'ALL PRIVILEGES') {
         if ($database != '*') {
             $check_all_priv = $priv_str
         } else {
