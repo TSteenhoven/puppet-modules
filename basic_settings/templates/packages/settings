@@ -6,3 +6,4 @@ APT::Periodic::Download-Upgradeable-Packages "1";
 APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::Update-Package-Lists "1";
 APT::Sandbox::Seccomp "true";
+Dpkg::Options {"--force-confold"};

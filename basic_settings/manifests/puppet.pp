@@ -44,7 +44,7 @@ class basic_settings::puppet(
             description => 'Clean puppet filebucket service',
             service     => {
                 'Type'      => 'oneshot',
-                'User'      => 'puppet',
+                'User'      => 'root',
                 'ExecStart' => "/usr/bin/find /var/cache/${server_dir}/clientbucket -type f -mtime +14 -atime +14 -delete",
                 'Nice'      => '19'
             }

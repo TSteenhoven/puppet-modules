@@ -1,8 +1,8 @@
 class basic_settings::login(
+    $getty_enable           = false,
     $mail_to                = 'root',
     $server_fdqn            = $fdqn,
-    $sudoers_dir_enable     = false,
-    $getty_enable           = false
+    $sudoers_dir_enable     = false
 ) {
     /* Remove unnecessary packages */
     package { ['session-migration', 'xdg-user-dirs']:

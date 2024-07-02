@@ -221,7 +221,7 @@ node 'webserver.dev.xxxx.nl' {
 Dit onderdeel maakt het mogelijk om een backend server op te zetten op basis van het PHP-pakket. Dit onderdeel wordt vaak in combinatie met PHP en/of MySQL onderdeel gebruikt. Wanneer in `basic settings` de PHP APT-repo is geactiveerd, probeert dit onderdeel de nieuwste PHP-versie te installeren in plaats van de standaardversie die wordt aangeboden door het besturingssysteem. Ik raad aan om de nieuwste versie te gebruiken om nieuwe technologieën.
 
 ### Voorbeeld
-Hieronder een voorbeeld hoe je PHP-FPM server opzet in productoe omgeving.
+Hieronder een voorbeeld hoe je PHP-FPM server opzet in productie omgeving.
 
 ```puppet
 /* Standaard PHP instellingen */
@@ -274,6 +274,69 @@ class {'php8::fpm':
 /* Setup www pool */
 php8::fpm_pool { 'wwww':
 
+}
+```
+
+## RabbitMQ
+
+Dit onderdeel maakt het mogelijk om berichten- en streamingbroker op te zetten op basis van het RabbitMQ-pakket. Indien basic settings of security package van basic package wordt gebruikt, worden verdachte commando's gemonitord door auditd.
+
+### Voorbeeld
+Hieronder een voorbeeld hoe je RabbitMQ server opzet in productie omgeving.
+
+```puppet
+/* Setup rabbitmq */
+class { 'rabbitmq':
+    target => 'production',
+    require => Class['basic_settings']
+}
+
+/* Setup rabbitmq TLS */
+class { 'rabbitmq::tcp':
+    ssl_ca_certificate      => '/etc/letsencrypt/live/rabbitmq.xxxx.nl/ca_cert.pem',
+    ssl_certificate         => '/etc/letsencrypt/live/rabbitmq.xxxx.nl/cert.pem',
+    ssl_certificate_key     => '/etc/letsencrypt/live/rabbitmq.xxxx.nl/privkey.pem',
+}
+
+/* Setup rabbitmq management */
+class { 'rabbitmq::management':
+    admin_password      => 'wachtwoord',
+    default_queue_type  => 'quorum',
+    require             => Class['rabbitmq::tcp']
+}
+rabbitmq::management_exange { 'failure_exchange':
+    require => Class['rabbitmq::management']
+}
+rabbitmq::management_queue { 'failure_messages':
+    type    => 'quorum',
+    require => Rabbitmq::Management_exange['failure_exchange']
+}
+rabbitmq::management_queue { 'result_messages':
+    arguments => {
+        'x-dead-letter-exchange'    => 'failure_exchange',
+        'x-dead-letter-routing-key' => 'failure_messages'
+    },
+    type    => 'quorum',
+    require => Rabbitmq::Management_exange['failure_exchange']
+}
+rabbitmq::management_binding { 'failure_binding':
+    source          => 'failure_exchange',
+    destination     => 'failure_messages',
+    routing_key     => 'failure_exchange',
+    require         => Rabbitmq::Management_exange['failure_exchange']
+}
+
+/* Setup user */
+rabbitmq::management_user { 'bookkeeper':
+    password    => 'wachtwoord',
+    tags        => undef,
+    require     => Class['accounts']
+}
+rabbitmq::management_user_permissions { 'bookkeeper_default':
+    user        => 'bookkeeper',
+    configure   => '',
+    write       => '.*',
+    read        => '.*',
 }
 ```
 

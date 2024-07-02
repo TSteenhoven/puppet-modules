@@ -6,6 +6,7 @@ class basic_settings(
         $dconf_service_enable                       = false,
         $docs_enable                                = false,
         $firewall_package                           = 'nftables',
+        $getty_enable                               = false,
         $kernel_connection_max                      = 4096,
         $kernel_hugepages                           = 0,
         $kernel_network_mode                        = 'strict',
@@ -545,6 +546,7 @@ class basic_settings(
 
     /* Setup login */
     class { 'basic_settings::login':
+        getty_enable        => $getty_enable,
         mail_to             => $systemd_notify_mail,
         server_fdqn         => $server_fdqn,
         sudoers_dir_enable  => $sudoers_dir_enable
