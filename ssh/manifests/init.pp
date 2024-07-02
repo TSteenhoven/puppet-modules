@@ -2,6 +2,7 @@
 class ssh(
     Optional[Array]     $allow_users                    = [],
     Optional[String]    $banner_text                    = "WARNING! You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
+    Optional[Integer]   $idle_timeout                   = 15,
     Optional[Array]     $password_authentication_users  = [],
     Optional[Boolean]   $permit_root_login              = false,
     Optional[Integer]   $port                           = 22
@@ -31,7 +32,7 @@ class ssh(
         mode    => '0644',
         content => "${banner_text}\n\n"
     }
-
+    
     /* Create SSHD custom config */
     file { '/etc/ssh/sshd_config.d/99-custom.conf':
         ensure  => file,
