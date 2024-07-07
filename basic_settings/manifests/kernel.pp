@@ -310,14 +310,16 @@ class basic_settings::kernel(
 
 
     /* Guest agent */
-    if ($guest_agent_enable) {
-        package { "${guest_agent_package}":
-            ensure          => installed,
-            install_options => $install_options
-        }
-    } else {
-        package { "${guest_agent_package}":
-            ensure  => purged
+    if ($guest_agent_package != undef) {
+        if ($guest_agent_enable) {
+            package { "${guest_agent_package}":
+                ensure          => installed,
+                install_options => $install_options
+            }
+        } else {
+            package { "${guest_agent_package}":
+                ensure  => purged
+            }
         }
     }
 
