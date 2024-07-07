@@ -3,6 +3,7 @@ class basic_settings::kernel(
     $connection_max             = 4096,
     $hugepages                  = 0,
     $network_mode               = 'strict',
+    $security_lockdown          = 'integrity',
     $tcp_congestion_control     = 'brr',
     $tcp_fastopen               = 3
 ) {
@@ -268,6 +269,12 @@ class basic_settings::kernel(
     exec { 'kernel_transparent_hugepage_defrag':
         command => "/usr/bin/bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/defrag'",
         onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"'
+    }
+
+    /* Kernel security lockdown */
+    exec { 'kernel_security_lockdown':
+        command => "/usr/bin/bash -c 'echo \"${security_lockdown}\" > /sys/kernel/security/lockdown'",
+        onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\""
     }
 
     /* Setup audit rules */

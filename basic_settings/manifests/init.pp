@@ -10,6 +10,7 @@ class basic_settings(
         $kernel_connection_max                      = 4096,
         $kernel_hugepages                           = 0,
         $kernel_network_mode                        = 'strict',
+        $kernel_security_lockdown                   = 'integrity',
         $kernel_tcp_congestion_control              = 'brr',
         $kernel_tcp_fastopen                        = 3,
         $locale_enable                              = false,
