@@ -1,4 +1,5 @@
 class basic_settings::kernel(
+    $antivirus_package          = undef,
     $bootloader                 = 'grub',
     $connection_max             = 4096,
     $hugepages                  = 0,
@@ -14,6 +15,16 @@ class basic_settings::kernel(
             package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
                 ensure  => installed
             }
+        }
+    }
+
+    /* Override some settings when we have antivirus */
+    case $antivirus_package {
+        'eset': {
+            $security_lockdown_correct = 'none'
+        }
+        default: {
+            $security_lockdown_correct = $security_lockdown
         }
     }
 
@@ -273,8 +284,8 @@ class basic_settings::kernel(
 
     /* Kernel security lockdown */
     exec { 'kernel_security_lockdown':
-        command => "/usr/bin/bash -c 'echo \"${security_lockdown}\" > /sys/kernel/security/lockdown'",
-        onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\""
+        command => "/usr/bin/bash -c 'echo \"${security_lockdown_correct}\" > /sys/kernel/security/lockdown'",
+        onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown_correct}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\""
     }
 
     /* Setup audit rules */

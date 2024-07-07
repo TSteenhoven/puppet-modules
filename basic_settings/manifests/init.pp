@@ -306,9 +306,11 @@ class basic_settings(
 
     /* Setup kernel */
     class { 'basic_settings::kernel':
+        antivirus_package       => $antivirus_package,
         connection_max          => $kernel_connection_max,
         hugepages               => $kernel_hugepages,
         network_mode            => $kernel_network_mode,
+        security_lockdown       => $kernel_security_lockdown,
         tcp_congestion_control  => $kernel_tcp_congestion_control,
         tcp_fastopen            => $kernel_tcp_fastopen
     }
