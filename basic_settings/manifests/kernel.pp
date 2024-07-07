@@ -2,11 +2,13 @@ class basic_settings::kernel(
     $antivirus_package          = undef,
     $bootloader                 = 'grub',
     $connection_max             = 4096,
+    $guest_agent_enable         = false,
     $hugepages                  = 0,
+    $install_options            = undef,
     $network_mode               = 'strict',
     $security_lockdown          = 'integrity',
     $tcp_congestion_control     = 'brr',
-    $tcp_fastopen               = 3
+    $tcp_fastopen               = 3,
 ) {
     /* Install extra packages when Ubuntu */
     if ($::os['name'] == 'Ubuntu') {
@@ -18,13 +20,31 @@ class basic_settings::kernel(
         }
     }
 
-    /* Override some settings when we have antivirus */
+    /* Try to get guest package */
+    if ($::is_virtual) {
+        case $::virtual {
+            'vmware': {
+                $guest_agent_package = 'open-vm-tools'
+            }
+            default: {
+                $guest_agent_package = 'qemu-guest-agent'
+            }
+        }
+    } else {
+        $guest_agent_package = undef
+    }
+
+    /* Override some settings when we have antivirus or we are virtual machine */
     case $antivirus_package {
         'eset': {
             $security_lockdown_correct = 'none'
         }
         default: {
-            $security_lockdown_correct = $security_lockdown
+            if ($guest_agent_enable and $guest_agent_package != undef) {
+                $security_lockdown_correct = 'none'
+            } else {
+                $security_lockdown_correct = $security_lockdown
+            }
         }
     }
 
@@ -286,6 +306,19 @@ class basic_settings::kernel(
     exec { 'kernel_security_lockdown':
         command => "/usr/bin/bash -c 'echo \"${security_lockdown_correct}\" > /sys/kernel/security/lockdown'",
         onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown_correct}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\""
+    }
+
+
+    /* Guest agent */
+    if ($guest_agent_enable) {
+        package { "${guest_agent_package}":
+            ensure          => installed,
+            install_options => $install_options
+        }
+    } else {
+        package { "${guest_agent_package}":
+            ensure  => purged
+        }
     }
 
     /* Setup audit rules */

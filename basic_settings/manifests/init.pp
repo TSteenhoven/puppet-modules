@@ -7,6 +7,7 @@ class basic_settings(
         $docs_enable                                = false,
         $firewall_package                           = 'nftables',
         $getty_enable                               = false,
+        $guest_agent_enable                         = false,
         $kernel_connection_max                      = 4096,
         $kernel_hugepages                           = 0,
         $kernel_network_mode                        = 'strict',
@@ -308,7 +309,9 @@ class basic_settings(
     class { 'basic_settings::kernel':
         antivirus_package       => $antivirus_package,
         connection_max          => $kernel_connection_max,
+        guest_agent_enable      => $guest_agent_enable,
         hugepages               => $kernel_hugepages,
+        install_options         => $backports_install_options,
         network_mode            => $kernel_network_mode,
         security_lockdown       => $kernel_security_lockdown,
         tcp_congestion_control  => $kernel_tcp_congestion_control,
