@@ -33,6 +33,9 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT page_alloc.shuffle=1"
 # Enable randomisation of the kernel stack offset
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT randomize_kstack_offset=on"
 
+# Lockdown kernel
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT lockdown=<%= @security_lockdown %>"
+
 # Restrict access to debugfs
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT debugfs=off"
 
