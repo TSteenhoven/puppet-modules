@@ -5,7 +5,8 @@ class ssh(
     Optional[Integer]   $idle_timeout                   = 15,
     Optional[Array]     $password_authentication_users  = [],
     Optional[Boolean]   $permit_root_login              = false,
-    Optional[Integer]   $port                           = 22
+    Optional[Integer]   $port                           = 22,
+    Optional[Integer]   $port_alternative               = undef
 ) {
 
     /* Required packages for SSHD */
@@ -16,6 +17,29 @@ class ssh(
     /* Convert array to string */
     $str_allow_users = join($allow_users, ' ')
     $str_password_authentication_users = join($password_authentication_users, ',')
+
+    /* Check if SSH used socket */
+    if (defined(Package['systemd'])) {
+        /* Get OS name */
+        case $::os['name'] {
+            'Ubuntu': {
+                /* Get OS name */
+                case $::os['release']['major'] {
+                    '23.04', '24.04': {
+                        $systemd_socket = true
+                    }
+                    default: {
+                        $systemd_socket = false
+                    }
+                }
+            }
+            default: {
+                $systemd_socket = false
+            }
+        }
+    } else {
+        $systemd_socket = false
+    }
 
     /* Create SSHD directory config */
     file { '/etc/ssh/sshd_config.d':
@@ -32,7 +56,7 @@ class ssh(
         mode    => '0644',
         content => "${banner_text}\n\n"
     }
-    
+
     /* Create SSHD custom config */
     file { '/etc/ssh/sshd_config.d/99-custom.conf':
         ensure  => file,
@@ -43,12 +67,56 @@ class ssh(
         require => File['/etc/ssh/sshd_config.d']
     }
 
-    /* Ensure that ssh is always running */
-    service { 'ssh':
-        ensure      => running,
-        enable      => true,
-        require     => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-        subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
+    /* Check if we have systemd socket */
+    if ($systemd_socket) {
+        /* Reload systemd deamon */
+        exec { 'ssh_systemd_daemon_reload':
+            command         => '/usr/bin/systemctl daemon-reload',
+            refreshonly     => true,
+            require         => Package['systemd']
+        }
+
+        /* Socket settings */
+        if ($port_alternative) {
+            $systemd_socket_settings = {
+                'ListenStream' => ['', $port, $port_alternative]
+            }
+        } else {
+            $systemd_socket_settings = {
+                'ListenStream' => ['', $port]
+            }
+        }
+
+        /* Create drop in for SSH socket */
+        basic_settings::systemd_drop_in { 'ssh_socket_settings':
+            target_unit     => 'ssh.socket',
+            socket          => $systemd_socket_settings,
+            daemon_reload   => 'ssh_systemd_daemon_reload',
+            require         => Package['openssh-server']
+        }
+
+        /* Disable SSH server service */
+        service { 'ssh.service':
+            ensure      => undef,
+            enable      => false,
+            require     => File['/etc/ssh/sshd_config.d/99-custom.conf'],
+            subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
+        }
+
+        /* Ensure that ssh is always running */
+        service { 'ssh.socket':
+            ensure      => running,
+            enable      => true,
+            require     => Package['openssh-server']
+        }
+    } else {
+        /* Ensure that ssh is always running */
+        service { 'ssh':
+            ensure      => running,
+            enable      => true,
+            require     => File['/etc/ssh/sshd_config.d/99-custom.conf'],
+            subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
+        }
     }
 
     if (defined(Package['auditd'])) {

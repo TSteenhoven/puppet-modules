@@ -1,4 +1,82 @@
 # Managed by puppet
+<% if ! @journal.empty? -%>
+[Journal]
+<% @journal.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @mount.empty? -%>
+[Mount]
+<% @mount.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @resolve.empty? -%>
+[Resolve]
+<% @resolve.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @service.empty? -%>
+[Service]
+<% @service.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @socket.empty? -%>
+[Socket]
+<% @socket.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @timer.empty? -%>
+[Timer]
+<% @timer.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
 <% if ! @unit.empty? -%>
 [Unit]
 <% @unit.sort.map do |key,value| -%>
@@ -10,56 +88,5 @@
 <%= key %>=<%= value %>
 <% end -%>
 <% end -%>
-<% end -%>
-<% if ! @service.empty? -%>
 
-[Service]
-<% @service.sort.map do |key,value| -%>
-<% if value.kind_of?(Array) -%>
-<% value.each do |arrvalue| -%>
-<%= key %>=<%= arrvalue %>
-<% end -%>
-<% else -%>
-<%= key %>=<%= value %>
-<% end -%>
-<% end -%>
-<% end -%>
-<% if ! @mount.empty? -%>
-
-[Mount]
-<% @mount.sort.map do |key,value| -%>
-<% if value.kind_of?(Array) -%>
-<% value.each do |arrvalue| -%>
-<%= key %>=<%= arrvalue %>
-<% end -%>
-<% else -%>
-<%= key %>=<%= value %>
-<% end -%>
-<% end -%>
-<% end -%>
-<% if ! @resolve.empty? -%>
-
-[Resolve]
-<% @resolve.sort.map do |key,value| -%>
-<% if value.kind_of?(Array) -%>
-<% value.each do |arrvalue| -%>
-<%= key %>=<%= arrvalue %>
-<% end -%>
-<% else -%>
-<%= key %>=<%= value %>
-<% end -%>
-<% end -%>
-<% end -%>
-<% if ! @timer.empty? -%>
-
-[Timer]
-<% @timer.sort.map do |key,value| -%>
-<% if value.kind_of?(Array) -%>
-<% value.each do |arrvalue| -%>
-<%= key %>=<%= arrvalue %>
-<% end -%>
-<% else -%>
-<%= key %>=<%= value %>
-<% end -%>
-<% end -%>
 <% end -%>

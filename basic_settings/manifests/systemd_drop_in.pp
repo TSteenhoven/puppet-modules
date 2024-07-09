@@ -2,10 +2,12 @@ define basic_settings::systemd_drop_in(
     $target_unit,
     $daemon_reload      = 'systemd_daemon_reload',
     $ensure             = present,
+    $journal            = {},
     $mount              = {},
     $path               = '/etc/systemd/system',
     $resolve            = {},
     $service            = {},
+    $socket             = {},
     $timer              = {},
     $unit               = {}
 ) {
