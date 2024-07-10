@@ -65,7 +65,7 @@ class basic_settings::io(
                 'MaxLevelConsole'   => 'warning'
             },
             daemon_reload   => 'io_systemd_daemon_reload',
-            require         => Package['systemd-resolved']
+            require         => Package['systemd']
         }
     }
 
