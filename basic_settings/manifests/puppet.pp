@@ -9,6 +9,12 @@ class basic_settings::puppet(
         ensure  => purged
     }
 
+    /* Remove unnecessary files */
+    file { '/boot/firmware/user-data':
+        ensure  => absent,
+        require => Package['cloud-init']
+    }
+
     /* Disable service */
     service { 'puppet':
         ensure  => undef,
