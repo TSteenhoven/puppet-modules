@@ -102,13 +102,13 @@ class basic_settings::login(
     /* Ensure that getty is stopped or running */
     if ($getty_enable) {
         service { 'getty@tty*':
-            ensure      => stopped,
-            enable      => false
+            ensure      => running,
+            enable      => true
         }
     } else {
         service { 'getty@tty*':
-            ensure      => running,
-            enable      => true
+            ensure      => stopped,
+            enable      => false
         }
     }
 
