@@ -81,12 +81,12 @@ class basic_settings::network(
     }
 
     /* Remove unnecessary packages */
-    package { ['ifupdown', 'wpasupplicant']:
+    package { ['ifupdown', 'netcat-traditional', 'wpasupplicant']:
         ensure  => purged
     }
 
     /* Install package */
-    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat', 'net-tools', 'telnet', 'iproute2', 'tcptraceroute', 'traceroute']:
+    package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat-openbsd', 'net-tools', 'telnet', 'iproute2', 'tcptraceroute', 'traceroute']:
         ensure => installed,
         require => Package['ifupdown']
     }
