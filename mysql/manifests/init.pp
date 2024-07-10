@@ -167,6 +167,20 @@ class mysql (
         $suspicious_packages = undef
     }
 
+    /* Install package for automysqlbackup */
+    if (!defined(Package['pigz'])) {
+        package { 'pigz':
+            ensure  => installed
+        }
+    }
+
+    /* Install package for automysqlbackup */
+    if (!defined(Package['pbzip2'])) {
+        package { 'pbzip2':
+            ensure  => installed
+        }
+    }
+
     /* Set config file */
     file { '/etc/default/automysqlbackup.conf':
         ensure  => file,
