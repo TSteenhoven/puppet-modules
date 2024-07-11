@@ -67,6 +67,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($::os['release']['major'] == '24.04') { # LTS
                 $backports_allow = false
+                $deb822 = true
                 $gcc_version = undef
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -86,6 +87,7 @@ class basic_settings(
                 $sury_allow = false
             } elsif ($::os['release']['major'] == '23.04') { # Stable
                 $backports_allow = false
+                $deb822 = false
                 $gcc_version = 12
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -105,6 +107,7 @@ class basic_settings(
                 $sury_allow = false
             } elsif ($::os['release']['major'] == '22.04') { # LTS
                 $backports_allow = false
+                $deb822 = false
                 $gcc_version = 12
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -124,6 +127,7 @@ class basic_settings(
                 $sury_allow = true
             } else {
                 $backports_allow = false
+                $deb822 = false
                 $gcc_version = undef
                 $mongodb_allow = false
                 $mysql_allow = false
@@ -149,6 +153,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($::os['release']['major'] == '12') {
                 $backports_allow = false
+                $deb822 = false
                 $gcc_version = undef
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -168,6 +173,7 @@ class basic_settings(
                 $sury_allow = true
             } else {
                 $backports_allow = false
+                $deb822 = false
                 $gcc_version = undef
                 $mongodb_allow = false
                 $mysql_allow = false
@@ -185,6 +191,7 @@ class basic_settings(
         }
         default: {
             $backports_allow = false
+            $deb822 = false
             $gcc_version = undef
             $mongodb_allow = false
             $mysql_allow = false
@@ -224,27 +231,70 @@ class basic_settings(
     }
 
     /* Reload source list */
-    exec { 'basic_settings_source_list_reload':
+    exec { 'basic_settings_source_reload':
         command     => 'apt-get update',
         refreshonly => true
     }
 
-    /* Check if we need backports */
-    if ($backports and $backports_allow) {
-        $backports_install_options = ['-t', "${os_name}-backports"]
-        exec { 'basic_settings_source_backports':
-            command     => "/usr/bin/printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
-            unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Package['coreutils']
+    /* Check if we need newer format for APT */
+    if ($deb822) {
+        /* Based on OS parent use correct source list */
+        file { '/etc/apt/sources.list':
+            path    => '/etc/apt/sources.list',
+            ensure  => file,
+            mode    => '0644',
+            owner   => 'root',
+            group   => 'root',
+            content => "# ${::os['name']} sourcess have to moved to /etc/apt/sources.list.d/${os_parent}.sources\n",
+            require => Package['apt']
+        }
+
+        /* Based on OS parent use correct source list */
+        file { 'basic_settings_source':
+            path    => "/etc/apt/sources.list.d/${os_parent}.sources",
+            ensure  => file,
+            mode    => '0644',
+            owner   => 'root',
+            group   => 'root',
+            content => template("basic_settings/source/${os_parent}.sources"),
+            require => [Package['apt'], File['/etc/apt/sources.list']]
+        }
+
+        /* Check if we need backports */
+        if ($backports and $backports_allow) {
+            $backports_install_options = ['-t', "${os_name}-backports"]
+        } else {
+            $backports_install_options = undef
         }
     } else {
-        $backports_install_options = undef
-        exec { 'basic_settings_source_backports':
-            command     => "/usr/bin/rm /etc/apt/sources.list.d/${os_name}-backports.list",
-            onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
-            notify      => Exec['basic_settings_source_list_reload'],
-            require     => Package['coreutils']
+        /* Check if we need backports */
+        if ($backports and $backports_allow) {
+            $backports_install_options = ['-t', "${os_name}-backports"]
+            exec { 'basic_settings_source_backports':
+                command     => "/usr/bin/printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
+                unless      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
+                notify      => Exec['basic_settings_source_reload'],
+                require     => [Package['apt'], Package['coreutils']]
+            }
+        } else {
+            $backports_install_options = undef
+            exec { 'basic_settings_source_backports':
+                command     => "/usr/bin/rm /etc/apt/sources.list.d/${os_name}-backports.list",
+                onlyif      => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
+                notify      => Exec['basic_settings_source_reload'],
+                require     => [Package['apt'], Package['coreutils']]
+            }
+        }
+
+        /* Based on OS parent use correct source list */
+        file { 'basic_settings_source':
+            path    => '/etc/apt/sources.list',
+            ensure  => file,
+            mode    => '0644',
+            owner   => 'root',
+            group   => 'root',
+            content => template("basic_settings/source/${os_parent}.list"),
+            require => Exec['basic_settings_source_backports']
         }
     }
 
@@ -253,17 +303,7 @@ class basic_settings(
         cluster_id      => $cluster_id,
         default_target  => $systemd_default_target,
         install_options => $backports_install_options,
-        require         => Exec['basic_settings_source_backports']
-    }
-
-    /* Based on OS parent use correct source list */
-    file { '/etc/apt/sources.list':
-        ensure  => file,
-        mode    => '0644',
-        owner   => 'root',
-        group   => 'root',
-        content => template("basic_settings/source/${os_parent}.list"),
-        require => Package['apt']
+        require         => File['basic_settings_source']
     }
 
     /* Setup message */
@@ -302,7 +342,7 @@ class basic_settings(
         timezone        => $server_timezone,
         ntp_extra_pools => $systemd_ntp_extra_pools,
         install_options => $backports_install_options,
-        require         => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
+        require         => [File['basic_settings_source'], Class['basic_settings::message']]
     }
 
     /* Setup kernel */
@@ -323,7 +363,7 @@ class basic_settings(
         antivirus_package   => $antivirus_package,
         firewall_package    => $firewall_package,
         install_options     => $backports_install_options,
-        require             => [Exec['basic_settings_source_backports'], Class['basic_settings::message']]
+        require             => [File['basic_settings_source'], Class['basic_settings::message']]
     }
 
     /* Set timezone */
@@ -344,7 +384,7 @@ class basic_settings(
                 exec { 'source_sury_php':
                     command     => "/usr/bin/printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['basic_settings_source_list_reload'],
+                    notify      => Exec['basic_settings_source_reload'],
                     require     => [Package['curl'], Package['gnupg']]
                 }
             }
@@ -352,7 +392,7 @@ class basic_settings(
                 exec { 'source_sury_php':
                     command     => "curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; dpkg -i /tmp/debsuryorg-archive-keyring.deb; printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list",
                     unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['basic_settings_source_list_reload'],
+                    notify      => Exec['basic_settings_source_reload'],
                     require     => [Package['curl'], Package['gnupg']]
                 }
             }
@@ -363,7 +403,7 @@ class basic_settings(
         exec { 'source_sury_php':
             command     => '/usr/bin/rm /etc/apt/sources.list.d/sury_php.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            notify      => Exec['basic_settings_source_list_reload']
+            notify      => Exec['basic_settings_source_reload']
         }
     }
 
@@ -372,7 +412,7 @@ class basic_settings(
         exec { 'source_nginx':
             command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; curl -s https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
+            notify      => Exec['basic_settings_source_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
     } else {
@@ -380,7 +420,7 @@ class basic_settings(
         exec { 'source_nginx':
             command     => '/usr/bin/rm /etc/apt/sources.list.d/nginx.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
+            notify      => Exec['basic_settings_source_reload'],
         }
     }
 
@@ -405,7 +445,7 @@ class basic_settings(
         exec { 'source_proxmox':
             command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; curl -sSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
             unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
+            notify      => Exec['basic_settings_source_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
     } else {
@@ -413,7 +453,7 @@ class basic_settings(
         exec { 'source_proxmox':
             command     => '/usr/bin/rm /etc/apt/sources.list.d/pve-install-repo.list.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['basic_settings_source_list_reload']
+            notify      => Exec['basic_settings_source_reload']
         }
     }
 
@@ -439,7 +479,7 @@ class basic_settings(
         exec { 'source_mongodb':
             command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -s https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
             unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['basic_settings_source_list_reload'],
+            notify      => Exec['basic_settings_source_reload'],
             require     => [Package['curl'], Package['gnupg']]
         }
 
@@ -458,7 +498,7 @@ class basic_settings(
         exec { 'source_mongodb':
             command     => '/usr/bin/rm /etc/apt/sources.list.d/mongodb.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['basic_settings_source_list_reload']
+            notify      => Exec['basic_settings_source_reload']
         }
     }
 
@@ -540,7 +580,7 @@ class basic_settings(
     class { 'basic_settings::development':
         gcc_version     => $gcc_version,
         install_options => $backports_install_options,
-        require         => Exec['basic_settings_source_backports']
+        require         => File['basic_settings_source']
     }
 
     /* Setup Puppet */
