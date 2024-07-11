@@ -3,7 +3,7 @@ class basic_settings::package_node(
     $version = '20'
 ) {
     /* Reload source list */
-    exec { 'package_node_source_list_reload':
+    exec { 'package_node_source_reload':
         command     => 'apt-get update',
         refreshonly => true
     }
@@ -13,7 +13,7 @@ class basic_settings::package_node(
         exec { 'source_nodejs':
             command     => "curl -fsSL https://deb.nodesource.com/setup_${version}.x | bash - &&\\",
             unless      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['package_node_source_list_reload'],
+            notify      => Exec['package_node_source_reload'],
             require     => Package['curl']
         }
 
@@ -42,7 +42,7 @@ class basic_settings::package_node(
         exec { 'source_nodejs':
             command     => '/usr/bin/rm /etc/apt/sources.list.d/nodesource.list',
             onlyif      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
-            notify      => Exec['package_node_source_list_reload'],
+            notify      => Exec['package_node_source_reload'],
             require     => Package['nodejs']
         }
     }

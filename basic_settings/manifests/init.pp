@@ -67,7 +67,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($::os['release']['major'] == '24.04') { # LTS
                 $backports_allow = false
-                $deb822 = true
+                $deb_version = '822'
                 $gcc_version = undef
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -87,7 +87,7 @@ class basic_settings(
                 $sury_allow = false
             } elsif ($::os['release']['major'] == '23.04') { # Stable
                 $backports_allow = false
-                $deb822 = false
+                $deb_version = 'list'
                 $gcc_version = 12
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -107,7 +107,7 @@ class basic_settings(
                 $sury_allow = false
             } elsif ($::os['release']['major'] == '22.04') { # LTS
                 $backports_allow = false
-                $deb822 = false
+                $deb_version = 'list'
                 $gcc_version = 12
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -127,7 +127,7 @@ class basic_settings(
                 $sury_allow = true
             } else {
                 $backports_allow = false
-                $deb822 = false
+                $deb_version = 'list'
                 $gcc_version = undef
                 $mongodb_allow = false
                 $mysql_allow = false
@@ -153,7 +153,7 @@ class basic_settings(
             /* Do thing based on version */
             if ($::os['release']['major'] == '12') {
                 $backports_allow = false
-                $deb822 = false
+                $deb_version = 'list'
                 $gcc_version = undef
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
@@ -173,7 +173,7 @@ class basic_settings(
                 $sury_allow = true
             } else {
                 $backports_allow = false
-                $deb822 = false
+                $deb_version = 'list'
                 $gcc_version = undef
                 $mongodb_allow = false
                 $mysql_allow = false
@@ -191,7 +191,7 @@ class basic_settings(
         }
         default: {
             $backports_allow = false
-            $deb822 = false
+            $deb_version = 'list'
             $gcc_version = undef
             $mongodb_allow = false
             $mysql_allow = false
@@ -237,7 +237,7 @@ class basic_settings(
     }
 
     /* Check if we need newer format for APT */
-    if ($deb822) {
+    if ($deb_version == '822') {
         /* Based on OS parent use correct source list */
         file { '/etc/apt/sources.list':
             path    => '/etc/apt/sources.list',
@@ -376,34 +376,21 @@ class basic_settings(
     class { 'basic_settings::io':
     }
 
-    /* Check if we need sury */
+    /* Check if variable rabbitmq is true; if true, install new source list and key */
     if ($sury_enable and $sury_allow) {
-        /* Add sury PHP repo */
-        case $os_parent {
-            'ubuntu': {
-                exec { 'source_sury_php':
-                    command     => "/usr/bin/printf \"deb https://ppa.launchpadcontent.net/ondrej/php/ubuntu ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 14AA40EC0831756756D7F66C4F4EA0AAE5267A6C ",
-                    unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['basic_settings_source_reload'],
-                    require     => [Package['curl'], Package['gnupg']]
-                }
-            }
-            default: {
-                exec { 'source_sury_php':
-                    command     => "curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; dpkg -i /tmp/debsuryorg-archive-keyring.deb; printf \"deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ ${os_name} main\\n\" > /etc/apt/sources.list.d/sury_php.list",
-                    unless      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-                    notify      => Exec['basic_settings_source_reload'],
-                    require     => [Package['curl'], Package['gnupg']]
-                }
-            }
+        class { 'basic_settings::package_sury':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
         }
-
     } else {
-        /* Remove sury php repo */
-        exec { 'source_sury_php':
-            command     => '/usr/bin/rm /etc/apt/sources.list.d/sury_php.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/sury_php.list ]',
-            notify      => Exec['basic_settings_source_reload']
+        class { 'basic_settings::package_sury':
+            eb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 
