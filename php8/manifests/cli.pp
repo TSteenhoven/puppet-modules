@@ -39,13 +39,13 @@ class php8::cli(
     if ($composer_enable) {
         /* Install composer */
         exec { "php8_${minor_version}_composer_fetch_installer":
-            command => '/usr/bin/curl -s -L https://getcomposer.org/installer -o /tmp/composer-setup.php',
+            command => '/usr/bin/curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php',
             unless  => '[ -e /usr/local/bin/composer ]',
             require =>  [Package['curl'], Package["php8.${minor_version}-cli"], Exec['php_set_default_version']]
         }
         ->
         exec { "php8_${minor_version}_composer_fetch_hash":
-            command => '/usr/bin/curl -s -L https://composer.github.io/installer.sig -o /tmp/composer_hash',
+            command => '/usr/bin/curl -fsSL https://composer.github.io/installer.sig -o /tmp/composer_hash',
             onlyif  => 'test -f /tmp/composer-setup.php',
             require => [Package['curl'], Package["php8.${minor_version}-cli"], Exec['php_set_default_version']]
         }

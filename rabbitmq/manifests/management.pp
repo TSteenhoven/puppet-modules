@@ -104,7 +104,7 @@ class rabbitmq::management(
 
         /* Install admin plugin */
         exec { 'rabbitmq_management_admin_cli':
-            command => "/usr/bin/curl -s -L http://127.0.0.1:${port}/cli/rabbitmqadmin -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
+            command => "/usr/bin/curl -fsSL http://127.0.0.1:${port}/cli/rabbitmqadmin -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
             unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
             require =>  [Package['curl'], File['rabbitmq_management_admin_config']]
         }
