@@ -396,24 +396,26 @@ class basic_settings(
 
     /* Check if variable nginx is true; if true, install new source list and key */
     if ($nginx_enable and $nginx_allow) {
-        exec { 'source_nginx':
-            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${os_parent} ${os_name} nginx\\n\" > /etc/apt/sources.list.d/nginx.list; /usr/bin/curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
-            unless      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['basic_settings_source_reload'],
-            require     => [Package['curl'], Package['gnupg']]
+        class { 'basic_settings::package_nginx':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
         }
     } else {
-        /* Remove nginx repo */
-        exec { 'source_nginx':
-            command     => '/usr/bin/rm /etc/apt/sources.list.d/nginx.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/nginx.list ]',
-            notify      => Exec['basic_settings_source_reload'],
+        class { 'basic_settings::package_nginx':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 
     /* Check if variable rabbitmq is true; if true, install new source list and key */
     if ($rabbitmq_enable and $rabbitmq_allow) {
         class { 'basic_settings::package_rabbitmq':
+            deb_version => $deb_version,
             enable      => true,
             os_parent   => $os_parent,
             os_name     => $os_name,
@@ -421,6 +423,7 @@ class basic_settings(
         }
     } else {
         class { 'basic_settings::package_rabbitmq':
+            deb_version => $deb_version,
             enable      => false,
             os_parent   => $os_parent,
             os_name     => $os_name
@@ -429,63 +432,57 @@ class basic_settings(
 
     /* Check if variable proxmox is true; if true, install new source list and key */
     if ($proxmox_enable and $proxmox_allow) {
-        exec { 'source_proxmox':
-            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/proxmox-release-bookworm.gpg] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n\" > /etc/apt/sources.list.d/pve-install-repo.list; /usr/bin/curl -fsSLo /usr/share/keyrings/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg",
-            unless      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['basic_settings_source_reload'],
-            require     => [Package['curl'], Package['gnupg']]
-        }
-    } else {
-        /* Remove proxmox repo */
-        exec { 'source_proxmox':
-            command     => '/usr/bin/rm /etc/apt/sources.list.d/pve-install-repo.list.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/pve-install-repo.list.list ]',
-            notify      => Exec['basic_settings_source_reload']
-        }
-    }
-
-    /* Check if variable mysql is true; if true, install new source list and key */
-    if ($mysql_enable and $mysql_allow) {
-        class { 'basic_settings::package_mysql':
+        class { 'basic_settings::package_proxmox':
+            deb_version => $deb_version,
             enable      => true,
-            version     => $mysql_version,
             os_parent   => $os_parent,
             os_name     => $os_name,
             require     => Class['basic_settings::packages']
         }
     } else {
-        class { 'basic_settings::package_mysql':
+        class { 'basic_settings::package_proxmox':
+            deb_version => $deb_version,
             enable      => false,
             os_parent   => $os_parent,
             os_name     => $os_name
         }
     }
 
-    /* Check if variable mongodb is true; if true, install new source list and key */
-    if ($mongodb_enable and $mongodb_allow) {
-        exec { 'source_mongodb':
-            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/mongodb.gpg] http://repo.mongodb.org/apt/debian ${os_name}/mongodb-org/${mongodb_version} main\\n\" > /etc/apt/sources.list.d/mongodb.list; curl -fsSL https://pgp.mongodb.com/server-${mongodb_version}.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb.gpg >/dev/null",
-            unless      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['basic_settings_source_reload'],
-            require     => [Package['curl'], Package['gnupg']]
-        }
-
-        /* Install mongodb-org-server package */
-        package { 'mongodb-org-server':
-            ensure  => installed,
-            require => Exec['source_mongodb']
+    /* Check if variable mysql is true; if true, install new source list and key */
+    if ($mysql_enable and $mysql_allow) {
+        class { 'basic_settings::package_mysql':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            version     => $mysql_version,
+            require     => Class['basic_settings::packages']
         }
     } else {
-        /* Remove mongodb-org-server package */
-        package { 'mongodb-org-server':
-            ensure  => purged
+        class { 'basic_settings::package_mysql':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
+    }
 
-        /* Remove mongodb repo */
-        exec { 'source_mongodb':
-            command     => '/usr/bin/rm /etc/apt/sources.list.d/mongodb.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/mongodb.list ]',
-            notify      => Exec['basic_settings_source_reload']
+    /* Check if variable mysql is true; if true, install new source list and key */
+    if ($mongodb_enable and $mongodb_allow) {
+        class { 'basic_settings::package_mongodb':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            version     => $mongodb_version,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_mongodb':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 

@@ -1,4 +1,5 @@
 class basic_settings::package_mysql(
+    $deb_version,
     $enable,
     $os_parent,
     $os_name,
@@ -6,8 +7,15 @@ class basic_settings::package_mysql(
 ) {
     /* Reload source list */
     exec { 'package_mysql_source_reload':
-        command     => 'apt-get update',
+        command     => '/usr/bin/apt-get update',
         refreshonly => true
+    }
+
+     /* Check if we need newer format for APT */
+    if ($deb_version == '822') {
+        $file = '/etc/apt/sources.list.d/mysql.sources'
+    } else {
+        $file = '/etc/apt/sources.list.d/mysql.list'
     }
 
     if ($enable) {
@@ -19,6 +27,13 @@ class basic_settings::package_mysql(
             default: {
                 $key = 'mysql-7.key'
             }
+        }
+
+        /* Get source */
+        if ($deb_version == '822') {
+            $source  = "Types: deb\nURIs: https://repo.mysql.com/apt/${os_parent}}\nSuites: ${os_name}\nComponents: mysql-${version}\nSigned-By:/usr/share/keyrings/mysql.gpg\n"
+        } else {
+            $source = "deb [signed-by=/usr/share/keyrings/mysql.gpg] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version}\n"
         }
 
         /* Create MySQL key */
@@ -33,16 +48,16 @@ class basic_settings::package_mysql(
 
         /* Set source */
         exec { 'package_mysql_source':
-            command     => "/usr/bin/printf \"deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version}\\n\" > /etc/apt/sources.list.d/mysql.list; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg",
-            unless      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
+            command     => "/usr/bin/printf \"${source}\" > ${file}; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg",
+            unless      => "[ -e ${file} ]",
             notify      => Exec['package_mysql_source_reload'],
             require     => [Package['curl'], Package['gnupg'], File['package_mysql_key']]
         }
     } else {
         /* Remove mysql repo */
         exec { 'package_mysql_source':
-            command     => '/usr/bin/rm /etc/apt/sources.list.d/mysql.list',
-            onlyif      => '[ -e /etc/apt/sources.list.d/mysql.list ]',
+            command     => "/usr/bin/rm ${file}",
+            onlyif      => "[ -e ${file} ]",
             notify      => Exec['package_mysql_source_reload']
         }
     }
