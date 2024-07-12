@@ -1,9 +1,9 @@
 class basic_settings::package_mongodb(
     $deb_version,
     $enable,
-    $version,
     $os_parent,
-    $os_name
+    $os_name,
+    $version = '4.4'
 ) {
     /* Reload source list */
     exec { 'package_mongodb_source_reload':
