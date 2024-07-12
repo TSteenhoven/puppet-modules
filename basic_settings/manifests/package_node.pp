@@ -11,7 +11,7 @@ class basic_settings::package_node(
     if ($enable) {
         /* Install source list */
         exec { 'source_nodejs':
-            command     => "/usr/bin/curl -fsSL https://deb.nodesource.com/setup_${version}.x | bash - &&\\",
+            command     => "/usr/bin/bash -c 'umask 22; /usr/bin/curl -fsSL https://deb.nodesource.com/setup_${version}.x | bash -'",
             unless      => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
             notify      => Exec['package_node_source_reload'],
             require     => Package['curl']
