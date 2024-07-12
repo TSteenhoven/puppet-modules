@@ -11,7 +11,7 @@ class basic_settings::package_mysql(
         refreshonly => true
     }
 
-     /* Check if we need newer format for APT */
+    /* Check if we need newer format for APT */
     if ($deb_version == '822') {
         $file = '/etc/apt/sources.list.d/mysql.sources'
     } else {
@@ -23,17 +23,23 @@ class basic_settings::package_mysql(
         case $version {
             '8.0': {
                 $key = 'mysql-8.key'
+                $version_correct = $version
+            }
+            '8.4': {
+                $key = 'mysql-8.key'
+                $version_correct = '8.0-lts'
             }
             default: {
                 $key = 'mysql-7.key'
+                $version_correct = $version
             }
         }
 
         /* Get source */
         if ($deb_version == '822') {
-            $source  = "Types: deb\nURIs: https://repo.mysql.com/apt/${os_parent}}\nSuites: ${os_name}\nComponents: mysql-${version}\nSigned-By:/usr/share/keyrings/mysql.gpg\n"
+            $source  = "Types: deb\nURIs: https://repo.mysql.com/apt/${os_parent}}\nSuites: ${os_name}\nComponents: mysql-${version_correct}\nSigned-By:/usr/share/keyrings/mysql.gpg\n"
         } else {
-            $source = "deb [signed-by=/usr/share/keyrings/mysql.gpg] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version}\n"
+            $source = "deb [signed-by=/usr/share/keyrings/mysql.gpg] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version_correct}\n"
         }
 
         /* Create MySQL key */
