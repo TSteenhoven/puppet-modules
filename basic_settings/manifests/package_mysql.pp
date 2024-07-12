@@ -27,7 +27,7 @@ class basic_settings::package_mysql(
             }
             '8.4': {
                 $key = 'mysql-8.key'
-                $version_correct = '8.0-lts'
+                $version_correct = "${version}-lts"
             }
             default: {
                 $key = 'mysql-7.key'
