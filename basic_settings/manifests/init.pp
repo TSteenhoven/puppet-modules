@@ -387,7 +387,7 @@ class basic_settings(
         }
     } else {
         class { 'basic_settings::package_sury':
-            eb_version => $deb_version,
+            deb_version => $deb_version,
             enable      => false,
             os_parent   => $os_parent,
             os_name     => $os_name
