@@ -64,8 +64,13 @@ Basic settings omvatten de volgende subonderdelen:
 - **Login:** Pakketten/configuraties gerelateerd aan login en gebruikersbeheer.
 - **Netwerk:** Pakketten/configuraties gerelateerd aan netwerken en optimalisatie ervan voor HPC-gebruik.
 - **Packages:** Installeren van een pakketbeheerder en het verwijderen van andere pakketbeheerders indien mogelijk.
+  - **Packages MongoDB:** Configureren van APT-repo voor MongoDB met bijbehorende sleutel.
   - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
+  - **Packages Nginx:** Configureren van APT-repo voor Nginx met bijbehorende sleutel.
   - **Packages Node:** Configureren en installeren van APT-repo voor Node.
+  - **Packages Proxmox:** Configureren van APT-repo voor Proxmox met bijbehorende sleutel.
+  - **Packages RabbitMQ:** Configureren van APT-repo voor RabbitMQ met bijbehorende sleutel.
+  - **Packages Sury:** Configureren van APT-repo voor Sury met bijbehorende sleutel.
 - **Pro:** Voor Ubuntu is het mogelijk om een Pro-abonnement af te nemen.
 - **Puppet:** Configureren van Puppet op de juiste manier.
 - **Security:** Installeren van benodigde beveiligingspakketten om de server te monitoren.
@@ -117,7 +122,7 @@ node 'webserver.dev.xxxx.nl' {
 
 ## MySQL
 
-MySQL is een populair open-source relationeel databasebeheersysteem (RDBMS). Het wordt veel gebruikt voor het opslaan, ophalen en beheren van gegevens voor websites en applicaties. Dit onderdeel maakt het mogelijk om een MySQL-database server op te zetten en te configureren. Wanneer in `basic settings` de MySQL APT-repo is geactiveerd, probeert dit onderdeel de geselecteerde MySQL-versie te installeren in plaats van de standaardversie of databasevariant zoals MariaDB die vanuit het besturingssysteem wordt aangeboden. Indien `basic settings` of `security package` van `basic package` wordt gebruikt, worden verdachte commando's gemonitord door auditd.
+MySQL is een populair open-source relationeel databasebeheersysteem (RDBMS). Het wordt veel gebruikt voor het opslaan, ophalen en beheren van gegevens voor websites en applicaties. Dit onderdeel maakt het mogelijk om een MySQL-database server op te zetten en te configureren. Wanneer in `basic settings` de MySQL APT-repo is geactiveerd, probeert dit onderdeel de geselecteerde MySQL-versie te installeren in plaats van de standaardversie of databasevariant zoals MariaDB die vanuit het besturingssysteem wordt aangeboden. Indien `basic settings` of `security` subonderdelen van `basic package` wordt gebruikt, worden verdachte commando's gemonitord door auditd.
 
 ### Voorbeeld
 Hieronder een voorbeeld hoe je MySQL database opzet in je Puppet omgeving:
