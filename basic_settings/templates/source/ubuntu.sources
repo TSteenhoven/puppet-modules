@@ -1,11 +1,11 @@
 Types: deb
 URIs: <%= @os_url %>
 Suites: <%= @os_name %> <%= @os_name %>-updates<% if (@backports && @backports_allow) %> <%= @os_name %>-backports<% end %>
-Components: main universe<% if @non_free %> restricted multiverse<% end %>
+Components: <%= @os_repo %><% if @non_free %> multiverse<% end %>
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb
 URIs: <%= @os_url_security %>
 Suites: <%= @os_name %>-security
-Components: main universe<% if @non_free %> restricted multiverse<% end %>
+Components: <%= @os_repo %><% if @non_free %> multiverse<% end %>
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
