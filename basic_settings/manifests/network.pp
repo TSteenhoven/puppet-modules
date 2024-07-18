@@ -6,6 +6,7 @@ class basic_settings::network(
         '2001:4860:4860::8888',
         '2001:4860:4860::8844'
     ],
+    $firewall_path = '/etc/firewall.conf',
     $antivirus_package = undef,
     $install_options = undef
 ) {
@@ -25,7 +26,7 @@ class basic_settings::network(
             $suspicious_packages = flatten($default_packages, ['/usr/sbin/nft'])
         }
         'iptables': {
-            $firewall_command = 'iptables-restore < /etc/firewall.conf'
+            $firewall_command = "iptables-restore < ${firewall_path}"
             package { ['nftables', 'firewalld']:
                 ensure => purged
             }
@@ -168,14 +169,19 @@ class basic_settings::network(
                 ensure  => file,
                 path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
                 mode    => '0755',
-                content => "#!/bin/bash\n\ntest -r /etc/firewall.conf && ${firewall_command}\n\nexit 0\n",
+                content => "#!/bin/bash\n\ntest -r ${firewall_path} && ${firewall_command}\n\nexit 0\n",
                 require => Package[$firewall_package]
             }
         } else {
-            file { 'firewall_networkd_dispatcher':
-                ensure  => absent,
-                path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
-                require => Package[$firewall_package]
+            /* Remove firewall package */
+            case $firewall_package {
+                'nftables', 'firewalld': {
+                    file { 'firewall_networkd_dispatcher':
+                        ensure  => absent,
+                        path    => '/etc/networkd-dispatcher/routable.d/iptables',
+                        require => Package[$firewall_package]
+                    }
+                }
             }
         }
 
