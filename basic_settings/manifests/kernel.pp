@@ -5,6 +5,7 @@ class basic_settings::kernel(
     $guest_agent_enable         = false,
     $hugepages                  = 0,
     $install_options            = undef,
+    $ip_version                 = 'all',
     $network_mode               = 'strict',
     $security_lockdown          = 'integrity',
     $tcp_congestion_control     = 'brr',
@@ -50,7 +51,7 @@ class basic_settings::kernel(
 
     /* Get IP versions */
     case $ip_version {
-        '4': {
+        4: {
             $ip_version_v4 = true
             $ip_version_v6 = false
         }

@@ -216,6 +216,8 @@ class basic_settings::network(
             'DNSOverTLS'    => 'opportunistic',
             'DNSSEC'        => 'allow-downgrade',
             'FallbackDNS'   => join($fallback_dns, ' '),
+            'LLMNR'         => 'no',
+            'MulticastDNS'  => 'no',
             'ReadEtcHosts'  => 'yes'
         }
 
