@@ -48,6 +48,18 @@ class basic_settings::kernel(
         }
     }
 
+    /* Get IP versions */
+    case $ip_version {
+        '4': {
+            $ip_version_v4 = true
+            $ip_version_v6 = false
+        }
+        default: {
+            $ip_version_v4 = true
+            $ip_version_v6 = true
+        }
+    }
+
     /* Create group for hugetlb only when hugepages is given */
     if (defined(Package['systemd']) and $hugepages > 0) {
         # Set variable 

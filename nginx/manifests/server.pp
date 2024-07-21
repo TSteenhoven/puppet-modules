@@ -90,6 +90,15 @@ define nginx::server(
         } else {
             $tcp_fastopen = false
         }
+
+        /* Check if IPv6 is active */
+        if ($basic_settings::kernel::ip_version_v6) {
+            $http_ipv6_correct = $http_ipv6
+            $https_ipv6_correct = $https_ipv6
+        } else {
+            $http_ipv6_correct = false
+            $https_ipv6_correct = false
+        }
     } else {
         /* Check if valid backlog value is given */
         if ($backlog > 0) {
@@ -100,6 +109,8 @@ define nginx::server(
             $backlog_value = undef
         }
         $tcp_fastopen = false
+        $http_ipv6_correct = $http_ipv6
+        $https_ipv6_correct = $https_ipv6
     }
 
     /* Check if HTTP/2 or HTTP/3 is allowed */
