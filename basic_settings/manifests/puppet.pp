@@ -5,7 +5,7 @@ class basic_settings::puppet(
 ) {
 
     /* Remove unnecessary packages */
-    package { 'cloud-init':
+    package { ['cloud-init', 'tasksel']:
         ensure  => purged
     }
 

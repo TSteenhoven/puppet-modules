@@ -221,11 +221,6 @@ class basic_settings(
         ensure  => installed
     }
 
-    /* Remove unnecessary packages */
-    package { ['at-spi2-core', 'lxd-installer', 'plymouth', 'x11-utils']:
-        ensure  => purged
-    }
-
     /* Basic system packages */
     package { ['sysstat']:
         ensure  => installed

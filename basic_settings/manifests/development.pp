@@ -3,6 +3,11 @@ class basic_settings::development(
     $install_options    = undef
 ) {
 
+    /* Remove unnecessary packages */
+    package { 'lxd-installer':
+        ensure  => purged
+    }
+
     /* Install default development packages */
     package { ['build-essential', 'python-is-python3', 'python3', 'nano', 'ruby', 'screen']:
         ensure  => installed

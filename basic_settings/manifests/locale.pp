@@ -1,11 +1,12 @@
 class basic_settings::locale(
     $enable         = false,
+    $dictionary     = 'american',
     $docs_enable    = false
 ) {
 
     /* Check if packages are needed */
     if ($enable) {
-        package { 'locales':
+        package { ['dictionaries-common', 'locales', "w${dictionary}"]:
             ensure  => installed
         }
 
@@ -15,7 +16,7 @@ class basic_settings::locale(
         }
     } else {
         /* Remove packages */
-        package { 'locales':
+        package { ['dictionaries-common', 'locales', 'wamerican', 'wbritish']:
             ensure  => purged
         }
 
