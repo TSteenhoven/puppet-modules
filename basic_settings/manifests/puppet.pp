@@ -51,7 +51,7 @@ class basic_settings::puppet(
             service     => {
                 'Type'      => 'oneshot',
                 'User'      => 'root',
-                'ExecStart' => "/usr/bin/find /var/cache/${server_dir}/clientbucket -type f -mtime +14 -atime +14 -delete",
+                'ExecStart' => "/usr/bin/find /var/cache/${server_dir}/clientbucket/ -type f -mtime +14 -atime +14 -delete", # Last dir separator (/) very important 
                 'Nice'      => '19'
             }
         }
@@ -119,7 +119,7 @@ class basic_settings::puppet(
                 service     => {
                     'Type'      => 'oneshot',
                     'User'      => 'puppet',
-                    'ExecStart' => "/usr/bin/find /var/lib/${server_dir}/reports -type f -name '*.yaml' -ctime +1 -delete",
+                    'ExecStart' => "/usr/bin/find /var/lib/${server_dir}/reports/ -type f -name '*.yaml' -ctime +1 -delete", # Last dir separator (/) very important 
                     'Nice'      => '19'
                 },
             }

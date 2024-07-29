@@ -10,7 +10,7 @@ define nginx::server(
     Optional[String]    $error_log                  = undef,
     Optional[Integer]   $fastcgi_read_timeout       = undef,
     Optional[Integer]   $fastopen                   = 0, # Global settings
-    Optional[Integer]   $hsts_max_age               = 604800,
+    Optional[Integer]   $hsts_max_age               = 31536000,
     Optional[Boolean]   $http2_enable               = false,
     Optional[Boolean]   $http3_enable               = false,
     Optional[Boolean]   $http_enable                = true,
