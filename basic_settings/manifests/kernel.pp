@@ -140,7 +140,7 @@ class basic_settings::kernel(
     }
 
     /* Remove unnecessary packages */
-    package { ['apport', 'installation-report', 'linux-tools-common', 'thermald', 'upower']:
+    package { ['apport', 'installation-report', 'linux-tools-common', 'plymouth', 'thermald', 'upower']:
         ensure  => purged
     }
 

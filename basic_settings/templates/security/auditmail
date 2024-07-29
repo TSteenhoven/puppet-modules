@@ -6,21 +6,48 @@
 AUREPORTTOOL=/usr/sbin/aureport
 test -x $AUREPORTTOOL || exit 1
 
+# Check if date is available
+DATE=/usr/bin/date
+test -x $DATE || exit 1
+
+# Check if journalctl is available
+JOURNALCTL=/usr/bin/journalctl
+test -x $JOURNALCTL || exit 1
+
 # Check if mail is available
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
 
 # Try to get aureport
-OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59 2>&1)
+AUDIT_OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59 2>&1)
+
+# Try to check if we have boots sinds yesterday
+YESTERDAY=$($DATE --date="yesterday" +"%Y-%m-%d")
+TODAY=$($DATE +"%Y-%m-%d")
+BOOT_OUTPUT=$($JOURNALCTL --quiet -list-boots | grep "$YESTERDAY\|$TODAY")
 
 # Check if we have valid report
-if [ -z "$(echo $OUTPUT | grep 'no events of interest were found')" ]; then
-    if [ -n "$(echo $OUTPUT | grep -i 'error')" ]; then
-        SUBJECT='Audit report with ERROR'
-    elif [ -n "$(echo $OUTPUT | grep -i 'susp_activity')" ]; then
-        SUBJECT='Audit report with suspicious activity'
+if [ -z "$(echo $AUDIT_OUTPUT | grep 'no events of interest were found')" ]; then
+    # Check what for logs we have
+    if [ -n "$(echo $AUDIT_OUTPUT | grep -i 'error')" ]; then
+        if [ -n "$BOOT_OUTPUT" ]; then
+            SUBJECT='Server has boot logs and audit report with ERROR'
+            AUDIT_OUTPUT="Boot logs:\n$BOOT_OUTPUT\n$AUDIT_OUTPUT"
+        else
+            SUBJECT='Audit report with ERROR'
+        fi
+    elif [ -n "$(echo $AUDIT_OUTPUT | grep -i 'susp_activity')" ]; then
+        if [ -n "$BOOT_OUTPUT" ]; then
+            SUBJECT='Server has boot logs and audit report with suspicious activity'
+            AUDIT_OUTPUT="Boot logs:\n$BOOT_OUTPUT\n$AUDIT_OUTPUT"
+        else
+            SUBJECT='Audit report with suspicious activity'
+        fi
+    elif [ -n "$BOOT_OUTPUT" ]; then
+        SUBJECT='Server has boot logs and audit report'
+        AUDIT_OUTPUT="Boot logs:\n$BOOT_OUTPUT\n$AUDIT_OUTPUT"
     else
         SUBJECT='Audit report'
     fi
-    printf '%b\n' "$OUTPUT" | $MAIL -s "$SUBJECT" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+    printf '%b\n' "$AUDIT_OUTPUT" | $MAIL -s "$SUBJECT" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 fi
