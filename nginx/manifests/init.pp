@@ -1,17 +1,17 @@
 class nginx(
-        $run_user                   = 'www-data',
-        $run_group                  = 'www-data',
-        $keepalive_requests         = 1000,
-        $keepalive_timeout          = '75s',
-        $types_hash_max_size        = 2048,
-        $global_directives          = [],
-        $events_directives          = [],
-        $http_directives            = [],
-        $target                     = 'services',
-        $ssl_protocols              = 'TLSv1.2 TLSv1.3',
-        $ssl_prefer_server_ciphers  = false,
-        $nice_level                 = 10,
-        $limit_file                 = 10000
+        Optional[Array]     $events_directives          = [],
+        Optional[Array]     $global_directives          = [],
+        Optional[Array]     $http_directives            = [],
+        Optional[Boolean]   $ssl_prefer_server_ciphers  = true,
+        Optional[Integer]   $keepalive_requests         = 1000,
+        Optional[Integer]   $limit_file                 = 10000
+        Optional[Integer]   $nice_level                 = 10,
+        Optional[Integer]   $types_hash_max_size        = 2048,
+        Optional[String]    $keepalive_timeout          = '75s',
+        Optional[String]    $run_group                  = 'www-data',
+        Optional[String]    $run_user                   = 'www-data',
+        Optional[String]    $ssl_protocols              = 'TLSv1.2 TLSv1.3',
+        Optional[String]    $target                     = 'services',
     ) {
 
     /* Remove unnecessary package */

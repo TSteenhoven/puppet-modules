@@ -1,73 +1,69 @@
 define nginx::server(
-    $docroot,
-
-    $server_name                        = undef,
-    $ip                                 = undef,
-    $ipv6                               = undef,
-
-    $http_enable                        = true,
-    $http_port                          = 80,
-    $http_ipv6                          = true,
-    $default_server                     = false,
-
-    $https_enable                       = false,
-    $https_port                         = 443,
-    $https_ipv6                         = true,
-
-    $allow_acme                         = false,
-
-    $https_force                        = false,
-    $http2_enable                       = false,
-    $http3_enable                       = false,
-
-    # Global settings for given ports; This values can only set onces
-    $backlog                            = -1, # -1: Disabled, 0: Kernel; >0: Custom value
-    $fastopen                           = 0,
-    $reuseport                          = false,
-
-    $keepalive_request_file             = undef,
-
-    $ssl_protocols                      = undef,
-    $ssl_ciphers                        = undef,
-    $ssl_buffer_size                    = undef,
-    $ssl_session_cache                  = undef,
-    $ssl_session_timeout                = undef,
-    $ssl_certificate                    = undef,
-    $ssl_certificate_key                = undef,
-
-    $fastcgi_read_timeout               = undef,
-
-    $php_fpm_enable                     = true,
-    $php_fpm_location                   = '~* \.php$',
-    $php_fpm_location_inc               = '~* \.php.inc$',
-    $php_fpm_uri                        = 'unix:/run/php/php-fpm.sock',
-    $php_fpm_directives                 = [],
-
-    $allow_directories                  = false,
-    $try_files_enable                   = true,
-    $try_files_custom                   = '$uri/ =404',
-
-    $client_max_body_size               = undef,
-
-    $access_log                         = undef,
-    $error_log                          = undef,
-
-    $location_internal                  = false,
-    $location_directives                = [],
-    $locations                          = [],
-    $directives                         = [],
-
-    $redirect_from                      = undef,
-    $redirect_ip                        = undef,
-    $redirect_ipv6                      = undef,
-    $redirect_http_port                 = undef,
-    $redirect_https_port                = undef,
-    $redirect_ssl_protocols             = undef,
-    $redirect_ssl_ciphers               = undef,
-    $redirect_certificate               = undef,
-    $redirect_certificate_key           = undef,
-
-    $restart_service                    = true
+    String              $docroot,
+    Optional[String]    $access_log                 = undef,
+    Optional[Boolean]   $allow_acme                 = false,
+    Optional[Boolean]   $allow_directories          = false,
+    Optional[Integer]   $backlog                    = -1, # Global settings; -1: Disabled, 0: Kernel; >0: Custom value
+    Optional[Integer]   $client_max_body_size       = undef,
+    Optional[Boolean]   $default_server             = false,
+    Optional[Array]     $directives                 = [],
+    Optional[String]    $error_log                  = undef,
+    Optional[Integer]   $fastcgi_read_timeout       = undef,
+    Optional[Integer]   $fastopen                   = 0, # Global settings
+    Optional[Integer]   $hsts_max_age               = 604800,
+    Optional[Boolean]   $http2_enable               = false,
+    Optional[Boolean]   $http3_enable               = false,
+    Optional[Boolean]   $http_enable                = true,
+    Optional[Boolean]   $http_ipv6                  = true,
+    Optional[Integer]   $http_port                  = 80,
+    Optional[Boolean]   $https_enable               = false,
+    Optional[Boolean]   $https_force                = false,
+    Optional[Boolean]   $https_ipv6                 = true,
+    Optional[Integer]   $https_port                 = 443,
+    Optional[String]    $ip                         = undef,
+    Optional[String]    $ipv6                       = undef,
+    Optional[String]    $keepalive_request_file     = undef,
+    Optional[Array]     $location_directives        = [],
+    Optional[Boolean]   $location_internal          = false,
+    Optional[Array]     $locations                  = [],
+    Optional[Array]     $php_fpm_directives         = [],
+    Optional[Boolean]   $php_fpm_enable             = true,
+    Optional[Boolean]   $php_fpm_location           = '~* \.php$',
+    Optional[String]    $php_fpm_location_inc       = '~* \.php.inc$',
+    Optional[String]    $php_fpm_uri                = 'unix:/run/php/php-fpm.sock',
+    Optional[String]    $redirect_certificate       = undef,
+    Optional[String]    $redirect_certificate_ke    = undef,
+    Optional[String]    $redirect_from              = undef,
+    Optional[String]    $redirect_http_port         = undef,
+    Optional[String]    $redirect_https_port        = undef,
+    Optional[String]    $redirect_ip                = undef,
+    Optional[String]    $redirect_ipv6              = undef,
+    Optional[String]    $redirect_ssl_ciphers       = undef,
+    Optional[String]    $redirect_ssl_protocols     = undef,
+    Optional[String]    $restart_service            = true,
+    Optional[Boolean]   $reuseport                  = false, # Global settings
+    Optional[String]    $server_name                = undef,
+    Optional[Integer]   $ssl_buffer_size            = undef,
+    Optional[String]    $ssl_certificate            = undef,
+    Optional[String]    $ssl_certificate_key        = undef,
+    Optional[Array]     $ssl_ciphers                = [
+        'TLS_AES_128_GCM_SHA256',
+        'TLS_AES_256_GCM_SHA384',
+        'TLS_CHACHA20_POLY1305_SHA256',
+        'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384',
+        'ECDHE-ECDSA-CHACHA20-POLY1305',
+        'ECDHE-RSA-CHACHA20-POLY1305',
+        'DHE-RSA-AES128-GCM-SHA256',
+        'DHE-RSA-AES256-GCM-SHA384','DHE-RSA-CHACHA20-POLY1305'
+    ],
+    Optional[String]    $ssl_protocols              = undef,
+    Optional[String]    $ssl_session_cache          = undef,
+    Optional[String]    $ssl_session_timeout        = undef,
+    Optional[String]    $try_files_custom           = '$uri/ =404',
+    Optional[Boolean]   $try_files_enable           = true
   ) {
 
     /* Check if TCP fast open is enabled */
