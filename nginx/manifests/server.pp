@@ -1,5 +1,5 @@
 define nginx::server(
-    String              $docroot,
+    Optional[String]    $docroot                    = undef,
     Optional[String]    $access_log                 = undef,
     Optional[Boolean]   $allow_acme                 = false,
     Optional[Boolean]   $allow_directories          = false,
@@ -28,7 +28,7 @@ define nginx::server(
     Optional[Array]     $locations                  = [],
     Optional[Array]     $php_fpm_directives         = [],
     Optional[Boolean]   $php_fpm_enable             = true,
-    Optional[Boolean]   $php_fpm_location           = '~* \.php$',
+    Optional[String]    $php_fpm_location           = '~* \.php$',
     Optional[String]    $php_fpm_location_inc       = '~* \.php.inc$',
     Optional[String]    $php_fpm_uri                = 'unix:/run/php/php-fpm.sock',
     Optional[String]    $redirect_certificate       = undef,
@@ -40,7 +40,7 @@ define nginx::server(
     Optional[String]    $redirect_ipv6              = undef,
     Optional[String]    $redirect_ssl_ciphers       = undef,
     Optional[String]    $redirect_ssl_protocols     = undef,
-    Optional[String]    $restart_service            = true,
+    Optional[Boolean]   $restart_service            = true,
     Optional[Boolean]   $reuseport                  = false, # Global settings
     Optional[String]    $server_name                = undef,
     Optional[Integer]   $ssl_buffer_size            = undef,
