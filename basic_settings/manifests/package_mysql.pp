@@ -37,7 +37,7 @@ class basic_settings::package_mysql(
 
         /* Get source */
         if ($deb_version == '822') {
-            $source  = "Types: deb\nURIs: https://repo.mysql.com/apt/${os_parent}}\nSuites: ${os_name}\nComponents: mysql-${version_correct}\nSigned-By:/usr/share/keyrings/mysql.gpg\n"
+            $source  = "Types: deb\nURIs: https://repo.mysql.com/apt/${os_parent}\nSuites: ${os_name}\nComponents: mysql-${version_correct}\nSigned-By:/usr/share/keyrings/mysql.gpg\n"
         } else {
             $source = "deb [signed-by=/usr/share/keyrings/mysql.gpg] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version_correct}\n"
         }
