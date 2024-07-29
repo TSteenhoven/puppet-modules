@@ -38,7 +38,7 @@ define nginx::server(
     Optional[String]    $redirect_https_port        = undef,
     Optional[String]    $redirect_ip                = undef,
     Optional[String]    $redirect_ipv6              = undef,
-    Optional[String]    $redirect_ssl_ciphers       = undef,
+    Optional[Array]     $redirect_ssl_ciphers       = undef,
     Optional[String]    $redirect_ssl_protocols     = undef,
     Optional[Boolean]   $restart_service            = true,
     Optional[Boolean]   $reuseport                  = false, # Global settings
@@ -190,10 +190,15 @@ define nginx::server(
     }
 
     /* Set SSL ciphers */
-    if ($redirect_ssl_ciphers == undef) {
-        $redirect_ssl_ciphers_correct = $ssl_ciphers
+    if ($ssl_ciphers == undef) {
+        $ssl_ciphers_correct = $ssl_ciphers
     } else {
-        $redirect_ssl_ciphers_correct = $redirect_ssl_ciphers
+        $ssl_ciphers_correct = join($ssl_ciphers, ':')
+    }
+    if ($redirect_ssl_ciphers == undef) {
+        $redirect_ssl_ciphers_correct = $ssl_ciphers_correct
+    } else {
+        $redirect_ssl_ciphers_correct = join($redirect_ssl_ciphers, ':')
     }
 
     /* Inform nginx when file is changed or created */
