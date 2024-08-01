@@ -27,7 +27,7 @@ class basic_settings(
         Optional[Integer]   $nodejs_version                             = 20,
         Optional[Boolean]   $non_free                                   = false,
         Optional[Boolean]   $openjdk_enable                             = false,
-        Optional[Boolean]   $openjdk_version                            = 'default',
+        Optional[String]    $openjdk_version                            = 'default',
         Optional[Boolean]   $pro_enable                                 = false,
         Optional[Boolean]   $proxmox_enable                             = false,
         Optional[Boolean]   $puppetserver_enable                        = false,
