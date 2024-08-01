@@ -1,4 +1,4 @@
-class basic_settings::package_giltab(
+class basic_settings::package_gitlab(
     Enum['list','822']  $deb_version,
     Boolean             $enable,
     String              $os_parent,
