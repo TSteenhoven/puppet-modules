@@ -4,7 +4,7 @@ define nginx::server(
     Optional[Boolean]   $allow_acme                 = false,
     Optional[Boolean]   $allow_directories          = false,
     Optional[Integer]   $backlog                    = -1, # Global settings; -1: Disabled, 0: Kernel; >0: Custom value
-    Optional[String]   $client_max_body_size       = undef,
+    Optional[String]    $client_max_body_size       = undef,
     Optional[Boolean]   $default_server             = false,
     Optional[Array]     $directives                 = [],
     Optional[String]    $error_log                  = undef,

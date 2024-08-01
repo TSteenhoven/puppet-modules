@@ -1,6 +1,6 @@
 class php8::cli(
-        $ini_settings       = {},
-        $composer_enable    = true
+        Optional[Boolean]   $composer_enable    = true,
+        Optional[Hash]      $ini_settings       = {}
     ) {
 
     /* Merge given init settings with default settings */

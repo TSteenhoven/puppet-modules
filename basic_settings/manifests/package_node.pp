@@ -1,6 +1,6 @@
 class basic_settings::package_node(
-    $enable,
-    $version = '20'
+    Boolean $enable,
+    Integer $version = 20
 ) {
     /* Reload source list */
     exec { 'package_node_source_reload':

@@ -1,8 +1,8 @@
 define mysql::database (
-        $ensure,
-        $charset = 'utf8',
-        $collate = 'utf8_general_ci',
-        $destroy = false
+        Enum['present','absent']    $ensure,
+        Optional[String]            $charset = 'utf8',
+        Optional[String]            $collate = 'utf8_general_ci',
+        Optional[Boolean]           $destroy = false
     ) {
 
     /* Set requirements */

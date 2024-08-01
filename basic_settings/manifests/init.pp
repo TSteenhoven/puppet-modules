@@ -1,47 +1,48 @@
 class basic_settings(
-        $adwaita_icon_theme_enable                  = false,
-        $antivirus_package                          = undef,
-        $backports                                  = false,
-        $cluster_id                                 = 'core',
-        $dconf_service_enable                       = false,
-        $docs_enable                                = false,
-        $firewall_package                           = 'nftables',
-        $getty_enable                               = false,
-        $guest_agent_enable                         = false,
-        $kernel_connection_max                      = 4096,
-        $kernel_hugepages                           = 0,
-        $kernel_ip_version                          = 'all',
-        $kernel_network_mode                        = 'strict',
-        $kernel_security_lockdown                   = 'integrity',
-        $kernel_tcp_congestion_control              = 'brr',
-        $kernel_tcp_fastopen                        = 3,
-        $locale_enable                              = false,
-        $mail_package                               = 'postfix',
-        $mongodb_enable                             = false,
-        $mongodb_version                            = '4.4',
-        $mysql_enable                               = false,
-        $mysql_version                              = '8.0',
-        $nginx_enable                               = false,
-        $nodejs_enable                              = false,
-        $nodejs_version                             = '20',
-        $non_free                                   = false,
-        $openjdk_enable                             = false,
-        $openjdk_version                            = 'default',
-        $pro_enable                                 = false,
-        $proxmox_enable                             = false,
-        $puppetserver_enable                        = false,
-        $rabbitmq_enable                            = false,
-        $server_fdqn                                = $::networking['fqdn'],
-        $server_timezone                            = 'UTC',
-        $smtp_server                                = 'localhost',
-        $snap_enable                                = false,
-        $sudoers_dir_enable                         = true,
-        $sury_enable                                = false,
-        $systemd_default_target                     = 'helpers',
-        $systemd_notify_mail                        = 'root',
-        $systemd_ntp_extra_pools                    = [],
-        $unattended_upgrades_block_extra_packages   = [],
-        $unattended_upgrades_block_packages         = [
+        Optional[Boolean]   $adwaita_icon_theme_enable                  = false,
+        Optional[String]    $antivirus_package                          = undef,
+        Optional[Boolean]   $backports                                  = false,
+        Optional[String]    $cluster_id                                 = 'core',
+        Optional[Boolean]   $dconf_service_enable                       = false,
+        Optional[Boolean]   $docs_enable                                = false,
+        Optional[String]    $firewall_package                           = 'nftables',
+        Optional[Boolean]   $getty_enable                               = false,
+        Optional[Boolean]   $gitlab_enable                              = false,
+        Optional[Boolean]   $guest_agent_enable                         = false,
+        Optional[Integer]   $kernel_connection_max                      = 4096,
+        Optional[Integer]   $kernel_hugepages                           = 0,
+        Optional[String]    $kernel_ip_version                          = 'all',
+        Optional[String]    $kernel_network_mode                        = 'strict',
+        Optional[String]    $kernel_security_lockdown                   = 'integrity',
+        Optional[String]    $kernel_tcp_congestion_control              = 'brr',
+        Optional[Integer]   $kernel_tcp_fastopen                        = 3,
+        Optional[Boolean]   $locale_enable                              = false,
+        Optional[String]    $mail_package                               = 'postfix',
+        Optional[Boolean]   $mongodb_enable                             = false,
+        Optional[Float]     $mongodb_version                            = 4.4,
+        Optional[Boolean]   $mysql_enable                               = false,
+        Optional[Float]     $mysql_version                              = 8.0,
+        Optional[Boolean]   $nginx_enable                               = false,
+        Optional[Boolean]   $nodejs_enable                              = false,
+        Optional[Integer]   $nodejs_version                             = 20,
+        Optional[Boolean]   $non_free                                   = false,
+        Optional[Boolean]   $openjdk_enable                             = false,
+        Optional[Boolean]   $openjdk_version                            = 'default',
+        Optional[Boolean]   $pro_enable                                 = false,
+        Optional[Boolean]   $proxmox_enable                             = false,
+        Optional[Boolean]   $puppetserver_enable                        = false,
+        Optional[Boolean]   $rabbitmq_enable                            = false,
+        Optional[String]    $server_fdqn                                = $::networking['fqdn'],
+        Optional[String]    $server_timezone                            = 'UTC',
+        Optional[String]    $smtp_server                                = 'localhost',
+        Optional[Boolean]   $snap_enable                                = false,
+        Optional[Boolean]   $sudoers_dir_enable                         = true,
+        Optional[Boolean]   $sury_enable                                = false,
+        Optional[String]    $systemd_default_target                     = 'helpers',
+        Optional[String]    $systemd_notify_mail                        = 'root',
+        Optional[Array]     $systemd_ntp_extra_pools                    = [],
+        Optional[Array]     $unattended_upgrades_block_extra_packages   = [],
+        Optional[Array]     $unattended_upgrades_block_packages         = [
             'libmysql*',
             'mysql*',
             'nginx',
@@ -70,6 +71,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = '822'
                 $gcc_version = undef
+                $gitlab_allow = true
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
@@ -90,6 +92,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = 12
+                $gitlab_allow = true
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
@@ -110,6 +113,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = 12
+                $gitlab_allow = true
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
@@ -130,6 +134,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = undef
+                $gitlab_allow = false
                 $mongodb_allow = false
                 $mysql_allow = false
                 $nginx_allow = false
@@ -156,6 +161,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = undef
+                $gitlab_allow = true
                 $mongodb_allow = true
                 if ($::os['architecture'] == 'amd64') {
                     $mysql_allow = true
@@ -176,6 +182,7 @@ class basic_settings(
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = undef
+                $gitlab_allow = false
                 $mongodb_allow = false
                 $mysql_allow = false
                 $nginx_allow = false
@@ -194,6 +201,7 @@ class basic_settings(
             $backports_allow = false
             $deb_version = 'list'
             $gcc_version = undef
+            $gitlab_allow = false
             $mongodb_allow = false
             $mysql_allow = false
             $nginx_allow = false
@@ -217,7 +225,7 @@ class basic_settings(
     }
 
     /* Basic system packages; This packages needed to be installed first */
-    package { ['apt', 'bc', 'coreutils', 'grep', 'lsb-release', 'sed', 'util-linux']:
+    package { ['apt', 'bc', 'coreutils', 'dpkg', 'grep', 'lsb-release', 'sed', 'util-linux']:
         ensure  => installed
     }
 
@@ -228,7 +236,7 @@ class basic_settings(
 
     /* Reload source list */
     exec { 'basic_settings_source_reload':
-        command     => 'apt-get update',
+        command     => '/usr/bin/apt-get update',
         refreshonly => true
     }
 
@@ -373,90 +381,18 @@ class basic_settings(
     class { 'basic_settings::io':
     }
 
-    /* Check if variable rabbitmq is true; if true, install new source list and key */
-    if ($sury_enable and $sury_allow) {
-        class { 'basic_settings::package_sury':
+    /* Check if variable gitlab is true; if true, install new source list and key */
+    if ($gitlab_enable and $gitlab_allow) {
+        class { 'basic_settings::package_gitlab':
             deb_version => $deb_version,
             enable      => true,
             os_parent   => $os_parent,
             os_name     => $os_name,
+            version     => $mongodb_version,
             require     => Class['basic_settings::packages']
         }
     } else {
-        class { 'basic_settings::package_sury':
-            deb_version => $deb_version,
-            enable      => false,
-            os_parent   => $os_parent,
-            os_name     => $os_name
-        }
-    }
-
-    /* Check if variable nginx is true; if true, install new source list and key */
-    if ($nginx_enable and $nginx_allow) {
-        class { 'basic_settings::package_nginx':
-            deb_version => $deb_version,
-            enable      => true,
-            os_parent   => $os_parent,
-            os_name     => $os_name,
-            require     => Class['basic_settings::packages']
-        }
-    } else {
-        class { 'basic_settings::package_nginx':
-            deb_version => $deb_version,
-            enable      => false,
-            os_parent   => $os_parent,
-            os_name     => $os_name
-        }
-    }
-
-    /* Check if variable rabbitmq is true; if true, install new source list and key */
-    if ($rabbitmq_enable and $rabbitmq_allow) {
-        class { 'basic_settings::package_rabbitmq':
-            deb_version => $deb_version,
-            enable      => true,
-            os_parent   => $os_parent,
-            os_name     => $os_name,
-            require     => Class['basic_settings::packages']
-        }
-    } else {
-        class { 'basic_settings::package_rabbitmq':
-            deb_version => $deb_version,
-            enable      => false,
-            os_parent   => $os_parent,
-            os_name     => $os_name
-        }
-    }
-
-    /* Check if variable proxmox is true; if true, install new source list and key */
-    if ($proxmox_enable and $proxmox_allow) {
-        class { 'basic_settings::package_proxmox':
-            deb_version => $deb_version,
-            enable      => true,
-            os_parent   => $os_parent,
-            os_name     => $os_name,
-            require     => Class['basic_settings::packages']
-        }
-    } else {
-        class { 'basic_settings::package_proxmox':
-            deb_version => $deb_version,
-            enable      => false,
-            os_parent   => $os_parent,
-            os_name     => $os_name
-        }
-    }
-
-    /* Check if variable mysql is true; if true, install new source list and key */
-    if ($mysql_enable and $mysql_allow) {
-        class { 'basic_settings::package_mysql':
-            deb_version => $deb_version,
-            enable      => true,
-            os_parent   => $os_parent,
-            os_name     => $os_name,
-            version     => $mysql_version,
-            require     => Class['basic_settings::packages']
-        }
-    } else {
-        class { 'basic_settings::package_mysql':
+        class { 'basic_settings::package_gitlab':
             deb_version => $deb_version,
             enable      => false,
             os_parent   => $os_parent,
@@ -483,6 +419,43 @@ class basic_settings(
         }
     }
 
+    /* Check if variable mysql is true; if true, install new source list and key */
+    if ($mysql_enable and $mysql_allow) {
+        class { 'basic_settings::package_mysql':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            version     => $mysql_version,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_mysql':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
+        }
+    }
+
+    /* Check if variable nginx is true; if true, install new source list and key */
+    if ($nginx_enable and $nginx_allow) {
+        class { 'basic_settings::package_nginx':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_nginx':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
+        }
+    }
+
     /* Check if variable nodejs is true; if true, install new source list and key */
     if ($nodejs_enable and $nodejs_allow) {
         class { 'basic_settings::package_node':
@@ -494,6 +467,60 @@ class basic_settings(
         class { 'basic_settings::package_node':
             enable      => false,
             require     => Class['basic_settings::packages']
+        }
+    }
+
+    /* Check if variable proxmox is true; if true, install new source list and key */
+    if ($proxmox_enable and $proxmox_allow) {
+        class { 'basic_settings::package_proxmox':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_proxmox':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
+        }
+    }
+
+    /* Check if variable rabbitmq is true; if true, install new source list and key */
+    if ($rabbitmq_enable and $rabbitmq_allow) {
+        class { 'basic_settings::package_rabbitmq':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_rabbitmq':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
+        }
+    }
+
+    /* Check if variable rabbitmq is true; if true, install new source list and key */
+    if ($sury_enable and $sury_allow) {
+        class { 'basic_settings::package_sury':
+            deb_version => $deb_version,
+            enable      => true,
+            os_parent   => $os_parent,
+            os_name     => $os_name,
+            require     => Class['basic_settings::packages']
+        }
+    } else {
+        class { 'basic_settings::package_sury':
+            deb_version => $deb_version,
+            enable      => false,
+            os_parent   => $os_parent,
+            os_name     => $os_name
         }
     }
 

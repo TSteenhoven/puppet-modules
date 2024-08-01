@@ -1,15 +1,15 @@
 class basic_settings::kernel(
-    $antivirus_package          = undef,
-    $bootloader                 = 'grub',
-    $connection_max             = 4096,
-    $guest_agent_enable         = false,
-    $hugepages                  = 0,
-    $install_options            = undef,
-    $ip_version                 = 'all',
-    $network_mode               = 'strict',
-    $security_lockdown          = 'integrity',
-    $tcp_congestion_control     = 'brr',
-    $tcp_fastopen               = 3,
+    Optional[String]    $antivirus_package          = undef,
+    Optional[String]    $bootloader                 = 'grub',
+    Optional[Integer]   $connection_max             = 4096,
+    Optional[Boolean]   $guest_agent_enable         = false,
+    Optional[Integer]   $hugepages                  = 0,
+    Optional[Array]     $install_options            = undef,
+    Optional[String]    $ip_version                 = 'all',
+    Optional[String]    $network_mode               = 'strict',
+    Optional[String]    $security_lockdown          = 'integrity',
+    Optional[String]    $tcp_congestion_control     = 'brr',
+    Optional[Integer]   $tcp_fastopen               = 3
 ) {
     /* Install extra packages when Ubuntu */
     if ($::os['name'] == 'Ubuntu') {

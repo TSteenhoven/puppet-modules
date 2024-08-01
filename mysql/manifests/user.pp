@@ -1,10 +1,10 @@
 
 define mysql::user (
-        $ensure,
-        $username,
-        $password = '',
-        $hostname = 'localhost',
-        $password_latency = 'password'
+        Enum['present','absent']    $ensure,
+        String                      $username,
+        Optional[String]            $password           = '',
+        Optional[String]            $password_latency   = 'password',
+        Optional[String]            $hostname           = 'localhost'
     ) {
 
     /* Set requirements */
@@ -14,13 +14,13 @@ define mysql::user (
 
     /* Check if mysql version is 5.7 or 8.0 */
     case $mysql::version {
-        '5.7': /* non-LTS */ {
+        5.7: /* non-LTS */ {
             $password_field = 'authentication_string'
             $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';"
             $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
         }
-        '8.0', /* non-LTS */
-        '8.4': /* LTS */ {
+        8.0, /* non-LTS */
+        8.4: /* LTS */ {
             if ($password_latency == 'authentication_string') {
                 $password_field = 'authentication_string'
                 $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED WITH mysql_native_password BY '${password}';" # use mysql_native_password instead off caching_sha2_password due to old packages non supported

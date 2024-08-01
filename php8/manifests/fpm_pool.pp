@@ -1,19 +1,17 @@
 define php8::fpm_pool(
-        $user                   = 'www-data',
-        $group                  = 'www-data',
-
-        $listen                 = undef,
-        $listen_user            = $user,
-        $listen_group           = $group,
-        $listen_mode            = '0660',
-
-        $pm                     = 'dynamic',
-        $pm_max_children        = 5,
-        $pm_start_servers       = 2,
-        $pm_min_spare_servers   = 1,
-        $pm_max_spare_servers   = 3,
-        $pm_procidle_timeout    = '10s',
-        $pm_max_requests        = 0
+        Optional[String]    $user                   = 'www-data',
+        Optional[String]    $group                  = 'www-data',
+        Optional[String]    $listen                 = undef,
+        Optional[String]    $listen_user            = $user,
+        Optional[String]    $listen_group           = $group,
+        Optional[String]    $listen_mode            = '0660',
+        Optional[String]    $pm                     = 'dynamic',
+        Optional[Integer]   $pm_max_children        = 5,
+        Optional[Integer]   $pm_start_servers       = 2,
+        Optional[Integer]   $pm_min_spare_servers   = 1,
+        Optional[Integer]   $pm_max_spare_servers   = 3,
+        Optional[String]    $pm_procidle_timeout    = '10s',
+        Optional[Integer]   $pm_max_requests        = 0
     ) {
 
     /* Set variables from parent */

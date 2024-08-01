@@ -1,7 +1,7 @@
 class php8::fpm(
-        $pidfile = '',
-        $errorlog = '',
-        $ini_settings = {}
+        Optional[String]    $errorlog       = '',
+        Optional[Hash]      $ini_settings   = {},
+        Optional[String]    $pidfile        = ''
     ) {
 
     /* Merge given init settings with default settings */

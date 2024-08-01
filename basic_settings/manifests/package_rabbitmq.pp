@@ -1,8 +1,8 @@
 class basic_settings::package_rabbitmq(
-    $deb_version,
-    $enable,
-    $os_parent,
-    $os_name
+    Enum['list','822']  $deb_version,
+    Boolean             $enable,
+    String              $os_parent,
+    String              $os_name
 ) {
     /* Reload source list */
     exec { 'package_rabbitmq_source_reload':

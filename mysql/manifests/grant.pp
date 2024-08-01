@@ -1,11 +1,11 @@
 define mysql::grant (
-        $ensure,
-        $username,
-        $hostname     = 'localhost',
-        $database     = '*',
-        $table        = '*',
-        $privileges   = ['ALL PRIVILEGES'],
-        $grant_option = false,
+        Enum['present','absent']    $ensure,
+        String                      $username,
+        Optional[String]            $database     = '*',
+        Optional[Boolean]           $grant_option = false,
+        Optional[String]            $hostname     = 'localhost',
+        Optional[Array]             $privileges   = ['ALL PRIVILEGES'],
+        Optional[String]            $table        = '*'
     ) {
 
     /* Set requirements */
@@ -18,7 +18,7 @@ define mysql::grant (
     $grant_option_num = $grant_option ? { true => '1', default => '0' }
 
     /* Change SQL queries based on version */
-    if (($mysql::version == '8.0' or $mysql::version == '8.4') and $priv_str == 'ALL PRIVILEGES') {
+    if (($mysql::version == 8.0 or $mysql::version == 8.4) and $priv_str == 'ALL PRIVILEGES') {
         if ($database != '*') {
             $check_all_priv = $priv_str
         } else {

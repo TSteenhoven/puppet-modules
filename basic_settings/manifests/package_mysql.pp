@@ -1,9 +1,9 @@
 class basic_settings::package_mysql(
-    $deb_version,
-    $enable,
-    $os_parent,
-    $os_name,
-    $version = '8.0'
+    Enum['list','822']  $deb_version,
+    Boolean             $enable,
+    String              $os_parent,
+    String              $os_name,
+    Optional[Float]     $version = 8.0
 ) {
     /* Reload source list */
     exec { 'package_mysql_source_reload':

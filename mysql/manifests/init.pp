@@ -1,10 +1,10 @@
 class mysql (
-        $root_password = '',
-        $settings = {},
-        $package_name = 'mysql',
-        $package_version = '8.0',
-        $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
-        $nice_level = 12
+        Optional[String]    $automysqlbackup_backupdir  = '/var/lib/automysqlbackup',
+        Optional[Integer]   $nice_level                 = 12,
+        Optional[String]    $package_name               = 'mysql',
+        Optional[Float]     $package_version            = 8.0,
+        Optional[String]    $root_password              = '',
+        Optional[Hash]      $settings                   = {}
     ) {
 
     /* Use systemd settings */

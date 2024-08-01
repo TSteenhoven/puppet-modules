@@ -1,6 +1,6 @@
 class basic_settings::development(
-    $gcc_version        = undef,
-    $install_options    = undef
+    Optional[Integer]   $gcc_version        = undef,
+    Optional[Array]     $install_options    = undef
 ) {
 
     /* Remove unnecessary packages */
