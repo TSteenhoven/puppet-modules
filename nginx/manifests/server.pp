@@ -190,11 +190,7 @@ define nginx::server(
     }
 
     /* Set SSL ciphers */
-    if ($ssl_ciphers == undef) {
-        $ssl_ciphers_correct = $ssl_ciphers
-    } else {
-        $ssl_ciphers_correct = join($ssl_ciphers, ':')
-    }
+    $ssl_ciphers_correct = join($ssl_ciphers, ':')
     if ($redirect_ssl_ciphers == undef) {
         $redirect_ssl_ciphers_correct = $ssl_ciphers_correct
     } else {
