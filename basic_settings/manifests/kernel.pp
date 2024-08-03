@@ -1,15 +1,15 @@
 class basic_settings::kernel(
-    Optional[String]    $antivirus_package          = undef,
-    Optional[String]    $bootloader                 = 'grub',
-    Optional[Integer]   $connection_max             = 4096,
-    Optional[Boolean]   $guest_agent_enable         = false,
-    Optional[Integer]   $hugepages                  = 0,
-    Optional[Array]     $install_options            = undef,
-    Optional[String]    $ip_version                 = 'all',
-    Optional[String]    $network_mode               = 'strict',
-    Optional[String]    $security_lockdown          = 'integrity',
-    Optional[String]    $tcp_congestion_control     = 'brr',
-    Optional[Integer]   $tcp_fastopen               = 3
+    Optional[String]            $antivirus_package          = undef,
+    Optional[String]            $bootloader                 = 'grub',
+    Optional[Integer]           $connection_max             = 4096,
+    Optional[Boolean]           $guest_agent_enable         = false,
+    Optional[Integer]           $hugepages                  = 0,
+    Optional[Array]             $install_options            = undef,
+    Optional[Enum['all','4']]   $ip_version                 = 'all',
+    Optional[String]            $network_mode               = 'strict',
+    Optional[String]            $security_lockdown          = 'integrity',
+    Optional[String]            $tcp_congestion_control     = 'brr',
+    Optional[Integer]           $tcp_fastopen               = 3
 ) {
     /* Install extra packages when Ubuntu */
     if ($::os['name'] == 'Ubuntu') {
@@ -51,7 +51,7 @@ class basic_settings::kernel(
 
     /* Get IP versions */
     case $ip_version {
-        4: {
+        '4': {
             $ip_version_v4 = true
             $ip_version_v6 = false
         }
