@@ -24,7 +24,7 @@ AUDIT_OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59 2>
 # Try to check if we have boots sinds yesterday
 YESTERDAY=$($DATE --date="yesterday" +"%Y-%m-%d")
 TODAY=$($DATE +"%Y-%m-%d")
-BOOT_OUTPUT=$($JOURNALCTL --quiet -list-boots | grep "$YESTERDAY\|$TODAY")
+BOOT_OUTPUT=$($JOURNALCTL --quiet --list-boots | grep "$YESTERDAY\|$TODAY")
 
 # Check if we have valid report
 if [ -z "$(echo $AUDIT_OUTPUT | grep 'no events of interest were found')" ]; then
@@ -50,4 +50,6 @@ if [ -z "$(echo $AUDIT_OUTPUT | grep 'no events of interest were found')" ]; the
         SUBJECT='Audit report'
     fi
     printf '%b\n' "$AUDIT_OUTPUT" | $MAIL -s "$SUBJECT" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+elif [ -n "$BOOT_OUTPUT" ]; then
+    printf '%b\n' "Boot logs:\n$BOOT_OUTPUT" | $MAIL -s "Server has boot logs" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 fi

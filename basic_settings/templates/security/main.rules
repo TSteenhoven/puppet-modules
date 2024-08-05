@@ -103,13 +103,13 @@
 -a always,exit -F arch=b64 -F path=/etc/issue -F perm=wa -F key=issue
 -a always,exit -F arch=b32 -F path=/etc/issue.net -F perm=wa -F key=issue
 -a always,exit -F arch=b64 -F path=/etc/issue.net -F perm=wa -F key=issue
-<% if @systemd_enable -%>
 
 # Apparmor configuration
 -a always,exit -F arch=b32 -F path=/etc/apparmor -F perm=wa -F key=apparmor
 -a always,exit -F arch=b64 -F path=/etc/apparmor -F perm=wa -F key=apparmor
 -a always,exit -F arch=b32 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
 -a always,exit -F arch=b64 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
+<% if @systemd_enable -%>
 
 # Systemd configuration
 -a always,exit -F arch=b32 -F path=/bin/systemctl -F perm=x -F auid!=unset -F key=systemd
@@ -120,8 +120,8 @@
 -a always,exit -F arch=b64 -F path=/usr/lib/systemd -F perm=wa -F key=systemd
 
 # Detect journalctl use
--a always,exit -F arch=b32 -F path=/bin/journalctl -F perm=x -F key=journalctl
--a always,exit -F arch=b64 -F path=/bin/journalctl -F perm=x -F key=journalctl
+-a always,exit -F arch=b32 -F path=/bin/journalctl -F perm=x -F auid!=unset -F key=journalctl
+-a always,exit -F arch=b64 -F path=/bin/journalctl -F perm=x -F auid!=unset -F key=journalctl
 <% end -%>
 
 # Monitor modifation on a user/group 
