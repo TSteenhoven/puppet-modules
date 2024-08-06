@@ -13,6 +13,8 @@ define basic_settings::systemd_timer(
     file { "/etc/systemd/system/${title}.timer":
         ensure  => $ensure,
         content => template('basic_settings/systemd/timer'),
+        owner   => 'root',
+        group   => 'root',
         mode    => '0600',
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']

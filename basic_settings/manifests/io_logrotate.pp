@@ -46,6 +46,8 @@ define basic_settings::io_logrotate(
     file { "/etc/logrotate.d/${title}":
         ensure  => $ensure,
         content => template('basic_settings/io/logrotate'),
+        owner   => 'root',
+        group   => 'root',
         mode    => '0600',
         require => Package['logrotate']
     }

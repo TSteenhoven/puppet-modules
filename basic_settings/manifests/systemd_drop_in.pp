@@ -19,7 +19,9 @@ define basic_settings::systemd_drop_in(
             recurse => true,
             force   => true,
             purge   => true,
-            mode    => '0755'
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0700',
         }
     }
 
@@ -27,6 +29,8 @@ define basic_settings::systemd_drop_in(
     file { "${path}/${target_unit}.d/${title}.conf":
         ensure  => $ensure,
         content => template('basic_settings/systemd/drop_in'),
+        owner   => 'root',
+        group   => 'root',
         mode    => '0600',
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']
