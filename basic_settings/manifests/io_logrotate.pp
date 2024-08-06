@@ -42,8 +42,6 @@ define basic_settings::io_logrotate(
         $hared_scripts = false
     }
 
-    if ($ssl_protocols != undef and $ssl_protocols =~ 'TLSv1.3') {
-
     /* Create configuration */
     file { "/etc/logrotate.d/${title}.conf":
         ensure  => $ensure,
