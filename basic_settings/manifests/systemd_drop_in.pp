@@ -27,7 +27,7 @@ define basic_settings::systemd_drop_in(
     file { "${path}/${target_unit}.d/${title}.conf":
         ensure  => $ensure,
         content => template('basic_settings/systemd/drop_in'),
-        mode    => '0644',
+        mode    => '0600',
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']
     }

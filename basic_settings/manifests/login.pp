@@ -77,7 +77,7 @@ class basic_settings::login(
         /* Disable motd news */
         file { '/etc/default/motd-news':
             ensure  => file,
-            mode    => '0644',
+            mode    => '0600',
             content => "ENABLED=0\n"
         }
 
@@ -96,7 +96,7 @@ class basic_settings::login(
         content => template('basic_settings/login/login-notify.sh'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
     }
 
     /* Ensure that getty is stopped or running */

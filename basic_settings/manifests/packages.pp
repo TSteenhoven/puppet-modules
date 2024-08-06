@@ -119,7 +119,7 @@ class basic_settings::packages(
         content  => template('basic_settings/packages/unattended-upgrades'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
         require => Package['unattended-upgrades']
     }
 
@@ -129,7 +129,7 @@ class basic_settings::packages(
         content  => template('basic_settings/packages/settings'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
         require => Package['unattended-upgrades']
     }
 
@@ -139,7 +139,7 @@ class basic_settings::packages(
         content  => template('basic_settings/packages/needrestart.conf'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
         require => Package['needrestart']
     }
 

@@ -250,7 +250,7 @@ class basic_settings::kernel(
                 content  => template('basic_settings/kernel/grub'),
                 owner   => 'root',
                 group   => 'root',
-                mode    => '0644',
+                mode    => '0600',
                 notify  => Exec['kernel_grub_update']
             }
         }

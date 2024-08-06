@@ -28,7 +28,7 @@ class basic_settings::io(
         ensure  => file,
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
         content => "blacklist floppy\n"
     }
 
@@ -45,7 +45,7 @@ class basic_settings::io(
         source  => 'puppet:///modules/basic_settings/io/multipath.conf',
         owner   => 'root',
         group   => 'root',
-        mode    => '0644',
+        mode    => '0600',
         notify  => Service['multipathd']
     }
 

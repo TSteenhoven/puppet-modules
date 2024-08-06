@@ -83,7 +83,7 @@ define basic_settings::login_user(
             file { "${home}/.ssh/authorized_keys":
                 ensure  => $ensure ? { absent => absent, default => present },
                 content => $authorized_keys,
-                mode    => '0644',
+                mode    => '0600',
                 owner   => $uid,
                 group   => $gid,
                 require => File[$home]

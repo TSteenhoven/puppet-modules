@@ -246,7 +246,7 @@ class basic_settings(
         file { '/etc/apt/sources.list':
             path    => '/etc/apt/sources.list',
             ensure  => file,
-            mode    => '0644',
+            mode    => '0600',
             owner   => 'root',
             group   => 'root',
             content => "# ${::os['name']} sourcess have to moved to /etc/apt/sources.list.d/${os_parent}.sources\n",
@@ -257,7 +257,7 @@ class basic_settings(
         file { 'basic_settings_source':
             path    => "/etc/apt/sources.list.d/${os_parent}.sources",
             ensure  => file,
-            mode    => '0644',
+            mode    => '0600',
             owner   => 'root',
             group   => 'root',
             content => template("basic_settings/source/${os_parent}.sources"),
@@ -294,7 +294,7 @@ class basic_settings(
         file { 'basic_settings_source':
             path    => '/etc/apt/sources.list',
             ensure  => file,
-            mode    => '0644',
+            mode    => '0600',
             owner   => 'root',
             group   => 'root',
             content => template("basic_settings/source/${os_parent}.list"),

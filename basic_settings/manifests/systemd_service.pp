@@ -12,7 +12,7 @@ define basic_settings::systemd_service(
     file { "/etc/systemd/system/${title}.service":
         ensure  => $ensure,
         content => template('basic_settings/systemd/service'),
-        mode    => '0644',
+        mode    => '0600',
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']
     }

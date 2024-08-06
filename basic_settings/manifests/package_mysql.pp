@@ -49,7 +49,7 @@ class basic_settings::package_mysql(
             source  => "puppet:///modules/basic_settings/mysql/${key}",
             owner   => 'root',
             group   => 'root',
-            mode    => '0644'
+            mode    => '0600'
         }
 
         /* Set source */

@@ -131,7 +131,7 @@ class php8(
             source  => 'puppet:///modules/php8/apt-bash',
             owner   => 'root',
             group   => 'root',
-            mode    => '0644',
+            mode    => '0600',
             require => File['/etc/php/mods-available']
         }
     }
