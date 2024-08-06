@@ -1,6 +1,7 @@
+# Managed by puppet
 <%= @path %> {
-	rotate <%= @rotate %>
-	<%= @handle %>
+    rotate <%= @rotate_correct %>
+    <%= @handle %>
 <% if @skip_empty -%>
     notifempty
 <% end -%>
@@ -15,7 +16,7 @@
 <% end -%>
 <% if ! @create_user.nil? -%>
     create <%= @create_mode %> <%= @create_user %> <%= @create_group %>
- <% if @shared_scripts -%>
+<% if @shared_scripts -%>
     sharedscripts
 <% end -%>
 <% end -%>

@@ -159,7 +159,7 @@ class nginx(
             handle          => 'daily',
             compress_delay  => true,
             create_user     => $run_user,
-            rotate_post     => "if [ -f /var/run/nginx.pid ]; then\n\tkill -USR1 `cat /var/run/nginx.pid`\nfi"
+            rotate_post     => "if [ -f /var/run/nginx.pid ]; then\n\t\tkill -USR1 `cat /var/run/nginx.pid`\n\tfi"
         }
     }
 }

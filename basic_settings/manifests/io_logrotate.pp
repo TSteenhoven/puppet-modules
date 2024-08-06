@@ -43,7 +43,7 @@ define basic_settings::io_logrotate(
     }
 
     /* Create configuration */
-    file { "/etc/logrotate.d/${title}.conf":
+    file { "/etc/logrotate.d/${title}":
         ensure  => $ensure,
         content => template('basic_settings/io/logrotate'),
         mode    => '0600',
