@@ -155,11 +155,11 @@ class nginx(
     /* Check if logrotate package exists */
     if (defined(Package['logrotate'])) {
         basic_settings::io_logrotate { 'nginx':
+            path            => '/var/log/nginx/*.log',
+            handle          => 'daily',
             compress_delay  => true,
             create_user     => $run_user,
-            handle          => 'daily',
-            path            => '/var/log/nginx/*.log',
-            postrotate      => "if [ -f /var/run/nginx.pid ]; then\n\tkill -USR1 `cat /var/run/nginx.pid`\nfi"
+            rotate_post     => "if [ -f /var/run/nginx.pid ]; then\n\tkill -USR1 `cat /var/run/nginx.pid`\nfi"
         }
     }
 }
