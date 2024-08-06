@@ -36,11 +36,13 @@ define basic_settings::io_logrotate(
     }
 
     /* Check if shared scripts is needed */
-    if ($create_user != undef and $path =~ '*') {
+    if ($create_user != undef and $path =~ '.*') {
         $shared_scripts = true
     } else {
         $hared_scripts = false
     }
+
+    if ($ssl_protocols != undef and $ssl_protocols =~ 'TLSv1.3') {
 
     /* Create configuration */
     file { "/etc/logrotate.d/${title}.conf":
