@@ -6,7 +6,7 @@ define basic_settings::io_logrotate(
     Optional[String]                    $create_group   = 'root',
     Optional[String]                    $create_mode    = '600',
     Optional[String]                    $create_user    = undef,
-    Optional[Enum['present','absent']]  $ensure         = true,
+    Optional[Enum['present','absent']]  $ensure         = present,
     Optional[Integer]                   $rotate         = undef,
     Optional[String]                    $rotate_post    = undef,
     Optional[Boolean]                   $skip_empty     = true,
