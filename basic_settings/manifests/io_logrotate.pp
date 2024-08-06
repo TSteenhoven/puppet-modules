@@ -8,8 +8,9 @@ define basic_settings::io_logrotate(
     Optional[String]                    $create_user    = undef,
     Optional[Enum['present','absent']]  $ensure         = true,
     Optional[Integer]                   $rotate         = undef,
+    Optional[String]                    $rotate_post    = undef,
     Optional[Boolean]                   $skip_empty     = true,
-    Optional[Boolean]                   $skip_missing   = true
+    Optional[Boolean]                   $skip_missing   = true,
 ) {
 
     /* Check if this dir is not already managed by puppet */

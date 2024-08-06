@@ -19,9 +19,9 @@
     sharedscripts
 <% end -%>
 <% end -%>
-<% if ! @postrotate.nil? -%>
+<% if ! @rotate_post.nil? -%>
     postrotate
-        <%= @postrotate %>
+        <%= @rotate_post %>
     endscript
 <% end -%>
 }
