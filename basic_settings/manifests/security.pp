@@ -38,7 +38,7 @@ class basic_settings::security(
         recurse => true,
         force   => true,
         purge   => true,
-        mode    => '0750'
+        mode    => '0700'
     }
 
     # Create default audit rule file */

@@ -1,4 +1,5 @@
 class basic_settings::io(
+    $log_rotate = 14
 ) {
 
     /* Create list of packages that is suspicious */

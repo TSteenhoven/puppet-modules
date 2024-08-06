@@ -114,7 +114,7 @@ class nginx(
         ensure  => directory,
         owner   => 'root',
         group   => 'root',
-        mode    => '0770',
+        mode    => '0700',
         require => Package['nginx']
     }
 
@@ -124,7 +124,7 @@ class nginx(
         ensure  => directory,
         owner   => 'root',
         group   => 'root',
-        mode    => '0770',
+        mode    => '0700',
         require => Package['nginx']
     }
 
@@ -150,5 +150,16 @@ class nginx(
         mode    => '0600',
         require => File['nginx_fastcgi_php_conf'],
         notify  => Service['nginx']
+    }
+
+    /* Check if logrotate package exists */
+    if (defined(Package['logrotate'])) {
+        basic_settings::io_logrotate { 'nginx':
+            compress_delay  => true,
+            create_user     => $run_user,
+            handle          => 'daily',
+            path            => '/var/log/nginx/*.log',
+            postrotate      => "if [ -f /var/run/nginx.pid ]; then\n\tkill -USR1 `cat /var/run/nginx.pid`\nfi"
+        }
     }
 }

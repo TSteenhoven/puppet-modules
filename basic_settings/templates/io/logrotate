@@ -1,0 +1,27 @@
+<%= @path %> {
+	rotate <%= @rotate %>
+	<%= @handle %>
+<% if @skip_empty -%>
+    notifempty
+<% end -%>
+<% if @skip_missing -%>
+    missingok
+<% end -%>
+<% if @compress -%>
+    compress
+<% if @compress_delay -%>
+    delaycompress
+<% end -%>
+<% end -%>
+<% if ! @create_user.nil? -%>
+    create <%= @create_mode %> <%= @create_user %> <%= @create_group %>
+ <% if @shared_scripts -%>
+    sharedscripts
+<% end -%>
+<% end -%>
+<% if ! @postrotate.nil? -%>
+    postrotate
+        <%= @postrotate %>
+    endscript
+<% end -%>
+}

@@ -23,7 +23,7 @@ define basic_settings::security_audit(
             recurse => true,
             force   => true,
             purge   => true,
-            mode    => '0750'
+            mode    => '0700'
         }
     }
 

@@ -1,7 +1,8 @@
 class gitlab(
     String              $root_password,
-    Optional[String]    $root_email  = undef,
-    Optional[String]    $server_fdqn = undef
+    Optional[Integer]   $nice_level     = 12,
+    Optional[String]    $root_email     = undef,
+    Optional[String]    $server_fdqn    = undef
 ) {
 
     /* Try to get server fdqn */
@@ -38,5 +39,54 @@ class gitlab(
         command => "GITLAB_ROOT_EMAIL=\"${root_email_correct}\" GITLAB_ROOT_PASSWORD=\"${root_password}\" EXTERNAL_URL=\"http://${server_fdqn}\" /usr/bin/apt-get install gitlab-ee",
         unless  => '/usr/bin/dpkg -l | /usr/bin/grep gitlab-ee',
         require => [Package['dpkg'], Package['grep']]
+    }
+
+    if (defined(Package['systemd'])) {
+        /* Reload systemd deamon */
+        exec { 'gitlab_systemd_daemon_reload':
+            command     => '/usr/bin/systemctl daemon-reload',
+            refreshonly => true,
+            require     => Package['systemd']
+        }
+
+        /* Check if basic settings is defined */
+        if (defined(Class['basic_settings'])) {
+            /* Disable Gitlab service */
+            service { 'gitlab-runsvdir':
+                ensure  => undef,
+                enable  => false,
+                require => Package['mysql-server']
+            }
+
+            /* Create drop in for services target */
+            basic_settings::systemd_drop_in { 'gitlab_dependency':
+                target_unit     => "${basic_settings::cluster_id}-services.target",
+                unit            => {
+                    'BindsTo'   => 'gitlab-runsvdir.service'
+                },
+                daemon_reload   => 'gitlab_systemd_daemon_reload',
+                require         => Basic_settings::Systemd_target["${basic_settings::cluster_id}-services"]
+            }
+        }
+
+        /* Get unit */
+        if (defined(Class['basic_settings::message'])) {
+            $unit = {
+                'OnFailure' => 'notify-failed@%i.service'
+            }
+        } else {
+            $unit = {}
+        }
+
+        /* Create drop in for nginx service */
+        basic_settings::systemd_drop_in { 'gitlab_settings':
+            target_unit     => 'gitlab-runsvdir.service',
+            unit            => $unit,
+            service         => {
+                'Nice'          => "-${nice_level}"
+            },
+            daemon_reload   => 'gitlab_systemd_daemon_reload',
+            require         => Exec['gitlab_install']
+        }
     }
 }

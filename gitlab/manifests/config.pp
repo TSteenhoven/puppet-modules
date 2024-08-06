@@ -1,5 +1,6 @@
 class gitlab::config(
     Optional[Boolean]   $https                  = false,
+    Optional[String]    $ssh_host               = undef,
     Optional[String]    $ssl_certificate        = undef,
     Optional[String]    $ssl_certificate_key    = undef,
     Optional[String]    $smtp_server            = undef

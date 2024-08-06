@@ -78,7 +78,7 @@ class rabbitmq(
         recurse => true,
         owner   => 'rabbitmq',
         group   => 'rabbitmq',
-        mode    => '0770',
+        mode    => '0700',
         require => Package['rabbitmq-server']
     }
 
@@ -88,7 +88,7 @@ class rabbitmq(
         ensure  => directory,
         owner   => 'rabbitmq',
         group   => 'rabbitmq',
-        mode    => '0770',
+        mode    => '0700',
         require => Package['rabbitmq-server']
     }
 }

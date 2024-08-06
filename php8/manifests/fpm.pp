@@ -111,7 +111,7 @@ class php8::fpm(
         ensure  => directory,
         owner   => 'root',
         group   => 'root',
-        mode    => '0770',
+        mode    => '0700',
         purge   => true,
         force   => true,
         recurse => true
