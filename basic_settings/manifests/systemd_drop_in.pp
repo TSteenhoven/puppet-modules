@@ -26,7 +26,10 @@ define basic_settings::systemd_drop_in(
     }
 
     /* Check if target is not custom service */
-    if ($target_unit == 'nginx.service' and $path == '/etc/systemd/system' and !defined(File["/etc/systemd/system/${target_unit}"])) {
+    if ($target_unit == 'nginx.service' and $path == '/etc/systemd/system'
+        and !defined(File["/usr/lib/systemd/system/${target_unit}"])
+        and !defined(File["/etc/systemd/system/${target_unit}"])) {
+
         file { "/usr/lib/systemd/system/${target_unit}":
             ensure  => file,
             owner   => 'root',
