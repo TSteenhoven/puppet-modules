@@ -21,11 +21,11 @@ class basic_settings::package_mysql(
     if ($enable) {
         /* Get source name */
         case $version {
-            '8.0': {
+            8.0: {
                 $key = 'mysql-8.key'
                 $version_correct = $version
             }
-            '8.4': {
+            8.4: {
                 $key = 'mysql-8.key'
                 $version_correct = "${version}-lts"
             }

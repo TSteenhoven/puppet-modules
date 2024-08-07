@@ -55,6 +55,7 @@ cmd_revoke_grant="REVOKE GRANT OPTION ON $arg_database.$arg_table FROM '$arg_use
 case "$arg_action" in
 	check)
 		$cmd_mysql "$cmd_show_grants" | sed 's/\\\\/\\/g' | grep -qix "$grep_grant_str_esc"
+        echo "$grep_grant_str_esc" >> /tmp/mysql.log
 		exit $?
 		;;
 	grant)
