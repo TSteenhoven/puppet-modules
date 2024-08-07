@@ -46,22 +46,6 @@ class mysql (
         $version = $package_version
     }
 
-    /* Create script dir */
-    file { $script_dir:
-        ensure  => directory,
-        owner   => 'root',
-        group   => 'root'
-    }
-
-    /* Create script */
-    file { $script_path:
-        ensure  => file,
-        content => template('mysql/grant.sh'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0755'
-    }
-
     /* Do only the following steps when package name is mysql */
     if ($package_name == 'mysql') {
         /* Default file is different than normal install */
@@ -179,6 +163,22 @@ class mysql (
         package { 'pbzip2':
             ensure  => installed
         }
+    }
+
+    /* Create script dir */
+    file { $script_dir:
+        ensure  => directory,
+        owner   => 'root',
+        group   => 'root'
+    }
+
+    /* Create script */
+    file { $script_path:
+        ensure  => file,
+        content => template('mysql/grant.sh'), # Keep this file below version and defaults_file variable
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0755'
     }
 
     /* Set config file */
