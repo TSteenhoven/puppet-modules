@@ -388,7 +388,6 @@ class basic_settings(
             enable      => true,
             os_parent   => $os_parent,
             os_name     => $os_name,
-            version     => $mongodb_version,
             require     => Class['basic_settings::packages']
         }
     } else {
