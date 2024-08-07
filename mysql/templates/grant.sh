@@ -42,7 +42,7 @@ cmd_show_grants="SHOW GRANTS FOR '$arg_username'@'$arg_hostname'"
 
 grant_str="GRANT $arg_grant_privilege ON $arg_database.$arg_table TO '$arg_username'@'$arg_hostname'${grant_option_str}"
 <% if @version == 8.0 or @version == 8.4 -%>
-grep_grant_str_esc="GRANT $arg_privileges ON $arg_database_esc.$arg_table_esc TO \`$arg_username\`@\`$arg_hostname\`${grant_option_str}"
+grep_grant_str_esc="GRANT $arg_privileges ON $arg_database_esc.$arg_table_esc TO \\`$arg_username\\`@\\`$arg_hostname\\`${grant_option_str}"
 <% else -%>
 grep_grant_str_esc="GRANT $arg_privileges ON $arg_database_esc.$arg_table_esc TO '$arg_username'@'$arg_hostname'\( IDENTIFIED BY PASSWORD '\*[a-zA-Z0-9]\{40\}'\)\{0,1\}${grant_option_str}"
 <% end -%>
