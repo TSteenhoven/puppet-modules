@@ -21,7 +21,7 @@ define basic_settings::systemd_drop_in(
             purge   => true,
             owner   => 'root',
             group   => 'root',
-            mode    => '0740', # See issue https://github.com/systemd/systemd/issues/770
+            mode    => '0744', # See issue https://github.com/systemd/systemd/issues/770
         }
     }
 
@@ -34,7 +34,7 @@ define basic_settings::systemd_drop_in(
             ensure  => file,
             owner   => 'root',
             group   => 'root',
-            mode    => '0640' # See issue https://github.com/systemd/systemd/issues/770
+            mode    => '0644' # See issue https://github.com/systemd/systemd/issues/770
         }
     }
 
@@ -44,7 +44,7 @@ define basic_settings::systemd_drop_in(
         content => template('basic_settings/systemd/drop_in'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0640', # See issue https://github.com/systemd/systemd/issues/770
+        mode    => '0644', # See issue https://github.com/systemd/systemd/issues/770
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']
     }
