@@ -327,7 +327,7 @@ class basic_settings(
 
     /* Set IO */
     class { 'basic_settings::io':
-        require => Class['basic_settings::security']
+        require => Class['basic_settings::message']
     }
 
     /* Setup APT */
@@ -339,7 +339,7 @@ class basic_settings(
         mail_to                                    => $systemd_notify_mail,
         require                                    => [
             File['/etc/apt/sources.list'],
-            Class['basic_settings::io']
+            Class['basic_settings::message']
         ]
     }
 
