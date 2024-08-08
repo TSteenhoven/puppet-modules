@@ -182,7 +182,8 @@ class basic_settings::packages(
         /* Remove default file */
         basic_settings::io_logrotate { 'apt':
             path            => '',
-            handle          => 'monthly'
+            handle          => 'monthly',
+            ensure          => absent
         }
 
         /* APT term */
