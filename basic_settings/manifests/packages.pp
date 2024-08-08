@@ -179,9 +179,19 @@ class basic_settings::packages(
 
     /* Check if logrotate package exists */
     if (defined(Package['logrotate'])) {
-        basic_settings::io_logrotate { 'apt':
+        basic_settings::io_logrotate { 'alternatives':
+            path            => '/var/log/alternatives.log',
+            handle          => 'monthly',
+            compress_delay  => true
+        }
+       basic_settings::io_logrotate { 'apt':
             path            => "/var/log/apt/term.log\n/var/log/apt/history.log",
             handle          => 'monthly'
+        }
+        basic_settings::io_logrotate { 'dpkg':
+            path            => '/var/log/dpkg.log',
+            handle          => 'monthly',
+            compress_delay  => true
         }
         basic_settings::io_logrotate { 'unattended-upgrades':
             path            => "/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log",
