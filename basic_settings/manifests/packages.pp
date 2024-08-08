@@ -183,7 +183,7 @@ class basic_settings::packages(
             path            => '/var/log/apt/term.log\n/var/log/apt/history.log',
             handle          => 'monthly'
         }
-        basic_settings::io_logrotate { 'dpkg':
+        basic_settings::io_logrotate { 'unattended-upgrades':
             path            => '/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log',
             handle          => 'monthly'
         }
