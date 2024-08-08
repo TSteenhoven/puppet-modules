@@ -176,4 +176,25 @@ class basic_settings::packages(
             daemon_reload   => 'packages_systemd_daemon_reload'
         }
     }
+
+    /* Check if logrotate package exists */
+    if (defined(Package['logrotate'])) {
+        /* Remove default file */
+        basic_settings::io_logrotate { 'apt':
+            path            => '',
+            handle          => 'monthly'
+        }
+
+        /* APT term */
+        basic_settings::io_logrotate { 'apt_term':
+            path            => '/var/log/apt/term.log',
+            handle          => 'monthly'
+        }
+
+        /* APT history */
+        basic_settings::io_logrotate { 'apt_history':
+            path            => '/var/log/apt/history.log',
+            handle          => 'monthly'
+        }
+    }
 }

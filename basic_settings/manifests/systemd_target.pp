@@ -14,7 +14,7 @@ define basic_settings::systemd_target(
         content => template('basic_settings/systemd/target'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0600',
+        mode    => '0640', # See issue https://github.com/systemd/systemd/issues/770
         notify  => Exec['systemd_daemon_reload'],
         require => Package['systemd']
     }

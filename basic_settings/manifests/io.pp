@@ -1,5 +1,5 @@
 class basic_settings::io(
-    $log_rotate = 14
+    Optional[Integer] $log_rotate = 14
 ) {
 
     /* Create list of packages that is suspicious */
@@ -18,7 +18,7 @@ class basic_settings::io(
         require => Exec['multipath_cmdline']
     }
 
-    /* Remove package for connection with Windows environment / device  */
+    /* Remove package for connection with Windows environment / device */
     package { ['ntfs-3g', 'smbclient']:
         ensure  => purged
     }
@@ -29,7 +29,8 @@ class basic_settings::io(
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        content => "blacklist floppy\n"
+        content => "blacklist floppy\n",
+        require => Package['kmod']
     }
 
     /* Enable multipathd service */

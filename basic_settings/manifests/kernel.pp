@@ -173,6 +173,13 @@ class basic_settings::kernel(
     }
 
     /* Install system package */
+    if (!defined(Package['kmod'])) {
+        package { 'kmod':
+            ensure  => installed
+        }
+    }
+
+    /* Install system package */
     if (!defined(Package['sed'])) {
         package { 'sed':
             ensure  => installed

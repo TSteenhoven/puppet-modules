@@ -225,7 +225,7 @@ class basic_settings(
     }
 
     /* Basic system packages; This packages needed to be installed first */
-    package { ['apt', 'bc', 'coreutils', 'dpkg', 'grep', 'lsb-release', 'sed', 'util-linux']:
+    package { ['apt', 'bc', 'coreutils', 'dpkg', 'grep', 'lsb-release', 'kmod', 'sed', 'util-linux']:
         ensure  => installed
     }
 
@@ -325,6 +325,11 @@ class basic_settings(
         require         => Class['basic_settings::message']
     }
 
+    /* Set IO */
+    class { 'basic_settings::io':
+        require => Class['basic_settings::security']
+    }
+
     /* Setup APT */
     class { 'basic_settings::packages':
         unattended_upgrades_block_extra_packages   => $unattended_upgrades_block_extra_packages,
@@ -332,7 +337,10 @@ class basic_settings(
         server_fdqn                                => $server_fdqn,
         snap_enable                                => $snap_correct,
         mail_to                                    => $systemd_notify_mail,
-        require                                    => [File['/etc/apt/sources.list'], Class['basic_settings::message']]
+        require                                    => [
+            File['/etc/apt/sources.list'],
+            Class['basic_settings::io']
+        ]
     }
 
     /* Set Pro */
@@ -375,10 +383,6 @@ class basic_settings(
     class { 'basic_settings::locale':
         enable              => $locale_enable,
         docs_enable         => $docs_enable
-    }
-
-    /* Set IO */
-    class { 'basic_settings::io':
     }
 
     /* Check if variable gitlab is true; if true, install new source list and key */

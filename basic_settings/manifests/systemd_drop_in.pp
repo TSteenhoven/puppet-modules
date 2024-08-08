@@ -1,15 +1,15 @@
 define basic_settings::systemd_drop_in(
-    $target_unit,
-    $daemon_reload      = 'systemd_daemon_reload',
-    $ensure             = present,
-    $journal            = {},
-    $mount              = {},
-    $path               = '/etc/systemd/system',
-    $resolve            = {},
-    $service            = {},
-    $socket             = {},
-    $timer              = {},
-    $unit               = {}
+    String $target_unit,
+    Optional[String]                    $daemon_reload      = 'systemd_daemon_reload',
+    Optional[Enum['present','absent']]  $ensure             = present,
+    Optional[Hash]                      $journal            = {},
+    Optional[Hash]                      $mount              = {},
+    Optional[String]                    $path               = '/etc/systemd/system',
+    Optional[Hash]                      $resolve            = {},
+    Optional[Hash]                      $service            = {},
+    Optional[Hash]                      $socket             = {},
+    Optional[Hash]                      $timer              = {},
+    Optional[Hash]                      $unit               = {}
 ) {
 
     /* Check if this dir is not already managed by puppet */
@@ -21,12 +21,12 @@ define basic_settings::systemd_drop_in(
             purge   => true,
             owner   => 'root',
             group   => 'root',
-            mode    => '0700',
+            mode    => '0740', # See issue https://github.com/systemd/systemd/issues/770
         }
     }
 
     /* Check if target is not custom service */
-    if ($target_unit == 'nginx.service' and $path == '/etc/systemd/system'
+    if ($path == '/etc/systemd/system'
         and !defined(File["/usr/lib/systemd/system/${target_unit}"])
         and !defined(File["/etc/systemd/system/${target_unit}"])) {
 
@@ -34,7 +34,7 @@ define basic_settings::systemd_drop_in(
             ensure  => file,
             owner   => 'root',
             group   => 'root',
-            mode    => '0700'
+            mode    => '0640' # See issue https://github.com/systemd/systemd/issues/770
         }
     }
 
@@ -44,7 +44,7 @@ define basic_settings::systemd_drop_in(
         content => template('basic_settings/systemd/drop_in'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0600',
+        mode    => '0640', # See issue https://github.com/systemd/systemd/issues/770
         notify  => Exec["${daemon_reload}"],
         require => Package['systemd']
     }

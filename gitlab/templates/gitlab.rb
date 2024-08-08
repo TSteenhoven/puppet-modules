@@ -1,5 +1,9 @@
 ## Managed by puppet
+<% if @https -%>
+external_url 'https://<%= @server_fdqn %>'
+<% else -%>
 external_url 'http://<%= @server_fdqn %>'
+<% end -%>
 gitlab_rails['gitlab_email_enabled'] = <%= (@smtp_enable ? "true" : "false") %>
 <% if ! @ssh_host.nil? -%>
 gitlab_rails['gitlab_ssh_host'] = '<%= @ssh_host %>'

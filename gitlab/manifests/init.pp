@@ -41,6 +41,16 @@ class gitlab(
         require => [Package['dpkg'], Package['grep']]
     }
 
+    /* Create ssl directory */
+    file { 'gitlab_ssl':
+        path    => '/etc/gitlab/ssl',
+        ensure  => directory,
+        owner   => 'root',
+        group   => 'roopt',
+        mode    => '0700',
+        require => Exec['gitlab_install']
+    }
+
     if (defined(Package['systemd'])) {
         /* Reload systemd deamon */
         exec { 'gitlab_systemd_daemon_reload':
