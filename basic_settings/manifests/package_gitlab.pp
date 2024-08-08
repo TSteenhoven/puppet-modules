@@ -27,7 +27,7 @@ class basic_settings::package_gitlab(
 
         /* Install Gitlab repo */
         exec { 'package_gitlab_source':
-            command     => "/usr/bin/printf \"${source}\" > ${file}; /usr/bin/curl -fsSL https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey | gpg --dearmor | tee /usr/share/keyrings/gitlab.gpg >/dev/null; chmod 644 /usr/share/keyrings/gitlab.gpg",
+            command     => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey | gpg --dearmor | tee /usr/share/keyrings/gitlab.gpg >/dev/null; chmod 644 /usr/share/keyrings/gitlab.gpg",
             unless      => "[ -e ${file} ]",
             notify      => Exec['package_gitlab_source_reload'],
             require     => [Package['curl'], Package['gnupg']]

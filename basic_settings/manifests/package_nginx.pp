@@ -27,7 +27,7 @@ class basic_settings::package_nginx(
 
         /* Install Nginx repo */
         exec { 'package_nginx_source':
-            command     => "/usr/bin/printf \"${source}\" > ${file}; /usr/bin/curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
+            command     => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
             unless      => "[ -e ${file} ]",
             notify      => Exec['package_nginx_source_reload'],
             require     => [Package['curl'], Package['gnupg']]

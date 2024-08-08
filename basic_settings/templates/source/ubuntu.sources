@@ -1,3 +1,4 @@
+# Managed by puppet
 Types: deb
 URIs: <%= @os_url %>
 Suites: <%= @os_name %> <%= @os_name %>-updates<% if (@backports && @backports_allow) %> <%= @os_name %>-backports<% end %>

@@ -27,7 +27,7 @@ class basic_settings::package_proxmox(
 
         /* Install proxmox repo */
         exec { 'package_proxmox_source':
-            command     => "/usr/bin/printf \"${source}\" > ${file}; /usr/bin/curl -fsSLo /usr/share/keyrings/proxmox.gpg https://enterprise.proxmox.com/debian/proxmox-release-${os_name}.gpg; chmod 644 /usr/share/keyrings/proxmox.gpg",
+            command     => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSLo /usr/share/keyrings/proxmox.gpg https://enterprise.proxmox.com/debian/proxmox-release-${os_name}.gpg; chmod 644 /usr/share/keyrings/proxmox.gpg",
             unless      => "[ -e ${file} ]",
             notify      => Exec['package_proxmox_source_reload'],
             require     => [Package['curl'], Package['gnupg']]

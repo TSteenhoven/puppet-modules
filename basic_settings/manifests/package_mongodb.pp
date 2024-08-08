@@ -28,7 +28,7 @@ class basic_settings::package_mongodb(
 
         /* Install mongodb repo */
         exec { 'package_mongodb_source':
-            command     => "/usr/bin/printf \"${source}\" > ${file}; /usr/bin/curl -fsSL https://pgp.mongodb.com/server-${version}.asc | gpg --dearmor | tee /usr/share/keyrings/mongodb.gpg >/dev/null; chmod 644 /usr/share/keyrings/mongodb.gpg",
+            command     => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL https://pgp.mongodb.com/server-${version}.asc | gpg --dearmor | tee /usr/share/keyrings/mongodb.gpg >/dev/null; chmod 644 /usr/share/keyrings/mongodb.gpg",
             unless      => "[ -e ${file} ]",
             notify      => Exec['package_mongodb_source_reload'],
             require     => [Package['curl'], Package['gnupg']]

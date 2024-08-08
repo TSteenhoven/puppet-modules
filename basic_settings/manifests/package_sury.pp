@@ -43,7 +43,7 @@ class basic_settings::package_sury(
         case $os_parent {
             'ubuntu': {
                 exec { 'package_sury_source':
-                    command     => "/usr/bin/printf \"${source}\" > ${file}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x14AA40EC0831756756D7F66C4F4EA0AAE5267A6C' | gpg --dearmor | tee ${key} >/dev/null; chmod 644 ${key}",
+                    command     => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x14AA40EC0831756756D7F66C4F4EA0AAE5267A6C' | gpg --dearmor | tee ${key} >/dev/null; chmod 644 ${key}",
                     unless      => "[ -e ${file} ]",
                     notify      => Exec['package_sury_source_reload'],
                     require     => [Package['curl'], Package['gnupg']]
