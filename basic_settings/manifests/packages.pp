@@ -179,22 +179,12 @@ class basic_settings::packages(
 
     /* Check if logrotate package exists */
     if (defined(Package['logrotate'])) {
-        /* Remove default file */
         basic_settings::io_logrotate { 'apt':
-            path            => '',
-            handle          => 'monthly',
-            ensure          => absent
-        }
-
-        /* APT term */
-        basic_settings::io_logrotate { 'apt_term':
-            path            => '/var/log/apt/term.log',
+            path            => '/var/log/apt/term.log\n/var/log/apt/history.log',
             handle          => 'monthly'
         }
-
-        /* APT history */
-        basic_settings::io_logrotate { 'apt_history':
-            path            => '/var/log/apt/history.log',
+        basic_settings::io_logrotate { 'dpkg':
+            path            => '/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log',
             handle          => 'monthly'
         }
     }
