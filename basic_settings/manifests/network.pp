@@ -75,7 +75,7 @@ class basic_settings::network(
                         '-a always,exclude -F exe=/opt/eset/efs/lib/odfeeder',
                         '-a always,exclude -F exe=/opt/eset/efs/lib/utild',
                     ],
-                    order  => '01'
+                    order  => 2
                 }
             }
         }
