@@ -1,21 +1,21 @@
 define basic_settings::login_user(
-    $home,
-    $uid,
-    $gid,
-    $password,
-    $ensure             = present,
-    $groups             = [],
-    $bash_profile       = undef,
-    $bashrc             = undef,
-    $bash_aliases       = undef,
-    $authorized_keys    = undef,
-    $shell              = '/bin/bash',
-    $disable_group      = false,
-    $home_enable        = true,
-    $home_force         = false,
-    $home_purge         = false,
-    $home_recurse       = false,
-    $home_source        = undef
+    String                              $home,
+    Integer                             $uid,
+    Integer                             $gid,
+    String                              $password,
+    Optional[Enum['present','absent']]  $ensure             = present,
+    Optional[Array]                     $groups             = [],
+    Optional[String]                    $bash_profile       = undef,
+    Optional[String]                    $bashrc             = undef,
+    Optional[String]                    $bash_aliases       = undef,
+    Optional[String]                    $authorized_keys    = undef,
+    Optional[String]                    $shell              = '/bin/bash',
+    Optional[Boolean]                   $disable_group      = false,
+    Optional[Boolean]                   $home_enable        = true,
+    Optional[Boolean]                   $home_force         = false,
+    Optional[Boolean]                   $home_purge         = false,
+    Optional[Boolean]                   $home_recurse       = false,
+    Optional[String]                    $home_source        = undef
 ) {
 
     /* Create only user group when group is disabled */
@@ -46,7 +46,7 @@ define basic_settings::login_user(
 
     if ($home_enable) {
         /* Make home dir */
-        if ($home_source) {
+        if ($home_source != undef) {
             file { $home:
                 ensure  => $ensure ? { absent => undef, default => directory },
                 owner   => $uid,

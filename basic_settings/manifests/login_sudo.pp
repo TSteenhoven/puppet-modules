@@ -1,5 +1,5 @@
 define basic_settings::login_sudo(
-        $rule,
+        String $rule,
     ) {
 
     file { "/etc/sudoers.d/${name}":

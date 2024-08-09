@@ -1,4 +1,4 @@
-## Managed by puppet
+# Managed by puppet
 <% if @https -%>
 external_url 'https://<%= @server_fdqn %>'
 <% else -%>
