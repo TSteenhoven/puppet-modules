@@ -1,14 +1,14 @@
 class basic_settings::network(
-    $firewall_package,
-    $fallback_dns = [
-        '8.8.8.8',
-        '8.8.4.4',
-        '2001:4860:4860::8888',
-        '2001:4860:4860::8844'
-    ],
-    $firewall_path = '/etc/firewall.conf',
-    $antivirus_package = undef,
-    $install_options = undef
+    Enum['nftables','iptables','firewalld']     $firewall_package,
+    Optional[Array]                             $fallback_dns       = [
+                                                    '8.8.8.8',
+                                                    '8.8.4.4',
+                                                    '2001:4860:4860::8888',
+                                                    '2001:4860:4860::8844'
+                                                ],
+    Optional[String]                            $firewall_path      = '/etc/firewall.conf',
+    Optional[String]                            $antivirus_package  = undef,
+    Optional[Array]                             $install_options    = undef
 ) {
 
     /* Default suspicious packages */

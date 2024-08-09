@@ -1,9 +1,8 @@
 class basic_settings::timezone(
-    $timezone,
-    $ntp_extra_pools = [],
-    $install_options = undef,
+    String              $timezone,
+    Optional[Array]     $ntp_extra_pools = [],
+    Optional[Array]     $install_options = undef
 ) {
-
     if (defined(Package['systemd'])) {
         /* Reload systemd deamon */
         exec { 'systemd_timezone_daemon_reload':

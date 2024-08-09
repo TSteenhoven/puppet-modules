@@ -1,7 +1,7 @@
 class basic_settings::systemd(
-    $cluster_id = 'core',
-    $default_target = 'helpers',
-    $install_options = undef,
+    Optional[String]    $cluster_id         = 'core',
+    Optional[String]    $default_target     = 'helpers',
+    Optional[Array]     $install_options    = undef
 ) {
 
     /* Install packages */

@@ -1,5 +1,5 @@
 class basic_settings::pro(
-    $enable = false
+    Optional[Boolean] $enable = false
 ) {
     /* Get OS name */
     case $::os['name'] {

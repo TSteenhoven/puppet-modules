@@ -1,15 +1,15 @@
 class basic_settings::packages(
-    $unattended_upgrades_block_extra_packages   = [],
-    $unattended_upgrades_block_packages         = [
-        'libmysql*',
-        'mysql*',
-        'nginx',
-        'nodejs',
-        'php*'
-    ],
-    $server_fdqn                                = $::networking['fqdn'],
-    $snap_enable                                = false,
-    $mail_to                                    = 'root'
+    Optional[Array]     $unattended_upgrades_block_extra_packages   = [],
+    Optional[Array]     $unattended_upgrades_block_packages         = [
+                                                                        'libmysql*',
+                                                                        'mysql*',
+                                                                        'nginx',
+                                                                        'nodejs',
+                                                                        'php*'
+                                                                    ],
+    Optional[String]    $server_fdqn                                = $::networking['fqdn'],
+    Optional[Boolean]   $snap_enable                                = false,
+    Optional[String]    $mail_to                                    = 'root'
 ) {
     /* Install apt package */
     if (!defined(Package['apt'])) {

@@ -1,8 +1,8 @@
 class basic_settings::login(
-    $getty_enable           = false,
-    $mail_to                = 'root',
-    $server_fdqn            = $fdqn,
-    $sudoers_dir_enable     = false
+    Optional[Boolean]   $getty_enable           = false,
+    Optional[String]    $mail_to                = 'root',
+    Optional[String]    $server_fdqn            = $::networking['fqdn'],
+    Optional[Boolean]   $sudoers_dir_enable     = false
 ) {
     /* Remove unnecessary packages */
     package { ['at-spi2-core', 'session-migration', 'xdg-user-dirs', 'xauth', 'x11-utils']:
@@ -96,7 +96,7 @@ class basic_settings::login(
         content => template('basic_settings/login/login-notify.sh'),
         owner   => 'root',
         group   => 'root',
-        mode    => '0600',
+        mode    => '0755', # Important, not only root are executing this rule
     }
 
     /* Ensure that getty is stopped or running */

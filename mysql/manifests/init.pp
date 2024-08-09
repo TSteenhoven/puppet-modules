@@ -178,7 +178,7 @@ class mysql (
         content => template('mysql/grant.sh'), # Keep this file below version and defaults_file variable
         owner   => 'root',
         group   => 'root',
-        mode    => '0755'
+        mode    => '0700'
     }
 
     /* Set config file */

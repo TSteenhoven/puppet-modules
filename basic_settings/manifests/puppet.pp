@@ -1,7 +1,7 @@
 class basic_settings::puppet(
-    $server_enable  = false,
-    $server_package = 'puppetserver',
-    $server_dir     = 'puppetserver'
+    Optional[Boolean]                               $server_enable  = false,
+    Optional[Enum['puppet-master','puppetserver']]  $server_package = 'puppetserver',
+    Optional[String]                                $server_dir     = 'puppetserver'
 ) {
 
     /* Remove unnecessary packages */

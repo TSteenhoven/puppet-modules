@@ -1,6 +1,6 @@
 class basic_settings::security(
-    $mail_to                = 'root',
-    $server_fdqn            = $fdqn
+    Optional[String] $mail_to                = 'root',
+    Optional[String] $server_fdqn            = $::networking['fqdn']
 ) {
 
     /* Install default security packages */
