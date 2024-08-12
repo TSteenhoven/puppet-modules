@@ -31,7 +31,7 @@ class gitlab::config(
     }
 
     /* Check if letsencrypt need to be enabled */
-    if ($https_enable) {
+    if ($https) {
         if ($ssl_certificate == undef and $ssl_certificate_key == undef) {
             $letsencrypt = true
         } else {
@@ -44,6 +44,7 @@ class gitlab::config(
     /* Reload source list */
     exec { 'gitlab_config_reconfigure':
         command     => '/usr/bin/gitlab-ctl reconfigure',
+        timeout     => 0,
         refreshonly => true
     }
 
