@@ -16,13 +16,13 @@ else
     IP="UNKNOWN"
 fi
 
-# Chec if we are in interactive sjhell
+# Chec if we are in interactive shell
 if [ -n "$PS1" ]; then
     # Show message 
     if [ "$USER" = "root" ]; then
-        printf "You login as root, this action is registered and sent to the server administrator(s).\n"
+        printf "[\033[1;31m\]You login as root, this action is registered and sent to the server administrator(s).[\033[0m\]n"
     else
-        printf "Your IP ($IP), login time ($NOW) and username ($USER) have been registered and sent to the server administrator(s).\n"
+        printf "[\033[0;36m\]Your IP ($IP), login time ($NOW) and username ($USER) have been registered and sent to the server administrator(s).[\033[1;31m\]\n"
     fi
 fi
 
