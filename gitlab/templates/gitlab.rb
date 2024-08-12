@@ -18,7 +18,8 @@ gitlab_rails['gitlab_email_reply_to'] = 'noreply@<%= @server_fdqn %>'
 <% end -%>
 letsencrypt['enable'] = <%= (@letsencrypt ? "true" : "false") %>
 <% if @https -%>
-nginx['listen_https'] = true
+nginx['hsts_max_age'] = 31536000
+nginx['hsts_include_subdomains'] = false
 nginx['redirect_http_to_https'] = true
 <% if ! @ssl_certificate.nil? -%>
 nginx['ssl_certificate'] = '<%= @ssl_certificate %>'
@@ -27,7 +28,6 @@ nginx['ssl_certificate'] = '<%= @ssl_certificate %>'
 nginx['ssl_certificate_key'] = '<%= @ssl_certificate_key %>'
 <% end -%>
 <% else -%>
-nginx['listen_https'] = false
 nginx['redirect_http_to_https'] = false
 <% end -%>
 nginx['listen_port'] = 80
