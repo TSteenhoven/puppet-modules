@@ -43,7 +43,7 @@ class gitlab(
             ensure  => directory,
             owner   => 'root',
             group   => 'root',
-            mode    => '0700',
+            mode    => '0755', # Important for internal scripts
         }
 
         /* Create symlink */
