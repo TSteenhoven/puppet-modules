@@ -2,6 +2,7 @@ class basic_settings::login(
     Optional[Boolean]   $getty_enable           = false,
     Optional[String]    $mail_to                = 'root',
     Optional[String]    $server_fdqn            = $::networking['fqdn'],
+    Optional[String]    $sudoers_banner_text    = "\033[0;31mWarning: You are running this command with elevated privileges.\033[0m\nThis action is registered and sent to the server administrator(s). Unauthorized access will be fully investigated and reported to law enforcement authorities.",
     Optional[Boolean]   $sudoers_dir_enable     = false
 ) {
     /* Remove unnecessary packages */
@@ -48,13 +49,22 @@ class basic_settings::login(
         content => template('basic_settings/login/pam/su')
     }
 
+    /* Sudoers banner */
+    file { '/etc/sudoers_lecture':
+        ensure  => file,
+        mode    => '0644',
+        content => "${sudoers_banner_text}\n\n",
+        require => Package['sudo']
+    }
+
     /* Setup sudoers config file */
     file { '/etc/sudoers':
         ensure  => file,
         mode    => '0440',
         owner   => 'root',
         group   => 'root',
-        content => template('basic_settings/login/sudoers')
+        content => template('basic_settings/login/sudoers'),
+        require => File['/etc/sudoers_lecture']
     }
 
     /* Setup sudoers dir */
