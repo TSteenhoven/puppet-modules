@@ -30,4 +30,3 @@ nginx['ssl_certificate_key'] = '<%= @ssl_certificate_key %>'
 <% else -%>
 nginx['redirect_http_to_https'] = false
 <% end -%>
-nginx['listen_port'] = 80
