@@ -6,7 +6,8 @@ class ssh(
     Optional[Array]     $password_authentication_users  = [],
     Optional[Boolean]   $permit_root_login              = false,
     Optional[Integer]   $port                           = 22,
-    Optional[Integer]   $port_alternative               = undef
+    Optional[Integer]   $port_alternative               = undef,
+    Optional[Array]     $port_alternative_allow_users   = undef
 ) {
 
     /* Required packages for SSHD */
@@ -17,6 +18,13 @@ class ssh(
     /* Convert array to string */
     $str_allow_users = join($allow_users, ' ')
     $str_password_authentication_users = join($password_authentication_users, ',')
+
+    /* Check if different list is given for alternative port */
+    if ($port_alternative_allow_users != undef) {
+        $str_port_alternative_allow_users = join($port_alternative_allow_users, ' ')
+    } else {
+        $str_port_alternative_allow_users = $str_allow_users
+    }
 
     /* Check if SSH used socket */
     if (defined(Package['systemd'])) {
