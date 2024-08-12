@@ -1,6 +1,7 @@
 class gitlab::config(
     Optional[Boolean]   $https                  = false,
     Optional[String]    $ssh_host               = undef,
+    Optional[Integer]   $ssh_port               = 22,
     Optional[String]    $ssl_certificate        = undef,
     Optional[String]    $ssl_certificate_key    = undef,
     Optional[String]    $smtp_server            = undef
@@ -20,6 +21,13 @@ class gitlab::config(
     } else {
         $smtp_enable = true
         $smtp_server_correct = $smtp_server
+    }
+
+    /* Try to get smtp server */
+    if ($ssh_host == undef) {
+        $ssh_host_correct = $server_fdqn
+    } else {
+        $ssh_host_correct = $ssh_host
     }
 
     /* Check if letsencrypt need to be enabled */

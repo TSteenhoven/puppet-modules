@@ -1,5 +1,6 @@
 class gitlab(
     String              $root_password,
+    Optional[String]    $install_dir    = undef,
     Optional[Integer]   $nice_level     = 12,
     Optional[String]    $root_email     = undef,
     Optional[String]    $server_fdqn    = undef
@@ -34,11 +35,38 @@ class gitlab(
         $root_email_correct = $root_email_found
     }
 
+    /* Check if installation dir is given */
+    if ($install_dir != undef) {
+        /* Create ssl directory */
+        file { 'gitlab_install_dir':
+            path    => $install_dir,
+            ensure  => directory,
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0700',
+        }
+
+        /* Create symlink */
+        file { '/opt/gitlab':
+            ensure  => 'link',
+            target  => $install_dir,
+            force   => true,
+            require => File['gitlab_install_dir']
+        }
+
+        /* Set requirements */
+        $requirements = [File['/opt/gitlab'], Package['dpkg'], Package['grep']]
+    } else {
+        /* Set requirements */
+        $requirements = [Package['dpkg'], Package['grep']]
+    }
+
     /* Check if gitlab is installed exists */
     exec { 'gitlab_install':
-        command => "/usr/bin/bash -c 'GITLAB_ROOT_EMAIL=\"${root_email_correct}\" GITLAB_ROOT_PASSWORD=\"${root_password}\" EXTERNAL_URL=\"http://${server_fdqn}\" /usr/bin/apt-get install gitlab-ee'",
+        command => Sensitive.new("/usr/bin/bash -c 'GITLAB_ROOT_EMAIL=\"${root_email_correct}\" GITLAB_ROOT_PASSWORD=\"${root_password}\" EXTERNAL_URL=\"http://${server_fdqn}\" /usr/bin/apt-get install gitlab-ee'"),
         unless  => '/usr/bin/dpkg -l | /usr/bin/grep gitlab-ee',
-        require => [Package['dpkg'], Package['grep']]
+        timeout => 0,
+        require => $requirements
     }
 
     /* Create ssl directory */
@@ -46,7 +74,7 @@ class gitlab(
         path    => '/etc/gitlab/ssl',
         ensure  => directory,
         owner   => 'root',
-        group   => 'roopt',
+        group   => 'root',
         mode    => '0700',
         require => Exec['gitlab_install']
     }

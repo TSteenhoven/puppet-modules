@@ -5,9 +5,8 @@ external_url 'https://<%= @server_fdqn %>'
 external_url 'http://<%= @server_fdqn %>'
 <% end -%>
 gitlab_rails['gitlab_email_enabled'] = <%= (@smtp_enable ? "true" : "false") %>
-<% if ! @ssh_host.nil? -%>
-gitlab_rails['gitlab_ssh_host'] = '<%= @ssh_host %>'
-<% end -%>
+gitlab_rails['gitlab_ssh_host'] = '<%= @ssh_host_correct %>'
+gitlab_rails['gitlab_shell_ssh_port'] = <%= @ssh_port %>
 gitlab_rails['incoming_email_enabled'] = false
 gitlab_rails['smtp_enable'] = <%= (@smtp_enable ? "true" : "false") %>
 <% if @smtp_enable -%>
