@@ -65,7 +65,7 @@ class gitlab(
             service { 'gitlab-runsvdir':
                 ensure  => undef,
                 enable  => false,
-                require => Package['mysql-server']
+                require => Exec['gitlab_install']
             }
 
             /* Create drop in for services target */
