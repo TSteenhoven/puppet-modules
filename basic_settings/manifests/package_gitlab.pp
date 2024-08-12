@@ -22,7 +22,7 @@ class basic_settings::package_gitlab(
         if ($deb_version == '822') {
             $source  = "Types: deb\nURIs: https://packages.gitlab.com/gitlab/gitlab-ee/${os_parent}\nSuites: ${os_name}\nComponents: main\nSigned-By:/usr/share/keyrings/gitlab.gpg\n"
         } else {
-            $source = "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg]https://packages.gitlab.com/gitlab/gitlab-ee/${os_parent} ${os_name} main\n"
+            $source = "deb [signed-by=/usr/share/keyrings/gitlab.gpg] https://packages.gitlab.com/gitlab/gitlab-ee/${os_parent} ${os_name} main\n"
         }
 
         /* Install Gitlab repo */
