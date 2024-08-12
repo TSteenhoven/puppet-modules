@@ -21,10 +21,10 @@ letsencrypt['enable'] = <%= (@letsencrypt ? "true" : "false") %>
 nginx['listen_https'] = true
 nginx['redirect_http_to_https'] = true
 <% if ! @ssl_certificate.nil? -%>
-nginx['ssl_certificate'] = "<%= @ssl_certificate %>
+nginx['ssl_certificate'] = '<%= @ssl_certificate %>'
 <% end -%>
 <% if ! @ssl_certificate_key.nil? -%>
-nginx['ssl_certificate_key'] = "<%= @ssl_certificate_key %>"
+nginx['ssl_certificate_key'] = '<%= @ssl_certificate_key %>'
 <% end -%>
 <% else -%>
 nginx['listen_https'] = false
