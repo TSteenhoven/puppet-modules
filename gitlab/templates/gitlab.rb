@@ -31,3 +31,6 @@ nginx['ssl_certificate_key'] = '<%= @ssl_certificate_key %>'
 <% else -%>
 nginx['redirect_http_to_https'] = false
 <% end -%>
+postgresql['shared_buffers'] = '<%= @database_shared_buffers %>'
+puma['worker_processes'] = <%= @puma_worker_processes %>
+sidekiq['concurrency'] = <%= @sidekiq_concurrency %>

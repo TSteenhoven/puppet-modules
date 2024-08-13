@@ -1,5 +1,8 @@
 class gitlab::config(
+    Optional[String]                $database_shared_buffers    = '256MB',
     Optional[Boolean]               $https                      = false,
+    Optional[Integer]               $puma_worker_processes      = 0,
+    Optional[Integer]               $sidekiq_concurrency        = 10,
     Optional[String]                $ssh_host                   = undef,
     Optional[Integer]               $ssh_port                   = 22,
     Optional[String]                $ssl_certificate            = undef,
