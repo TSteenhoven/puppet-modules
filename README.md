@@ -64,6 +64,7 @@ Basic settings omvatten de volgende subonderdelen:
 - **Login:** Pakketten/configuraties gerelateerd aan login en gebruikersbeheer.
 - **Netwerk:** Pakketten/configuraties gerelateerd aan netwerken en optimalisatie ervan voor HPC-gebruik.
 - **Packages:** Installeren van een pakketbeheerder en het verwijderen van andere pakketbeheerders indien mogelijk.
+  - **Packages GitLab:** Configureren van APT-repo voor GitLab met bijbehorende sleutel.
   - **Packages MongoDB:** Configureren van APT-repo voor MongoDB met bijbehorende sleutel.
   - **Packages MySQL:** Configureren van APT-repo voor MySQL met bijbehorende sleutel.
   - **Packages Nginx:** Configureren van APT-repo voor Nginx met bijbehorende sleutel.
@@ -150,6 +151,32 @@ node 'webserver.dev.xxxx.nl' {
         ensure  => present,
         username  => 'www',
         database  => 'www'
+    }
+}
+```
+
+## GitLab
+
+GitLab is een populaire open-source DevOps-platform. Dit platform is voor softwareontwikkeling waar je en je team samen aan code kunnen werken. Het biedt functies zoals versiebeheer (het bijhouden van verschillende versies van je code), bugtracking (het bijhouden en oplossen van problemen in je software), en Continuous Integration/Continuous Deployment (CI/CD, wat helpt bij het automatisch testen en uitrollen van code). 
+
+### Voorbeeld
+Hieronder een voorbeeld hoe je een GitLab opzet in je Puppet omgeving:
+
+```puppet
+node 'gitlab.dev.xxxx.nl' {
+    /* Setup gitlab */
+    class { 'gitlab':
+        root_password   => 'mypassword',
+        server_fdqn     => 'gitlab.xxxx.nl'
+    }
+
+    /* Setup Gitlab config */
+    class { 'gitlab::config':
+        https                   => true,
+        ssh_host                => 'source.xxxx.nl',
+        ssh_port                => 2222,
+        ssl_certificate         => '/etc/gitlab/ssl/fullchain.pem',
+        ssl_certificate_key     => '/etc/gitlab/ssl/privkey.pem'
     }
 }
 ```
