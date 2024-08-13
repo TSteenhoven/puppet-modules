@@ -3,19 +3,20 @@ define basic_settings::login_user(
     Integer                             $uid,
     Integer                             $gid,
     Sensitive[String]                   $password,
-    Optional[Enum['present','absent']]  $ensure             = present,
-    Optional[Array]                     $groups             = [],
-    Optional[String]                    $bash_profile       = undef,
+    Optional[Array]                     $authorized_keys    = undef,
     Optional[String]                    $bashrc             = undef,
     Optional[String]                    $bash_aliases       = undef,
-    Optional[Array]                     $authorized_keys    = undef,
-    Optional[String]                    $shell              = '/bin/bash',
+    Optional[String]                    $bash_profile       = undef,
     Optional[Boolean]                   $disable_group      = false,
+    Optional[Enum['present','absent']]  $ensure             = present,
+    Optional[Array]                     $groups             = [],
     Optional[Boolean]                   $home_enable        = true,
     Optional[Boolean]                   $home_force         = false,
     Optional[Boolean]                   $home_purge         = false,
     Optional[Boolean]                   $home_recurse       = false,
-    Optional[String]                    $home_source        = undef
+    Optional[String]                    $home_source        = undef,
+    Optional[String]                    $private_key        = undef,
+    Optional[String]                    $shell              = '/bin/bash'
 ) {
 
     /* Create only user group when group is disabled */
@@ -83,6 +84,18 @@ define basic_settings::login_user(
             file { "${home}/.ssh/authorized_keys":
                 ensure  => $ensure ? { absent => absent, default => present },
                 content => Sensitive.new(join($authorized_keys, "\n")),
+                mode    => '0600',
+                owner   => $uid,
+                group   => $gid,
+                require => File[$home]
+            }
+        }
+
+        /* Create private key file */
+        if ($private_key != undef) {
+            file { "${home}/.ssh/private.key":
+                ensure  => $ensure ? { absent => absent, default => present },
+                source  => Sensitive.new($private_key),
                 mode    => '0600',
                 owner   => $uid,
                 group   => $gid,
