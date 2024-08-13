@@ -2,6 +2,7 @@
 class ssh(
     Optional[Array]     $allow_users                    = [],
     Optional[String]    $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
+    Optional[Array]     $host_key_algorithms            = ['ecdsa-sha2-nistp256','ecdsa-sha2-nistp384','ecdsa-sha2-nistp521','ed25519'],
     Optional[Integer]   $idle_timeout                   = 15,
     Optional[Array]     $password_authentication_users  = [],
     Optional[Boolean]   $permit_root_login              = false,
@@ -16,14 +17,15 @@ class ssh(
     }
 
     /* Convert array to string */
-    $str_allow_users = join($allow_users, ' ')
-    $str_password_authentication_users = join($password_authentication_users, ',')
+    $allow_users_str = join($allow_users, ' ')
+    $password_authentication_users_str = join($password_authentication_users, ',')
+    $host_key_algorithms_str = join($host_key_algorithms, ',')
 
     /* Check if different list is given for alternative port */
     if ($port_alternative_allow_users != undef) {
-        $str_port_alternative_allow_users = join($port_alternative_allow_users, ' ')
+        $port_alternative_allow_users_str = join($port_alternative_allow_users, ' ')
     } else {
-        $str_port_alternative_allow_users = $str_allow_users
+        $port_alternative_allow_users_str = $allow_users_str
     }
 
     /* Check if SSH used socket */
