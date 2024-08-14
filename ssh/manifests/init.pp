@@ -54,9 +54,12 @@ class ssh(
     /* Create SSHD directory config */
     file { '/etc/ssh/sshd_config.d':
         ensure  => directory,
-        mode    => '0600',
+        force   => true,
         owner   => 'root',
         group   => 'root',
+        mode    => '0600',
+        purge   => true,
+        recurse => true,
         require => Package['openssh-server']
     }
 
