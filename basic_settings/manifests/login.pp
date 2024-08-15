@@ -49,9 +49,11 @@ class basic_settings::login(
         content => template('basic_settings/login/pam/su')
     }
 
-    /* Remove sudoers banner */
-    file { ['/etc/sudoers_lecture', '/etc/sudoers.lecture']:
-        ensure  => absent,
+    /* Sudoers banner by password prompt */
+    file { '/etc/sudoers.lecture':
+        ensure  => file,
+        mode    => '0644',
+        content => "${sudoers_banner_text}\n\n",
         require => Package['sudo']
     }
 
@@ -61,7 +63,8 @@ class basic_settings::login(
         mode    => '0440',
         owner   => 'root',
         group   => 'root',
-        content => template('basic_settings/login/sudoers')
+        content => template('basic_settings/login/sudoers'),
+        require => File['/etc/sudoers.lecture']
     }
 
     /* Setup sudoers dir */
