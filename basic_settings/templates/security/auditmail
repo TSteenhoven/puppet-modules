@@ -14,6 +14,10 @@ test -x $DATE || exit 1
 JOURNALCTL=/usr/bin/journalctl
 test -x $JOURNALCTL || exit 1
 
+# Check if grep is available
+GREP=/usr/bin/grep
+test -x $GREP || exit 1
+
 # Check if mail is available
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
@@ -24,7 +28,7 @@ AUDIT_OUTPUT=$($AUREPORTTOOL -k -ts yesterday 00:00:00 -te yesterday 23:59:59 2>
 # Try to check if we have boots sinds yesterday
 YESTERDAY=$($DATE --date="yesterday" +"%Y-%m-%d")
 TODAY=$($DATE +"%Y-%m-%d")
-BOOT_OUTPUT=$($JOURNALCTL --quiet --list-boots | grep "$YESTERDAY\|$TODAY")
+BOOT_OUTPUT=$($JOURNALCTL --quiet --list-boots | $GREP "$YESTERDAY" | $GREP "$TODAY")
 
 # Check if we have valid report
 if [ -z "$(echo $AUDIT_OUTPUT | grep 'no events of interest were found')" ]; then
