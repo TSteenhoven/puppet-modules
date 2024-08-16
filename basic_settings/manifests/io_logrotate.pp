@@ -1,6 +1,6 @@
 define basic_settings::io_logrotate(
     String                              $path,
-    Enum['daily','weekly', 'monthly']   $handle,
+    Enum['daily','weekly', 'monthly']   $frequency,
     Optional[Boolean]                   $compress       = true,
     Optional[Boolean]                   $compress_delay = false,
     Optional[String]                    $create_group   = 'root',

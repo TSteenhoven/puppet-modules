@@ -5,6 +5,8 @@ class gitlab(
     Optional[String]    $root_email     = undef,
     Optional[String]    $server_fdqn    = undef
 ) {
+    /* Set suspicious packages */
+    $suspicious_packages = ['/usr/bin/gitlab-ctl']
 
     /* Try to get server fdqn */
     if ($server_fdqn == undef) {
@@ -125,6 +127,19 @@ class gitlab(
             },
             daemon_reload   => 'gitlab_systemd_daemon_reload',
             require         => Exec['gitlab_install']
+        }
+    }
+
+    /* Setup audit rules */
+    if (defined(Package['auditd'])) {
+        basic_settings::security_audit { 'gitlab':
+            rules => ['-a always,exclude -F auid=unset -F exe=/usr/local/lib/gitlab/embedded/bin/node_exporter'],
+            order => 2,
+            require => Exec['gitlab_install']
+        }
+        basic_settings::security_audit { 'gitlab':
+            rule_suspicious_packages => $suspicious_packages,
+            require => Exec['gitlab_install']
         }
     }
 }

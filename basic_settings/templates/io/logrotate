@@ -1,7 +1,7 @@
 # Managed by puppet
 <%= @path %> {
     rotate <%= @rotate_correct %>
-    <%= @handle %>
+    <%= @frequency %>
 <% if @skip_empty -%>
     notifempty
 <% end -%>

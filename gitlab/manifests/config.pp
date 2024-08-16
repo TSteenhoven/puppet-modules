@@ -1,6 +1,7 @@
 class gitlab::config(
     Optional[String]                $database_shared_buffers    = '256MB',
     Optional[Boolean]               $https                      = false,
+    Optional[Integer]               $logrotate_rotate           = undef,
     Optional[Integer]               $puma_worker_processes      = 0,
     Optional[Integer]               $sidekiq_concurrency        = 10,
     Optional[String]                $ssh_host                   = undef,
@@ -12,6 +13,17 @@ class gitlab::config(
 ) {
     /* Set variables */
     $server_fdqn = $gitlab::server_fdqn_correct
+
+    /* Get logrotate rotate */
+    if ($logrotate_rotate == undef) {
+        if (defined(Class['basic_settings::io'])) {
+            $logrotate_rotate_correct = $basic_settings::io::log_rotate
+        } else {
+            $logrotate_rotate_correct = 12
+        }
+    } else {
+        $logrotate_rotate_correct = $logrotate_rotate
+    }
 
     /* Try to get smtp server */
     if ($smtp_server == undef) {

@@ -156,7 +156,7 @@ class nginx(
     if (defined(Package['logrotate'])) {
         basic_settings::io_logrotate { 'nginx':
             path            => '/var/log/nginx/*.log',
-            handle          => 'daily',
+            frequency       => 'daily',
             compress_delay  => true,
             create_user     => $run_user,
             rotate_post     => "if [ -f /var/run/nginx.pid ]; then\n\t\tkill -USR1 `cat /var/run/nginx.pid`\n\tfi"

@@ -145,6 +145,26 @@ class mysql (
                 require         => Package['mysql-server']
             }
         }
+
+        /* Check if logrotate package exists */
+        if (defined(Package['logrotate'])) {
+            basic_settings::io_logrotate { 'mysql':
+                path            => "/var/log/mysql.log\n/var/log/mysql/*log",
+                frequency       => 'daily',
+                create_user     => 'mysql',
+                rotate_post     => join([
+                    'test -x /usr/bin/mysqladmin || exit 0',
+                    'MYADMIN="/usr/bin/mysqladmin --defaults-file=/etc/mysql/debian.cnf"',
+                    'if [ -z "`$MYADMIN ping 2>/dev/null`" ]; then',
+                        "\tif killall -q -s0 -umysql mysqld; then",
+                        "\texit 1",
+                        "\tfi",
+                    'else',
+                        "\t\$MYADMIN flush-logs",
+                    'fi'
+                ], "\n\t")
+            }
+        }
     } else {
         /* Default file for normal install */
         $defaults_file = '/etc/mysql/debian.cnf'

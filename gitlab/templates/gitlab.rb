@@ -31,6 +31,11 @@ nginx['ssl_certificate_key'] = '<%= @ssl_certificate_key %>'
 <% else -%>
 nginx['redirect_http_to_https'] = false
 <% end -%>
+logrotate['enable'] = true
+logging['logrotate_frequency'] = 'daily'
+logging['logrotate_maxsize'] = nil
+logging['logrotate_size'] = nil
+logging['logrotate_rotate'] = <%= @logrotate_rotate_correct %>
 postgresql['shared_buffers'] = '<%= @database_shared_buffers %>'
 puma['worker_processes'] = <%= @puma_worker_processes %>
 sidekiq['concurrency'] = <%= @sidekiq_concurrency %>
