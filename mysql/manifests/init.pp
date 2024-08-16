@@ -148,7 +148,7 @@ class mysql (
 
         /* Check if logrotate package exists */
         if (defined(Package['logrotate'])) {
-            basic_settings::io_logrotate { 'mysql':
+            basic_settings::io_logrotate { 'mysql-server':
                 path            => "/var/log/mysql.log\n/var/log/mysql/*log",
                 frequency       => 'daily',
                 create_user     => 'mysql',

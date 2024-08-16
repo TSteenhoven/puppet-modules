@@ -25,6 +25,14 @@ class basic_settings::pro(
                     enable      => false
                 }
             }
+
+            /* Check if logrotate package exists */
+            if (defined(Package['logrotate'])) {
+                basic_settings::io_logrotate { 'ubuntu-pro-client':
+                    path            => '/var/log/ubuntu-advantage*.log',
+                    frequency       => 'monthly'
+                }
+            }
         }
     }
 }
