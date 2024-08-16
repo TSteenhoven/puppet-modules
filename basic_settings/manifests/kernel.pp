@@ -216,7 +216,7 @@ class basic_settings::kernel(
     }
 
     /* Create sysctl network config  */
-    file { '/etc/sysctl.d/10-network.conf':
+    file { '/etc/sysctl.d/90-network.conf':
         ensure  => file,
         content  => template('basic_settings/kernel/sysctl/network.conf'),
         owner   => 'root',
@@ -226,7 +226,7 @@ class basic_settings::kernel(
     }
 
     /* Create sysctl memory config  */
-    file { '/etc/sysctl.d/10-memory.conf':
+    file { '/etc/sysctl.d/90-memory.conf':
         ensure  => file,
         content  => template('basic_settings/kernel/sysctl/memory.conf'),
         owner   => 'root',
