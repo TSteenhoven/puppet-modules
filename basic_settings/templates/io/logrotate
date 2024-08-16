@@ -1,4 +1,5 @@
 # Managed by puppet
+    su root root
 <%= @path %> {
     rotate <%= @rotate_correct %>
     <%= @frequency %>
