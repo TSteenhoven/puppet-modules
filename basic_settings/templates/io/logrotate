@@ -1,6 +1,6 @@
 # Managed by puppet
-    su root root
 <%= @path %> {
+    su root root
     rotate <%= @rotate_correct %>
     <%= @frequency %>
 <% if @skip_empty -%>
