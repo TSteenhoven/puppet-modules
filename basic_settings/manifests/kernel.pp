@@ -208,16 +208,38 @@ class basic_settings::kernel(
         ensure  => directory,
         owner   => 'root',
         group   => 'root',
-        mode    => '0600'
+        mode    => '0600',
+        force   => true,
+        purge   => true,
+        recurse => true,
+        notify  => Exec['kernel_sysctl_reload']
     }
 
     /* Create sysctl network config  */
-    file { '/etc/sysctl.d/20-network-security.conf':
+    file { '/etc/sysctl.d/10-network.conf':
         ensure  => file,
         content  => template('basic_settings/kernel/sysctl/network.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
+        notify  => Exec['kernel_sysctl_reload']
+    }
+
+    /* Create sysctl memory config  */
+    file { '/etc/sysctl.d/10-memory.conf':
+        ensure  => file,
+        content  => template('basic_settings/kernel/sysctl/memory.conf'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Exec['kernel_sysctl_reload']
+    }
+
+    /* Create symlink */
+    file { '/etc/sysctl.d/99-sysctl.conf':
+        ensure  => 'link',
+        target  => '/etc/sysctl.conf',
+        force   => true,
         notify  => Exec['kernel_sysctl_reload']
     }
 
