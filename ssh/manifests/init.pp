@@ -54,10 +54,10 @@ class ssh(
     /* Create SSHD directory config */
     file { '/etc/ssh/sshd_config.d':
         ensure  => directory,
-        force   => true,
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
+        force   => true,
         purge   => true,
         recurse => true,
         require => Package['openssh-server']
@@ -113,7 +113,7 @@ class ssh(
             ensure      => undef,
             enable      => false,
             require     => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-            subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
+            subscribe   => [File['/etc/ssh/sshd_config.d'], File['/etc/ssh/sshd_config.d/99-custom.conf']]
         }
 
         /* Ensure that ssh is always running */
@@ -128,7 +128,7 @@ class ssh(
             ensure      => running,
             enable      => true,
             require     => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-            subscribe   => File['/etc/ssh/sshd_config.d/99-custom.conf']
+            subscribe   => [File['/etc/ssh/sshd_config.d'], File['/etc/ssh/sshd_config.d/99-custom.conf']]
         }
     }
 
