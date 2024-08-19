@@ -1,0 +1,16 @@
+#!/bin/bash
+# Managed by puppet
+
+# Check if shell is login shell
+if [[ "$0" !=~ ^- ]]; then
+    # Check if mail is available
+    MAIL=/usr/bin/mail
+    test -x $MAIL || exit 1
+
+    # Set values
+    NOW=$(date)
+    USER= $(whoami)
+
+    # Mail
+    printf '%b\n' "User $USER logged into the <%= @server_fdqn %> at $NOW" | $MAIL -s "Audit login $USER" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+fi

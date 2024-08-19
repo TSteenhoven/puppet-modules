@@ -25,10 +25,10 @@ class basic_settings::login(
     /* Create list of packages that is suspicious */
     $suspicious_packages = ['/usr/bin/sudo', '/usr/sbin/pam-auth-update'];
 
-    /* Create profile trigger */
-    file { '/etc/profile.d/99-login-notify.sh':
+    /* Create su trigger */
+    file { '/usr/local/bin/su-notify':
         ensure  => file,
-        content => template('basic_settings/login/login-notify.sh'),
+        content => template('basic_settings/login/pam/notify'),
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # Important, not only root are executing this rule
@@ -58,7 +58,7 @@ class basic_settings::login(
         owner   => 'root',
         group   => 'root',
         content => template('basic_settings/login/pam/su'),
-        require => File['/etc/profile.d/99-login-notify.sh']
+        require => File['/usr/local/bin/su-notify']
     }
 
     /* Sudoers banner by password prompt */
@@ -121,6 +121,15 @@ class basic_settings::login(
             content => template('basic_settings/login/motd/header'),
             notify  => Package['update-motd']
         }
+    }
+
+    /* Create profile trigger */
+    file { '/etc/profile.d/99-login-notify.sh':
+        ensure  => file,
+        content => template('basic_settings/login/login-notify.sh'),
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0755', # Important, not only root are executing this rule
     }
 
     /* Ensure that getty is stopped or running */
