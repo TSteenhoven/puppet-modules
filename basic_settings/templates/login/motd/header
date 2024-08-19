@@ -31,9 +31,9 @@ fi
 # Check if terminal is not linux
 if [ "$TERM" != "linux" ]; then
 <% if @environment == 'production' -%>
-    printf "Welcome to \033[1;31m%s\033[0m %s %s (%s %s %s) server \n" "<%= @environment %>" "<%= @hostname %>" "$DISTRIB_DESCRIPTION" "$(uname -o)" "$(uname -r)" "$(uname -m)"
+    printf "Welcome to \033[1;31m%s\033[0m \033[0;36m%s\033[0m %s (%s %s %s) server \n" "<%= @environment %>" "<%= @hostname %>" "$DISTRIB_DESCRIPTION" "$(uname -o)" "$(uname -r)" "$(uname -m)"
 <% else -%>
-    printf "Welcome to \033[1;36m%s\033[0m %s %s (%s %s %s) server \n" "<%= @environment %>" "<%= @hostname %>" "$DISTRIB_DESCRIPTION" "$(uname -o)" "$(uname -r)" "$(uname -m)"
+    printf "Welcome to \033[1;32m%s\033[0m \033[0;36m%s\033[0m %s (%s %s %s) server \n" "<%= @environment %>" "<%= @hostname %>" "$DISTRIB_DESCRIPTION" "$(uname -o)" "$(uname -r)" "$(uname -m)"
 <% end -%>
 else
     printf "Welcome to %s %s %s (%s %s %s) server \n" "<%= @environment %>" "<%= @hostname %>" "$DISTRIB_DESCRIPTION" "$(uname -o)" "$(uname -r)" "$(uname -m)"
