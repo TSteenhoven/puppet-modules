@@ -132,12 +132,12 @@ class gitlab(
 
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
-        basic_settings::security_audit { 'gitlab':
+        basic_settings::security_audit { 'gitlab_exclude':
             rules => ['-a always,exclude -F auid=unset -F exe=/usr/local/lib/gitlab/embedded/bin/node_exporter'],
             order => 2,
             require => Exec['gitlab_install']
         }
-        basic_settings::security_audit { 'gitlab':
+        basic_settings::security_audit { 'gitlab_packages':
             rule_suspicious_packages => $suspicious_packages,
             require => Exec['gitlab_install']
         }
