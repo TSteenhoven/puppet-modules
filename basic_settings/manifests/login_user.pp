@@ -20,7 +20,7 @@ define basic_settings::login_user(
 ) {
 
     /* Set variables */
-    $environment_name = $basic_settings::login::environment_name
+    $environment = $basic_settings::login::environment
     $hostname = $basic_settings::login::hostname
 
     /* Create only user group when group is disabled */

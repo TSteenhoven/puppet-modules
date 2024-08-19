@@ -1,5 +1,5 @@
 class basic_settings::login(
-    Optional[String]    $environment_name       = 'production',
+    Optional[String]    $environment            = 'production',
     Optional[Boolean]   $getty_enable           = false,
     Optional[String]    $hostname               = $::networking['hostname'],
     Optional[String]    $mail_to                = 'root',

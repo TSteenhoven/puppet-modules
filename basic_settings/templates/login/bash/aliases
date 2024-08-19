@@ -1,13 +1,10 @@
 # Managed by puppet
 
-# Set variables
-ENVIRONMENT_NAME="<%= @environment_name %>"
-
 # Set PS1
-<% if @environment_name == 'production' -%>
-PS1='\u@\[\033[0;36m\]\h\[\033[1;31m\]($ENVIRONMENT_NAME)\[\033[0m\]:\w\$ '
+<% if @environment == 'production' -%>
+PS1='\u@\[\033[0;36m\]\h\[\033[1;31m\](<%= @environment %>)\[\033[0m\]:\w\$ '
 <% else -%>
-PS1='\u@\[\033[0;36m\]\h\[\033[1;36m\]($ENVIRONMENT_NAME)\[\033[0m\]:\w\$ '
+PS1='\u@\[\033[0;36m\]\h\[\033[1;36m\](<%= @environment %>)\[\033[0m\]:\w\$ '
 <% end -%>
 
 # Enable color support of ls and also add handy aliases
@@ -21,5 +18,5 @@ fi
 
 # Check if terminal is not linux
 if [ "$TERM" != "linux" ]; then
-    PROMPT_COMMAND='echo -ne "\033]0;"<%= @hostname %> \($ENVIRONMENT_NAME\)"\007"'
+    PROMPT_COMMAND='echo -ne "\033]0;"<%= @hostname %> \(<%= @environment %\)"\007"'
 fi
