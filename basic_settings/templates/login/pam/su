@@ -38,6 +38,9 @@ session optional pam_mail.so nopen
 # (Replaces the use of /etc/limits in old login)
 session required pam_limits.so
 
+# Notify administrator when user uses su
+session optional pam_exec.so /etc/profile.d/99-login-notify.sh
+
 # The standard Unix authentication modules, used with
 # NIS (man nsswitch) as well as normal /etc/passwd and
 # /etc/shadow entries.
