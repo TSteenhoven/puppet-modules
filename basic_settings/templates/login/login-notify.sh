@@ -21,9 +21,12 @@ if [ -n "$PS1" ]; then
     # Show message 
     if [ "$USER" = "root" ]; then
         printf "\033[0;31mYou login as root, this action is registered and sent to the server administrator(s).\033[0m\n"
-    else
-        printf "\033[0;36mYour IP (%s), login time (%s) and username (%s) have been registered and sent to the server administrator(s).\033[0m\n" "$IP" "$NOW" "$USER"
+        printf '%b\n' "User $USER logged in as root into the <%= @server_fdqn %> at $NOW\nIP: $IP" | $MAIL -s "Audit root login $USER" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+        exit 0
     fi
+
+    # Show message 
+    printf "\033[0;36mYour IP (%s), login time (%s) and username (%s) have been registered and sent to the server administrator(s).\033[0m\n" "$IP" "$NOW" "$USER"
 fi
 
 # Send message
