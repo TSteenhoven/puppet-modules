@@ -6,21 +6,5 @@ if [[ "$0" =~ ^- ]]; then
     exit 0
 fi
 
-# Check if date is available
-DATE=/usr/bin/date
-test -x $DATE || exit 1
-
-# Check if mail is available
-MAIL=/usr/bin/mail
-test -x $MAIL || exit 1
-
-# Check if whoami is available
-WHOAMI=/usr/bin/whoami
-test -x $WHOAMI || exit 1
-
-# Get values
-NOW=$($DATE)
-USER=$(WHOAMI)
-
-# Mail
-printf '%b\n' "User $USER logged in as root into the <%= @server_fdqn %> at $NOW\nIP: $IP" | $MAIL -s "Audit root login $USER" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+# Trigger profile script
+/etc/profile.d/99-login-notify.sh
