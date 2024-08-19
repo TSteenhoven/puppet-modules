@@ -1,0 +1,12 @@
+# Managed by puppet
+if [ "$BASH" ]; then
+    if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+    fi
+else
+    if [ -f ~/.bash_aliases ]; then
+        . ~/.bash_aliases
+    fi
+fi
+
+mesg n

@@ -19,6 +19,10 @@ define basic_settings::login_user(
     Optional[String]                    $shell              = '/bin/bash'
 ) {
 
+    /* Set variables */
+    $environment_name = $basic_settings::login::environment_name
+    $hostname = $basic_settings::login::hostname
+
     /* Create only user group when group is disabled */
     if (!$disable_group) {
         group { $name:
@@ -105,9 +109,14 @@ define basic_settings::login_user(
 
         /* Create profile file */
         if ($bash_profile != undef) {
+            if ($bash_profile == 'default') {
+                $bash_profile_correct = template('basic_settings/login/bash/profile')
+            } else {
+                $bash_profile_correct = $bash_profile
+            }
             file { "${home}/.profile":
                 ensure  => $ensure ? { absent => absent, default => present },
-                content => $bash_profile,
+                content => $bash_profile_correct,
                 owner   => $uid,
                 group   => $gid,
                 mode    => '0700',
@@ -117,9 +126,14 @@ define basic_settings::login_user(
 
         /* Create bashrc file */
         if ($bashrc != undef) {
+            if ($bashrc == 'default') {
+                $bash_rc_correct = template('basic_settings/login/bash/rc')
+            } else {
+                $bash_rc_correct = $bashrc
+            }
             file { "${home}/.bashrc":
                 ensure  => $ensure ? { absent => absent, default => present },
-                content => $bashrc,
+                content => $bash_rc_correct,
                 owner   => $uid,
                 group   => $gid,
                 mode    => '0700',
@@ -129,9 +143,14 @@ define basic_settings::login_user(
 
         /* Create bash aliases file */
         if ($bash_aliases != undef) {
+            if ($bash_aliases == 'default') {
+                $bash_aliases_correct = template('basic_settings/login/bash/aliases')
+            } else {
+                $bash_aliases_correct = $bash_aliases
+            }
             file { "${home}/.bash_aliases":
                 ensure  => $ensure ? { absent => absent, default => present },
-                content => $bash_aliases,
+                content => $bash_aliases_correct,
                 owner   => $uid,
                 group   => $gid,
                 mode    => '0700',

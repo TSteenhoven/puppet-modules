@@ -1,5 +1,7 @@
 class basic_settings::login(
+    Optional[String]    $environment_name       = 'production',
     Optional[Boolean]   $getty_enable           = false,
+    Optional[String]    $hostname               = $::networking['hostname'],
     Optional[String]    $mail_to                = 'root',
     Optional[String]    $server_fdqn            = $::networking['fqdn'],
     Optional[String]    $sudoers_banner_text    = "WARNING: You are running this command with elevated privileges.\nThis action is registered and sent to the server administrator(s). Unauthorized access will be fully investigated and reported to law enforcement authorities.",
@@ -88,7 +90,8 @@ class basic_settings::login(
         file { '/etc/default/motd-news':
             ensure  => file,
             mode    => '0600',
-            content => "ENABLED=0\n"
+            content => "ENABLED=0\n",
+            require => Package['update-motd']
         }
 
         /* Ensure that motd-news is stopped */
@@ -96,7 +99,17 @@ class basic_settings::login(
             ensure      => stopped,
             enable      => false,
             require     => File['/etc/default/motd-news'],
-            subscribe   => File['/etc/default/motd-news']
+            subscribe   => File['/etc/default/motd-news'],
+        }
+
+        /* Set welcome header */
+        file { '/etc/update-motd.d/00-header':
+            ensure  => file,
+            mode    => '0755',
+            owner   => 'root',
+            group   => 'root',
+            content => template('basic_settings/login/motd/header'),
+            notify  => Package['update-motd']
         }
     }
 

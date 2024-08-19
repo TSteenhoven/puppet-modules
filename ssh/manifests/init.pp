@@ -1,7 +1,7 @@
 
 class ssh(
     Optional[Array]     $allow_users                    = [],
-    Optional[String]    $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. All activity on this system is recorded and forwarded.\nUnauthorized access will be fully investigated and reported to law enforcement authorities.",
+    Optional[String]    $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.",
     Optional[Array]     $host_key_algorithms            = ['ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519'],
     Optional[Integer]   $idle_timeout                   = 15,
     Optional[Array]     $password_authentication_users  = [],

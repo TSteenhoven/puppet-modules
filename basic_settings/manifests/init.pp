@@ -5,6 +5,7 @@ class basic_settings(
         Optional[String]            $cluster_id                                 = 'core',
         Optional[Boolean]           $dconf_service_enable                       = false,
         Optional[Boolean]           $docs_enable                                = false,
+        Optional[String]            $environment_name                           = 'production',
         Optional[String]            $firewall_package                           = 'nftables',
         Optional[Boolean]           $getty_enable                               = false,
         Optional[Boolean]           $gitlab_enable                              = false,
@@ -603,6 +604,7 @@ class basic_settings(
 
     /* Setup login */
     class { 'basic_settings::login':
+        environment_name    => $environment_name,
         getty_enable        => $getty_enable,
         mail_to             => $systemd_notify_mail,
         server_fdqn         => $server_fdqn,

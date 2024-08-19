@@ -1,0 +1,25 @@
+# Managed by puppet
+
+# Set variables
+ENVIRONMENT_NAME="<%= @environment_name %>"
+
+# Set PS1
+<% if @environment_name == 'production' -%>
+PS1='\u@\[\033[0;36m\]\h\[\033[1;31m\]($ENVIRONMENT_NAME)\[\033[0m\]:\w\$ '
+<% else -%>
+PS1='\u@\[\033[0;36m\]\h\[\033[1;36m\]($ENVIRONMENT_NAME)\[\033[0m\]:\w\$ '
+<% end -%>
+
+# Enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# Check if terminal is not linux
+if [ "$TERM" != "linux" ]; then
+    PROMPT_COMMAND='echo -ne "\033]0;"<%= @hostname %> \($ENVIRONMENT_NAME\)"\007"'
+fi
