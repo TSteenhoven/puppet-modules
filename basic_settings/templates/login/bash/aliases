@@ -18,5 +18,5 @@ fi
 
 # Check if terminal is not linux
 if [ "$TERM" != "linux" ]; then
-    PROMPT_COMMAND='echo -ne "\033]0;"<%= @hostname %> \(<%= @environment %\)"\007"'
+    PROMPT_COMMAND='echo -ne "\033]0;"<%= @hostname %> \(<%= @environment %>\)"\007"'
 fi

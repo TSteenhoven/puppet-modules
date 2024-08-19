@@ -22,7 +22,7 @@ if [ -n "$PS1" ]; then
     if [ "$USER" = "root" ]; then
         printf "\033[0;31mYou login as root, this action is registered and sent to the server administrator(s).\033[0m\n"
     else
-        printf "\033[0;36mYour IP ($IP), login time ($NOW) and username ($USER) have been registered and sent to the server administrator(s).\033[0m\n"
+        printf "\033[0;36mYour IP (%s), login time (%s) and username (%s) have been registered and sent to the server administrator(s).\033[0m\n" "$IP" "$NOW" "$USER"
     fi
 fi
 
