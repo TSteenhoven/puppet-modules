@@ -9,10 +9,6 @@ test -x $AWK || exit 1
 DATE=/usr/bin/date
 test -x $DATE || exit 1
 
-# Check if grep is available
-GREP=/usr/bin/grep
-test -x $GREP || exit 1
-
 # Check if mail is available
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
@@ -55,7 +51,7 @@ else
 fi
 
 # Chec if we are in interactive shell
-if echo "$0" | $GREP -q '^-'; then
+if [ -n "$PS1" ]; then
     if [[ "$TARGET_USER" = "root" ]]; then
         printf "\033[0;31mYou login as root, this action is registered and sent to the server administrator(s).\033[0m\n"
     elif [ "$TARGET_USER" = "$USER" ]; then

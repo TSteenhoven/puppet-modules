@@ -1,10 +1,7 @@
 #!/bin/bash
 # Managed by puppet
 
-# Check if shell is login shell
-if [[ "$0" =~ ^- ]]; then
-    exit 0
+# Check if shell is non login shell
+if [ "$PAM_SERVICE" = "su" ]; then
+    sh /etc/profile.d/99-login-notify.sh
 fi
-
-# Trigger profile script
-sh /etc/profile.d/99-login-notify.sh
