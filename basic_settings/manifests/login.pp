@@ -25,13 +25,25 @@ class basic_settings::login(
     /* Create list of packages that is suspicious */
     $suspicious_packages = ['/usr/bin/sudo', '/usr/sbin/pam-auth-update'];
 
+    /* Create script dir */
+    if (!defined(File['/usr/local/lib/puppet'])) {
+        file { '/usr/local/lib/puppet':
+            ensure  => directory,
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0755' # Important, not only root are executing this rule
+        }
+    }
+
     /* Create su trigger */
-    file { '/usr/local/bin/su-notify':
+    $su_notify_path = '/usr/local/lib/puppet/su-notify'
+    file { $su_notify_path:
         ensure  => file,
         content => template('basic_settings/login/pam/notify'),
         owner   => 'root',
         group   => 'root',
         mode    => '0755', # Important, not only root are executing this rule
+        require => File['/usr/local/lib/puppet']
     }
 
     /* Run command when PAM file is changed */
@@ -58,7 +70,7 @@ class basic_settings::login(
         owner   => 'root',
         group   => 'root',
         content => template('basic_settings/login/pam/su'),
-        require => File['/usr/local/bin/su-notify']
+        require => File[$su_notify_path]
     }
 
     /* Sudoers banner by password prompt */

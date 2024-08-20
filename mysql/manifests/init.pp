@@ -36,8 +36,7 @@ class mysql (
     $mysqld_default = stdlib::merge($default_values, $settings)
 
     /* Basic variable */
-    $script_dir = '/usr/local/lib/puppet-mysql'
-    $script_path = "${script_dir}/grant.sh"
+    $script_path = '/usr/local/lib/puppet/mysql-grant.sh'
 
     /* Get version */
     if (defined(Class['basic_settings::package_mysql'])) {
@@ -186,10 +185,13 @@ class mysql (
     }
 
     /* Create script dir */
-    file { $script_dir:
-        ensure  => directory,
-        owner   => 'root',
-        group   => 'root'
+    if (!defined(File['/usr/local/lib/puppet'])) {
+        file { '/usr/local/lib/puppet':
+            ensure  => directory,
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0755' # Important, not only root are executing this rule
+        }
     }
 
     /* Create script */
@@ -198,7 +200,8 @@ class mysql (
         content => template('mysql/grant.sh'), # Keep this file below version and defaults_file variable
         owner   => 'root',
         group   => 'root',
-        mode    => '0700'
+        mode    => '0700',
+        require => File['/usr/local/lib/puppet']
     }
 
     /* Set config file */
