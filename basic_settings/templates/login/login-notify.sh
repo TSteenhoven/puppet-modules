@@ -21,28 +21,21 @@ test -x $LAST || exit 1
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
 
-# Check if tr is available
-TR=/usr/bin/tr
-test -x $TR || exit 1
-
-# Check if whoami is available
-WHOAMI=/usr/bin/whoami
-test -x $WHOAMI || exit 1
-
-# Set variables
-NOW=$($DATE)
-TARGET_USER=$($WHOAMI)
-
-# Check if user variable is not given
-if [ -z "$USER" ]; then
-    USER="$TARGET_USER"
-    TARGET_USER="${1:-root}"
+# Check if PAM values exits
+if [ -n "$PAM_RUSER" ]; then
+    USER="$PAM_RUSER"
+    TARGET_USER="$PAM_USER"
+else
+    # Check if whoami is available
+    WHOAMI=/usr/bin/whoami
+    test -x $WHOAMI || exit 1
+    TARGET_USER=$($WHOAMI)
 fi
 
 # Try to get IP
-if [ -n "$(echo $SSH_CLIENT)" ]; then
+if [ -n "$SSH_CLIENT" ]; then
     IP=$(echo $SSH_CLIENT | $AWK '{ print $1}')
-elif [ -n "$(echo $SSH_CONNECTION)" ]; then
+elif [ -n "$SSH_CONNECTION" ]; then
     IP=$(echo $SSH_CONNECTION | $AWK '{ print $1}')
 else
     IP_TMP=$($LAST -i -n 1 $USER | $AWK '{print $3}' | $HEAD -n 1)
@@ -52,6 +45,9 @@ else
         IP="UNKNOWN"
     fi
 fi
+
+# Set variables
+NOW=$($DATE)
 
 # Chec if we are in interactive shell
 if [ -n "$PS1" ]; then
