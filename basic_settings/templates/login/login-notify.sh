@@ -23,7 +23,7 @@ TARGET_USER=$($WHOAMI)
 
 # Check if user variable is not given
 if [ -z "$USER" ]; then
-	USER="$TARGET_USER"
+    USER="$TARGET_USER"
     TARGET_USER="${1:-root}"
 fi
 
