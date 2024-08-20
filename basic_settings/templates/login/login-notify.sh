@@ -28,10 +28,9 @@ if [ -z "$USER" ]; then
 fi
 
 # Try to get IP
-if [ -n "$(echo $SSH_CLIENT)" ]; then
-    IP=$(echo $SSH_CLIENT | awk '{ print $1}')
-elif [ -n "$(echo $SSH_CONNECTION)" ]; then
-    IP=$(echo $SSH_CONNECTION | awk '{ print $1}')
+IP_TMP=$(who -u am i | awk '{print $NF}' | tr -d '()')
+if [ -z "$IP_TMP" ]; then
+    IP="$IP_TMP"
 else
     IP="UNKNOWN"
 fi
