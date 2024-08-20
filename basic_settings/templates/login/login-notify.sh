@@ -9,6 +9,14 @@ test -x $AWK || exit 1
 DATE=/usr/bin/date
 test -x $DATE || exit 1
 
+# Check if head is available
+HEAD=/usr/bin/head
+test -x $HEAD || exit 1
+
+# Check if last is available
+LAST=/usr/bin/last
+test -x $LAST || exit 1
+
 # Check if mail is available
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
@@ -16,10 +24,6 @@ test -x $MAIL || exit 1
 # Check if tr is available
 TR=/usr/bin/tr
 test -x $TR || exit 1
-
-# Check if who is available
-WHO=/usr/bin/who
-test -x $WHO || exit 1
 
 # Check if whoami is available
 WHOAMI=/usr/bin/whoami
@@ -41,9 +45,8 @@ if [ -n "$(echo $SSH_CLIENT)" ]; then
 elif [ -n "$(echo $SSH_CONNECTION)" ]; then
     IP=$(echo $SSH_CONNECTION | $AWK '{ print $1}')
 else
-    # Failback to system call for finding IP address
-    IP_TMP=$($WHO -u am i | $AWK '{print $NF}' | $TR -d '()')
-    if [ -z "$IP_TMP" ]; then
+    IP_TMP=$($LAST -i -n 1 $USER | $AWK '{print $3}' | $HEAD -n 1)
+    if [ -n "$IP_TMP" ]; then
         IP="$IP_TMP"
     else
         IP="UNKNOWN"
