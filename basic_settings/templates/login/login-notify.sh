@@ -1,6 +1,10 @@
 #!/bin/sh
 # Managed by puppet
 
+# Check if awk is available
+AWK=/usr/bin/awk
+test -x $AWK || exit 1
+
 # Check if date is available
 DATE=/usr/bin/date
 test -x $DATE || exit 1
@@ -13,11 +17,19 @@ test -x $GREP || exit 1
 MAIL=/usr/bin/mail
 test -x $MAIL || exit 1
 
+# Check if tr is available
+TR=/usr/bin/tr
+test -x $TR || exit 1
+
+# Check if who is available
+WHO=/usr/bin/who
+test -x $WHO || exit 1
+
 # Check if whoami is available
 WHOAMI=/usr/bin/whoami
 test -x $WHOAMI || exit 1
 
-# Current date
+# Set variables
 NOW=$($DATE)
 TARGET_USER=$($WHOAMI)
 
@@ -28,11 +40,18 @@ if [ -z "$USER" ]; then
 fi
 
 # Try to get IP
-IP_TMP=$(who -u am i | awk '{print $NF}' | tr -d '()')
-if [ -z "$IP_TMP" ]; then
-    IP="$IP_TMP"
+if [ -n "$(echo $SSH_CLIENT)" ]; then
+    IP=$(echo $SSH_CLIENT | $AWK '{ print $1}')
+elif [ -n "$(echo $SSH_CONNECTION)" ]; then
+    IP=$(echo $SSH_CONNECTION | $AWK '{ print $1}')
 else
-    IP="UNKNOWN"
+    # Failback to system call for finding IP address
+    IP_TMP=$($WHO -u am i | $AWK '{print $NF}' | $TR -d '()')
+    if [ -z "$IP_TMP" ]; then
+        IP="$IP_TMP"
+    else
+        IP="UNKNOWN"
+    fi
 fi
 
 # Chec if we are in interactive shell
