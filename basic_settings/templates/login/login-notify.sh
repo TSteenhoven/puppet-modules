@@ -18,8 +18,10 @@ LAST=/usr/bin/last
 test -x $LAST || exit 1
 
 # Check if mail is available
-MAIL=/usr/bin/mail
-test -x $MAIL || exit 1
+if [ -z"$MAIL" ]; then
+    MAIL=/usr/bin/mail
+    test -x $MAIL || exit 1
+fi
 
 # Check if PAM values exits
 if [ -n "$PAM_RUSER" ]; then
@@ -61,9 +63,7 @@ if [ -n "$PS1" ]; then
 fi
 
 # Send message
-if [ "$TARGET_USER" = "root" ]; then
-    printf '%b\n' "User $USER logged in as root into the <%= @server_fdqn %> at $NOW\nIP: $IP" | $MAIL -s "Audit $USER logged in as root" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
-elif [ "$TARGET_USER" = "$USER" ]; then
+if [ "$TARGET_USER" = "$USER" ]; then
     printf '%b\n' "User $USER logged into the <%= @server_fdqn %> at $NOW\nIP: $IP" | $MAIL -s "Audit login $USER" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 else
     printf '%b\n' "User $USER logged in as $TARGET_USER into the <%= @server_fdqn %> at $NOW\nIP: $IP" | $MAIL -s "Audit $USER logged in as $TARGET_USER" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
