@@ -40,6 +40,7 @@ class gitlab(
     /* Check if installation dir is given */
     if ($install_dir != undef) {
         /* Create ssl directory */
+        $install_dir_correct = $install_dir
         file { 'gitlab_install_dir':
             path    => $install_dir,
             ensure  => directory,
@@ -60,6 +61,7 @@ class gitlab(
         $requirements = [File['/opt/gitlab'], Package['dpkg'], Package['grep']]
     } else {
         /* Set requirements */
+        $install_dir_correct = '/opt/gitlab'
         $requirements = [Package['dpkg'], Package['grep']]
     }
 
@@ -133,7 +135,7 @@ class gitlab(
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'gitlab_exclude':
-            rules => ['-a always,exclude -F auid=unset -F exe=/usr/local/lib/gitlab/embedded/bin/node_exporter'],
+            rules => ["-a always,exclude -F auid=unset -F exe=${install_dir_correct}/embedded/bin/node_exporter"],
             order => 2,
             require => Exec['gitlab_install']
         }
