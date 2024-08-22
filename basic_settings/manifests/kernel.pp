@@ -301,7 +301,6 @@ class basic_settings::kernel(
             }
         }
     } else {
-        $cpu_processor = ''
         $cpu_governor_corect = undef
         $cpu_boost = undef
         $cpu_idle_max_cstate = undef
