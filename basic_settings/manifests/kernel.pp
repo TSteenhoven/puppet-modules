@@ -251,38 +251,50 @@ class basic_settings::kernel(
         $apparmor_enable = false
     }
 
+    /* Get CPU processor */
+    if (empty($::processors::models)) {
+        $cpu_processor = ''
+    } else {
+        $cpu_processor = $::processors::models[0]
+    }
+
+    /* Set CPU manufacturer */
+    if ($cpu_processor =~ 'AMD') {
+        $cpu_manufacturer = 'amd'
+    } elsif ($cpu_processor =~ 'Intel') {
+        $cpu_manufacturer = 'intel'
+    } else {
+        $cpu_manufacturer = undef
+    }
+
     /* Set CPU settings */
     if (!$::is_virtual) {
-        /* Get CPU processor */
-        if (empty($::processors::models)) {
-            $cpu_processor = ''
-        } else {
-            $cpu_processor = $::processors::models[0]
-        }
-
         /* Get settings */
         $cpu_governor_correct = $cpu_governor
         case $cpu_governor_correct {
             'performance': {
-                $cpu_boost = 1
-                if ($cpu_processor =~ 'Intel') {
-                    $cpu_intel_idle_max_cstate = 0
-                    $cpu_intel_pstate = 'passive'
-                } else {
-                    $cpu_intel_idle_max_cstate = undef
-                    $cpu_intel_pstate = undef
+                case $cpu_manufacturer {
+                    'amd', 'intel': {
+                        $cpu_boost = 1
+                        $cpu_idle_max_cstate = 1
+                        $cpu_pstate = 'passive'
+                    }
+                    default: {
+                        $cpu_boost = undef
+                        $cpu_idle_max_cstate = undef
+                        $cpu_pstate = undef
+                    }
                 }
             }
             default: {
-                $cpu_boost = 0
-                $cpu_intel_idle_max_cstate = undef
-                $cpu_intel_pstate = undef
+                $cpu_boost = undef
+                $cpu_idle_max_cstate = undef
+                $cpu_pstate = undef
             }
         }
 
-        /* Do special caces based on model */
-        if ($cpu_processor =~ 'Intel' or $cpu_processor =~ 'AMD') {
-            /* Activate boost modus */
+        /* Check if boot value is given */
+        if ($cpu_boost != undef) {
             exec { 'kernel_cpu_boost':
                 command => "/usr/bin/bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
                 onlyif  => "/usr/bin/bash -c 'if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"${cpu_boost}\" ]; then exit 1; else exit 0; fi'"
@@ -291,9 +303,9 @@ class basic_settings::kernel(
     } else {
         $cpu_processor = ''
         $cpu_governor_corect = undef
-        $cpu_boost = 0
-        $cpu_intel_idle_max_cstate = undef
-        $cpu_intel_pstate = undef
+        $cpu_boost = undef
+        $cpu_idle_max_cstate = undef
+        $cpu_pstate = undef
     }
 
     /* Setup TCP */

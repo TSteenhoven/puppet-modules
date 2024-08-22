@@ -52,14 +52,18 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT apparmor=0"
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT cpufreq.default_governor=<%= @cpu_governor_correct %>" 
 
 <% end -%>
-<% if ! @cpu_intel_idle_max_cstate.nil? -%>
-# Set Intel idle cstate
-GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_idle.max_cstate=<%= @cpu_intel_idle_max_cstate %>" 
+<% if ! @cpu_idle_max_cstate.nil? -%>
+# Set idle cstate
+<% if @cpu_manufacturer = 'intel '-%>
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_idle.max_cstate=<%= @cpu_idle_max_cstate %>" 
+<% else -%>
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT processor.max_cstate=<%= @cpu_idle_max_cstate %>" 
+<% end -%>
 
 <% end -%>
-<% if ! @cpu_intel_pstate.nil? -%>
-# Set Intel pstate
-GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_pstate=<%= @cpu_intel_pstate %>" 
+<% if ! @cpu_pstate.nil? -%>
+# Set pstate
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT <%= @cpu_manufacturer %>_pstate=<%= @cpu_pstate %>" 
 
 <% end -%>
 <% if @ip_version_v6 -%>
