@@ -42,6 +42,32 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT debugfs=off"
 <% if @apparmor_enable -%>
 # Enable apparmor
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT apparmor=1 security=apparmor"
+<% else -%>
+# Disable apparmor
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT apparmor=0"
+<% end -%>
+
+<% if ! @cpu_governor_correct.nil? -%>
+# Set CPU governor
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT cpufreq.default_governor=<%= @cpu_governor_correct %>" 
+
+<% end -%>
+<% if ! @cpu_intel_idle_max_cstate.nil? -%>
+# Set Intel idle cstate
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_idle.max_cstate=<%= @cpu_intel_idle_max_cstate %>" 
+
+<% end -%>
+<% if ! @cpu_intel_pstate.nil? -%>
+# Set Intel pstate
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_pstate=<%= @cpu_intel_pstate %>" 
+
+<% end -%>
+<% if @ip_version_v6 -%>
+# Enable IPv6
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT ipv6.disable=0"
+<% else -%>
+# Disable IPv6
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT ipv6.disable=1"
 <% end -%>
 
 # Disable graphical terminal

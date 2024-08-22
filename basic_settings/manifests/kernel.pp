@@ -2,6 +2,7 @@ class basic_settings::kernel(
     Optional[String]            $antivirus_package          = undef,
     Optional[String]            $bootloader                 = 'grub',
     Optional[Integer]           $connection_max             = 4096,
+    Optional[String]            $cpu_governor               = 'performance',
     Optional[Boolean]           $guest_agent_enable         = false,
     Optional[Integer]           $hugepages                  = 0,
     Optional[Array]             $install_options            = undef,
@@ -250,6 +251,51 @@ class basic_settings::kernel(
         $apparmor_enable = false
     }
 
+    /* Set CPU settings */
+    if (!$::is_virtual) {
+        /* Get CPU processor */
+        if (empty($::processors::models)) {
+            $cpu_processor = ''
+        } else {
+            $cpu_processor = $::processors::models[0]
+        }
+
+        /* Get settings */
+        $cpu_governor_correct = $cpu_governor
+        case $cpu_governor_correct {
+            'performance': {
+                $cpu_boost = 1
+                if ($cpu_processor =~ 'Intel') {
+                    $cpu_intel_idle_max_cstate = 0
+                    $cpu_intel_pstate = 'passive'
+                } else {
+                    $cpu_intel_idle_max_cstate = undef
+                    $cpu_intel_pstate = undef
+                }
+            }
+            default: {
+                $cpu_boost = 0
+                $cpu_intel_idle_max_cstate = undef
+                $cpu_intel_pstate = undef
+            }
+        }
+
+        /* Do special caces based on model */
+        if ($cpu_processor =~ 'Intel' or $cpu_processor =~ 'AMD') {
+            /* Activate boost modus */
+            exec { 'kernel_cpu_boost':
+                command => "/usr/bin/bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
+                onlyif  => "/usr/bin/bash -c 'if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"${cpu_boost}\" ]; then exit 1; else exit 0; fi'"
+            }
+        }
+    } else {
+        $cpu_processor = ''
+        $cpu_governor_corect = undef
+        $cpu_boost = 0
+        $cpu_intel_idle_max_cstate = undef
+        $cpu_intel_pstate = undef
+    }
+
     /* Setup TCP */
     case $bootloader {
         'grub': {
@@ -306,24 +352,6 @@ class basic_settings::kernel(
                 notify      => Exec['kernel_sysctl_reload']
             }
         }
-    }
-
-    /* Activate performance modus */
-    exec { 'kernel_performance':
-        command     => "/usr/bin/bash -c 'for (( i=0; i<`nproc`; i++ )); do if [ -d /sys/devices/system/cpu/cpu\${i}/cpufreq ]; then echo \"performance\" > /sys/devices/system/cpu/cpu\${i}/cpufreq/scaling_governor; fi; done > /tmp/kernel_performance.state'",
-        onlyif      => "/usr/bin/bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [[ $(grep ^vendor_id /proc/cpuinfo | uniq | awk \"(\$3!='GenuineIntel' && \$3!='AuthenticAMD')\") ]]; then exit 1; fi; if [ -f /tmp/kernel_performance.state ]; then exit 1; else exit 0; fi'"
-    }
-
-    /* Activate turbo modus */
-    exec { 'kernel_turbo':
-        command => "/usr/bin/bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
-        onlyif  => "/usr/bin/bash -c 'if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ $(cat /sys/devices/system/cpu/cpufreq/boost) -eq \"1\" ]; then exit 1; else exit 0; fi'"
-    }
-
-    /* Disable CPU core C states */
-    exec { 'kernel_c_states':
-        command => "/usr/bin/bash -c 'for (( i=0; i<`nproc`; i++ )); do if [ -d /sys/devices/system/cpu/cpu\${i}/cpuidle/state2 ]; then echo \"1\" > /sys/devices/system/cpu/cpu\${i}/cpuidle/state2/disable; fi; done > /tmp/kernel_c_states.state'",
-        onlyif  => "/usr/bin/bash -c 'if [[ ! $(grep ^vendor_id /proc/cpuinfo) ]]; then exit 1; fi; if [ $(grep ^vendor_id /proc/cpuinfo | uniq | \"(\$3!='GenuineIntel')\") ]; then exit 1; fi; if [ -f /tmp/kernel_c_states.state ]; then exit 1; else exit 0; fi'"
     }
 
     /* Improve kernel io */
