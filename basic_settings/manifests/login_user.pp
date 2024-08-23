@@ -15,6 +15,7 @@ define basic_settings::login_user(
     Optional[Boolean]                   $home_purge         = false,
     Optional[Boolean]                   $home_recurse       = false,
     Optional[String]                    $home_source        = undef,
+    Optional[Interger]                  $password_max_age   = undef,
     Optional[String]                    $private_key        = undef,
     Optional[String]                    $shell              = '/bin/bash'
 ) {
@@ -22,6 +23,36 @@ define basic_settings::login_user(
     /* Set variables */
     $environment = $basic_settings::login::environment
     $hostname = $basic_settings::login::hostname
+
+    /* Set authorized keys state */
+    if ($authorized_keys != undef) {
+        $authorized_keys_purge = false
+        if (empty($authorized_keys)) {
+            $authorized_keys_empty = true
+        } else {
+            $authorized_keys_empty = false
+        }
+    } else {
+        $authorized_keys_purge = true
+        $authorized_keys_empty = true
+    }
+
+    /* Get password max age */
+    if ($authorized_keys_empty) {
+        if ($password_max_age == undef) {
+            if ($password == '!') {
+                $password_max_age_correct = -1
+            } else {
+                $password_max_age_correct = 365
+            }
+        } else {
+            $password_max_age_correct = $password_max_age
+        }
+    } elsif ($password_max_age == undef) {
+        $password_max_age_correct = -1
+    } else {
+        $password_max_age_correct = $password_max_age
+    }
 
     /* Create only user group when group is disabled */
     if (!$disable_group) {
@@ -33,14 +64,16 @@ define basic_settings::login_user(
 
     /* Create user */
     user { $name:
-        ensure      => $ensure,
-        uid         => $uid,
-        gid         => $gid,
-        groups      => $groups,
-        shell       => $shell,
-        home        => $home,
-        managehome  => false,
-        password    => $password
+        ensure              => $ensure,
+        uid                 => $uid,
+        gid                 => $gid,
+        groups              => $groups,
+        shell               => $shell,
+        home                => $home,
+        managehome          => false,
+        password            => $password,
+        password_max_age    => $password_max_age_correct,
+        purge_ssh_keys      => $authorized_keys_purge
     }
 
     if ($ensure == present) {
