@@ -15,7 +15,7 @@ define basic_settings::login_user(
     Optional[Boolean]                   $home_purge         = false,
     Optional[Boolean]                   $home_recurse       = false,
     Optional[String]                    $home_source        = undef,
-    Optional[Interger]                  $password_max_age   = undef,
+    Optional[Integer]                   $password_max_age   = undef,
     Optional[String]                    $private_key        = undef,
     Optional[String]                    $shell              = '/bin/bash'
 ) {
