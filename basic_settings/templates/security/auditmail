@@ -53,7 +53,7 @@ if [ -z "$(echo $AUDIT_OUTPUT | grep 'no events of interest were found')" ]; the
     else
         SUBJECT='Audit report'
     fi
-    printf '%b\n' "$AUDIT_OUTPUT" | $MAIL -s "$SUBJECT" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+    printf '%b\n' "Server:<%= @server_fdqn %>\n\n$AUDIT_OUTPUT" | $MAIL -s "$SUBJECT" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 elif [ -n "$BOOT_OUTPUT" ]; then
-    printf '%b\n' "Boot logs:\n$BOOT_OUTPUT" | $MAIL -s "Server has boot logs" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
+    printf '%b\n' "Server:<%= @server_fdqn %>\n\nBoot logs:\n$BOOT_OUTPUT" | $MAIL -s "Server has boot logs" -r "audit@<%= @server_fdqn %>" "<%= @mail_to %>"
 fi
