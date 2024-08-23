@@ -135,7 +135,12 @@ class gitlab(
     /* Setup audit rules */
     if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'gitlab_exclude':
-            rules => ["-a always,exclude -F auid=unset -F exe=${install_dir_correct}/embedded/bin/node_exporter"],
+            rules => [
+                '-a always,exclude -F arch=b32 -S adjtimex -F gid=gitlab-prometheus',
+                '-a always,exclude -F arch=b64 -S adjtimex -F gid=gitlab-prometheus',
+                '-a always,exclude -F arch=b32 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby',
+                '-a always,exclude -F arch=b64 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby'
+            ],
             order => 2,
             require => Exec['gitlab_install']
         }
