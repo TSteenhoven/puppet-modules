@@ -73,6 +73,7 @@ define basic_settings::login_user(
         managehome          => false,
         password            => $password,
         password_max_age    => $password_max_age_correct,
+        password_warn_days  => 31,
         purge_ssh_keys      => $authorized_keys_purge
     }
 
