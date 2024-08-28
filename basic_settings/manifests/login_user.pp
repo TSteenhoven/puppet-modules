@@ -40,7 +40,7 @@ define basic_settings::login_user(
     /* Get password max age */
     if ($authorized_keys_empty) {
         if ($password_max_age == undef) {
-            if ($password == '!') {
+            if ($password == '!!') {
                 $password_max_age_correct = -1
             } else {
                 $password_max_age_correct = 365

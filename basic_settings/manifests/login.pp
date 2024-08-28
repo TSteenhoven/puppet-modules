@@ -23,7 +23,7 @@ class basic_settings::login(
     }
 
     /* Create list of packages that is suspicious */
-    $suspicious_packages = ['/usr/bin/sudo', '/usr/sbin/pam-auth-update'];
+    $suspicious_packages = ['/usr/bin/chage', '/usr/bin/sudo', '/usr/bin/last', '/usr/sbin/pam-auth-update'];
 
     /* Create script dir */
     if (!defined(File['/usr/local/lib/puppet'])) {
