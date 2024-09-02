@@ -24,7 +24,7 @@ class basic_settings::kernel(
 
     /* Try to get guest package */
     if ($facts['is_virtual']) {
-        case $facts::virtual {
+        case $facts['virtual'] {
             'vmware': {
                 $guest_agent_package = 'open-vm-tools'
             }
