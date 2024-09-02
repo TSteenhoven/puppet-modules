@@ -2,7 +2,7 @@ class basic_settings::pro(
     Optional[Boolean] $enable = false
 ) {
     /* Get OS name */
-    case $::os['name'] {
+    case $facts['os']['name'] {
         'Ubuntu': {
             /* Install advantage tools */
             package { 'ubuntu-advantage-tools':

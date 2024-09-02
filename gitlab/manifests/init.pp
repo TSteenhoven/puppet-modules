@@ -13,7 +13,7 @@ class gitlab(
         if (defined(Class['basic_settings'])) {
             $server_fdqn_correct = $basic_settings::server_fdqn
         } else {
-            $server_fdqn_correct = $::networking['fqdn']
+            $server_fdqn_correct = $facts['networking']['fqdn']
         }
     } else {
         $server_fdqn_correct = $server_fdqn

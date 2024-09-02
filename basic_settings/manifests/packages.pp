@@ -7,7 +7,7 @@ class basic_settings::packages(
                                                                         'nodejs',
                                                                         'php*'
                                                                     ],
-    Optional[String]    $server_fdqn                                = $::networking['fqdn'],
+    Optional[String]    $server_fdqn                                = $facts['networking']['fqdn'],
     Optional[Boolean]   $snap_enable                                = false,
     Optional[String]    $mail_to                                    = 'root'
 ) {
@@ -73,7 +73,7 @@ class basic_settings::packages(
     }
 
     /* Do extra steps when Ubuntu */
-    if ($::os['name'] == 'Ubuntu') {
+    if ($facts['os']['name'] == 'Ubuntu') {
         /* Install extra packages when Ubuntu */
         package { 'update-manager-core':
             ensure => installed

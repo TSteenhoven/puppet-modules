@@ -18,7 +18,7 @@ class basic_settings::timezone(
         }
 
         /* Get OS name */
-        case $::os['name'] {
+        case $facts['os']['name'] {
             'Ubuntu': {
                 $ntp_all_pools = flatten($ntp_extra_pools, [
                     '0.ubuntu.pool.ntp.org',

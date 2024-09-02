@@ -31,10 +31,10 @@ class ssh(
     /* Check if SSH used socket */
     if (defined(Package['systemd'])) {
         /* Get OS name */
-        case $::os['name'] {
+        case $facts['os']['name'] {
             'Ubuntu': {
                 /* Get OS name */
-                case $::os['release']['major'] {
+                case $facts['os']['release']['major'] {
                     '23.04', '24.04': {
                         $systemd_socket = true
                     }

@@ -1,9 +1,9 @@
 class basic_settings::login(
     Optional[String]    $environment            = 'production',
     Optional[Boolean]   $getty_enable           = false,
-    Optional[String]    $hostname               = $::networking['hostname'],
+    Optional[String]    $hostname               = $facts['networking']['hostname'],
     Optional[String]    $mail_to                = 'root',
-    Optional[String]    $server_fdqn            = $::networking['fqdn'],
+    Optional[String]    $server_fdqn            = $facts['networking']['fqdn'],
     Optional[String]    $sudoers_banner_text    = "WARNING: You are running this command with elevated privileges.\nThis action is registered and sent to the server administrator(s). Unauthorized access will be fully investigated and reported to law enforcement authorities.",
     Optional[Boolean]   $sudoers_dir_enable     = false
 ) {
@@ -102,7 +102,7 @@ class basic_settings::login(
     }
 
     /* Check if OS is Ubuntu */
-    if ($::os['name'] == 'Ubuntu') {
+    if ($facts['os']['name'] == 'Ubuntu') {
         /* Install packages */
         package { 'update-motd':
             ensure  => installed

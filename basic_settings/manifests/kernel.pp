@@ -13,8 +13,8 @@ class basic_settings::kernel(
     Optional[Integer]           $tcp_fastopen               = 3
 ) {
     /* Install extra packages when Ubuntu */
-    if ($::os['name'] == 'Ubuntu') {
-        $os_version = $::os['release']['major']
+    if ($facts['os']['name'] == 'Ubuntu') {
+        $os_version = $facts['os']['release']['major']
         if ($os_version != '24.04') {
             package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
                 ensure  => installed
@@ -23,8 +23,8 @@ class basic_settings::kernel(
     }
 
     /* Try to get guest package */
-    if ($::is_virtual) {
-        case $::virtual {
+    if ($facts['is_virtual']) {
+        case $facts::virtual {
             'vmware': {
                 $guest_agent_package = 'open-vm-tools'
             }
@@ -252,10 +252,10 @@ class basic_settings::kernel(
     }
 
     /* Get CPU processor */
-    if (empty($::processors::models)) {
+    if (empty($facts['processors']['models'])) {
         $cpu_processor = ''
     } else {
-        $cpu_processor = $::processors::models[0]
+        $cpu_processor = $facts['processors']['models'][0]
     }
 
     /* Set CPU manufacturer */
@@ -268,7 +268,7 @@ class basic_settings::kernel(
     }
 
     /* Set CPU settings */
-    if (!$::is_virtual) {
+    if (!$facts['is_virtual']) {
         /* Get settings */
         $cpu_governor_correct = $cpu_governor
         case $cpu_governor_correct {

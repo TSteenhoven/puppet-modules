@@ -33,7 +33,7 @@ class basic_settings(
         Optional[Boolean]           $proxmox_enable                             = false,
         Optional[Boolean]           $puppetserver_enable                        = false,
         Optional[Boolean]           $rabbitmq_enable                            = false,
-        Optional[String]            $server_fdqn                                = $::networking['fqdn'],
+        Optional[String]            $server_fdqn                                = $facts['networking']['fqdn'],
         Optional[String]            $server_timezone                            = 'UTC',
         Optional[String]            $smtp_server                                = 'localhost',
         Optional[Boolean]           $snap_enable                                = false,
@@ -54,12 +54,12 @@ class basic_settings(
     ) {
 
     /* Get OS name */
-    case $::os['name'] {
+    case $facts['os']['name'] {
         'Ubuntu': {
             /* Set some variables */
             $os_parent = 'ubuntu'
             $os_repo = 'main universe restricted'
-            if ($::os['architecture'] == 'amd64') {
+            if ($facts['os']['architecture'] == 'amd64') {
                 $os_url = 'http://archive.ubuntu.com/ubuntu/'
                 $os_url_security = 'http://security.ubuntu.com/ubuntu'
             } else {
@@ -68,13 +68,13 @@ class basic_settings(
             }
 
             /* Do thing based on version */
-            if ($::os['release']['major'] == '24.04') { # LTS
+            if ($facts['os']['release']['major'] == '24.04') { # LTS
                 $backports_allow = false
                 $deb_version = '822'
                 $gcc_version = undef
                 $gitlab_allow = true
                 $mongodb_allow = true
-                if ($::os['architecture'] == 'amd64') {
+                if ($facts['os']['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -89,13 +89,13 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_package = 'puppetserver'
                 $sury_allow = false
-            } elsif ($::os['release']['major'] == '23.04') { # Stable
+            } elsif ($facts['os']['release']['major'] == '23.04') { # Stable
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = 12
                 $gitlab_allow = true
                 $mongodb_allow = true
-                if ($::os['architecture'] == 'amd64') {
+                if ($facts['os']['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -110,13 +110,13 @@ class basic_settings(
                 $puppetserver_jdk = true
                 $puppetserver_package = 'puppetserver'
                 $sury_allow = false
-            } elsif ($::os['release']['major'] == '22.04') { # LTS
+            } elsif ($facts['os']['release']['major'] == '22.04') { # LTS
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = 12
                 $gitlab_allow = true
                 $mongodb_allow = true
-                if ($::os['architecture'] == 'amd64') {
+                if ($facts['os']['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
@@ -158,13 +158,13 @@ class basic_settings(
             $os_url_security = 'http://deb.debian.org/debian-security/'
 
             /* Do thing based on version */
-            if ($::os['release']['major'] == '12') {
+            if ($facts['os']['release']['major'] == '12') {
                 $backports_allow = false
                 $deb_version = 'list'
                 $gcc_version = undef
                 $gitlab_allow = true
                 $mongodb_allow = true
-                if ($::os['architecture'] == 'amd64') {
+                if ($facts['os']['architecture'] == 'amd64') {
                     $mysql_allow = true
                 } else {
                     $mysql_allow = false
