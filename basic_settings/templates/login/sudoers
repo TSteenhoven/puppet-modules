@@ -4,7 +4,7 @@
 Defaults !root_sudo
 Defaults env_reset
 Defaults env_keep += SSH_AUTH_SOCK
-Defaults fqdn="<%= @server_fdqn %>"
+Defaults fqdn
 Defaults mailfrom="audit@<%= @server_fdqn %>"
 Defaults mailto="<%= @mail_to %>"
 Defaults mailsub="Audit sudo %u"
