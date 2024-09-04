@@ -71,7 +71,7 @@ class basic_settings(
             if ($facts['os']['release']['major'] == '24.04') { # LTS
                 $backports_allow = false
                 $deb_version = '822'
-                $gcc_version = undef
+                $gcc_version = 14
                 $gitlab_allow = true
                 $mongodb_allow = true
                 if ($facts['os']['architecture'] == 'amd64') {

@@ -16,17 +16,33 @@ class basic_settings::development(
     /* Set default rules */
     $default_rules = ['/usr/bin/gcc', '/usr/bin/git', '/usr/bin/gmake', '/usr/bin/make']
 
-    /* Install gcc packages */
+    /* Check if no gcc version is given */
     if ($gcc_version == undef) {
+         /* Install gcc packages */
         package { 'gcc':
-            ensure  => installed,
+            ensure  => installed
         }
 
         /* Create list of packages that is suspicious */
         $suspicious_packages = $default_rules
     } else {
+         /* Install gcc packages */
         package { ['gcc', "gcc-${gcc_version}"]:
             ensure  => installed
+        }
+
+        /* Remove other gcc packages */
+        case $gcc_version {
+            14: {
+                package { ['gcc-12', 'gcc-10']:
+                    ensure  => purged
+                }
+            }
+            12: {
+                package { ['gcc-14', 'gcc-10']:
+                    ensure  => purged
+                }
+            }
         }
 
         /* Create list of packages that is suspicious */
