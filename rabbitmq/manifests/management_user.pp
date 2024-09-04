@@ -12,13 +12,13 @@ define rabbitmq::management_user(
             if ($password == undef) {
                 if (defined(Resource['basic_settings::login_user', $name])) {
                     $user_home = getparam(Resource['basic_settings::login_user', $name], 'home')
-                    $user_addd = "/usr/bin/bash -c 'TMPPASS=`/usr/bin/pwgen -s 26 1`; echo \$TMPPASS > ${user_home}/.rabbitmq.password; /usr/bin/chown ${name}:${name} ${user_home}/.rabbitmq.password; /usr/bin/chmod 600 ${user_home}/.rabbitmq.password; echo \$TMPPASS | /usr/sbin/rabbitmqctl add_user ${name}'"
+                    $user_addd = "/usr/bin/bash -c 'TMPPASS=`/usr/bin/pwgen -s 26 1`; echo \$TMPPASS > ${user_home}/.rabbitmq.password; /usr/bin/chown ${name}:${name} ${user_home}/.rabbitmq.password; /usr/bin/chmod 600 ${user_home}/.rabbitmq.password; echo \$TMPPASS | /usr/sbin/rabbitmqctl add_user ${name}'" # Important, don't use --quiet here
                     $user_require = [Package['pwgen'], Exec['rabbitmq_management_plugin']]
                 } else {
                     fail("User ${name} not present")
                 }
             } else {
-                $user_addd = "/usr/sbin/rabbitmqctl add_user ${name} ${password}"
+                $user_addd = "/usr/sbin/rabbitmqctl add_user ${name} ${password}" # Important, don't use --quiet here
                 $user_require = Exec['rabbitmq_management_plugin']
             }
 

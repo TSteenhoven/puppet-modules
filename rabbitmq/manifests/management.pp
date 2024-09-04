@@ -12,10 +12,17 @@ class rabbitmq::management(
         Optional[String]    $ssl_ciphers            = undef
     ) {
 
+    /* Delete guest user */
+    exec { 'rabbitmq_management_plugin_guest':
+        command     => '/usr/sbin/rabbitmqctl --quiet delete_user guest',
+        refreshonly => true
+    }
+
     /* Setup the plugin */
     exec { 'rabbitmq_management_plugin':
         command =>  '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
         unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
+        notify  => Exec['rabbitmq_management_plugin_guest'],
         require => Package['rabbitmq-server']
     }
 
@@ -117,11 +124,6 @@ class rabbitmq::management(
 
         /* Remove unnecessary files */
         file { '/usr/sbin/rabbitmqadmin':
-            ensure => absent
-        }
-
-        /* Remove guest account */
-        rabbitmq::management_user { 'guest':
             ensure => absent
         }
     }
