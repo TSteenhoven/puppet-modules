@@ -67,15 +67,34 @@ class basic_settings::puppet(
 
     /* Do only the next steps when we are puppet server */
     if ($server_enable) {
+        /* Install package */
+        package { "${server_package}":
+            ensure  => installed
+        }
+
+        /* Remove other package */
+        if ($server_package == 'puppetserver') {
+            package { 'puppet-master':
+                ensure  => purged,
+                require => Package["${server_package}"]
+            }
+        } else {
+            package { 'puppetserver':
+                ensure  => purged,
+                require => Package["${server_package}"]
+            }
+        }
+
         /* Disable service */
         service {  "${server_package}":
             ensure  => undef,
-            enable  => false
+            enable  => false,
+            require => Package["${server_package}"]
         }
 
         /* Create drop in for services target */
         if (defined(Class['basic_settings'])) {
-            basic_settings::systemd_drop_in { 'puppetserver_dependency':
+            basic_settings::systemd_drop_in { "${server_package}_dependency":
                 target_unit     => "${basic_settings::cluster_id}-system.target",
                 unit            => {
                     'Wants'   => "${server_package}.service"
@@ -102,8 +121,8 @@ class basic_settings::puppet(
         }
 
         if (defined(Package['systemd'])) {
-            /* Create drop in for puppet server service */
-            basic_settings::systemd_drop_in { 'puppetserver_settings':
+            /* Create drop in for puppet x service */
+            basic_settings::systemd_drop_in { "${server_package}_settings":
                 target_unit     => "${server_package}.service",
                 unit            => {
                     'OnFailure' => 'notify-failed@%i.service'
@@ -113,9 +132,9 @@ class basic_settings::puppet(
                 }
             }
 
-            /* Create systemd puppet server clean reports service */
-            basic_settings::systemd_service { 'puppetserver-clean-reports':
-                description => 'Clean puppetserver reports service',
+            /* Create systemd puppet x clean reports service */
+            basic_settings::systemd_service { "${server_package}-clean-reports":
+                description => "Clean ${server_package} reports service",
                 service     => {
                     'Type'      => 'oneshot',
                     'User'      => 'puppet',
@@ -124,16 +143,16 @@ class basic_settings::puppet(
                 },
             }
 
-            /* Create systemd puppet server clean reports timer */
-            basic_settings::systemd_timer { 'puppetserver-clean-reports':
-                description => 'Clean puppetserver reports timer',
+            /* Create systemd puppet x clean reports timer */
+            basic_settings::systemd_timer { "${server_package}-clean-reports":
+                description => "Clean ${server_package} reports timer",
                 timer       => {
                     'OnCalendar' => '*-*-* 10:00'
                 }
             }
 
             /* Create drop in for puppet service */
-            basic_settings::systemd_drop_in { 'puppet_puppetserver_dependency':
+            basic_settings::systemd_drop_in { "puppet_${server_package}_dependency":
                 target_unit     => 'puppet.service',
                 unit         => {
                     'After'     => "${server_package}.service",
