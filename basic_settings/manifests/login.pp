@@ -8,7 +8,7 @@ class basic_settings::login(
     Optional[Boolean]   $sudoers_dir_enable     = false
 ) {
     /* Remove unnecessary packages */
-    package { ['at-spi2-core', 'session-migration', 'xdg-user-dirs', 'xauth', 'x11-utils']:
+    package { ['at-spi2-core', 'session-migration', 'polkitd', 'xdg-user-dirs', 'xauth', 'x11-utils']:
         ensure  => purged
     }
 

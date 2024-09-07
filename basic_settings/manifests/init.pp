@@ -231,7 +231,7 @@ class basic_settings(
     }
 
     /* Basic system packages */
-    package { ['sysstat']:
+    package { 'sysstat':
         ensure  => installed
     }
 
