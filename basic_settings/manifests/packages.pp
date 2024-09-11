@@ -153,7 +153,7 @@ class basic_settings::packages(
     /* Set debconf readline */
     exec { 'packages_debconf_readline':
         command => '/usr/bin/echo "debconf debconf/frontend select Readline" | /usr/bin/debconf-set-selections',
-        unless  => '/usr/bin/debconf-show debconf | /usr/bin/grep "Frontend: Readline"',
+        unless  => '/usr/bin/debconf-show debconf | /usr/bin/grep "debconf/frontend: Readline"',
         require => [Package['debconf'], Package['grep']]
     }
 
