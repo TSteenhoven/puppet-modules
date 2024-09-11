@@ -54,7 +54,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT cpufreq.default_governor
 <% end -%>
 <% if ! @cpu_idle_max_cstate.nil? -%>
 # Set idle cstate
-<% if @cpu_manufacturer = 'intel '-%>
+<% if @cpu_manufacturer == 'intel '-%>
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_idle.max_cstate=<%= @cpu_idle_max_cstate %>" 
 <% else -%>
 GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT processor.max_cstate=<%= @cpu_idle_max_cstate %>" 
