@@ -26,7 +26,7 @@ class basic_settings::packages(
     }
 
     /* Install package */
-    package { ['apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'ucf', 'unattended-upgrades']:
+    package { ['apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debconf', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'ucf', 'unattended-upgrades']:
         ensure  => installed,
         require => Package['apt']
     }
@@ -148,6 +148,13 @@ class basic_settings::packages(
         ensure      => running,
         enable      => true,
         require     => Package['systemd']
+    }
+
+    /* Set debconf readline */
+    exec { 'packages_debconf_readline':
+        command => '/usr/bin/echo "debconf debconf/frontend select Readline" | /usr/bin/debconf-set-selections',
+        unless  => '/usr/bin/debconf-show debconf | /usr/bin/grep "Frontend: Readline"',
+        require => [Package['debconf'], Package['grep']]
     }
 
     if (defined(Package['systemd']) and defined(Class['basic_settings::message'])) {
