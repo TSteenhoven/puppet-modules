@@ -18,7 +18,7 @@ class basic_settings::development(
 
     /* Check if no gcc version is given */
     if ($gcc_version == undef) {
-         /* Install gcc packages */
+        /* Install gcc packages */
         package { 'gcc':
             ensure  => installed
         }
