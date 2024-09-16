@@ -138,8 +138,8 @@ class gitlab(
             rules => [
                 '-a always,exclude -F arch=b32 -S adjtimex -F gid=gitlab-prometheus',
                 '-a always,exclude -F arch=b64 -S adjtimex -F gid=gitlab-prometheus',
-                '-a always,exclude -F arch=b32 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby',
-                '-a always,exclude -F arch=b64 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby'
+                '-a always,exclude -F arch=b32 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F auid=unset',
+                '-a always,exclude -F arch=b64 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F auid=unset'
             ],
             order => 2,
             require => Exec['gitlab_install']

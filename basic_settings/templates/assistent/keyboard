@@ -1,0 +1,7 @@
+XKBLAYOUT="<%= @keyboard_layout %>"
+XKBVARIANT=""
+<% if @keyboard_codeset == 'Lat15' -%>
+XKBOPTIONS="lv3:ralt_switch,compose:ralt"
+<% else -%>
+XKBOPTIONS=""
+<% end -%>

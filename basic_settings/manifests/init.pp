@@ -386,6 +386,11 @@ class basic_settings(
         docs_enable         => $docs_enable
     }
 
+    /* Set assistent */
+    class { 'basic_settings::assistent':
+    
+    }
+
     /* Check if variable gitlab is true; if true, install new source list and key */
     if ($gitlab_enable and $gitlab_allow) {
         class { 'basic_settings::package_gitlab':
