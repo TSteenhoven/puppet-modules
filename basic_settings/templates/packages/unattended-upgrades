@@ -1,6 +1,7 @@
 # Managed by puppet
 Unattended-Upgrade::Mail "<%= @mail_to %>";
 Unattended-Upgrade::MailReport "only-on-error";
+Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Sender "unattended-upgrade@<%= @server_fdqn %>";
 Unattended-Upgrade::Origins-Pattern {
     "origin=*";
