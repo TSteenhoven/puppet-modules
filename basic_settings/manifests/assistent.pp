@@ -25,7 +25,8 @@ class basic_settings::assistent(
             ensure  => absent,
             recurse => true,
             purge   => true,
-            force   => true
+            force   => true,
+            require => Package['console-setup']
         }
     } else {
         /* Install packages */
