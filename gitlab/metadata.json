@@ -1,15 +1,13 @@
 {
     "name": "puppetmodules-gitlab",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "DevSysEngineer",
     "summary": "Setup Gitlab environment",
     "license": "Apache-2.0",
     "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/gitlab",
     "project_page": "https://github.com/DevSysEngineer/puppet-modules",
     "issues_url": "https://github.com/DevSysEngineer/puppet-modules/issues",
-    "dependencies": [
-
-    ],
+    "dependencies": [],
     "operatingsystem_support": [
         {
             "operatingsystem": "Debian",
