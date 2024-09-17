@@ -1,9 +1,88 @@
 # Managed by puppet
-APT::Clean-Installed "true";
-APT::Periodic::AutocleanInterval "1";
-APT::Periodic::CleanInterval "7";
-APT::Periodic::Download-Upgradeable-Packages "1";
-APT::Periodic::Unattended-Upgrade "1";
-APT::Periodic::Update-Package-Lists "1";
-APT::Sandbox::Seccomp "true";
-Dpkg::Options {"--force-confold"};
+APT
+{
+  Clean-Installed "true";
+
+  NeverAutoRemove
+  {
+    "^firmware-linux.*";
+    "^linux-firmware$";
+    "^linux-image-[a-z0-9]*$";
+    "^linux-image-[a-z0-9]*-[a-z0-9]*$";
+  };
+
+  VersionedKernelPackages
+  {
+    # kernels
+    "linux-.*";
+    "kfreebsd-.*";
+    "gnumach-.*";
+    # (out-of-tree) modules
+    ".*-modules";
+    ".*-kernel";
+  };
+
+  Move-Autobit-Sections
+  {
+    "oldlibs";
+  };
+
+  Never-MarkAuto-Sections
+  {
+    "metapackages";
+    "tasks";
+  };
+  
+  Periodic
+  {
+    AutocleanInterval "1";
+    CleanInterval "7";
+    Download-Upgradeable-Packages "1";
+    Unattended-Upgrade "1";
+    Update-Package-Lists "1";
+  };
+
+  Sandbox
+  {
+    Seccomp "true";  // Beveilig APT door gebruik van seccomp
+  };
+};
+
+Dir
+{
+  Etc
+  {
+    apt-listchanges-main "listchanges.conf";
+    apt-listchanges-parts "listchanges.conf.d";
+  };
+};
+
+Dpkg
+{
+  Options
+  {
+    "--force-confold";
+  };
+
+  Post-Invoke
+  {
+    "test -x /usr/lib/needrestart/apt-pinvoke && /usr/lib/needrestart/apt-pinvoke || true";
+  };
+
+  Pre-Install-Pkgs
+  {
+     "/usr/bin/apt-listchanges --apt || test $? -lt 10";
+     "/usr/sbin/dpkg-preconfigure --apt || true";
+  };
+
+  Tools
+  {
+    Options
+    {
+      "/usr/bin/apt-listchanges" {
+        Version "2";
+        InfoFD "20";
+      };
+    };
+  };
+};

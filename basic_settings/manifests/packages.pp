@@ -1,4 +1,5 @@
 class basic_settings::packages (
+  Boolean $config_dir_enable                          = true,
   Array   $unattended_upgrades_block_extra_packages   = [],
   Array   $unattended_upgrades_block_packages         = [
     'libmysql*',
@@ -109,6 +110,16 @@ class basic_settings::packages (
       basic_settings::security_audit { 'packages':
         rules => flatten($default_rules, $snap_rules),
       }
+    }
+  }
+
+  # Setup APT config dir
+  if ($config_dir_enable) {
+    file { '/etc/apt/apt.conf.d':
+      ensure  => directory,
+      purge   => true,
+      recurse => true,
+      force   => true,
     }
   }
 
