@@ -124,9 +124,9 @@ class php8 (
     }
 
     # Create APT config
-    file { '/etc/apt/apt.conf.d/05-php':
+    file { '/etc/apt/apt.conf.d/05-php.conf':
       ensure  => file,
-      source  => 'puppet:///modules/php8/apt-bash',
+      source  => 'puppet:///modules/php8/apt.conf',
       owner   => 'root',
       group   => 'root',
       mode    => '0600',

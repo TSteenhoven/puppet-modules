@@ -1,5 +1,6 @@
 class basic_settings::packages (
   Boolean $config_dir_enable                          = true,
+  Boolean $listchanges_dir_enable                     = true,
   Array   $unattended_upgrades_block_extra_packages   = [],
   Array   $unattended_upgrades_block_packages         = [
     'libmysql*',
@@ -10,7 +11,8 @@ class basic_settings::packages (
   ],
   String  $server_fdqn                                = $facts['networking']['fqdn'],
   Boolean $snap_enable                                = false,
-  String  $mail_to                                    = 'root'
+  String  $mail_to                                    = 'root',
+  Boolean $needrestart_dir_enable                     = true
 ) {
   # Install apt package
   if (!defined(Package['apt'])) {
@@ -42,6 +44,9 @@ class basic_settings::packages (
     '-a always,exit -F arch=b32 -F path=/usr/bin/apt-get -F perm=x -F auid!=unset -F key=software_mgmt',
     '-a always,exit -F arch=b64 -F path=/usr/bin/apt-get -F perm=x -F auid!=unset -F key=software_mgmt',
   ]
+
+  # Set unattended_upgrades
+  $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
 
   # Check if we need snap
   if (!$snap_enable) {
@@ -120,18 +125,10 @@ class basic_settings::packages (
       purge   => true,
       recurse => true,
       force   => true,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
     }
-  }
-
-  # Create unattended upgrades config
-  $unattended_upgrades_block_all_packages = flatten($unattended_upgrades_block_extra_packages, $unattended_upgrades_block_packages);
-  file { '/etc/apt/apt.conf.d/99-unattended-upgrades':
-    ensure  => file,
-    content => template('basic_settings/packages/unattended-upgrades'),
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0600',
-    require => Package['unattended-upgrades'],
   }
 
   # Create APT settings
@@ -144,8 +141,44 @@ class basic_settings::packages (
     require => Package['unattended-upgrades'],
   }
 
+  # Setup APT list changes dir
+  if ($listchanges_dir_enable) {
+    file { '/etc/apt/listchanges.conf.d':
+      ensure  => directory,
+      purge   => true,
+      recurse => true,
+      force   => true,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
+    }
+  }
+
+  # Create APT list chanes settings
+  file { '/etc/apt/listchanges.conf.d/99-settings.conf':
+    ensure  => file,
+    content => template('basic_settings/packages/listchanges.conf'),
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => Package['unattended-upgrades'],
+  }
+
+  # Setup needrestart dir
+  if ($needrestart_dir_enable) {
+    file { '/etc/needrestart/conf.d':
+      ensure  => directory,
+      purge   => true,
+      recurse => true,
+      force   => true,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
+    }
+  }
+
   # Create needrestart config
-  file { '/etc/needrestart/conf.d/99-custom.conf':
+  file { '/etc/needrestart/conf.d/99-settings.conf':
     ensure  => file,
     content => template('basic_settings/packages/needrestart.conf'),
     owner   => 'root',

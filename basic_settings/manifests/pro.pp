@@ -5,8 +5,18 @@ class basic_settings::pro (
   case $facts['os']['name'] {
     'Ubuntu': {
       # Install advantage tools
-      package { 'ubuntu-advantage-tools':
+      package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:
         ensure => installed,
+      }
+
+      # Keep APT config
+      file { '/etc/apt/apt.conf.d/20apt-esm-hook.conf':
+        ensure  => file,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        replace => false,
+        require => Package['ubuntu-pro-client'],
       }
 
       # Check snap state

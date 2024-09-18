@@ -65,16 +65,28 @@ class basic_settings::network (
     install_options => $install_options,
   }
 
-  # Setup audit rules
-  if (defined(Package['auditd'])) {
-    case $antivirus_package {
-      'eset': {
+  # Do things based oon antivirus package
+  case $antivirus_package {
+    'eset': {
+      # Setup audit rules
+      if (defined(Package['auditd'])) {
         basic_settings::security_audit { 'eset':
           rules => [
             '-a always,exclude -F exe=/opt/eset/efs/lib/odfeeder',
             '-a always,exclude -F exe=/opt/eset/efs/lib/utild',
           ],
           order => 2,
+        }
+      }
+
+      # Setup needrestart rules
+      if (defined(Package['needrestart'])) {
+        file { '/etc/needrestart/conf.d/eset_efs.conf':
+          ensure  => file,
+          owner   => 'root',
+          group   => 'root',
+          mode    => '0600',
+          replace => false,
         }
       }
     }
