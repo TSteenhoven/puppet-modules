@@ -132,9 +132,9 @@ class basic_settings::packages (
   }
 
   # Create APT settings
-  file { '/etc/apt/apt.conf.d/99-settings':
+  file { '/etc/apt/apt.conf.d/99-settings.conf':
     ensure  => file,
-    content => template('basic_settings/packages/settings'),
+    content => template('basic_settings/packages/settings.conf'),
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
