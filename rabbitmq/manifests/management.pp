@@ -31,7 +31,10 @@ class rabbitmq::management (
     $ssl_ca_certificate_correct = $ssl_ca_certificate
     $ssl_certificate_correct = $ssl_certificate
     $ssl_certificate_key_correct = $ssl_certificate_key
-  } elsif (defined(Class['rabbitmq::tcp']) and $rabbitmq::tcp::ssl_ca_certificate != undef and $rabbitmq::tcp::ssl_certificate != undef and $rabbitmq::tcp::ssl_certificate_key != undef) {
+  } elsif (defined(Class['rabbitmq::tcp'])
+    and $rabbitmq::tcp::ssl_ca_certificate != undef
+    and $rabbitmq::tcp::ssl_certificate != undef
+  and $rabbitmq::tcp::ssl_certificate_key != undef) {
     $https_allow = true
     $ssl_ca_certificate_correct = $rabbitmq::tcp::ssl_ca_certificate
     $ssl_certificate_correct = $rabbitmq::tcp::ssl_certificate

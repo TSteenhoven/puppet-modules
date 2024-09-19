@@ -31,7 +31,7 @@ class basic_settings::development (
     }
 
     # Remove other gcc packages
-    case $gcc_version {
+    case $gcc_version { #lint:ignore:case_without_default
       14: {
         package { ['gcc-12', 'gcc-10']:
           ensure  => purged,

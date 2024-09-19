@@ -7,7 +7,7 @@ class basic_settings::io (
   # Active multipatch
   exec { 'multipath_cmdline':
     command => "/usr/bin/sed 's/multipath=off//g' /boot/firmware/cmdline.txt",
-    onlyif  => "/usr/bin/bash -c 'if [ ! -f /boot/firmware/cmdline.txt ]; then exit 1; fi; if [ $(grep -c \'multipath=off\' /boot/firmware/cmdline.txt) -eq 1 ]; then exit 0; fi; exit 1'",
+    onlyif  => "/usr/bin/bash -c 'if [ ! -f /boot/firmware/cmdline.txt ]; then exit 1; fi; if [ $(grep -c \'multipath=off\' /boot/firmware/cmdline.txt) -eq 1 ]; then exit 0; fi; exit 1'", #lint:ignore:140chars
     require => Package['sed'],
   }
 

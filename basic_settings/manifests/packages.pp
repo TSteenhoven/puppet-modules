@@ -29,9 +29,23 @@ class basic_settings::packages (
   }
 
   # Install package
-  package { ['apt-listchanges', 'apt-transport-https', 'ca-certificates', 'curl', 'debconf', 'debian-archive-keyring', 'debian-keyring', 'dirmngr', 'gnupg', 'libssl-dev', 'needrestart', 'ucf', 'unattended-upgrades']:
-    ensure  => installed,
-    require => Package['apt'],
+  package { [
+      'apt-listchanges',
+      'apt-transport-https',
+      'ca-certificates',
+      'curl',
+      'debconf',
+      'debian-archive-keyring',
+      'debian-keyring',
+      'dirmngr',
+      'gnupg',
+      'libssl-dev',
+      'needrestart',
+      'ucf',
+      'unattended-upgrades',
+    ]:
+      ensure  => installed,
+      require => Package['apt'],
   }
 
   # Set default rules

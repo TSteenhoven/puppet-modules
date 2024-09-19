@@ -2,7 +2,7 @@ class basic_settings::pro (
   Boolean $enable = false
 ) {
   # Get OS name
-  case $facts['os']['name'] {
+  case $facts['os']['name'] { #lint:ignore:case_without_default
     'Ubuntu': {
       # Install advantage tools
       package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:

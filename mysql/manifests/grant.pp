@@ -21,7 +21,7 @@ define mysql::grant (
     if ($database != '*') {
       $check_all_priv = $priv_str
     } else {
-      $check_all_priv = 'SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE'
+      $check_all_priv = 'SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE' #lint:ignore:140chars
     }
     $check_script_args = "\"${username}\" \"${hostname}\" \"${database}\" \"${table}\" \"${check_all_priv}\" ${grant_option_num}"
     $grant_script_args = "\"${username}\" \"${hostname}\" \"${database}\" \"${table}\" \"${check_all_priv}\" ${grant_option_num} \"${priv_str}\""

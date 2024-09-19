@@ -47,7 +47,7 @@ class php8::cli (
       require => [Package['curl'], Package["php8.${minor_version}-cli"], Exec['php_set_default_version']],
     }
     -> exec { "php8_${minor_version}_composer_fetch_check_hash":
-      command => 'php -r "if (hash_file(\'SHA384\', \'/tmp/composer-setup.php\') !== trim(file_get_contents(\'/tmp/composer_hash\'))) { unlink(\'/tmp/composer-setup.php\'); unlink(\'/tmp/composer_hash\'); exit(1); }"',
+      command => 'php -r "if (hash_file(\'SHA384\', \'/tmp/composer-setup.php\') !== trim(file_get_contents(\'/tmp/composer_hash\'))) { unlink(\'/tmp/composer-setup.php\'); unlink(\'/tmp/composer_hash\'); exit(1); }"', #lint:ignore:140chars
       onlyif  => ['test -f /tmp/composer-setup.php', 'test -f /tmp/composer_hash'],
       require => [Package["php8.${minor_version}-cli"], Exec['php_set_default_version']],
     }

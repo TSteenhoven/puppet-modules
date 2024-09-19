@@ -24,7 +24,7 @@ define rabbitmq::management_vhost (
       # Check if type of the vhost is the same
       exec { "rabbitmq_management_vhost_${exec_name}_type":
         command => "/usr/sbin/rabbitmqctl update_vhost_metadata ${name} --default-queue-type ${type}",
-        unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep '${name}|${type}'",
+        unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep '${name}|${type}'", #lint:ignore:140chars
         require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${exec_name}"]],
       }
     }

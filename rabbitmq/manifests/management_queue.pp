@@ -28,7 +28,7 @@ define rabbitmq::management_queue (
       }
 
       # Set create command
-      $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare queue name=${name} durable=${durable_value}"
+      $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare queue name=${name} durable=${durable_value}" #lint:ignore:140chars
 
       # Set type
       if ($type == undef) {
@@ -65,14 +65,14 @@ define rabbitmq::management_queue (
       # Check if durable of the exange is the same
       exec { "rabbitmq_management_queue_${name}_durable":
         command => "${delete} && ${create_correct}",
-        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list queues name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'",
+        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list queues name durable | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${durable_ucfirstvalue}|'", #lint:ignore:140chars
         require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]],
       }
 
       # Check if arguments of the exange is the same
       exec { "rabbitmq_management_queue_${name}_arguments":
         command => "${delete} && ${create_correct}",
-        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'",
+        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep '\"name\":\"${name}\"' | /usr/bin/grep '{\"arguments\":${arguments_json},\"name\":\"${name}\"}'", #lint:ignore:140chars
         require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]],
       }
     }

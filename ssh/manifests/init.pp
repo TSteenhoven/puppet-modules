@@ -1,6 +1,6 @@
 class ssh (
   Array               $allow_users                    = [],
-  String              $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.",
+  String              $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.", #lint:ignore:140chars
   Array               $host_key_algorithms            = [
     'ecdsa-sha2-nistp256',
     'ecdsa-sha2-nistp384',

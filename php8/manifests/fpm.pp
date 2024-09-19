@@ -131,7 +131,7 @@ class php8::fpm (
       path           => "/var/log/php8.${minor_version}-fpm.log",
       frequency      => 'weekly',
       compress_delay => true,
-      rotate_post    => "if [ -x /usr/lib/php/php8.${minor_version}-fpm-reopenlogs ]; then\n\t\t/usr/lib/php/php8.${minor_version}-fpm-reopenlogs;\n\tfi",
+      rotate_post    => "if [ -x /usr/lib/php/php8.${minor_version}-fpm-reopenlogs ]; then\n\t\t/usr/lib/php/php8.${minor_version}-fpm-reopenlogs;\n\tfi", #lint:ignore:140chars
     }
   }
 }

@@ -17,7 +17,7 @@ define rabbitmq::management_exange (
       }
 
       # Set create command
-      $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare exchange name=${name} type=${type}"
+      $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare exchange name=${name} type=${type}" #lint:ignore:140chars
 
       # Create exange
       exec { "rabbitmq_management_exange_${name}":
@@ -29,7 +29,7 @@ define rabbitmq::management_exange (
       # Check if type of the exange is the same
       exec { "rabbitmq_management_exange_${name}_type":
         command => "${delete} && ${create}",
-        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'",
+        unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'", #lint:ignore:140chars
         require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exange_${name}"]],
       }
     }

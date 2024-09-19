@@ -14,7 +14,7 @@ define mysql::database (
     'present': {
       exec { "mysql_create_database_${title}":
         unless  => "/usr/bin/bash -c \"mysql --defaults-file=${mysql::defaults_file} -NBe 'SHOW DATABASES;' | grep -qx '${title}'\"",
-        command => "mysql --defaults-file=${mysql::defaults_file} -e \"CREATE DATABASE \\`${title}\\` DEFAULT CHARACTER SET = '${charset}' DEFAULT COLLATE = '${collate}';\"",
+        command => "mysql --defaults-file=${mysql::defaults_file} -e \"CREATE DATABASE \\`${title}\\` DEFAULT CHARACTER SET = '${charset}' DEFAULT COLLATE = '${collate}';\"", #lint:ignore:140chars
       }
     }
     'absent': {

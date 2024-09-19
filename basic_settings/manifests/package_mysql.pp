@@ -54,7 +54,7 @@ class basic_settings::package_mysql (
 
     # Set source
     exec { 'package_mysql_source':
-      command => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg",
+      command => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee /usr/share/keyrings/mysql.gpg >/dev/null; chmod 644 /usr/share/keyrings/mysql.gpg", #lint:ignore:140chars
       unless  => "[ -e ${file} ]",
       notify  => Exec['package_mysql_source_reload'],
       require => [Package['curl'], Package['gnupg'], File['package_mysql_key']],

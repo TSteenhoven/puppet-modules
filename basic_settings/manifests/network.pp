@@ -11,10 +11,23 @@ class basic_settings::network (
   Optional[Array]                             $install_options    = undef
 ) {
   # Default suspicious packages
-  $default_packages = ['/usr/bin/ip', '/usr/bin/mtr', '/usr/bin/nc', '/usr/bin/netcat', '/usr/bin/ping', '/usr/bin/ping4', '/usr/bin/ping6', '/usr/bin/tcptraceroute', '/usr/bin/telnet', '/usr/sbin/arp', '/usr/sbin/route', '/usr/sbin/traceroute']
+  $default_packages = [
+    '/usr/bin/ip',
+    '/usr/bin/mtr',
+    '/usr/bin/nc',
+    '/usr/bin/netcat',
+    '/usr/bin/ping',
+    '/usr/bin/ping4',
+    '/usr/bin/ping6',
+    '/usr/bin/tcptraceroute',
+    '/usr/bin/telnet',
+    '/usr/sbin/arp',
+    '/usr/sbin/route',
+    '/usr/sbin/traceroute',
+  ]
 
   # Based on firewall package do special commands
-  case $firewall_package {
+  case $firewall_package { #lint:ignore:case_without_default
     'nftables': {
       $firewall_command = ''
       package { ['iptables', 'firewalld']:
@@ -66,7 +79,7 @@ class basic_settings::network (
   }
 
   # Do things based oon antivirus package
-  case $antivirus_package {
+  case $antivirus_package { #lint:ignore:case_without_default
     'eset': {
       # Setup audit rules
       if (defined(Package['auditd'])) {
@@ -98,9 +111,20 @@ class basic_settings::network (
   }
 
   # Install package
-  package { ['dnsutils', 'ethtool', 'iputils-ping', 'mtr-tiny', 'netcat-openbsd', 'net-tools', 'telnet', 'iproute2', 'tcptraceroute', 'traceroute']:
-    ensure  => installed,
-    require => Package['ifupdown'],
+  package { [
+      'dnsutils',
+      'ethtool',
+      'iputils-ping',
+      'mtr-tiny',
+      'netcat-openbsd',
+      'net-tools',
+      'telnet',
+      'iproute2',
+      'tcptraceroute',
+      'traceroute',
+    ]:
+      ensure  => installed,
+      require => Package['ifupdown'],
   }
 
   # If we need to install netplan

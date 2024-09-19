@@ -67,7 +67,7 @@ class gitlab (
 
   # Check if gitlab is installed exists
   exec { 'gitlab_install':
-    command => Sensitive.new("/usr/bin/bash -c 'GITLAB_ROOT_EMAIL=\"${root_email_correct}\" GITLAB_ROOT_PASSWORD=\"${root_password}\" EXTERNAL_URL=\"http://${server_fdqn}\" /usr/bin/apt-get install gitlab-ee'"),
+    command => Sensitive.new("/usr/bin/bash -c 'GITLAB_ROOT_EMAIL=\"${root_email_correct}\" GITLAB_ROOT_PASSWORD=\"${root_password}\" EXTERNAL_URL=\"http://${server_fdqn}\" /usr/bin/apt-get install gitlab-ee'"), #lint:ignore:140chars 
     unless  => '/usr/bin/dpkg -l | /usr/bin/grep gitlab-ee',
     timeout => 0,
     require => $requirements,

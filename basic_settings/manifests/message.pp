@@ -28,7 +28,7 @@ class basic_settings::message (
       description   => 'Send systemd notifications to mail',
       service       => {
         'Type'      => 'oneshot',
-        'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${mail_to}\"'",
+        'ExecStart' => "/usr/bin/bash -c 'LC_CTYPE=C systemctl status --full %i | /usr/bin/mail -s \"Service %i failed on ${server_fdqn}\" -r \"systemd@${server_fdqn}\" \"${mail_to}\"'", #lint:ignore:140chars
       },
       daemon_reload => 'message_systemd_daemon_reload',
       require       => Package[$mail_package],

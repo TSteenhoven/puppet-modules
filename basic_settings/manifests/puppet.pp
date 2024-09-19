@@ -44,13 +44,20 @@ class basic_settings::puppet (
       },
     }
 
+    # Get clean filebucket dir
+    if ($server_enable) {
+      $clean_filebucket_dir = $server_dir
+    } else {
+      $clean_filebucket_dir = 'puppet'
+    }
+
     # Create systemd puppet clean bucket service
     basic_settings::systemd_service { 'puppet-clean-filebucket':
       description => 'Clean puppet filebucket service',
       service     => {
         'Type'      => 'oneshot',
         'User'      => 'root',
-        'ExecStart' => "/usr/bin/find /var/cache/${server_dir}/clientbucket/ -type f -mtime +14 -atime +14 -delete", # Last dir separator (/) very important 
+        'ExecStart' => "/usr/bin/find /var/cache/${clean_filebucket_dir}/clientbucket/ -type f -mtime +14 -atime +14 -delete", #lint:ignore:140chars # Last dir separator (/) very important
         'Nice'      => '19',
       },
     }
@@ -137,7 +144,7 @@ class basic_settings::puppet (
         service     => {
           'Type'      => 'oneshot',
           'User'      => 'puppet',
-          'ExecStart' => "/usr/bin/find /var/lib/${server_dir}/reports/ -type f -name '*.yaml' -ctime +1 -delete", # Last dir separator (/) very important 
+          'ExecStart' => "/usr/bin/find /var/lib/${server_dir}/reports/ -type f -name '*.yaml' -ctime +1 -delete", #lint:ignore:140chars # Last dir separator (/) very important
           'Nice'      => '19',
         },
       }

@@ -275,7 +275,7 @@ class basic_settings (
     if ($backports and $backports_allow) {
       $backports_install_options = ['-t', "${os_name}-backports"]
       exec { 'basic_settings_source_backports':
-        command => "/usr/bin/printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list",
+        command => "/usr/bin/printf \"deb ${os_url} ${os_name}-backports ${os_repo}\\n\" > /etc/apt/sources.list.d/${os_name}-backports.list", #lint:ignore:140chars
         unless  => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",
         notify  => Exec['basic_settings_source_reload'],
         require => [Package['apt'], Package['coreutils']],
@@ -542,8 +542,8 @@ class basic_settings (
 
     # Install openjdk package
     package { 'openjdk':
-      name   => $openjdk_package,
       ensure => installed,
+      name   => $openjdk_package,
     }
 
     # Install java extensions
@@ -554,8 +554,8 @@ class basic_settings (
   } else {
     # Remove openjdk package
     package { 'openjdk':
-      name   => 'openjdk*',
       ensure => purged,
+      name   => 'openjdk*',
     }
 
     # Check if we need to install adwaita theme

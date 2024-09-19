@@ -14,23 +14,25 @@ define mysql::user (
   case $mysql::version {
     5.7: {
       $password_field = 'authentication_string'
-      $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';"
-      $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
+      $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';" #lint:ignore:140chars
+      $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\"" #lint:ignore:140chars
     }
     8.0, 8.4: {
       if ($password_latency == 'authentication_string') {
+        # Use mysql_native_password instead off caching_sha2_password due to old packages non supported
         $password_field = 'authentication_string'
-        $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED WITH mysql_native_password BY '${password}';" # use mysql_native_password instead off caching_sha2_password due to old packages non supported
+        $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED WITH mysql_native_password BY '${password}';"
       } else {
+        # Use default caching_sha2_password method for saving password
         $password_field = 'password'
-        $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';" # use default caching_sha2_password method for saving password 
+        $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';"
       }
-      $unless_field = "/usr/bin/bash -c \"if [ `touch /tmp/mysql.cnf && chmod 600 /tmp/mysql.cnf && printf '%b' '[client]\\npassword=${password}' > /tmp/mysql.cnf; mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql --defaults-file=/tmp/mysql.cnf -u ${username} -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; rm /tmp/mysql.cnf; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\""
+      $unless_field = "/usr/bin/bash -c \"if [ `touch /tmp/mysql.cnf && chmod 600 /tmp/mysql.cnf && printf '%b' '[client]\\npassword=${password}' > /tmp/mysql.cnf; mysql --defaults-file=${mysql::defaults_file} -NBe 'system mysql --defaults-file=/tmp/mysql.cnf -u ${username} -NBe \\\"SELECT CURRENT_USER()\\\"' > /tmp/mysql.result; rm /tmp/mysql.cnf; cat /tmp/mysql.result;` = '${username}@${hostname}' ]; then exit 0; else exit 1; fi\"" #lint:ignore:140chars
     }
     default: {
       $password_field = 'password'
       $password_command = "SET PASSWORD FOR '${username}'@'${hostname}' = PASSWORD('${password}');"
-      $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\""
+      $unless_field = "/usr/bin/bash -c \"[ `mysql --defaults-file=${mysql::defaults_file} -NBe \\\"select COUNT(*) from mysql.user where user='${username}' and ${password_field}=PASSWORD('${password}');\\\"` != \\\"0\\\" ]\"" #lint:ignore:140chars
     }
   }
 
