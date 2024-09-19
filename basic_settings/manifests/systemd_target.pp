@@ -1,6 +1,6 @@
 define basic_settings::systemd_target (
   String                    $description,
-  String                    $parent_targets,
+  Array                     $parent_targets,
   Enum['present','absent']  $ensure                 = present,
   Boolean                   $stronger_requirements  = true,
   Boolean                   $allow_isolate          = false,
