@@ -1,12 +1,12 @@
 define basic_settings::systemd_timer (
-  $ensure         = present,
-  $description,
-  $unit           = {},
-  $timer          = {},
-  $install        = {
+  String                    $description,
+  Enum['present','absent']  $ensure         = present,
+  Hash                      $unit           = {},
+  Hash                      $timer          = {},
+  Hash                      $install        = {
     'WantedBy'  => 'timers.target',
   },
-  $daemon_reload  = 'systemd_daemon_reload'
+  String                    $daemon_reload  = 'systemd_daemon_reload'
 ) {
   # Create timer file
   file { "/etc/systemd/system/${title}.timer":

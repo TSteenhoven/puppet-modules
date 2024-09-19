@@ -1,11 +1,11 @@
 define basic_settings::systemd_target (
-  $description,
-  $parent_targets,
-  $ensure                 = present,
-  $stronger_requirements  = true,
-  $allow_isolate          = false,
-  $unit                   = {},
-  $install                = {}
+  String                    $description,
+  String                    $parent_targets,
+  Enum['present','absent']  $ensure                 = present,
+  Boolean                   $stronger_requirements  = true,
+  Boolean                   $allow_isolate          = false,
+  Hash                      $unit                   = {},
+  Hash                      $install                = {}
 ) {
   file { "/etc/systemd/system/${title}.target":
     ensure  => $ensure,
