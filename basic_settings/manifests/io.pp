@@ -1,18 +1,14 @@
 class basic_settings::io (
-  Integer $log_rotate = 14
+  Integer $log_rotate = 14,
+  Boolean $lvm_enable = true,
+  Boolean $multipath_enable = false,
+  Boolean $nfs_server_enable = false
 ) {
   # Create list of packages that is suspicious
   $suspicious_packages = ['/usr/bin/rsync']
 
-  # Active multipatch
-  exec { 'multipath_cmdline':
-    command => "/usr/bin/sed 's/multipath=off//g' /boot/firmware/cmdline.txt",
-    onlyif  => "/usr/bin/bash -c 'if [ ! -f /boot/firmware/cmdline.txt ]; then exit 1; fi; if [ $(grep -c \'multipath=off\' /boot/firmware/cmdline.txt) -eq 1 ]; then exit 0; fi; exit 1'", #lint:ignore:140chars
-    require => Package['sed'],
-  }
-
   # Install default development packages
-  package { ['fuse', 'logrotate', 'multipath-tools-boot', 'pbzip2', 'pigz', 'rsync', 'unzip', 'xz-utils']:
+  package { ['fuse', 'logrotate', 'pbzip2', 'pigz', 'rsync', 'unzip', 'xz-utils']:
     ensure  => installed,
     require => Exec['multipath_cmdline'],
   }
@@ -20,6 +16,67 @@ class basic_settings::io (
   # Remove package for connection with Windows environment / device
   package { ['ntfs-3g', 'smbclient']:
     ensure  => purged,
+  }
+
+  # Check if we need LVM
+  if ($lvm_enable) {
+    package { 'lvm2':
+      ensure  => installed,
+    }
+  } else {
+    package { 'lvm2':
+      ensure  => purged,
+    }
+  }
+
+  # Check if we need multipatp
+  if ($multipath_enable) {
+    # Active multipatch
+    exec { 'multipath_cmdline':
+      command => "/usr/bin/sed 's/multipath=off//g' /boot/firmware/cmdline.txt",
+      onlyif  => "/usr/bin/bash -c 'if [ ! -f /boot/firmware/cmdline.txt ]; then exit 1; fi; if [ $(grep -c \'multipath=off\' /boot/firmware/cmdline.txt) -eq 1 ]; then exit 0; fi; exit 1'", #lint:ignore:140chars
+      require => Package['sed'],
+    }
+
+    # Install multipath
+    package { ['multipath-tools', 'multipath-tools-boot']:
+      ensure  => installed,
+      require => Exec['multipath_cmdline'],
+    }
+
+    # Enable multipathd service
+    service { 'multipathd':
+      ensure  => true,
+      enable  => true,
+      require => Package['multipath-tools-boot'],
+    }
+
+    # Create multipart config
+    file { '/etc/multipath.conf':
+      ensure => file,
+      source => 'puppet:///modules/basic_settings/io/multipath.conf',
+      owner  => 'root',
+      group  => 'root',
+      mode   => '0600',
+      notify => Service['multipathd'],
+    }
+  } else {
+    # Remove multipath
+    package { ['multipath-tools', 'multipath-tools-boot']:
+      ensure  => purged,
+      require => Exec['multipath_cmdline'],
+    }
+  }
+
+  # Check if we need NFS server
+  if ($nfs_server_enable) {
+    package { ['nfs-kernel-server', 'rpcbind']:
+      ensure  => installed,
+    }
+  } else {
+    package { ['nfs-kernel-server', 'rpcbind']:
+      ensure  => purged,
+    }
   }
 
   # Disable floppy
@@ -30,23 +87,6 @@ class basic_settings::io (
     mode    => '0600',
     content => "blacklist floppy\n",
     require => Package['kmod'],
-  }
-
-  # Enable multipathd service
-  service { 'multipathd':
-    ensure  => true,
-    enable  => true,
-    require => Package['multipath-tools-boot'],
-  }
-
-  # Create multipart config
-  file { '/etc/multipath.conf':
-    ensure => file,
-    source => 'puppet:///modules/basic_settings/io/multipath.conf',
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0600',
-    notify => Service['multipathd'],
   }
 
   if (defined(Package['systemd'])) {
