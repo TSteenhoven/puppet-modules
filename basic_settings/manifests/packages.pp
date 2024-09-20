@@ -209,10 +209,11 @@ class basic_settings::packages (
   }
 
   # Set debconf readline
-  exec { 'packages_debconf_readline':
-    command => '/usr/bin/echo "debconf debconf/frontend select Readline" | /usr/bin/debconf-set-selections',
-    unless  => '/usr/bin/debconf-show debconf | /usr/bin/grep "debconf/frontend: Readline"',
-    require => [Package['debconf'], Package['grep']],
+  debconf { 'packages_debconf_readline':
+    package => 'debconf',
+    item    => 'debconf/frontend',
+    type    => 'select',
+    value   => 'Readline',
   }
 
   if (defined(Package['systemd']) and defined(Class['basic_settings::message'])) {
