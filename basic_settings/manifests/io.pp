@@ -10,7 +10,6 @@ class basic_settings::io (
   # Install default development packages
   package { ['fuse', 'logrotate', 'pbzip2', 'pigz', 'rsync', 'unzip', 'xz-utils']:
     ensure  => installed,
-    require => Exec['multipath_cmdline'],
   }
 
   # Remove package for connection with Windows environment / device
