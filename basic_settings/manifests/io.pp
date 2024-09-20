@@ -64,7 +64,6 @@ class basic_settings::io (
     # Remove multipath
     package { ['multipath-tools', 'multipath-tools-boot']:
       ensure  => purged,
-      require => Exec['multipath_cmdline'],
     }
   }
 
