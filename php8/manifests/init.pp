@@ -127,7 +127,7 @@ class php8 (
     if (defined(Package['apt'])) {
       file { '/etc/apt/apt.conf.d/05-php.conf':
         ensure  => file,
-        source  => 'puppet:///modules/php8/apt.conf',
+        content => template('php8/apt.conf'),
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
