@@ -152,7 +152,7 @@ class basic_settings::packages (
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
-    require => Package['unattended-upgrades'],
+    require => [Package['coreutils'], Package['needrestart'], Package['unattended-upgrades']],
   }
 
   # Setup APT list changes dir

@@ -123,14 +123,16 @@ class php8 (
       require => File['/usr/lib/php/extras'],
     }
 
-    # Create APT config
-    file { '/etc/apt/apt.conf.d/05-php.conf':
-      ensure  => file,
-      source  => 'puppet:///modules/php8/apt.conf',
-      owner   => 'root',
-      group   => 'root',
-      mode    => '0600',
-      require => File['/etc/php/mods-available'],
+    # Check if APT package exists
+    if (defined(Package['apt'])) {
+      file { '/etc/apt/apt.conf.d/05-php.conf':
+        ensure  => file,
+        source  => 'puppet:///modules/php8/apt.conf',
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        require => [File['/etc/php/mods-available'], Package['grep']],
+      }
     }
   }
 }

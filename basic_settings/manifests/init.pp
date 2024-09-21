@@ -18,6 +18,7 @@ class basic_settings (
   String            $kernel_tcp_congestion_control              = 'brr',
   Integer           $kernel_tcp_fastopen                        = 3,
   Boolean           $locale_enable                              = false,
+  Boolean           $lvm_enable                                 = true,
   String            $mail_package                               = 'postfix',
   Boolean           $mongodb_enable                             = false,
   Float             $mongodb_version                            = 4.4,
@@ -327,7 +328,8 @@ class basic_settings (
 
   # Set IO
   class { 'basic_settings::io':
-    require => Class['basic_settings::message'],
+    lvm_enable  => $lvm_enable,
+    require     => Class['basic_settings::message'],
   }
 
   # Setup APT
