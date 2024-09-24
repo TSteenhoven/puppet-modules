@@ -45,7 +45,7 @@ class basic_settings::package_sury (
           command => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x14AA40EC0831756756D7F66C4F4EA0AAE5267A6C' | gpg --dearmor | tee ${key} >/dev/null; chmod 644 ${key}",
           unless  => "[ -e ${file} ]",
           notify  => Exec['package_sury_source_reload'],
-          require => [Package['curl'], Package['gnupg']],
+          require => [Package['apt'], Package['curl'], Package['gnupg']],
         }
       }
       default: {
@@ -53,7 +53,7 @@ class basic_settings::package_sury (
           command => "/usr/bin/curl -fsSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; dpkg -i /tmp/debsuryorg-archive-keyring.deb; printf \"${source}\" > ${file}",
           unless  => "[ -e ${file} ]",
           notify  => Exec['package_sury_source_reload'],
-          require => [Package['curl'], Package['gnupg']],
+          require => [Package['apt'], Package['curl'], Package['gnupg']],
         }
       }
     }
@@ -63,6 +63,7 @@ class basic_settings::package_sury (
       command => "/usr/bin/rm ${file}",
       onlyif  => "[ -e ${file} ]",
       notify  => Exec['package_sury_source_reload'],
+      require => Package['apt'],
     }
   }
 }

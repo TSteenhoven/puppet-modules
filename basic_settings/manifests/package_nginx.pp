@@ -30,7 +30,7 @@ class basic_settings::package_nginx (
       command => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; chmod 644 /usr/share/keyrings/nginx-archive-keyring.gpg",
       unless  => "[ -e ${file} ]",
       notify  => Exec['package_nginx_source_reload'],
-      require => [Package['curl'], Package['gnupg']],
+      require => [Package['apt'], Package['curl'], Package['gnupg']],
     }
   } else {
     # Remove Nginx repo
@@ -38,6 +38,7 @@ class basic_settings::package_nginx (
       command => "/usr/bin/rm ${file}",
       onlyif  => "[ -e ${file} ]",
       notify  => Exec['package_nginx_source_reload'],
+      require => Package['apt'],
     }
   }
 }

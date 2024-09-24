@@ -31,7 +31,7 @@ class basic_settings::package_mongodb (
       command => "/usr/bin/printf \"# Managed by puppet\n${source}\" > ${file}; /usr/bin/curl -fsSL https://pgp.mongodb.com/server-${version}.asc | gpg --dearmor | tee /usr/share/keyrings/mongodb.gpg >/dev/null; chmod 644 /usr/share/keyrings/mongodb.gpg",
       unless  => "[ -e ${file} ]",
       notify  => Exec['package_mongodb_source_reload'],
-      require => [Package['curl'], Package['gnupg']],
+      require => [Package['apt'], Package['curl'], Package['gnupg']],
     }
 
     # Install mongodb-org-server package
@@ -50,7 +50,7 @@ class basic_settings::package_mongodb (
       command => "/usr/bin/rm ${file}",
       onlyif  => "[ -e ${file} ]",
       notify  => Exec['package_mongodb_source_reload'],
-      require => Package['mongodb-org-server'],
+      require => [Package['apt'], Package['mongodb-org-server']],
     }
   }
 }

@@ -397,8 +397,7 @@ class basic_settings (
       deb_version => $deb_version,
       enable      => true,
       os_parent   => $os_parent,
-      os_name     => $os_name,
-      require     => Class['basic_settings::packages'],
+      os_name     => $os_name
     }
   } else {
     class { 'basic_settings::package_gitlab':
@@ -417,7 +416,6 @@ class basic_settings (
       os_parent   => $os_parent,
       os_name     => $os_name,
       version     => $mongodb_version,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_mongodb':
@@ -436,7 +434,6 @@ class basic_settings (
       os_parent   => $os_parent,
       os_name     => $os_name,
       version     => $mysql_version,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_mysql':
@@ -454,7 +451,6 @@ class basic_settings (
       enable      => true,
       os_parent   => $os_parent,
       os_name     => $os_name,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_nginx':
@@ -470,12 +466,10 @@ class basic_settings (
     class { 'basic_settings::package_node':
       enable  => true,
       version => $nodejs_version,
-      require => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_node':
       enable  => false,
-      require => Class['basic_settings::packages'],
     }
   }
 
@@ -486,7 +480,6 @@ class basic_settings (
       enable      => true,
       os_parent   => $os_parent,
       os_name     => $os_name,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_proxmox':
@@ -504,7 +497,6 @@ class basic_settings (
       enable      => true,
       os_parent   => $os_parent,
       os_name     => $os_name,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_rabbitmq':
@@ -522,7 +514,6 @@ class basic_settings (
       enable      => true,
       os_parent   => $os_parent,
       os_name     => $os_name,
-      require     => Class['basic_settings::packages'],
     }
   } else {
     class { 'basic_settings::package_sury':

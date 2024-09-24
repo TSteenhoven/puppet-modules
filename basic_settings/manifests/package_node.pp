@@ -14,7 +14,7 @@ class basic_settings::package_node (
       command => "/usr/bin/bash -c 'umask 22; /usr/bin/curl -fsSL https://deb.nodesource.com/setup_${version}.x | bash -'",
       unless  => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
       notify  => Exec['package_node_source_reload'],
-      require => Package['curl'],
+      require => [Package['apt'], Package['curl']],
     }
 
     # Install nodejs package
@@ -43,7 +43,7 @@ class basic_settings::package_node (
       command => '/usr/bin/rm /etc/apt/sources.list.d/nodesource.list',
       onlyif  => '[ -e /etc/apt/sources.list.d/nodesource.list ]',
       notify  => Exec['package_node_source_reload'],
-      require => Package['nodejs'],
+      require => [Package['apt'], Package['nodejs']],
     }
   }
 }

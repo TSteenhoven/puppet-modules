@@ -34,7 +34,7 @@ class basic_settings::package_rabbitmq (
       command => "/usr/bin/printf \"# Managed by puppet\n${source_erlang}\" > ${file_erlang}; /usr/bin/curl -fsSL https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/gpg.E495BB49CC4BBE5B.key | gpg --dearmor | tee /usr/share/keyrings/rabbitmq-erlang.gpg >/dev/null; chmod 644 /usr/share/keyrings/rabbitmq-erlang.gpg",
       unless  => "[ -e ${file_erlang} ]",
       notify  => Exec['package_rabbitmq_source_reload'],
-      require => [Package['curl'], Package['gnupg']],
+      require => [Package['apt'], Package['curl'], Package['gnupg']],
     }
 
     # Install Rabbitmq server repo
@@ -42,7 +42,7 @@ class basic_settings::package_rabbitmq (
       command => "/usr/bin/printf \"# Managed by puppet\n${source_server}\" >  ${file_server}; /usr/bin/curl -fsSL https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/gpg.9F4587F226208342.key | gpg --dearmor | tee /usr/share/keyrings/rabbitmq-server.gpg >/dev/null; chmod 644 /usr/share/keyrings/rabbitmq-server.gpg",
       unless  => "[ -e  ${file_server} ]",
       notify  => Exec['package_rabbitmq_source_reload'],
-      require => [Package['curl'], Package['gnupg']],
+      require => [Package['apt'], Package['curl'], Package['gnupg']],
     }
   } else {
     # Remove Rabbitmq erlang repo
@@ -57,6 +57,7 @@ class basic_settings::package_rabbitmq (
       command => "/usr/bin/rm  ${file_server}",
       onlyif  => "[ -e  ${file_server} ]",
       notify  => Exec['package_rabbitmq_source_reload'],
+      require => Package['apt'],
     }
   }
 }
