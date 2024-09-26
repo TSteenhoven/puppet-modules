@@ -1,12 +1,12 @@
 define basic_settings::systemd_service (
   String                    $description,
+  String                    $daemon_reload  = 'systemd_daemon_reload',
   Enum['present','absent']  $ensure         = present,
   Hash                      $unit           = {},
   Hash                      $service        = {},
   Hash                      $install        = {
     'WantedBy'  => 'multi-user.target',
-  },
-  String $daemon_reload  = 'systemd_daemon_reload'
+  }
 ) {
   file { "/etc/systemd/system/${title}.service":
     ensure  => $ensure,

@@ -13,12 +13,13 @@ class basic_settings (
   Integer           $kernel_connection_max                      = 4096,
   Integer           $kernel_hugepages                           = 0,
   Enum['all','4']   $kernel_ip_version                          = 'all',
+  Boolean           $kernel_network_autoconfigure               = true,
   String            $kernel_network_mode                        = 'strict',
   String            $kernel_security_lockdown                   = 'integrity',
   String            $kernel_tcp_congestion_control              = 'brr',
   Integer           $kernel_tcp_fastopen                        = 3,
   Boolean           $locale_enable                              = false,
-  Boolean           $lvm_enable                                 = true,
+  Boolean           $lvm_enable                                 = false,
   String            $mail_package                               = 'postfix',
   Boolean           $mongodb_enable                             = false,
   Float             $mongodb_version                            = 4.4,
@@ -328,8 +329,8 @@ class basic_settings (
 
   # Set IO
   class { 'basic_settings::io':
-    lvm_enable  => $lvm_enable,
-    require     => Class['basic_settings::message'],
+    lvm_enable => $lvm_enable,
+    require    => Class['basic_settings::message'],
   }
 
   # Setup APT
@@ -367,6 +368,7 @@ class basic_settings (
     hugepages               => $kernel_hugepages,
     install_options         => $backports_install_options,
     ip_version              => $kernel_ip_version,
+    network_autoconfigure   => $kernel_network_autoconfigure,
     network_mode            => $kernel_network_mode,
     security_lockdown       => $kernel_security_lockdown,
     tcp_congestion_control  => $kernel_tcp_congestion_control,
@@ -397,7 +399,7 @@ class basic_settings (
       deb_version => $deb_version,
       enable      => true,
       os_parent   => $os_parent,
-      os_name     => $os_name
+      os_name     => $os_name,
     }
   } else {
     class { 'basic_settings::package_gitlab':

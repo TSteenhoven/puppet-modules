@@ -1,5 +1,6 @@
 class basic_settings::network (
   Enum['nftables','iptables','firewalld']     $firewall_package,
+  Optional[String]                            $antivirus_package  = undef,
   Array                                       $fallback_dns       = [
     '8.8.8.8',
     '8.8.4.4',
@@ -7,7 +8,6 @@ class basic_settings::network (
     '2001:4860:4860::8844',
   ],
   String                                      $firewall_path      = '/etc/firewall.conf',
-  Optional[String]                            $antivirus_package  = undef,
   Optional[Array]                             $install_options    = undef
 ) {
   # Default suspicious packages
@@ -20,6 +20,7 @@ class basic_settings::network (
     '/usr/bin/ping4',
     '/usr/bin/ping6',
     '/usr/bin/tcptraceroute',
+    '/usr/bin/tcpdump',
     '/usr/bin/telnet',
     '/usr/sbin/arp',
     '/usr/sbin/route',
@@ -119,6 +120,7 @@ class basic_settings::network (
       'netcat-openbsd',
       'net-tools',
       'telnet',
+      'tcpdump',
       'iproute2',
       'tcptraceroute',
       'traceroute',
