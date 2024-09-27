@@ -105,10 +105,22 @@
 -a always,exit -F arch=b64 -F path=/etc/issue.net -F perm=wa -F key=issue
 
 # Apparmor configuration
--a always,exit -F arch=b32 -F path=/etc/apparmor -F perm=wa -F key=apparmor
--a always,exit -F arch=b64 -F path=/etc/apparmor -F perm=wa -F key=apparmor
--a always,exit -F arch=b32 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
--a always,exit -F arch=b64 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor
+-a always,exit -F arch=b32 -F path=/etc/apparmor -F perm=wa -F key=apparmor_config
+-a always,exit -F arch=b64 -F path=/etc/apparmor -F perm=wa -F key=apparmor_config
+-a always,exit -F arch=b32 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor_config
+-a always,exit -F arch=b64 -F path=/etc/apparmor.d -F perm=wa -F key=apparmor_config
+
+# Apparmor tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aa-complain -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aa-complain -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aa-enforce -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aa-enforce -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aa-remove-unknown -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aa-remove-unknown -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/aa-status -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/aa-status -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b32 -F path=/usr/sbin/apparmor_parser -F perm=x -F auid!=unset -F key=apparmor_tools
+-a always,exit -F arch=b64 -F path=/usr/sbin/apparmor_parser -F perm=x -F auid!=unset -F key=apparmor_tools
 <% if @systemd_enable -%>
 
 # Systemd configuration

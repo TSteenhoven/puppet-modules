@@ -59,8 +59,8 @@ class basic_settings::security (
     # Create systemd exclude rules
     basic_settings::security_audit { 'systemd_exclude':
       rules   => [
-        '-a always,exclude -F arch=b32 -S openat -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
-        '-a always,exclude -F arch=b64 -S openat -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
+        '-a always,exclude -F arch=b32 -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
+        '-a always,exclude -F arch=b64 -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
       ],
       order   => 2,
       require => File['/etc/audit/rules.d'],
