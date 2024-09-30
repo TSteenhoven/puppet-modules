@@ -18,6 +18,7 @@ class basic_settings (
   String            $kernel_security_lockdown                   = 'integrity',
   String            $kernel_tcp_congestion_control              = 'brr',
   Integer           $kernel_tcp_fastopen                        = 3,
+  Optional[Boolean] $keyboard_enable                            = undef,
   Boolean           $locale_enable                              = false,
   Boolean           $lvm_enable                                 = false,
   String            $mail_package                               = 'postfix',
@@ -391,6 +392,7 @@ class basic_settings (
 
   # Set assistent
   class { 'basic_settings::assistent':
+    keyboard_enable => $keyboard_enable,
   }
 
   # Check if variable gitlab is true; if true, install new source list and key
