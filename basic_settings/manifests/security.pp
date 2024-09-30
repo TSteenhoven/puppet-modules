@@ -55,18 +55,20 @@ class basic_settings::security (
   if (defined(Package['systemd'])) {
     # We have systemd
     $systemd_enable = true
+  } else {
+    $systemd_enable = false
+  }
 
-    # Create systemd exclude rules
+  # Create systemd exclude rules
+  if (defined(Package['systemd-cron'])) {
     basic_settings::security_audit { 'systemd_exclude':
       rules   => [
-        '-a always,exclude -F arch=b32 -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
-        '-a always,exclude -F arch=b64 -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
+        '-a always,exclude -F arch=b32 -F path=/var/spool/cron/crontabs -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
+        '-a always,exclude -F arch=b64 -F path=/var/spool/cron/crontabs -F exe=/usr/bin/systemd-tmpfiles -F auid=unset',
       ],
       order   => 2,
       require => File['/etc/audit/rules.d'],
     }
-  } else {
-    $systemd_enable = false
   }
 
   # Create main audit rule file */
