@@ -192,17 +192,27 @@ class basic_settings::network (
   if (defined(Package['systemd'])) {
     # Setup default Router Advertisement settings
     if ($ra_interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
-      $ip_learn_prefix = bool2str($basic_settings::kernel::ip_learn_prefix, 'yes', 'no')
-      basic_settings::systemd_network { '90-router-advertisement':
-        interface      => $ra_interfaces,
-        ipv6_accept_ra => {
-          'UseAutonomousPrefix' => $ip_learn_prefix,
-          'UseOnLinkPrefix'     => $ip_learn_prefix,
-        },
-        network        => {
-          'IPv6AcceptRA' => 'yes',
-        },
-        daemon_reload  => 'network_firewall_systemd_daemon_reload',
+      if ($basic_settings::kernel::ip_ra_enable) {
+        $ip_learn_prefix = bool2str($basic_settings::kernel::ip_ra_learn_prefix, 'yes', 'no')
+        basic_settings::systemd_network { '90-router-advertisement':
+          interface      => $ra_interfaces,
+          ipv6_accept_ra => {
+            'UseAutonomousPrefix' => $ip_learn_prefix,
+            'UseOnLinkPrefix'     => $ip_learn_prefix,
+          },
+          network        => {
+            'IPv6AcceptRA' => 'yes',
+          },
+          daemon_reload  => 'network_firewall_systemd_daemon_reload',
+        }
+      } else {
+        basic_settings::systemd_network { '90-router-advertisement':
+          interface     => $ra_interfaces,
+          network       => {
+            'IPv6AcceptRA' => 'no',
+          },
+          daemon_reload => 'network_firewall_systemd_daemon_reload',
+        }
       }
     } else {
       basic_settings::systemd_network { '90-router-advertisement':
