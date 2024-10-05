@@ -1,6 +1,6 @@
 # Managed by puppet
 [Match]
-name=<%= @interfase %>
+name=<%= @interface %>
 
 <% if ! @network.empty? -%>
 [Network]
