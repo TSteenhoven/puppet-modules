@@ -1,6 +1,7 @@
 class basic_settings::network (
   Enum['nftables','iptables','firewalld']     $firewall_package,
   Optional[String]                            $antivirus_package  = undef,
+  Boolean                                     $dhcpc_enable       =  true,
   Array                                       $fallback_dns       = [
     '8.8.8.8',
     '8.8.4.4',
@@ -10,6 +11,7 @@ class basic_settings::network (
   String                                      $firewall_path      = '/etc/firewall.conf',
   Optional[Array]                             $install_options    = undef,
   String                                      $ra_interfaces      = 'ens*'
+
 ) {
   # Default suspicious packages
   $default_packages = [
@@ -114,7 +116,6 @@ class basic_settings::network (
 
   # Install package
   package { [
-      'dhcpcd5',
       'dnsutils',
       'ethtool',
       'iputils-ping',
@@ -129,6 +130,19 @@ class basic_settings::network (
     ]:
       ensure  => installed,
       require => Package['ifupdown'],
+  }
+
+  # Check if dhcpc is needed on this server
+  if ($dhcpc_enable) {
+    package { 'dhcpcd':
+      ensure  => installed,
+      require => Package['ifupdown'],
+    }
+  } else {
+    package { 'dhcpcd':
+      ensure  => purged,
+      require => Package['ifupdown'],
+    }
   }
 
   # If we need to install netplan
@@ -192,7 +206,7 @@ class basic_settings::network (
   if (defined(Package['systemd'])) {
     # Setup default Router Advertisement settings
     if ($ra_interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
-      if ($basic_settings::kernel::ip_ra_enable) {
+      if ($dhcpc_enable and $basic_settings::kernel::ip_ra_enable) {
         $ip_learn_prefix = bool2str($basic_settings::kernel::ip_ra_learn_prefix, 'yes', 'no')
         basic_settings::systemd_network { '90-router-advertisement':
           interface      => $ra_interfaces,

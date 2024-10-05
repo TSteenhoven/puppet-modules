@@ -10,6 +10,7 @@ class basic_settings (
   Boolean           $getty_enable                               = false,
   Boolean           $gitlab_enable                              = false,
   Boolean           $guest_agent_enable                         = false,
+  Boolean           $ip_dhcpc_enable                            = true,
   Enum['all','4']   $ip_version                                 = 'all',
   Boolean           $ip_ra_enable                               = true,
   Boolean           $ip_ra_learn_prefix                         = true,
@@ -228,6 +229,13 @@ class basic_settings (
     $snap_correct = $snap_enable
   }
 
+  # Get IP RA state
+  if ($ip_dhcpc_enable and $ip_ra_enable) {
+    $ip_ra_enable_correct = $ip_ra_enable
+  } else {
+    $ip_ra_enable_correct = false
+  }
+
   # Basic system packages; This packages needed to be installed first
   package { ['apt', 'bc', 'coreutils', 'dpkg', 'grep', 'lsb-release', 'kmod', 'sed', 'util-linux']:
     ensure  => installed,
@@ -370,7 +378,7 @@ class basic_settings (
     hugepages               => $kernel_hugepages,
     install_options         => $backports_install_options,
     ip_version              => $ip_version,
-    ip_ra_enable            => $ip_ra_enable,
+    ip_ra_enable            => $ip_ra_enable_correct,
     ip_ra_learn_prefix      => $ip_ra_learn_prefix,
     network_mode            => $kernel_network_mode,
     security_lockdown       => $kernel_security_lockdown,
@@ -381,6 +389,7 @@ class basic_settings (
   # Set network
   class { 'basic_settings::network':
     antivirus_package => $antivirus_package,
+    dhcpc_enable      => $ip_dhcpc_enable,
     firewall_package  => $firewall_package,
     install_options   => $backports_install_options,
     require           => [File['basic_settings_source'], Class['basic_settings::message']],
