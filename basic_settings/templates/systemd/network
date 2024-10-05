@@ -1,0 +1,30 @@
+# Managed by puppet
+[Match]
+name=<%= @interfase %>
+
+<% if ! @network.empty? -%>
+[Network]
+<% @network.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>
+<% if ! @ipv6_accept_ra.empty? -%>
+[IPv6AcceptRA]
+<% @ipv6_accept_ra.sort.map do |key,value| -%>
+<% if value.kind_of?(Array) -%>
+<% value.each do |arrvalue| -%>
+<%= key %>=<%= arrvalue %>
+<% end -%>
+<% else -%>
+<%= key %>=<%= value %>
+<% end -%>
+<% end -%>
+
+<% end -%>

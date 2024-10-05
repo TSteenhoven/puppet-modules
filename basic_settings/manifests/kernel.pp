@@ -7,7 +7,7 @@ class basic_settings::kernel (
   Integer                     $hugepages                  = 0,
   Optional[Array]             $install_options            = undef,
   Enum['all','4']             $ip_version                 = 'all',
-  Boolean                     $network_autoconfigure      = true,
+  Boolean                     $ip_learn_prefix            = true,
   String                      $network_mode               = 'strict',
   String                      $security_lockdown          = 'integrity',
   String                      $tcp_congestion_control     = 'brr',

@@ -8,7 +8,8 @@ class basic_settings::network (
     '2001:4860:4860::8844',
   ],
   String                                      $firewall_path      = '/etc/firewall.conf',
-  Optional[Array]                             $install_options    = undef
+  Optional[Array]                             $install_options    = undef,
+  String                                      $ra_interfaces      = 'ens*'
 ) {
   # Default suspicious packages
   $default_packages = [
@@ -113,6 +114,7 @@ class basic_settings::network (
 
   # Install package
   package { [
+      'dhcpcd5',
       'dnsutils',
       'ethtool',
       'iputils-ping',
@@ -188,6 +190,27 @@ class basic_settings::network (
   }
 
   if (defined(Package['systemd'])) {
+    # Setup default Router Advertisement settings
+    if ($ra_interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
+      $ip_learn_prefix = bool2str($basic_settings::kernel::ip_learn_prefix, 'yes', 'no')
+      basic_settings::systemd_network { '90-router-advertisement':
+        interface      => $ra_interfaces,
+        ipv6_accept_ra => {
+          'UseAutonomousPrefix' => $ip_learn_prefix,
+          'UseOnLinkPrefix'     => $ip_learn_prefix,
+        },
+        network        => {
+          'IPv6AcceptRA' => 'yes',
+        },
+        daemon_reload  => 'network_firewall_systemd_daemon_reload',
+      }
+    } else {
+      basic_settings::systemd_network { '90-router-advertisement':
+        ensure        => absent,
+        daemon_reload => 'network_firewall_systemd_daemon_reload',
+      }
+    }
+
     # Set networkd rules
     $networkd_rules = [
       '-a always,exit -F arch=b32 -F path=/etc/networkd-dispatcher -F perm=wa -F key=network',
