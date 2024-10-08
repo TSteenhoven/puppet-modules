@@ -10,7 +10,7 @@ class basic_settings::network (
   ],
   String                                      $firewall_path      = '/etc/firewall.conf',
   Optional[Array]                             $install_options    = undef,
-  String                                      $ra_interfaces      = 'ens*'
+  String                                      $interfaces         = 'ens*'
 
 ) {
   # Default suspicious packages
@@ -204,12 +204,28 @@ class basic_settings::network (
   }
 
   if (defined(Package['systemd'])) {
+    # If DHCP is disabled, force system not to use DHCP
+    if ($interfaces != '' and !$dhcpc_enable) {
+      basic_settings::systemd_network { '90-dhcpc':
+        interface     => $interfaces,
+        network       => {
+          'DHCP' => 'no',
+        },
+        daemon_reload => 'network_firewall_systemd_daemon_reload',
+      }
+    } else {
+      basic_settings::systemd_network { '90-dhcpc':
+        ensure        => absent,
+        daemon_reload => 'network_firewall_systemd_daemon_reload',
+      }
+    }
+
     # Setup default Router Advertisement settings
-    if ($ra_interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
+    if ($interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
       if ($dhcpc_enable and $basic_settings::kernel::ip_ra_enable) {
         $ip_learn_prefix = bool2str($basic_settings::kernel::ip_ra_learn_prefix, 'yes', 'no')
         basic_settings::systemd_network { '90-router-advertisement':
-          interface      => $ra_interfaces,
+          interface      => $interfaces,
           ipv6_accept_ra => {
             'UseAutonomousPrefix' => $ip_learn_prefix,
             'UseOnLinkPrefix'     => $ip_learn_prefix,
@@ -221,7 +237,7 @@ class basic_settings::network (
         }
       } else {
         basic_settings::systemd_network { '90-router-advertisement':
-          interface     => $ra_interfaces,
+          interface     => $interfaces,
           network       => {
             'IPv6AcceptRA' => 'no',
           },
@@ -276,7 +292,7 @@ class basic_settings::network (
       owner   => 'root',
       group   => 'root',
       mode    => '0755', # High important,
-      require => File['/usr/local/sbin/rxbuffer'],
+      require => [Package['networkd-dispatcher'], File['/usr/local/sbin/rxbuffer']],
     }
 
     # Check if systemd resolved package exists
