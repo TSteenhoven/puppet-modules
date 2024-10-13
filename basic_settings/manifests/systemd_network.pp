@@ -1,7 +1,7 @@
 define basic_settings::systemd_network (
-  String                    $interface,
   String                    $daemon_reload  = 'systemd_daemon_reload',
   Enum['present','absent']  $ensure         = present,
+  String                    $interface      = 'ens*',
   Hash                      $ipv6_accept_ra = {},
   Hash                      $network        = {},
 ) {
