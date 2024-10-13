@@ -96,14 +96,6 @@ class php8 (
       require => Package["php8.${minor_version}-common"],
     }
 
-    # Available php mods
-    file { '/etc/php/mods-available':
-      ensure  => link,
-      target  => "/etc/php/8.${minor_version}/mods-available",
-      force   => true,
-      require => Package["php8.${minor_version}-common"],
-    }
-
     # Extra packages
     file { '/usr/lib/php/extras':
       ensure  => directory,
@@ -121,18 +113,6 @@ class php8 (
       group   => 'root',
       mode    => '0644', # Import, otherwise non-root users will not be able to use PHP
       require => File['/usr/lib/php/extras'],
-    }
-
-    # Check if APT package exists
-    if (defined(Package['apt'])) {
-      file { '/etc/apt/apt.conf.d/05-php.conf':
-        ensure  => file,
-        content => template('php8/apt.conf'),
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0600',
-        require => [File['/etc/php/mods-available'], Package['grep']],
-      }
     }
   }
 }
