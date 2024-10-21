@@ -134,12 +134,12 @@ class basic_settings::network (
 
   # Check if dhcpc is needed on this server
   if ($dhcpc_enable) {
-    package { 'dhcpcd':
+    package { ['dhcpcd', 'dhcpcd-base']:
       ensure  => installed,
       require => Package['ifupdown'],
     }
   } else {
-    package { 'dhcpcd':
+    package { ['dhcpcd', 'dhcpcd-base']:
       ensure  => purged,
       require => Package['ifupdown'],
     }
