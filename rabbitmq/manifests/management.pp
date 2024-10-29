@@ -17,12 +17,22 @@ class rabbitmq::management (
     refreshonly => true,
   }
 
+    # Create enable_plugins file
+  file { '/etc/rabbitmq/enabled_plugins':
+    ensure  => file,
+    owner   => 'rabbitmq',
+    group   => 'rabbitmq',
+    mode    => '0600',
+    replace => 'false'
+    notify  => Service['rabbitmq-server'],
+  }
+
   # Setup the plugin
-  exec { 'rabbitmq_management_plugin':
+    exec { 'rabbitmq_management_plugin':
     command => '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
     unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
     notify  => Exec['rabbitmq_management_plugin_guest'],
-    require => Package['rabbitmq-server'],
+    require => [ Package['rabbitmq-server'], File['/etc/rabbitmq/enabled_plugins'] ]
   }
 
   # Check if all cert variables are given
