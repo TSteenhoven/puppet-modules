@@ -211,8 +211,8 @@
 -a always,exit -F arch=b64 -F path=/etc/cron.weekly -F perm=wa -F key=cron
 -a always,exit -F arch=b32 -F path=/etc/crontab -F perm=wa -F key=cron
 -a always,exit -F arch=b64 -F path=/etc/crontab -F perm=wa -F key=cron
--a always,exit -F arch=b32 -F path=/var/spool/cron/crontabs -F key=cron
--a always,exit -F arch=b64 -F path=/var/spool/cron/crontabs -F key=cron
+-a always,exit -F arch=b32 -F path=/var/spool/cron/crontabs -F perm=wa -F key=cron
+-a always,exit -F arch=b64 -F path=/var/spool/cron/crontabs -F perm=wa -F key=cron
 
 # Monitor usage of commands to change power state
 -a always,exit -F arch=b32 -F path=/usr/sbin/shutdown -F perm=x -F key=power
