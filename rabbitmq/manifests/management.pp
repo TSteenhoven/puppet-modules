@@ -17,22 +17,24 @@ class rabbitmq::management (
     refreshonly => true,
   }
 
-    # Create enable_plugins file
-  file { '/etc/rabbitmq/enabled_plugins':
+  # Setup the plugin
+  exec { 'rabbitmq_management_plugin':
+    command => '/usr/bin/bash -c "(umask 133 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"', #lint:ignore:140chars # Important for rabbitmq to keep unmask 133
+    unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
+    notify  => Exec['rabbitmq_management_plugin_guest'],
+    require => Package['rabbitmq-server'],
+  }
+
+  # Create enabled plugins file
+  file { 'rabbitmq_management_plugin_enable':
     ensure  => file,
+    path    => '/etc/rabbitmq/enabled_plugins',
     owner   => 'rabbitmq',
     group   => 'rabbitmq',
     mode    => '0600',
-    replace => 'false',
+    replace => false,
     notify  => Service['rabbitmq-server'],
-  }
-
-  # Setup the plugin
-    exec { 'rabbitmq_management_plugin':
-    command => '/usr/bin/bash -c "(umask 27 && /usr/sbin/rabbitmq-plugins --quiet enable rabbitmq_management)"',
-    unless  => '/usr/sbin/rabbitmq-plugins --quiet is_enabled rabbitmq_management',
-    notify  => Exec['rabbitmq_management_plugin_guest'],
-    require => [ Package['rabbitmq-server'], File['/etc/rabbitmq/enabled_plugins'] ]
+    require => File['rabbitmq_management_plugin'],
   }
 
   # Check if all cert variables are given
@@ -106,7 +108,7 @@ class rabbitmq::management (
     rabbitmq::management_user { 'guest':
       password => $admin_password,
       tags     => ['administrator'],
-      require  => Exec['rabbitmq_management_plugin_guest'],
+      require  => File['rabbitmq_management_plugin_enable'],
     }
     rabbitmq::management_user_permissions { 'guest_default':
       user => 'guest',

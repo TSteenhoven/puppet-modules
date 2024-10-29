@@ -80,14 +80,15 @@ class basic_settings (
         $mongodb_allow = true
         if ($facts['os']['architecture'] == 'amd64') {
           $mysql_allow = true
+          $rabbitmq_allow = true
         } else {
           $mysql_allow = false
+          $rabbitmq_allow = false
         }
         $nginx_allow = true
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'noble'
-        $rabbitmq_allow = true
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -101,14 +102,15 @@ class basic_settings (
         $mongodb_allow = true
         if ($facts['os']['architecture'] == 'amd64') {
           $mysql_allow = true
+          $rabbitmq_allow = true
         } else {
           $mysql_allow = false
+          $rabbitmq_allow = true
         }
         $nginx_allow = true
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'lunar'
-        $rabbitmq_allow = true
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -122,14 +124,15 @@ class basic_settings (
         $mongodb_allow = true
         if ($facts['os']['architecture'] == 'amd64') {
           $mysql_allow = true
+          $rabbitmq_allow = true
         } else {
           $mysql_allow = false
+          $rabbitmq_allow = false
         }
         $nginx_allow = true
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'jammy'
-        $rabbitmq_allow = true
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
         $puppetserver_jdk = false
