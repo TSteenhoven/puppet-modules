@@ -23,7 +23,7 @@ class rabbitmq::management (
     owner   => 'rabbitmq',
     group   => 'rabbitmq',
     mode    => '0600',
-    replace => 'false',
+    replace => false,
     notify  => Service['rabbitmq-server'],
   }
 
