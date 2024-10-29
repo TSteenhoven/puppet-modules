@@ -96,6 +96,7 @@ class rabbitmq::management (
     rabbitmq::management_user { 'guest':
       password => $admin_password,
       tags     => ['administrator'],
+      Require  => Exec['rabbitmq_management_plugin_guest'],
     }
     rabbitmq::management_user_permissions { 'guest_default':
       user => 'guest',
