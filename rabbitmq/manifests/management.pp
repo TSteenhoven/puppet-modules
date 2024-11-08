@@ -34,7 +34,7 @@ class rabbitmq::management (
     mode    => '0600',
     replace => false,
     notify  => Service['rabbitmq-server'],
-    require => File['rabbitmq_management_plugin'],
+    require => Exec['rabbitmq_management_plugin'],
   }
 
   # Check if all cert variables are given
