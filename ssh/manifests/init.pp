@@ -54,6 +54,21 @@ class ssh (
     $systemd_socket = false
   }
 
+  # Check if we have systemd socket and kernel package exists
+  if ($systemd_socket and defined(Class['basic_settings::kernel'])) {
+    # Get IP versions
+    case $basic_settings::kernel::ip_version {
+      '4': {
+        $ip_version = 'default'
+      }
+      default: {
+        $ip_version = 'both'
+      }
+    }
+  } else {
+    $ip_version = 'default'
+  }
+
   # Create SSHD directory config
   file { '/etc/ssh/sshd_config.d':
     ensure  => directory,
@@ -96,10 +111,12 @@ class ssh (
     if ($port_alternative) {
       $systemd_socket_settings = {
         'ListenStream' => ['', $port, $port_alternative],
+        'BindIPv6Only' => ['', $ip_version],
       }
     } else {
       $systemd_socket_settings = {
         'ListenStream' => ['', $port],
+        'BindIPv6Only' => ['', $ip_version],
       }
     }
 
