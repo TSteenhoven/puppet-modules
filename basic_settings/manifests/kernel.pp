@@ -15,9 +15,12 @@ class basic_settings::kernel (
   String                      $tcp_congestion_control     = 'brr',
   Integer                     $tcp_fastopen               = 3
 ) {
+  # Set variables
+  $os_name = $facts['os']['name'];
+  $os_version = $facts['os']['release']['major']
+
   # Install extra packages when Ubuntu
-  if ($facts['os']['name'] == 'Ubuntu') {
-    $os_version = $facts['os']['release']['major']
+  if ($os_name == 'Ubuntu') {
     if ($os_version != '24.04') {
       package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
         ensure  => installed,
@@ -349,8 +352,7 @@ class basic_settings::kernel (
   }
 
   # Try to get init ram filesystem packages 
-  if ($facts['os']['name'] == 'Ubuntu') {
-    $os_version = $facts['os']['release']['major']
+  if ($os_name == 'Ubuntu') {
     if ($os_version == '24.04') {
       $initramfs_packages = ['initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']
     } else {
