@@ -111,12 +111,12 @@ class ssh (
     if ($port_alternative) {
       $systemd_socket_settings = {
         'ListenStream' => ['', $port, $port_alternative],
-        'BindIPv6Only' => ['', $ip_version],
+        'BindIPv6Only' => $ip_version,
       }
     } else {
       $systemd_socket_settings = {
         'ListenStream' => ['', $port],
-        'BindIPv6Only' => ['', $ip_version],
+        'BindIPv6Only' => $ip_version,
       }
     }
 
