@@ -5,6 +5,7 @@ class basic_settings::kernel (
   String                      $cpu_governor               = 'performance',
   Boolean                     $guest_agent_enable         = false,
   Integer                     $hugepages                  = 0,
+  Boolean                     $initramfs_enable           = false,
   Optional[Array]             $install_options            = undef,
   Enum['all','4']             $ip_version                 = 'all',
   Boolean                     $ip_ra_enable               = true,
@@ -344,6 +345,29 @@ class basic_settings::kernel (
     }
     default: {
       $bootloader_packages = []
+    }
+  }
+
+  # Try to get init ram filesystem packages 
+  if ($facts['os']['name'] == 'Ubuntu') {
+    $os_version = $facts['os']['release']['major']
+    if ($os_version == '24.04') {
+      $initramfs_packages = ['initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']
+    } else {
+      $initramfs_packages = ['initramfs-tools-core', 'initramfs-tools']
+    }
+  } else {
+    $initramfs_packages = ['initramfs-tools-core', 'initramfs-tools']
+  }
+
+  # Check if we need init ram filesystem
+  if ($initramfs_enable) {
+    package { $initramfs_packages:
+      ensure => installed,
+    }
+  } else {
+    package { $initramfs_packages:
+      ensure => purged,
     }
   }
 
