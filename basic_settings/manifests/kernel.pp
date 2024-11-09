@@ -320,6 +320,23 @@ class basic_settings::kernel (
     $cpu_pstate = undef
   }
 
+  # Try to install init ram filesystem packages 
+  if ($os_name == 'Ubuntu') {
+    if ($os_version == '24.04') {
+      package {['dhcpcd-base', 'initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
+        ensure => installed,
+      }
+    } else {
+      package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
+        ensure => installed,
+      }
+    }
+  } else {
+    package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
+      ensure => installed,
+    }
+  }
+
   # Setup TCP
   case $bootloader {
     'grub': {
@@ -328,7 +345,8 @@ class basic_settings::kernel (
 
       # Install package
       package { 'grub2-common':
-        ensure => installed,
+        ensure  => installed,
+        require => Package['initramfs-tools-core'],
       }
 
       # Remove unnecessary packages
@@ -355,23 +373,6 @@ class basic_settings::kernel (
     }
     default: {
       $bootloader_packages = []
-    }
-  }
-
-  # Try to install init ram filesystem packages 
-  if ($os_name == 'Ubuntu') {
-    if ($os_version == '24.04') {
-      package {['dhcpcd-base', 'initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
-        ensure => installed,
-      }
-    } else {
-      package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-        ensure => installed,
-      }
-    }
-  } else {
-    package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-      ensure => installed,
     }
   }
 

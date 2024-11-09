@@ -13,6 +13,9 @@ class basic_settings::network (
   String                                      $interfaces         = 'ens*'
 
 ) {
+  # Set some default values
+  $kernel_enable = defined(Class['basic_settings::kernel'])
+
   # Default suspicious packages
   $default_packages = [
     '/usr/bin/ip',
@@ -133,13 +136,42 @@ class basic_settings::network (
   }
 
   # Check if dhcpc is needed on this server
-  if ($dhcpc_enable) {
+  if ($dhcpc_enable or $kernel_enable) {
+    # Install dhcpcd-base
+    if (!defined(Package['dhcpcd-base'])) {
+      package { 'dhcpcd-base':
+        ensure  => installed,
+      }
+    }
+
+    # Install dhcpcd
     package { ['dhcpcd']:
       ensure  => installed,
-      require => Package['ifupdown'],
+      require => [Packagep['dhcpcd-base'], Package['ifupdown']],
+    }
+
+    # Enable dhcpcd service
+    service { 'dhcpcd':
+      ensure  => true,
+      enable  => true,
+      require => Package['dhcpcd'],
+    }
+
+    # DHCP is disabled, but we need dhcpd package because kernel package
+    if (!$dhcpc_enable and $kernel_enable) {
+      # Create config file
+      file { '/etc/dhcpcd.conf':
+        ensure  => file,
+        content => 'denyinterfaces *',
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0600',
+        notify  => Service['dhcpcd'],
+      }
     }
   } else {
-    package { ['dhcpcd']:
+    # Insralll dhcpcd
+    package { ['dhcpcd-base', 'dhcpcd']:
       ensure  => purged,
       require => Package['ifupdown'],
     }
@@ -221,7 +253,7 @@ class basic_settings::network (
     }
 
     # Setup default Router Advertisement settings
-    if ($interfaces != '' and defined(Class['basic_settings::kernel']) and $basic_settings::kernel::ip_version_v6) {
+    if ($interfaces != '' and $kernel_enable and $basic_settings::kernel::ip_version_v6) {
       if ($dhcpc_enable and $basic_settings::kernel::ip_ra_enable) {
         $ip_learn_prefix = bool2str($basic_settings::kernel::ip_ra_learn_prefix, 'yes', 'no')
         basic_settings::systemd_network { '90-router-advertisement':
