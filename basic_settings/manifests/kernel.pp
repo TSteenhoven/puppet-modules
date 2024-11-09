@@ -5,7 +5,6 @@ class basic_settings::kernel (
   String                      $cpu_governor               = 'performance',
   Boolean                     $guest_agent_enable         = false,
   Integer                     $hugepages                  = 0,
-  Boolean                     $initramfs_enable           = false,
   Optional[Array]             $install_options            = undef,
   Enum['all','4']             $ip_version                 = 'all',
   Boolean                     $ip_ra_enable               = true,
@@ -25,6 +24,14 @@ class basic_settings::kernel (
       package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
         ensure  => installed,
       }
+    }
+    # Ubuntu wants linux-tools-common installed
+    package { 'linux-tools-common':
+      ensure => installed,
+    }
+  } else {
+    package { 'linux-tools-common':
+      ensure => purged,
     }
   }
 
@@ -147,7 +154,7 @@ class basic_settings::kernel (
   }
 
   # Remove unnecessary packages
-  package { ['apport', 'installation-report', 'linux-tools-common', 'plymouth', 'thermald', 'upower']:
+  package { ['apport', 'installation-report', 'plymouth', 'thermald', 'upower']:
     ensure  => purged,
   }
 
@@ -351,25 +358,20 @@ class basic_settings::kernel (
     }
   }
 
-  # Try to get init ram filesystem packages 
+  # Try to install init ram filesystem packages 
   if ($os_name == 'Ubuntu') {
     if ($os_version == '24.04') {
-      $initramfs_packages = ['initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']
+      package {['initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
+        ensure => installed,
+      }
     } else {
-      $initramfs_packages = ['initramfs-tools-core', 'initramfs-tools']
+      package {['initramfs-tools-core', 'initramfs-tools']:
+        ensure => installed,
+      }
     }
   } else {
-    $initramfs_packages = ['initramfs-tools-core', 'initramfs-tools']
-  }
-
-  # Check if we need init ram filesystem
-  if ($initramfs_enable) {
-    package { $initramfs_packages:
+    package {['initramfs-tools-core', 'initramfs-tools']:
       ensure => installed,
-    }
-  } else {
-    package { $initramfs_packages:
-      ensure => purged,
     }
   }
 
