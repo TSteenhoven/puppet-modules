@@ -147,7 +147,7 @@ class basic_settings::network (
     # Install dhcpcd
     package { ['dhcpcd']:
       ensure  => installed,
-      require => [Packagep['dhcpcd-base'], Package['ifupdown']],
+      require => [Package['dhcpcd-base'], Package['ifupdown']],
     }
 
     # Enable dhcpcd service
