@@ -361,16 +361,16 @@ class basic_settings::kernel (
   # Try to install init ram filesystem packages 
   if ($os_name == 'Ubuntu') {
     if ($os_version == '24.04') {
-      package {['initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
+      package {['dhcpcd-base', 'initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
         ensure => installed,
       }
     } else {
-      package {['initramfs-tools-core', 'initramfs-tools']:
+      package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
         ensure => installed,
       }
     }
   } else {
-    package {['initramfs-tools-core', 'initramfs-tools']:
+    package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
       ensure => installed,
     }
   }
