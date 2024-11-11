@@ -29,115 +29,115 @@ class php8 (
 
   if ($bcmath) {
     package { "php8.${minor_version}-bcmath":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($bzip2) {
     package { "php8.${minor_version}-bz2":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($curl) {
     package { "php8.${minor_version}-curl":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($gd) {
     package { "php8.${minor_version}-gd":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($gmp) {
     package { "php8.${minor_version}-gmp":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($imagick) {
     package { "php8.${minor_version}-imagick":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($intl) {
     package { "php8.${minor_version}-intl":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($ldap) {
     package { "php8.${minor_version}-ldap":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($mbstring) {
     package { "php8.${minor_version}-mbstring":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($mcrypt) {
     package { "php8.${minor_version}-mcrypt":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($msgpack) {
     package { "php8.${minor_version}-msgpack":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($mysql) {
     package { "php8.${minor_version}-mysql":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($readline) {
     package { "php8.${minor_version}-readline":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($soap) {
     package { "php8.${minor_version}-soap":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($sqlite3) {
     package { "php8.${minor_version}-sqlite3":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($sybase) {
     package { "php8.${minor_version}-sybase":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($xdebug) {
     package { "php8.${minor_version}-xdebug":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($xml) {
     package { "php8.${minor_version}-xml":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
   if ($zip) {
     package { "php8.${minor_version}-zip":
-      ensure          => installed
+      ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
