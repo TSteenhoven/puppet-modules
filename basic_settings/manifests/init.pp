@@ -1,54 +1,55 @@
 class basic_settings (
-  Boolean           $adwaita_icon_theme_enable                  = false,
-  Optional[String]  $antivirus_package                          = undef,
-  Boolean           $backports                                  = false,
-  String            $cluster_id                                 = 'core',
-  Boolean           $dconf_service_enable                       = false,
-  Boolean           $docs_enable                                = false,
-  String            $environment                                = 'production',
-  String            $firewall_package                           = 'nftables',
-  Boolean           $getty_enable                               = false,
-  Boolean           $gitlab_enable                              = false,
-  Boolean           $guest_agent_enable                         = false,
-  Boolean           $ip_dhcpc_enable                            = true,
-  Enum['all','4']   $ip_version                                 = 'all',
-  Boolean           $ip_ra_enable                               = true,
-  Boolean           $ip_ra_learn_prefix                         = true,
-  Integer           $kernel_connection_max                      = 4096,
-  Integer           $kernel_hugepages                           = 0,
-  String            $kernel_network_mode                        = 'strict',
-  String            $kernel_security_lockdown                   = 'integrity',
-  String            $kernel_tcp_congestion_control              = 'brr',
-  Integer           $kernel_tcp_fastopen                        = 3,
-  Optional[Boolean] $keyboard_enable                            = undef,
-  Boolean           $locale_enable                              = false,
-  Boolean           $lvm_enable                                 = false,
-  String            $mail_package                               = 'postfix',
-  Boolean           $mongodb_enable                             = false,
-  Float             $mongodb_version                            = 4.4,
-  Boolean           $mysql_enable                               = false,
-  Float             $mysql_version                              = 8.0,
-  Boolean           $nginx_enable                               = false,
-  Boolean           $nodejs_enable                              = false,
-  Integer           $nodejs_version                             = 20,
-  Boolean           $non_free                                   = false,
-  Boolean           $openjdk_enable                             = false,
-  String            $openjdk_version                            = 'default',
-  Boolean           $pro_enable                                 = false,
-  Boolean           $proxmox_enable                             = false,
-  Boolean           $puppetserver_enable                        = false,
-  Boolean           $rabbitmq_enable                            = false,
-  String            $server_fdqn                                = $facts['networking']['fqdn'],
-  String            $server_timezone                            = 'UTC',
-  String            $smtp_server                                = 'localhost',
-  Boolean           $snap_enable                                = false,
-  Boolean           $sudoers_dir_enable                         = true,
-  Boolean           $sury_enable                                = false,
-  String            $systemd_default_target                     = 'helpers',
-  String            $systemd_notify_mail                        = 'root',
-  Array             $systemd_ntp_extra_pools                    = [],
-  Array             $unattended_upgrades_block_extra_packages   = [],
-  Array             $unattended_upgrades_block_packages         = [
+  Boolean                               $adwaita_icon_theme_enable                  = false,
+  Optional[String]                      $antivirus_package                          = undef,
+  Boolean                               $backports                                  = false,
+  String                                $cluster_id                                 = 'core',
+  Boolean                               $dconf_service_enable                       = false,
+  Boolean                               $docs_enable                                = false,
+  String                                $environment                                = 'production',
+  String                                $firewall_package                           = 'nftables',
+  Boolean                               $getty_enable                               = false,
+  Boolean                               $gitlab_enable                              = false,
+  Boolean                               $guest_agent_enable                         = false,
+  Boolean                               $ip_dhcpc_enable                            = true,
+  Enum['all','4']                       $ip_version                                 = 'all',
+  Boolean                               $ip_ra_enable                               = true,
+  Boolean                               $ip_ra_learn_prefix                         = true,
+  Integer                               $kernel_connection_max                      = 4096,
+  Integer                               $kernel_hugepages                           = 0,
+  String                                $kernel_network_mode                        = 'strict',
+  Optional[Enum['initramfs','dracut']]  $kernel_ramdisk_package                     = 'initramfs',
+  String                                $kernel_security_lockdown                   = 'integrity',
+  String                                $kernel_tcp_congestion_control              = 'brr',
+  Integer                               $kernel_tcp_fastopen                        = 3,
+  Optional[Boolean]                     $keyboard_enable                            = undef,
+  Boolean                               $locale_enable                              = false,
+  Boolean                               $lvm_enable                                 = false,
+  String                                $mail_package                               = 'postfix',
+  Boolean                               $mongodb_enable                             = false,
+  Float                                 $mongodb_version                            = 4.4,
+  Boolean                               $mysql_enable                               = false,
+  Float                                 $mysql_version                              = 8.0,
+  Boolean                               $nginx_enable                               = false,
+  Boolean                               $nodejs_enable                              = false,
+  Integer                               $nodejs_version                             = 20,
+  Boolean                               $non_free                                   = false,
+  Boolean                               $openjdk_enable                             = false,
+  String                                $openjdk_version                            = 'default',
+  Boolean                               $pro_enable                                 = false,
+  Boolean                               $proxmox_enable                             = false,
+  Boolean                               $puppetserver_enable                        = false,
+  Boolean                               $rabbitmq_enable                            = false,
+  String                                $server_fdqn                                = $facts['networking']['fqdn'],
+  String                                $server_timezone                            = 'UTC',
+  String                                $smtp_server                                = 'localhost',
+  Boolean                               $snap_enable                                = false,
+  Boolean                               $sudoers_dir_enable                         = true,
+  Boolean                               $sury_enable                                = false,
+  String                                $systemd_default_target                     = 'helpers',
+  String                                $systemd_notify_mail                        = 'root',
+  Array                                 $systemd_ntp_extra_pools                    = [],
+  Array                                 $unattended_upgrades_block_extra_packages   = [],
+  Array                                 $unattended_upgrades_block_packages         = [
     'libmysql*',
     'mysql*',
     'nginx',
@@ -89,6 +90,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'noble'
+        $ramdisk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -111,6 +113,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'lunar'
+        $ramdisk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -133,6 +136,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'jammy'
+        $ramdisk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
         $puppetserver_jdk = false
@@ -149,6 +153,7 @@ class basic_settings (
         $nodejs_allow = false
         $openjdk_allow = false
         $os_name = 'unknown'
+        $ramdisk_package = 'initramfs'
         $rabbitmq_allow = false
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
@@ -180,6 +185,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'bookworm'
+        $ramdisk_package = 'initramfs'
         $rabbitmq_allow = true
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
@@ -197,6 +203,7 @@ class basic_settings (
         $nodejs_allow = false
         $openjdk_allow = false
         $os_name = 'unknown'
+        $ramdisk_package = 'initramfs'
         $rabbitmq_allow = false
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
@@ -216,6 +223,7 @@ class basic_settings (
       $nodejs_allow = false
       $openjdk_allow = false
       $os_name = 'unknown'
+      $ramdisk_package = 'initramfs'
       $rabbitmq_allow = false
       $proxmox_allow = false
       $puppetserver_dir = 'puppet'
@@ -223,6 +231,13 @@ class basic_settings (
       $puppetserver_package = 'puppet-master'
       $sury_allow = false
     }
+  }
+
+  # Get ramdisk package
+  if ($kernel_ramdisk_package == undef) {
+    $kernel_ramdisk_package_correct = $ramdisk_package
+  } else {
+    $kernel_ramdisk_package_correct = $kernel_ramdisk_package
   }
 
   # Get snap state
@@ -386,6 +401,7 @@ class basic_settings (
     ip_ra_enable            => $ip_ra_enable_correct,
     ip_ra_learn_prefix      => $ip_ra_learn_prefix,
     network_mode            => $kernel_network_mode,
+    ramdisk_package         => $kernel_ramdisk_package_correct,
     security_lockdown       => $kernel_security_lockdown,
     tcp_congestion_control  => $kernel_tcp_congestion_control,
     tcp_fastopen            => $kernel_tcp_fastopen

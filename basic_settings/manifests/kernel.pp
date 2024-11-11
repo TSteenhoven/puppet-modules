@@ -9,6 +9,7 @@ class basic_settings::kernel (
   Enum['all','4']             $ip_version                 = 'all',
   Boolean                     $ip_ra_enable               = true,
   Boolean                     $ip_ra_learn_prefix         = true,
+  Enum['initramfs','dracut']  $ramdisk_package            = 'initramfs',
   String                      $network_mode               = 'strict',
   String                      $security_lockdown          = 'integrity',
   String                      $tcp_congestion_control     = 'brr',
@@ -319,23 +320,47 @@ class basic_settings::kernel (
     $cpu_pstate = undef
   }
 
-  # Try to install init ram filesystem packages 
-  if ($os_name == 'Ubuntu') {
-    if ($os_version == '24.04') {
-      package {['dhcpcd-base', 'initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
+  # Install ram disk package
+  case $ramdisk_package { #lint:ignore:case_without_default
+    'dracut': {
+      # Install packages
+      package {['dracut', 'dracut-core']:
         ensure          => installed,
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
-    } else {
-      package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-        ensure          => installed,
-        install_options => ['--no-install-recommends', '--no-install-suggests'],
+
+      # Remove unused packages
+      package {['initramfs-tools', 'initramfs-tools-bin', 'initramfs-tools-core']:
+        ensure  => purged,
+        require => Package['dracut-core'],
       }
     }
-  } else {
-    package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    'initramfs': {
+      # Install packages 
+      if ($os_name == 'Ubuntu') {
+        if ($os_version == '24.04') {
+          package {['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-bin', 'initramfs-tools-core']:
+            ensure          => installed,
+            install_options => ['--no-install-recommends', '--no-install-suggests'],
+          }
+        } else {
+          package {['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-core']:
+            ensure          => installed,
+            install_options => ['--no-install-recommends', '--no-install-suggests'],
+          }
+        }
+      } else {
+        package {['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-core']:
+          ensure          => installed,
+          install_options => ['--no-install-recommends', '--no-install-suggests'],
+        }
+      }
+
+      # Remove unused packages
+      package {['dracut', 'dracut-core']:
+        ensure  => purged,
+        require => Package['initramfs-tools-core'],
+      }
     }
   }
 

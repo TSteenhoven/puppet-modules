@@ -137,7 +137,7 @@ class basic_settings::network (
   }
 
   # Check if dhcpc is needed on this server
-  if ($dhcpc_enable or $kernel_enable) {
+  if ($dhcpc_enable or ($kernel_enable and $basic_settings::kernel::ramdisk_package == 'initramfs')) {
     # Install dhcpcd-base
     if (!defined(Package['dhcpcd-base'])) {
       package { 'dhcpcd-base':
@@ -174,7 +174,7 @@ class basic_settings::network (
     }
   } else {
     # Purge dhcpcd
-    package { ['dhcpcd-base', 'dhcpcd']:
+    package { ['dhcpcd', 'dhcpcd-base']:
       ensure  => purged,
       require => Package['ifupdown'],
     }
