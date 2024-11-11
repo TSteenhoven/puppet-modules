@@ -241,12 +241,14 @@ class basic_settings (
 
   # Basic system packages; This packages needed to be installed first
   package { ['apt', 'bc', 'coreutils', 'dpkg', 'grep', 'lsb-release', 'kmod', 'sed', 'util-linux']:
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Basic system packages
   package { 'sysstat':
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Reload source list
@@ -553,14 +555,16 @@ class basic_settings (
 
     # Install openjdk package
     package { 'openjdk':
-      ensure => installed,
-      name   => $openjdk_package,
+      ensure          => installed,
+      name            => $openjdk_package,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Install java extensions
     package { ['adwaita-icon-theme', 'ca-certificates-java', 'dconf-service']:
-      ensure  => installed,
-      require => Package['openjdk'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['openjdk'],
     }
   } else {
     # Remove openjdk package
@@ -572,8 +576,9 @@ class basic_settings (
     # Check if we need to install adwaita theme
     if ($adwaita_icon_theme_enable) {
       package { 'adwaita-icon-theme':
-        ensure  => installed,
-        require => Package['openjdk'],
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
+        require         => Package['openjdk'],
       }
     } else {
       package { 'adwaita-icon-theme':
@@ -585,8 +590,9 @@ class basic_settings (
     # Check if we need to install dconf-service
     if ($dconf_service_enable) {
       package { 'dconf-service':
-        ensure  => installed,
-        require => Package['openjdk'],
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
+        require         => Package['openjdk'],
       }
     } else {
       package { 'dconf-service':

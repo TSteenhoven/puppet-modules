@@ -5,13 +5,15 @@ class rabbitmq (
 ) {
   # Install erlang
   package { 'erlang-base':
-    ensure => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Install rabbitmq
   package { 'rabbitmq-server':
-    ensure  => installed,
-    require => Package['erlang-base'],
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
+    require         => Package['erlang-base'],
   }
 
   # Disable service

@@ -6,7 +6,8 @@ class basic_settings::pro (
     'Ubuntu': {
       # Install advantage tools
       package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:
-        ensure => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
 
       # Keep APT config

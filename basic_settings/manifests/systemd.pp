@@ -6,7 +6,7 @@ class basic_settings::systemd (
   # Install packages
   package { ['dbus', 'dbus-user-session', 'systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd']:
     ensure          => installed,
-    install_options => $install_options,
+    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
   }
 
   # Remove unnecessary packages

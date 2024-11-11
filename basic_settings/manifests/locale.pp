@@ -6,7 +6,8 @@ class basic_settings::locale (
   # Check if packages are needed
   if ($enable) {
     package { ['dictionaries-common', 'locales', "w${dictionary}"]:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Remove default locale file
@@ -30,7 +31,8 @@ class basic_settings::locale (
   # Check if docs is needed
   if ($enable and $docs_enable) {
     package { ['manpages', 'manpages-dev', 'man-db']:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
     package { ['manpages', 'manpages-dev', 'man-db']:

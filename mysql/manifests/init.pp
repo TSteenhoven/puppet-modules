@@ -172,14 +172,16 @@ class mysql (
   # Install package for automysqlbackup
   if (!defined(Package['pigz'])) {
     package { 'pigz':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install package for automysqlbackup
   if (!defined(Package['pbzip2'])) {
     package { 'pbzip2':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 

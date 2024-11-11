@@ -4,7 +4,8 @@ class basic_settings::security (
 ) {
   # Install default security packages
   package { ['apparmor', 'auditd', 'pwgen']:
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Enable apparmor service

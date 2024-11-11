@@ -17,14 +17,16 @@ class basic_settings::packages (
   # Install apt package
   if (!defined(Package['apt'])) {
     package { 'apt':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install dpkg package
   if (!defined(Package['dpkg'])) {
     package { 'dpkg':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -44,8 +46,9 @@ class basic_settings::packages (
       'ucf',
       'unattended-upgrades',
     ]:
-      ensure  => installed,
-      require => Package['apt'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['apt'],
   }
 
   # Set default rules
@@ -83,7 +86,8 @@ class basic_settings::packages (
       '-a always,exit -F arch=b64 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
     ]
     package { 'snapd':
-      ensure => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -96,7 +100,8 @@ class basic_settings::packages (
   if ($facts['os']['name'] == 'Ubuntu') {
     # Install extra packages when Ubuntu
     package { 'update-manager-core':
-      ensure => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Remove unnecessary snapd and unminimize files

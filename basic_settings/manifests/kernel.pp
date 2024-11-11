@@ -21,7 +21,8 @@ class basic_settings::kernel (
   # Install extra packages when Ubuntu
   if ($os_name == 'Ubuntu' and $os_version != '24.04') {
     package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -72,7 +73,8 @@ class basic_settings::kernel (
 
     # Install libhugetlbfs package
     package { 'libhugetlbfs-bin':
-      ensure => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Remove group 
@@ -151,49 +153,56 @@ class basic_settings::kernel (
   # Install system package
   if (!defined(Package['bc'])) {
     package { 'bc':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['coreutils'])) {
     package { 'coreutils':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['grep'])) {
     package { 'grep':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['lsb-release'])) {
     package { 'lsb-release':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['kmod'])) {
     package { 'kmod':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['sed'])) {
     package { 'sed':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
   # Install system package
   if (!defined(Package['util-linux'])) {
     package { 'util-linux':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -314,16 +323,19 @@ class basic_settings::kernel (
   if ($os_name == 'Ubuntu') {
     if ($os_version == '24.04') {
       package {['dhcpcd-base', 'initramfs-tools-bin', 'initramfs-tools-core', 'initramfs-tools']:
-        ensure => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     } else {
       package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-        ensure => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     }
   } else {
     package {['dhcpcd-base', 'initramfs-tools-core', 'initramfs-tools']:
-      ensure => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -335,8 +347,9 @@ class basic_settings::kernel (
 
       # Install package
       package { 'grub2-common':
-        ensure  => installed,
-        require => Package['initramfs-tools-core'],
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
+        require         => Package['initramfs-tools-core'],
       }
 
       # Remove unnecessary packages
@@ -415,7 +428,7 @@ class basic_settings::kernel (
     if ($guest_agent_enable) {
       package { $guest_agent_package:
         ensure          => installed,
-        install_options => $install_options,
+        install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
       }
     } else {
       package { $guest_agent_package:

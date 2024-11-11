@@ -10,7 +10,8 @@ class basic_settings::assistent (
 
   # Install packages
   package { ['bash-completion']:
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Get keyboard state
@@ -24,7 +25,8 @@ class basic_settings::assistent (
   if ($keyboard_enable_correct) {
     # Install packages
     package { ['console-setup', 'keyboard-configuration']:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Reload keyboard

@@ -16,7 +16,8 @@ class ssh (
 ) {
   # Required packages for SSHD
   package { ['openssh-server', 'openssh-client']:
-    ensure => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Convert array to string

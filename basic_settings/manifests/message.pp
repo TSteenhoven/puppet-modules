@@ -5,7 +5,8 @@ class basic_settings::message (
 ) {
   # Install package
   package { [$mail_package, 'mailutils']:
-    ensure => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Enable mail service

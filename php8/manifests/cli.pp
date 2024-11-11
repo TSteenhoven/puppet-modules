@@ -12,8 +12,9 @@ class php8::cli (
 
   # Setip PHP 8 CLI
   package { "php8.${minor_version}-cli":
-    ensure  => installed,
-    require => Class['php8'],
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
+    require         => Class['php8'],
   }
   -> file { "/etc/php/8.${minor_version}/cli/conf.d/99-custom-settings.ini":
     ensure  => file,

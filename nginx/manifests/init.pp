@@ -20,8 +20,9 @@ class nginx (
 
   # Install Nginx
   package { 'nginx':
-    ensure  => installed,
-    require => Package['apache2'],
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
+    require         => Package['apache2'],
   }
 
   # Set PID file

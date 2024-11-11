@@ -31,8 +31,9 @@ class php8::fpm (
 
   # Install package
   package { "php8.${minor_version}-fpm":
-    ensure  => installed,
-    require => Class['php8'],
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
+    require         => Class['php8'],
   }
 
   # Disable service

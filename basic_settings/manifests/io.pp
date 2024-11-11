@@ -9,7 +9,8 @@ class basic_settings::io (
 
   # Install default development packages
   package { ['fuse', 'logrotate', 'pbzip2', 'pigz', 'rsync', 'unzip', 'xz-utils']:
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Remove package for connection with Windows environment / device
@@ -20,7 +21,8 @@ class basic_settings::io (
   # Check if we need LVM
   if ($lvm_enable) {
     package { 'lvm2':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
     package { 'lvm2':
@@ -39,8 +41,9 @@ class basic_settings::io (
 
     # Install multipath
     package { ['multipath-tools', 'multipath-tools-boot']:
-      ensure  => installed,
-      require => Exec['multipath_cmdline'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Exec['multipath_cmdline'],
     }
 
     # Enable multipathd service
@@ -69,7 +72,8 @@ class basic_settings::io (
   # Check if we need NFS server
   if ($nfs_server_enable) {
     package { ['nfs-kernel-server', 'rpcbind']:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
     package { ['nfs-kernel-server', 'rpcbind']:

@@ -75,7 +75,8 @@ class basic_settings::puppet (
   if ($server_enable) {
     # Install package
     package { $server_package:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Remove other package

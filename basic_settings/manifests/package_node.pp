@@ -19,8 +19,9 @@ class basic_settings::package_node (
 
     # Install nodejs package
     package { 'nodejs':
-      ensure  => installed,
-      require => Exec['source_nodejs'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Exec['source_nodejs'],
     }
 
     # Create list of packages that is suspicious

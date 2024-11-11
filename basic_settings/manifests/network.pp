@@ -61,7 +61,8 @@ class basic_settings::network (
             ensure => purged,
           }
           package { 'nftables':
-            ensure  => installed,
+            ensure          => installed,
+            install_options => ['--no-install-recommends', '--no-install-suggests'],
           }
 
           # Create list of packages that is suspicious
@@ -82,7 +83,7 @@ class basic_settings::network (
   # Install package
   package { $firewall_package:
     ensure          => installed,
-    install_options => $install_options,
+    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
   }
 
   # Do things based oon antivirus package
@@ -140,14 +141,16 @@ class basic_settings::network (
     # Install dhcpcd-base
     if (!defined(Package['dhcpcd-base'])) {
       package { 'dhcpcd-base':
-        ensure  => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     }
 
     # Install dhcpcd
     package { ['dhcpcd']:
-      ensure  => installed,
-      require => [Package['dhcpcd-base'], Package['ifupdown']],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => [Package['dhcpcd-base'], Package['ifupdown']],
     }
 
     # Enable dhcpcd service
@@ -185,7 +188,8 @@ class basic_settings::network (
         '-a always,exit -F arch=b64 -F path=/etc/netplan -F perm=wa -F key=network',
       ]
       package { 'netplan.io':
-        ensure  => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     }
     default: {
@@ -291,8 +295,9 @@ class basic_settings::network (
 
     # Install package
     package { 'networkd-dispatcher':
-      ensure  => installed,
-      require => Package['ifupdown'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['ifupdown'],
     }
 
     # Set script that's set the firewall
@@ -357,7 +362,7 @@ class basic_settings::network (
     if ($systemd_resolved_package) {
       package { 'systemd-resolved':
         ensure          => installed,
-        install_options => $install_options,
+        install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
       }
 
       # Ensure that networkd services is always running

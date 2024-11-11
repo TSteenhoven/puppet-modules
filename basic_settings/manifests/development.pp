@@ -9,7 +9,8 @@ class basic_settings::development (
 
   # Install default development packages
   package { ['build-essential', 'python-is-python3', 'python3', 'nano', 'ruby', 'screen']:
-    ensure  => installed,
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
   # Set default rules
@@ -19,7 +20,8 @@ class basic_settings::development (
   if ($gcc_version == undef) {
     # Install gcc packages
     package { 'gcc':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Create list of packages that is suspicious
@@ -27,7 +29,8 @@ class basic_settings::development (
   } else {
     # Install gcc packages
     package { ['gcc', "gcc-${gcc_version}"]:
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Remove other gcc packages
@@ -51,7 +54,7 @@ class basic_settings::development (
   # Install packages
   package { 'git':
     ensure          => installed,
-    install_options => $install_options,
+    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']]),
   }
 
   # Setup audit rules

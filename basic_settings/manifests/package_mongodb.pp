@@ -36,8 +36,9 @@ class basic_settings::package_mongodb (
 
     # Install mongodb-org-server package
     package { 'mongodb-org-server':
-      ensure  => installed,
-      require => Exec['package_mongodb_source'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Exec['package_mongodb_source'],
     }
   } else {
     # Remove mongodb-org-server package

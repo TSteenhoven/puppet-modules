@@ -14,7 +14,7 @@ class basic_settings::timezone (
     # Install package
     package { 'systemd-timesyncd':
       ensure          => installed,
-      install_options => $install_options,
+      install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
     }
 
     # Get OS name
