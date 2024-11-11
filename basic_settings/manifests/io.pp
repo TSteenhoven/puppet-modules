@@ -83,7 +83,7 @@ class basic_settings::io (
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
-    content => "blacklist floppy\n",
+    content => "# Managed by puppet\nblacklist floppy\n",
     require => Package['kmod'],
   }
 

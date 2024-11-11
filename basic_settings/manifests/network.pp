@@ -162,15 +162,15 @@ class basic_settings::network (
       # Create config file
       file { '/etc/dhcpcd.conf':
         ensure  => file,
-        content => 'denyinterfaces *',
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
+        content => "# Managed by puppet\ndenyinterfaces *\n",
         notify  => Service['dhcpcd'],
       }
     }
   } else {
-    # Insralll dhcpcd
+    # Purge dhcpcd
     package { ['dhcpcd-base', 'dhcpcd']:
       ensure  => purged,
       require => Package['ifupdown'],

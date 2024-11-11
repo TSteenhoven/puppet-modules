@@ -264,7 +264,7 @@ class basic_settings (
       mode    => '0600',
       owner   => 'root',
       group   => 'root',
-      content => "# ${facts['os']['name']} sourcess have to moved to /etc/apt/sources.list.d/${os_parent}.sources\n",
+      content => "# Managed by puppet\n# ${facts['os']['name']} sourcess have to moved to /etc/apt/sources.list.d/${os_parent}.sources\n",
       require => Package['apt'],
     }
 
