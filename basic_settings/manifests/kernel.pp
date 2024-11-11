@@ -9,8 +9,8 @@ class basic_settings::kernel (
   Enum['all','4']             $ip_version                 = 'all',
   Boolean                     $ip_ra_enable               = true,
   Boolean                     $ip_ra_learn_prefix         = true,
-  Enum['initramfs','dracut']  $ramdisk_package            = 'initramfs',
   String                      $network_mode               = 'strict',
+  Enum['initramfs','dracut']  $ramdisk_package            = 'initramfs',
   String                      $security_lockdown          = 'integrity',
   String                      $tcp_congestion_control     = 'brr',
   Integer                     $tcp_fastopen               = 3
