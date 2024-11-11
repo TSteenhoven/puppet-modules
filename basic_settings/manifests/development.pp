@@ -54,7 +54,7 @@ class basic_settings::development (
   # Install packages
   package { 'git':
     ensure          => installed,
-    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']]),
+    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
   }
 
   # Setup audit rules
