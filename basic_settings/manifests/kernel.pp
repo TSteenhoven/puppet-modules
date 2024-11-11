@@ -19,19 +19,9 @@ class basic_settings::kernel (
   $os_version = $facts['os']['release']['major']
 
   # Install extra packages when Ubuntu
-  if ($os_name == 'Ubuntu') {
-    if ($os_version != '24.04') {
-      package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
-        ensure  => installed,
-      }
-    }
-    # Ubuntu wants linux-tools-common installed
-    package { 'linux-tools-common':
-      ensure => installed,
-    }
-  } else {
-    package { 'linux-tools-common':
-      ensure => purged,
+  if ($os_name == 'Ubuntu' and $os_version != '24.04') {
+    package { ["linux-image-generic-hwe-${os_version}", "linux-headers-generic-hwe-${os_version}"]:
+      ensure  => installed,
     }
   }
 
@@ -154,7 +144,7 @@ class basic_settings::kernel (
   }
 
   # Remove unnecessary packages
-  package { ['apport', 'installation-report', 'plymouth', 'thermald', 'upower']:
+  package { ['apport', 'installation-report', 'linux-tools-common', 'plymouth', 'thermald', 'upower']:
     ensure  => purged,
   }
 
