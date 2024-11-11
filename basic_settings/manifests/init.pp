@@ -285,7 +285,7 @@ class basic_settings (
     if ($backports and $backports_allow) {
       $backports_install_options = ['-t', "${os_name}-backports"]
     } else {
-      $backports_install_options = undef
+      $backports_install_options = []
     }
   } else {
     # Check if we need backports
@@ -298,7 +298,7 @@ class basic_settings (
         require => [Package['apt'], Package['coreutils']],
       }
     } else {
-      $backports_install_options = undef
+      $backports_install_options = []
       exec { 'basic_settings_source_backports':
         command => "/usr/bin/rm /etc/apt/sources.list.d/${os_name}-backports.list",
         onlyif  => "[ -e /etc/apt/sources.list.d/${os_name}-backports.list ]",

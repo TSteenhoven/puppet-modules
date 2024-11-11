@@ -5,7 +5,7 @@ class basic_settings::kernel (
   String                      $cpu_governor               = 'performance',
   Boolean                     $guest_agent_enable         = false,
   Integer                     $hugepages                  = 0,
-  Optional[Array]             $install_options            = undef,
+  Array                       $install_options            = [],
   Enum['all','4']             $ip_version                 = 'all',
   Boolean                     $ip_ra_enable               = true,
   Boolean                     $ip_ra_learn_prefix         = true,

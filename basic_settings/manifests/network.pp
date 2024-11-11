@@ -9,7 +9,7 @@ class basic_settings::network (
     '2001:4860:4860::8844',
   ],
   String                                      $firewall_path      = '/etc/firewall.conf',
-  Optional[Array]                             $install_options    = undef,
+  Array                                       $install_options    = [],
   String                                      $interfaces         = 'ens*'
 
 ) {

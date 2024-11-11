@@ -1,6 +1,6 @@
 class basic_settings::development (
   Optional[Integer]   $gcc_version        = undef,
-  Optional[Array]     $install_options    = undef
+  Array               $install_options    = []
 ) {
   # Remove unnecessary packages
   package { 'lxd-installer':

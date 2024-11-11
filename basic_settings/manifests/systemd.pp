@@ -1,7 +1,7 @@
 class basic_settings::systemd (
   String              $cluster_id         = 'core',
   String              $default_target     = 'helpers',
-  Optional[Array]     $install_options    = undef
+  Array               $install_options    = [],
 ) {
   # Install packages
   package { ['dbus', 'dbus-user-session', 'systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd']:

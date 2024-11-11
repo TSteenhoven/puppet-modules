@@ -1,7 +1,7 @@
 class basic_settings::timezone (
   String              $timezone,
   Array               $ntp_extra_pools = [],
-  Optional[Array]     $install_options = undef
+  Array               $install_options = [],
 ) {
   if (defined(Package['systemd'])) {
     # Reload systemd deamon
