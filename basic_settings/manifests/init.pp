@@ -17,7 +17,7 @@ class basic_settings (
   Integer                               $kernel_connection_max                      = 4096,
   Integer                               $kernel_hugepages                           = 0,
   String                                $kernel_network_mode                        = 'strict',
-  Optional[Enum['initramfs','dracut']]  $kernel_ramdisk_package                     = 'initramfs',
+  Optional[Enum['initramfs','dracut']]  $kernel_ram_disk_package                    = 'initramfs',
   String                                $kernel_security_lockdown                   = 'integrity',
   String                                $kernel_tcp_congestion_control              = 'brr',
   Integer                               $kernel_tcp_fastopen                        = 3,
@@ -90,7 +90,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'noble'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -113,7 +113,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'lunar'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
@@ -136,7 +136,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'jammy'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
         $puppetserver_jdk = false
@@ -153,7 +153,7 @@ class basic_settings (
         $nodejs_allow = false
         $openjdk_allow = false
         $os_name = 'unknown'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $rabbitmq_allow = false
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
@@ -185,7 +185,7 @@ class basic_settings (
         $nodejs_allow = true
         $openjdk_allow = true
         $os_name = 'bookworm'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $rabbitmq_allow = true
         $proxmox_allow = false
         $puppetserver_dir = 'puppetserver'
@@ -203,7 +203,7 @@ class basic_settings (
         $nodejs_allow = false
         $openjdk_allow = false
         $os_name = 'unknown'
-        $ramdisk_package = 'initramfs'
+        $ram_disk_package = 'initramfs'
         $rabbitmq_allow = false
         $proxmox_allow = false
         $puppetserver_dir = 'puppet'
@@ -223,7 +223,7 @@ class basic_settings (
       $nodejs_allow = false
       $openjdk_allow = false
       $os_name = 'unknown'
-      $ramdisk_package = 'initramfs'
+      $ram_disk_package = 'initramfs'
       $rabbitmq_allow = false
       $proxmox_allow = false
       $puppetserver_dir = 'puppet'
@@ -234,10 +234,10 @@ class basic_settings (
   }
 
   # Get ramdisk package
-  if ($kernel_ramdisk_package == undef) {
-    $kernel_ramdisk_package_correct = $ramdisk_package
+  if ($kernel_ram_disk_package == undef) {
+    $kernel_ram_disk_package_correct = $ram_disk_package
   } else {
-    $kernel_ramdisk_package_correct = $kernel_ramdisk_package
+    $kernel_ram_disk_package_correct = $kernel_ram_disk_package
   }
 
   # Get snap state
@@ -401,7 +401,7 @@ class basic_settings (
     ip_ra_enable            => $ip_ra_enable_correct,
     ip_ra_learn_prefix      => $ip_ra_learn_prefix,
     network_mode            => $kernel_network_mode,
-    ramdisk_package         => $kernel_ramdisk_package_correct,
+    ram_disk_package        => $kernel_ram_disk_package_correct,
     security_lockdown       => $kernel_security_lockdown,
     tcp_congestion_control  => $kernel_tcp_congestion_control,
     tcp_fastopen            => $kernel_tcp_fastopen

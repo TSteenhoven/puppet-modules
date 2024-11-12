@@ -137,7 +137,7 @@ class basic_settings::network (
   }
 
   # Check if dhcpc is needed on this server
-  if ($dhcpc_enable or ($kernel_enable and $basic_settings::kernel::ramdisk_package == 'initramfs')) {
+  if ($dhcpc_enable or ($kernel_enable and $basic_settings::kernel::ram_disk_package == 'initramfs')) {
     # Install dhcpcd-base
     if (!defined(Package['dhcpcd-base'])) {
       package { 'dhcpcd-base':

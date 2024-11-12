@@ -10,7 +10,7 @@ class basic_settings::kernel (
   Boolean                     $ip_ra_enable               = true,
   Boolean                     $ip_ra_learn_prefix         = true,
   String                      $network_mode               = 'strict',
-  Enum['initramfs','dracut']  $ramdisk_package            = 'initramfs',
+  Enum['initramfs','dracut']  $ram_disk_package            = 'initramfs',
   String                      $security_lockdown          = 'integrity',
   String                      $tcp_congestion_control     = 'brr',
   Integer                     $tcp_fastopen               = 3
@@ -321,7 +321,7 @@ class basic_settings::kernel (
   }
 
   # Install ram disk package
-  case $ramdisk_package { #lint:ignore:case_without_default
+  case $ram_disk_package { #lint:ignore:case_without_default
     'dracut': {
       # Install packages
       package {['dracut', 'dracut-core']:
