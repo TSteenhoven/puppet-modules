@@ -1,4 +1,4 @@
-define rabbitmq::management_exange (
+define rabbitmq::management_exchange (
   Enum['present','absent']    $ensure     = present,
   String                      $vhost      = '/',
   String                      $type       = 'direct'
@@ -19,23 +19,23 @@ define rabbitmq::management_exange (
       # Set create command
       $create = "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} --vhost=${vhost} declare exchange name=${name} type=${type}" #lint:ignore:140chars
 
-      # Create exange
-      exec { "rabbitmq_management_exange_${name}":
+      # Create exchange
+      exec { "rabbitmq_management_exchange_${name}":
         command => $create,
         unless  => $find,
         require => [Package['grep'], Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
       }
 
-      # Check if type of the exange is the same
-      exec { "rabbitmq_management_exange_${name}_type":
+      # Check if type of the exchange is the same
+      exec { "rabbitmq_management_exchange_${name}_type":
         command => "${delete} && ${create}",
         unless  => "/usr/sbin/rabbitmqadmin --config ${rabbitmq::management::admin_config_path} list exchanges name type | /usr/bin/grep ${name} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep '|${name}|${type}|'", #lint:ignore:140chars
-        require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exange_${name}"]],
+        require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exchange_${name}"]],
       }
     }
     'absent': {
-      # Delete exange
-      exec { "rabbitmq_management_exange_${name}":
+      # Delete exchange
+      exec { "rabbitmq_management_exchange_${name}":
         onlyif  => $find,
         command => $delete,
         require => [Package['grep'], Exec['rabbitmq_management_admin_cli']],
