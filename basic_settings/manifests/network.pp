@@ -41,6 +41,14 @@ class basic_settings::network (
         ensure => purged,
       }
 
+      # Remove unnecessary files
+      file { '/etc/firewalld':
+        ensure  => absent,
+        recurse => true,
+        force   => true,
+        require => Package['firewalld'],
+      }
+
       # Create list of packages that is suspicious
       $suspicious_packages = flatten($default_packages, ['/usr/sbin/nft'])
     }
