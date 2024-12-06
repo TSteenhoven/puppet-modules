@@ -1,7 +1,10 @@
 class rabbitmq (
-  String    $target     = 'services',
-  Integer   $nice_level = 12,
-  Integer   $limit_file = 10000
+  Array     $deprecated_features  = [
+    'transient_nonexcl_queues',
+  ],
+  String    $target               = 'services',
+  Integer   $nice_level           = 12,
+  Integer   $limit_file           = 10000
 ) {
   # Install erlang
   package { 'erlang-base':
@@ -81,6 +84,17 @@ class rabbitmq (
     group   => 'rabbitmq',
     mode    => '0700',
     require => Package['rabbitmq-server'],
+  }
+
+  # Create deprecated_features conf
+  file { '/etc/rabbitmq/conf.d/deprecated_features.conf':
+    ensure  => file,
+    content => template('rabbitmq/deprecated_features.conf'),
+    owner   => 'rabbitmq',
+    group   => 'rabbitmq',
+    mode    => '0600',
+    notify  => Service['rabbitmq-server'],
+    require => File['rabbitmq_config_dir'],
   }
 
   # Create ssl directory
