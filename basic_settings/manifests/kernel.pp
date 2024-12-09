@@ -445,15 +445,24 @@ class basic_settings::kernel (
 
   # Kernel Multi-Gen LRU
   if ($mglru_enable) {
+    $mglru_min_ttl_ms = 1000
     exec { 'kernel_mglru':
       command => "/usr/bin/bash -c 'echo \"y\" > /sys/kernel/mm/lru_gen/enabled'",
       onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0007\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
     }
   } else {
+    $mglru_min_ttl_ms = 0
     exec { 'kernel_mglru':
       command => "/usr/bin/bash -c 'echo \"n\" > /sys/kernel/mm/lru_gen/enabled'",
       onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0000\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
     }
+  }
+
+  # Kernel Multi-Gen LRU thrashing prevention
+  exec { 'kernel_mglru_min_ttl_ms':
+    command => "/usr/bin/bash -c 'echo \"${mglru_min_ttl_ms}\" > /sys/kernel/mm/lru_gen/min_ttl_ms'",
+    onlyif  => "/usr/bin/bash -c \"if [ $(grep -c \'${mglru_min_ttl_ms}\' /sys/kernel/mm/lru_gen/min_ttl_ms) -eq 0 ]; then exit 0; fi; exit 1\"", #lint:ignore:140chars
+    require => Exec['kernel_mglru'],
   }
 
   # Kernel security lockdown
