@@ -128,28 +128,33 @@ class nginx (
     require => Package['nginx'],
   }
 
+  # Create FastCGI config
+  file { 'nginx_fastcgi_params':
+    ensure => file,
+    path   => '/etc/nginx/fastcgi_params',
+    source => 'puppet:///modules/nginx/fastcgi_params',
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0600',
+    notify => Service['nginx'],
+  }
+
   # Create FastCGI PHP config
-  file { 'nginx_fastcgi_php_conf':
+  file { 'nginx_fastcgi_params_php':
     ensure  => file,
-    path    => '/etc/nginx/snippets/fastcgi-php.conf',
-    source  => 'puppet:///modules/nginx/fastcgi-php.conf',
+    path    => '/etc/nginx/snippets/fastcgi_params-php',
+    source  => 'puppet:///modules/nginx/fastcgi_params-php',
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
-    require => File['nginx_snippets'],
+    require => [File['nginx_fastcgi_params'], File['nginx_snippets']],
     notify  => Service['nginx'],
   }
 
-  # Create FastCGI config
-  file { 'nginx_fastcgi_conf':
-    ensure  => file,
-    path    => '/etc/nginx/fastcgi.conf',
-    source  => 'puppet:///modules/nginx/fastcgi.conf',
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0600',
-    require => File['nginx_fastcgi_php_conf'],
-    notify  => Service['nginx'],
+  # Remove wrong FastCGI config
+  file { ['/etc/nginx/fastcgi.conf', '/etc/nginx/snippets/fastcgi-php.conf']:
+    ensure  => absent,
+    require => File['nginx_snippets'],
   }
 
   # Check if logrotate package exists

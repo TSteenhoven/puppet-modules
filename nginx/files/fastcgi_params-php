@@ -12,4 +12,4 @@ set $path_info $fastcgi_path_info;
 fastcgi_param PATH_INFO $path_info;
 
 fastcgi_index index.php;
-include fastcgi.conf;
+include /etc/nginx/fastcgi_params;
