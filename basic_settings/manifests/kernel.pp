@@ -10,7 +10,8 @@ class basic_settings::kernel (
   Boolean                     $ip_ra_enable               = true,
   Boolean                     $ip_ra_learn_prefix         = true,
   String                      $network_mode               = 'strict',
-  Enum['initramfs','dracut']  $ram_disk_package            = 'initramfs',
+  Boolean                     $mglru_enable               = true,
+  Enum['initramfs','dracut']  $ram_disk_package           = 'initramfs',
   String                      $security_lockdown          = 'integrity',
   String                      $tcp_congestion_control     = 'brr',
   Integer                     $tcp_fastopen               = 3
@@ -446,6 +447,13 @@ class basic_settings::kernel (
   exec { 'kernel_security_lockdown':
     command => "/usr/bin/bash -c 'echo \"${security_lockdown_correct}\" > /sys/kernel/security/lockdown'",
     onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown_correct}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\"", #lint:ignore:140chars
+  }
+
+  if ($mglru_enable) {
+    exec { 'kernel_mglru':
+      command => "/usr/bin/bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
+      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+    }
   }
 
   # Guest agent
