@@ -140,10 +140,10 @@ class nginx (
   }
 
   # Create FastCGI PHP config
-  file { 'nginx_fastcgi_params_php':
+  file { 'nginx_fastcgi_php':
     ensure  => file,
-    path    => '/etc/nginx/snippets/fastcgi_params-php',
-    source  => 'puppet:///modules/nginx/fastcgi_params-php',
+    path    => '/etc/nginx/snippets/fastcgi_php.conf',
+    source  => 'puppet:///modules/nginx/fastcgi_php.conf',
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
@@ -152,7 +152,7 @@ class nginx (
   }
 
   # Remove wrong FastCGI config
-  file { ['/etc/nginx/fastcgi.conf', '/etc/nginx/snippets/fastcgi-php.conf']:
+  file { ['/etc/nginx/fastcgi.conf', '/etc/nginx/snippets/fastcgi-php.conf', '/etc/nginx/snippets/fastcgi_params-php']:
     ensure  => absent,
     require => File['nginx_snippets'],
   }
