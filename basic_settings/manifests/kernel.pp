@@ -437,23 +437,29 @@ class basic_settings::kernel (
     onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
   }
 
-  # Activate transparent hugepage modus
+  # Activate transparent hugepage defrag
   exec { 'kernel_transparent_hugepage_defrag':
     command => "/usr/bin/bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/defrag'",
     onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+  }
+
+  # Kernel Multi-Gen LRU
+  if ($mglru_enable) {
+    exec { 'kernel_mglru':
+      command => "/usr/bin/bash -c 'echo \"y\" > /sys/kernel/mm/lru_gen/enabled'",
+      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0007\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+    }
+  } else {
+    exec { 'kernel_mglru':
+      command => "/usr/bin/bash -c 'echo \"n\" > /sys/kernel/mm/lru_gen/enabled'",
+      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0000\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+    }
   }
 
   # Kernel security lockdown
   exec { 'kernel_security_lockdown':
     command => "/usr/bin/bash -c 'echo \"${security_lockdown_correct}\" > /sys/kernel/security/lockdown'",
     onlyif  => "/usr/bin/bash -c \"if [ $(grep -c '\\[${security_lockdown_correct}\\]' /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1\"", #lint:ignore:140chars
-  }
-
-  if ($mglru_enable) {
-    exec { 'kernel_mglru':
-      command => "/usr/bin/bash -c 'echo \"1\" > /sys/devices/system/cpu/cpufreq/boost'",
-      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
-    }
   }
 
   # Guest agent
