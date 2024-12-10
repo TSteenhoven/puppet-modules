@@ -16,7 +16,7 @@ class basic_settings (
   Boolean                               $ip_ra_learn_prefix                         = true,
   Integer                               $kernel_connection_max                      = 4096,
   Integer                               $kernel_hugepages                           = 0,
-  Boolean                               $kernel_mglru_enable                        = false,
+  Boolean                               $kernel_mglru_enable                        = true,
   String                                $kernel_network_mode                        = 'strict',
   Optional[Enum['initramfs','dracut']]  $kernel_ram_disk_package                    = 'initramfs',
   String                                $kernel_security_lockdown                   = 'integrity',
