@@ -1,4 +1,5 @@
 class php8 (
+  Boolean   $apcu               = false,
   Boolean   $bcmath             = false,
   Boolean   $bzip2              = false,
   Boolean   $curl               = false,
@@ -27,6 +28,12 @@ class php8 (
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
+  if ($apcu) {
+    package { "php8.${minor_version}-apcu":
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+  }
   if ($bcmath) {
     package { "php8.${minor_version}-bcmath":
       ensure          => installed,
