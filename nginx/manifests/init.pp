@@ -25,6 +25,15 @@ class nginx (
     require         => Package['apache2'],
   }
 
+  # Check if letsencrypt class is defined
+  if (defined(Class['letsencrypt'])) {
+    package { 'python3-certbot-nginx':
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['apache2'],
+    }
+  }
+
   # Set PID file
   $pid = '/run/nginx.pid'
 
