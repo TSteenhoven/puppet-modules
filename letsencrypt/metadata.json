@@ -1,0 +1,38 @@
+{
+    "name": "puppetmodules-letsencrypt",
+    "version": "2.0.0",
+    "author": "DevSysEngineer",
+    "summary": "Let's Encrypt",
+    "license": "Apache-2.0",
+    "source": "https://github.com/DevSysEngineer/puppet-modules/tree/main/letsencrypt",
+    "project_page": "https://github.com/DevSysEngineer/puppet-modules",
+    "issues_url": "https://github.com/DevSysEngineer/puppet-modules/issues",
+    "dependencies": [],
+    "operatingsystem_support": [
+        {
+            "operatingsystem": "Debian",
+            "operatingsystemrelease": [
+                "11",
+                "12"
+            ]
+        },
+        {
+            "operatingsystem": "Ubuntu",
+            "operatingsystemrelease": [
+                "22.04",
+                "23.04",
+                "24.04"
+            ]
+        }
+    ],
+    "requirements": [
+        {
+            "name": "puppet",
+            "version_requirement": ">= 5.5.0 < 9.0.0"
+        }
+    ],
+    "tags": [
+        "puppet-modules",
+        "letsencrypt"
+    ]
+}

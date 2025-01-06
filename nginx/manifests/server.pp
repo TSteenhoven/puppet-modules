@@ -1,11 +1,11 @@
 define nginx::server (
-  Optional[String]    $docroot                    = undef,
   Optional[String]    $access_log                 = undef,
-  Boolean             $allow_acme                 = false,
+  Boolean             $acme_enable                = false,
   Boolean             $allow_directories          = false,
   Integer             $backlog                    = -1, # Global settings; -1: Disabled, 0: Kernel; >0: Custom value
   Optional[String]    $client_max_body_size       = undef,
   Boolean             $default_server             = false,
+  Optional[String]    $docroot                    = undef,
   Array               $directives                 = [],
   Optional[String]    $error_log                  = undef,
   Optional[Integer]   $fastcgi_read_timeout       = undef,
