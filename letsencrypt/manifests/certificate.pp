@@ -20,13 +20,14 @@ define letsencrypt::certificate (
   case $ensure {
     'present': {
       # Convert array to string
-      $domain_list_install = join($domains, ' -d ')
-      $domain_list_find = join($domains, ' ')
+      $domain_sort = $domains.sort();
+      $domain_list_install = join($domain_sort, ' -d ')
+      $domain_list_find = join($domain_sort, ' ')
 
       # Check if fullchain.pem and privkey.pem exists
       exec { "letsencrypt_certificate_${name}":
-        command => "${cerbot_bin} run --${plugin} --cert-name ${name} -d ${domain_list_install}",
-        unless  => "${cerbot_bin} certificates --cert-name ${name} | /usr/bin/grep 'Domains: ${domain_list_find}'",
+        command => "${cerbot_bin} run --${plugin} -n --cert-name ${name} -d ${domain_list_install}",
+        unless  => "${cerbot_bin} certificates -n --cert-name ${name} | /usr/bin/grep 'Domains: ${domain_list_find}'",
         require => $require,
       }
     }
@@ -34,7 +35,7 @@ define letsencrypt::certificate (
       # Delete fullchain.pem and privkey.pem
       exec { "letsencrypt_certificate_${name}":
         command => "${cerbot_bin} delete --${plugin} --cert-name ${name}",
-        onlyif  => "${cerbot_bin} certificates --cert-name ${name} | /usr/bin/grep 'Certificate Name: ${name}'",
+        onlyif  => "${cerbot_bin} certificates -n --cert-name ${name} | /usr/bin/grep 'Certificate Name: ${name}'",
         require => $require,
       }
     }
