@@ -96,7 +96,7 @@ class basic_settings (
         $puppetserver_dir = 'puppetserver'
         $puppetserver_jdk = true
         $puppetserver_package = 'puppetserver'
-        $sury_allow = false
+        $sury_allow = true
       } elsif ($facts['os']['release']['major'] == '23.04') { # Stable
         $backports_allow = false
         $deb_version = 'list'
