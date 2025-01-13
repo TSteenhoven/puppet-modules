@@ -16,6 +16,7 @@ class php8 (
   Boolean   $soap               = false,
   Boolean   $sqlite3            = false,
   Boolean   $sybase             = false,
+  Boolean   $uploadprogress     = false,
   Boolean   $xdebug             = false,
   Boolean   $xml                = false,
   Boolean   $zip                = false,
@@ -126,6 +127,12 @@ class php8 (
   }
   if ($sybase) {
     package { "php8.${minor_version}-sybase":
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+  }
+  if ($uploadprogress) {
+    package { "php8.${minor_version}-uploadprogress":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
