@@ -1,5 +1,5 @@
 # Puppet-modules
-Welkom bij mijn Puppet-modules project. Dit is een uitgebreide module voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basic settings`, `Nginx`, `PHP`, `MySQL`, `SSH`, en `RabbitMQ`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil graag de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
+Welkom bij mijn Puppet-modules project. Dit is een uitgebreide module voor je Puppet-omgeving, bestaande uit verschillende onderdelen: `Basic settings`, `GitLab`, `Let's Encrypt`, `Nginx`, `PHP`, `MySQL`, `SSH`, en `RabbitMQ`. Deze onderdelen kunnen afzonderlijk of in combinatie worden gebruikt om je infrastructuur te verbeteren. Om deze uitbreiding mogelijk te maken, vertrouw ik op andere Puppet-modules, die ik heb toegevoegd als git-submodules. Ik wil graag de makers van [debconf](https://github.com/smoeding/puppet-debconf.git), [reboot](https://github.com/puppetlabs/puppetlabs-reboot.git), [stdlib](https://github.com/puppetlabs/puppetlabs-stdlib.git) en [timezone](https://github.com/saz/puppet-timezone.git) bedanken voor hun waardevolle bijdragen.
 
 :warning: **Compatibiliteit**: Deze uitbreidingsmodule is ontworpen voor 64-bits besturingssystemen.
 
@@ -117,6 +117,21 @@ node 'webserver.dev.xxxx.nl' {
         bash_aliases    => template('accounts/bash-aliases'), # Indien van toepassing
         authorized_keys => $authorized_keys,
         groups          => ['wheel'] # Gebruik groep 'wheel' alleen als gebruiker ook moet kunnen 'su'en
+    }
+}
+```
+
+## Let's Encrypt
+
+Let's Encrypt is een gratis, geautomatiseerde en open certificaatautoriteit die SSL/TLS-certificaten uitgeeft om veilige HTTPS-verbindingen mogelijk te maken. Dit onderdeel integreert Let's Encrypt in je Puppet-omgeving, zodat je eenvoudig certificaten kunt aanvragen en beheren. Het ondersteunt zowel automatische certificaatvernieuwing als configuratie van bijbehorende webservers, zoals Nginx.
+
+### Voorbeeld
+Hieronder een voorbeeld hoe je Let's Encrypt gebruikt in je Puppet-omgeving:
+
+```puppet
+node 'webserver.dev.xxxx.nl' {
+    letsencrypt::certificate { 'webserver.dev.xxxx.nl':
+        domains => ['webserver.dev.xxxx.nl'],
     }
 }
 ```
