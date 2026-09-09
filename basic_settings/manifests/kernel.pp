@@ -1,11 +1,8 @@
 # @summary Applies kernel, boot, sysctl, CPU, USB, and hardware hardening settings.
 #
-# This class manages kernel-related packages and configuration for Debian and
-# Ubuntu servers. It owns sysctl files, bootloader configuration, optional
-# hugepage setup, kernel lockdown, MGLRU, TCP tuning, selected hardware tools,
-# guest-agent packages, USB monitoring input, and audit rules for kernel-sensitive
-# commands. Several settings directly affect boot behavior and should be changed
-# only after validating the target hardware and virtualization platform.
+# lint:ignore:140chars
+# This class manages kernel-related packages and configuration for Debian and Ubuntu servers. It owns sysctl files, bootloader configuration, optional hugepage setup, kernel lockdown, MGLRU, TCP tuning, selected hardware tools, guest-agent packages, USB monitoring input, and audit rules for kernel-sensitive commands. Several settings directly affect boot behavior and should be changed only after validating the target hardware and virtualization platform.
+# lint:endignore
 #
 # @example Use the default hardened kernel profile
 #   include basic_settings::kernel
@@ -17,16 +14,13 @@
 #   }
 #
 # @param antivirus_package
-#   Optional antivirus integration name. Some values loosen lockdown behavior
-#   where the antivirus package needs kernel access.
+#   Optional antivirus integration name. Some values loosen lockdown behavior where the antivirus package needs kernel access.
 #
 # @param bootloader
-#   Bootloader family to manage. The default is `grub`; unsupported values skip
-#   bootloader-specific management.
+#   Bootloader family to manage. The default is `grub`; unsupported values skip bootloader-specific management.
 #
 # @param connection_max
-#   Connection backlog value used by sysctl templates and by consumers that
-#   inherit kernel connection limits. The default is 4096.
+#   Connection backlog value used by sysctl templates and by consumers that inherit kernel connection limits. The default is 4096.
 #
 # @param cpu_governor
 #   CPU governor policy used for physical hosts. The default is `performance`.
@@ -39,68 +33,60 @@
 #   `undef` enables it on physical hosts and disables it on virtual machines.
 #
 # @param hugepages
-#   Number of hugepages to configure. Values greater than zero create the
-#   `hugetlb` group and related systemd/sysctl handling.
+#   Number of hugepages to configure. Values greater than zero create the `hugetlb` group and related systemd/sysctl handling.
 #
 # @param install_options
-#   Additional APT install options for selected kernel-related packages.
+# lint:ignore:140chars
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
+# lint:endignore
 #
 # @param ip_ra_enable
-#   Controls IPv6 router advertisement handling in generated sysctl and network
-#   defaults.
+#   Controls IPv6 router advertisement handling in generated sysctl and network defaults.
 #
 # @param ip_ra_learn_prefix
-#   Controls whether router-advertised prefixes are learned when RA support is
-#   active.
+#   Controls whether router-advertised prefixes are learned when RA support is active.
 #
 # @param ip_regdom
 #   Wireless regulatory domain used by kernel templates. The default is `NL`.
 #
 # @param ip_version
-#   Selects IPv4-only (`4`) or dual-stack (`all`) behavior for kernel and
-#   network templates.
+#   Selects IPv4-only (`4`) or dual-stack (`all`) behavior for kernel and network templates.
 #
 # @param memory_available_profiles
 #   Optional MemAvailable threshold profiles for memory-pressure monitoring.
-#   `undef` resolves to the built-in RAM profile list. Each profile hash accepts
-#   `max_ram`, `warning`, and `critical`; the final profile uses `max_ram =>
-#   undef` as the open-ended fallback. The generated check validates profile
-#   syntax, size values, and threshold ordering at runtime.
+# lint:ignore:140chars
+#   `undef` resolves to the built-in RAM profile list. Each profile hash accepts `max_ram`, `warning`, and `critical`; the final profile uses `max_ram => undef` as the open-ended fallback. The generated check validates profile syntax, size values, and threshold ordering at runtime.
+# lint:endignore
 #
 # @param mglru_enable
-#   Controls Multi-Gen LRU. `true` uses the default `min_ttl_ms` of 1000,
-#   `false` disables MGLRU, and an integer sets a custom `min_ttl_ms`.
+#   Controls Multi-Gen LRU. `true` uses the default `min_ttl_ms` of 1000, `false` disables MGLRU, and an integer sets a custom `min_ttl_ms`.
 #
 # @param network_mode
 #   Kernel network hardening mode consumed by the sysctl templates.
 #
 # @param ram_disk_package
-#   Selects the initramfs implementation to install and retain. Valid values are
-#   `initramfs` and `dracut`.
+#   Selects the initramfs implementation to install and retain. Valid values are `initramfs` and `dracut`.
 #
 # @param security_lockdown
-#   Controls kernel lockdown. `true` resolves to `integrity`, `false` resolves
-#   to `none`, and a string is written as the explicit requested mode. Secure
-#   Boot enforces at least `integrity`.
+# lint:ignore:140chars
+#   Controls kernel lockdown. `true` resolves to `integrity`, `false` resolves to `none`, and a string is written as the explicit requested mode. Secure Boot enforces at least `integrity`.
+# lint:endignore
 #
 # @param swap_free_profiles
-#   Optional SwapFree threshold profiles for memory-pressure monitoring. `undef`
-#   resolves to the built-in swap profile list. Each profile hash accepts
-#   `max_swap`, `warning`, and `critical`; the final profile uses `max_swap =>
-#   undef` as the open-ended fallback. The generated check validates profile
-#   syntax, size values, and threshold ordering at runtime.
+# lint:ignore:140chars
+#   Optional SwapFree threshold profiles for memory-pressure monitoring. `undef` resolves to the built-in swap profile list. Each profile hash accepts `max_swap`, `warning`, and `critical`; the final profile uses `max_swap => undef` as the open-ended fallback. The generated check validates profile syntax, size values, and threshold ordering at runtime.
+# lint:endignore
 #
 # @param tcp_congestion_control
-#   TCP congestion-control mode. The `bbr` value writes the BBR sysctl snippet
-#   when kernel support is present; other values remove that snippet.
+# lint:ignore:140chars
+#   TCP congestion-control mode. The `bbr` value writes the BBR sysctl snippet when kernel support is present; other values remove that snippet.
+# lint:endignore
 #
 # @param tcp_fastopen
-#   TCP Fast Open sysctl value used by kernel templates and consumers. The
-#   default is 3.
+#   TCP Fast Open sysctl value used by kernel templates and consumers. The default is 3.
 #
 # @param usb_any_requirements
-#   USB monitoring entries where any one matching device satisfies the
-#   requirement.
+#   USB monitoring entries where any one matching device satisfies the requirement.
 #
 # @param usb_expected
 #   USB monitoring entries expected to be present.
@@ -110,29 +96,29 @@
 #
 # @api public
 class basic_settings::kernel (
-  Optional[String]            $antivirus_package          = undef,
-  String                      $bootloader                 = 'grub',
-  Integer                     $connection_max             = 4096,
-  String                      $cpu_governor               = 'performance',
-  Boolean                     $guest_agent_enable         = false,
-  Optional[Boolean]           $hardware_passthrough       = undef,
-  Integer                     $hugepages                  = 0,
-  Array                       $install_options            = [],
-  Boolean                     $ip_ra_enable               = true,
-  Boolean                     $ip_ra_learn_prefix         = true,
-  String                      $ip_regdom                  = 'NL',
-  Enum['all','4']             $ip_version                 = 'all',
-  Optional[Array[Hash]]       $memory_available_profiles  = undef,
-  Variant[Boolean,Integer[0]] $mglru_enable               = true,
-  String                      $network_mode               = 'strict',
-  Enum['initramfs','dracut']  $ram_disk_package           = 'initramfs',
-  Variant[Boolean,String]     $security_lockdown          = true,
-  Optional[Array[Hash]]       $swap_free_profiles         = undef,
-  String                      $tcp_congestion_control     = 'brr',
-  Integer                     $tcp_fastopen               = 3,
-  Array                       $usb_any_requirements       = [],
-  Array                       $usb_expected               = [],
-  Array                       $usb_whitelist              = []
+  Optional[String]             $antivirus_package         = undef,
+  String                       $bootloader                = 'grub',
+  Integer                      $connection_max            = 4096,
+  String                       $cpu_governor              = 'performance',
+  Boolean                      $guest_agent_enable        = false,
+  Optional[Boolean]            $hardware_passthrough      = undef,
+  Integer                      $hugepages                 = 0,
+  Array                        $install_options           = [],
+  Boolean                      $ip_ra_enable              = true,
+  Boolean                      $ip_ra_learn_prefix        = true,
+  String                       $ip_regdom                 = 'NL',
+  Enum['all', '4']             $ip_version                = 'all',
+  Optional[Array[Hash]]        $memory_available_profiles = undef,
+  Variant[Boolean, Integer[0]] $mglru_enable              = true,
+  String                       $network_mode              = 'strict',
+  Enum['initramfs', 'dracut']  $ram_disk_package          = 'initramfs',
+  Variant[Boolean, String]     $security_lockdown         = true,
+  Optional[Array[Hash]]        $swap_free_profiles        = undef,
+  String                       $tcp_congestion_control    = 'brr',
+  Integer                      $tcp_fastopen              = 3,
+  Array                        $usb_any_requirements      = [],
+  Array                        $usb_expected              = [],
+  Array                        $usb_whitelist             = [],
 ) {
   # Set variables
   $os_name = $facts['os']['name'];
@@ -143,19 +129,20 @@ class basic_settings::kernel (
     default     => 'other',
   }
   $systemd_enable = defined(Package['systemd'])
-  $usb_whitelist_correct = join($usb_whitelist, ' ')
-  $usb_expected_correct = join($usb_expected, ' ')
-  $usb_any_requirements_correct = join($usb_any_requirements, ' ')
+  # Serialize configured USB filters as literal shell words before rendering the monitoring assignments.
+  $usb_whitelist_shell = stdlib::shell_escape(join($usb_whitelist, ' '))
+  $usb_expected_shell = stdlib::shell_escape(join($usb_expected, ' '))
+  $usb_any_requirements_shell = stdlib::shell_escape(join($usb_any_requirements, ' '))
 
   # Resolve the built-in MemAvailable profile list only when no caller overrides it.
   $memory_available_profiles_correct = $memory_available_profiles ? {
     undef   => [
-      { 'max_ram' => '4GB',  'warning' => '768MB',  'critical' => '384MB' },
-      { 'max_ram' => '8GB',  'warning' => '1024MB', 'critical' => '512MB' },
+      { 'max_ram' => '4GB', 'warning' => '768MB', 'critical' => '384MB' },
+      { 'max_ram' => '8GB', 'warning' => '1024MB', 'critical' => '512MB' },
       { 'max_ram' => '16GB', 'warning' => '1536MB', 'critical' => '768MB' },
       { 'max_ram' => '32GB', 'warning' => '2048MB', 'critical' => '1024MB' },
       { 'max_ram' => '64GB', 'warning' => '3072MB', 'critical' => '1536MB' },
-      { 'max_ram' => undef,  'warning' => '4096MB', 'critical' => '2048MB' },
+      { 'max_ram' => undef, 'warning' => '4096MB', 'critical' => '2048MB' },
     ],
     default => $memory_available_profiles,
   }
@@ -183,9 +170,9 @@ class basic_settings::kernel (
   # Resolve the built-in SwapFree profile list only when no caller overrides it.
   $swap_free_profiles_correct = $swap_free_profiles ? {
     undef   => [
-      { 'max_swap' => '1GB', 'warning' => '128MB',  'critical' => '32MB' },
-      { 'max_swap' => '2GB', 'warning' => '256MB',  'critical' => '64MB' },
-      { 'max_swap' => '4GB', 'warning' => '512MB',  'critical' => '128MB' },
+      { 'max_swap' => '1GB', 'warning' => '128MB', 'critical' => '32MB' },
+      { 'max_swap' => '2GB', 'warning' => '256MB', 'critical' => '64MB' },
+      { 'max_swap' => '4GB', 'warning' => '512MB', 'critical' => '128MB' },
       { 'max_swap' => undef, 'warning' => '1024MB', 'critical' => '256MB' },
     ],
     default => $swap_free_profiles,
@@ -332,6 +319,9 @@ class basic_settings::kernel (
         require         => Package['linux-raspi'],
       }
     }
+    default: {
+      # Other kernel selections do not require a specialized kernel package.
+    }
   }
 
   # Create group for hugetlb only when hugepages is given
@@ -427,7 +417,7 @@ class basic_settings::kernel (
 
   # Remove unnecessary packages
   package { ['apport', 'installation-report', 'linux-tools-common', 'pemmican-common', 'plymouth', 'thermald', 'upower']:
-    ensure  => purged,
+    ensure => purged,
   }
 
   # Install system package
@@ -563,6 +553,8 @@ class basic_settings::kernel (
   # Create symlink
   file { '/etc/sysctl.d/99-sysctl.conf':
     ensure => 'link',
+    owner  => 'root',
+    group  => 'root',
     target => '/etc/sysctl.conf',
     force  => true,
     notify => Exec['kernel_sysctl_reload'],
@@ -621,7 +613,7 @@ class basic_settings::kernel (
     if ($cpu_boost != undef) {
       # Escape the CPU boost value before embedding it in the guard script.
       $cpu_boost_shell = stdlib::shell_escape($cpu_boost)
-      $cpu_boost_check_script = "if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ \$(cat /sys/devices/system/cpu/cpufreq/boost) -eq ${cpu_boost_shell} ]; then exit 1; else exit 0; fi" #lint:ignore:140chars
+      $cpu_boost_check_script = "if [ ! -f /sys/devices/system/cpu/cpufreq/boost ]; then exit 1; fi; if [ \$(cat /sys/devices/system/cpu/cpufreq/boost) -eq ${cpu_boost_shell} ]; then exit 1; else exit 0; fi" # lint:ignore:140chars
 
       # Escape the complete guard script before passing it to bash -c.
       $cpu_boost_check_script_shell = stdlib::shell_escape($cpu_boost_check_script)
@@ -643,11 +635,13 @@ class basic_settings::kernel (
     # Install firmware packages
     if ($facts['secure_boot_enabled']) {
       package { ['fwupd', 'fwupd-signed']:
-        ensure  => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     } else {
       package { 'fwupd':
-        ensure  => installed,
+        ensure          => installed,
+        install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
     }
 
@@ -660,12 +654,12 @@ class basic_settings::kernel (
   } else {
     # Remove firmware packages
     package { ['fwupd', 'fwupd-signed', 'rpi-eeprom-update']:
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
   # Install ram disk package
-  case $ram_disk_package { #lint:ignore:case_without_default
+  case $ram_disk_package {
     'dracut': {
       # Install packages
       $ram_disk_require = ['dracut', 'dracut-core']
@@ -709,6 +703,9 @@ class basic_settings::kernel (
         ensure  => purged,
         require => Package['initramfs-tools-core'],
       }
+    }
+    default: {
+      # The public enum restricts this selector to the supported initramfs implementations.
     }
   }
 
@@ -810,8 +807,8 @@ class basic_settings::kernel (
   case $tcp_congestion_control {
     'bbr': {
       exec { 'tcp_congestion_control':
-        command => '/usr/bin/printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; chmod 600 /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf', #lint:ignore:140chars
-        onlyif  => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')'], #lint:ignore:140chars
+        command => '/usr/bin/printf "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr" > /etc/sysctl.d/20-tcp_congestion_control.conf; chmod 600 /etc/sysctl.d/20-tcp_congestion_control.conf; sysctl -p /etc/sysctl.d/20-tcp_congestion_control.conf', # lint:ignore:140chars
+        onlyif  => ['test ! -f /etc/sysctl.d/20-tcp_congestion_control.conf', 'test 4 -eq $(cat /boot/config-$(uname -r) | grep -c -E \'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ\')'], # lint:ignore:140chars
       }
     }
     default: {
@@ -824,9 +821,9 @@ class basic_settings::kernel (
   }
 
   # Improve kernel I/O without storing root-exec state in a predictable /tmp path.
-  $kernel_io_device_script = 'dev=$(/usr/bin/lsblk -oMOUNTPOINT,PKNAME -P -M | /usr/bin/sed -n "s/^MOUNTPOINT=\"\/\" PKNAME=\"\([^\"]*\)\".*/\1/p" | /usr/bin/sed "s/[0-9]*$//" | /usr/bin/sed -n "1p")' #lint:ignore:140chars
-  $kernel_io_command_script = "${kernel_io_device_script}; [ -n \"\$dev\" ] || exit 0; [ -w \"/sys/block/\${dev}/queue/scheduler\" ] || exit 0; /usr/bin/printf %s none > \"/sys/block/\${dev}/queue/scheduler\"" #lint:ignore:140chars
-  $kernel_io_check_script = "${kernel_io_device_script}; [ -n \"\$dev\" ] || exit 1; [ -r \"/sys/block/\${dev}/queue/scheduler\" ] || exit 1; if /usr/bin/grep -q '\\[none\\]' \"/sys/block/\${dev}/queue/scheduler\"; then exit 1; fi; exit 0" #lint:ignore:140chars
+  $kernel_io_device_script = 'dev=$(/usr/bin/lsblk -oMOUNTPOINT,PKNAME -P -M | /usr/bin/sed -n "s/^MOUNTPOINT=\"\/\" PKNAME=\"\([^\"]*\)\".*/\1/p" | /usr/bin/sed "s/[0-9]*$//" | /usr/bin/sed -n "1p")' # lint:ignore:140chars
+  $kernel_io_command_script = "${kernel_io_device_script}; [ -n \"\$dev\" ] || exit 0; [ -w \"/sys/block/\${dev}/queue/scheduler\" ] || exit 0; /usr/bin/printf %s none > \"/sys/block/\${dev}/queue/scheduler\"" # lint:ignore:140chars
+  $kernel_io_check_script = "${kernel_io_device_script}; [ -n \"\$dev\" ] || exit 1; [ -r \"/sys/block/\${dev}/queue/scheduler\" ] || exit 1; if /usr/bin/grep -q '\\[none\\]' \"/sys/block/\${dev}/queue/scheduler\"; then exit 1; fi; exit 0" # lint:ignore:140chars
 
   # Escape the complete scripts once before passing them to bash -c.
   $kernel_io_command_shell = stdlib::shell_escape($kernel_io_command_script)
@@ -839,32 +836,32 @@ class basic_settings::kernel (
   # Activate transparent hugepage modus
   exec { 'kernel_transparent_hugepage':
     command => "/usr/bin/bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/enabled'",
-    onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+    onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/enabled) -eq 0 ]; then exit 0; fi; exit 1"', # lint:ignore:140chars
   }
 
   # Activate transparent hugepage defrag
   exec { 'kernel_transparent_hugepage_defrag':
     command => "/usr/bin/bash -c 'echo \"madvise\" > /sys/kernel/mm/transparent_hugepage/defrag'",
-    onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+    onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'\\[madvise\\]\' /sys/kernel/mm/transparent_hugepage/defrag) -eq 0 ]; then exit 0; fi; exit 1"', # lint:ignore:140chars
   }
 
   # Kernel Multi-Gen LRU
   if ($mglru_active) {
     exec { 'kernel_mglru':
       command => "/usr/bin/bash -c 'echo \"y\" > /sys/kernel/mm/lru_gen/enabled'",
-      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0003\|0x0007\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0003\|0x0007\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"',
     }
   } else {
     exec { 'kernel_mglru':
       command => "/usr/bin/bash -c 'echo \"n\" > /sys/kernel/mm/lru_gen/enabled'",
-      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0000\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"', #lint:ignore:140chars
+      onlyif  => '/usr/bin/bash -c "if [ $(grep -c \'0x0000\' /sys/kernel/mm/lru_gen/enabled) -eq 0 ]; then exit 0; fi; exit 1"',
     }
   }
 
   # Kernel Multi-Gen LRU thrashing prevention
   # Escape the MGLRU value before writing it and checking the current kernel state.
   $mglru_min_ttl_ms_shell = stdlib::shell_escape($mglru_min_ttl_ms_correct)
-  $mglru_min_ttl_ms_check_script = "if [ \$(grep -c ${mglru_min_ttl_ms_shell} /sys/kernel/mm/lru_gen/min_ttl_ms) -eq 0 ]; then exit 0; fi; exit 1" #lint:ignore:140chars
+  $mglru_min_ttl_ms_check_script = "if [ \$(grep -c ${mglru_min_ttl_ms_shell} /sys/kernel/mm/lru_gen/min_ttl_ms) -eq 0 ]; then exit 0; fi; exit 1" # lint:ignore:140chars
 
   # Escape the complete guard script before passing it to bash -c.
   $mglru_min_ttl_ms_check_script_shell = stdlib::shell_escape($mglru_min_ttl_ms_check_script)
@@ -878,7 +875,7 @@ class basic_settings::kernel (
   # Escape lockdown values before writing them and checking the current kernel state.
   $security_lockdown_correct_shell = stdlib::shell_escape($security_lockdown_correct)
   $security_lockdown_pattern_shell = stdlib::shell_escape("\\[${security_lockdown_correct}\\]")
-  $security_lockdown_check_script = "if [ \$(grep -c ${security_lockdown_pattern_shell} /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1" #lint:ignore:140chars
+  $security_lockdown_check_script = "if [ \$(grep -c ${security_lockdown_pattern_shell} /sys/kernel/security/lockdown) -eq 0 ]; then exit 0; fi; exit 1" # lint:ignore:140chars
 
   # Escape the complete guard script before passing it to bash -c.
   $security_lockdown_check_script_shell = stdlib::shell_escape($security_lockdown_check_script)
@@ -890,13 +887,14 @@ class basic_settings::kernel (
   # Guest agent
   if ($guest_agent_package != undef) {
     if ($guest_agent_enable) {
+      # Keep policy flags last even when caller options contain duplicate or conflicting flags.
       package { $guest_agent_package:
         ensure          => installed,
-        install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
+        install_options => concat($install_options, ['--no-install-recommends', '--no-install-suggests']),
       }
     } else {
       package { $guest_agent_package:
-        ensure  => purged,
+        ensure => purged,
       }
     }
   }

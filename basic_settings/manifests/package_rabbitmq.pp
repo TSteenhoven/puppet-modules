@@ -1,8 +1,8 @@
 # @summary Manages RabbitMQ Erlang and server APT repositories.
 #
-# This private helper writes or removes the RabbitMQ Erlang and RabbitMQ Server
-# package sources and signing keys. It is called by `basic_settings` after OS
-# support has been calculated.
+# lint:ignore:140chars
+# This private helper writes or removes the RabbitMQ Erlang and RabbitMQ Server package sources and signing keys. It is called by `basic_settings` after OS support has been calculated.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_rabbitmq':
@@ -16,8 +16,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates both repositories and imports keys when `true`; removes them when
-#   `false`.
+#   Creates both repositories and imports keys when `true`; removes them when `false`.
 #
 # @param os_name
 #   Distribution codename used in repository paths and suites.
@@ -27,10 +26,10 @@
 #
 # @api private
 class basic_settings::package_rabbitmq (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
-  String              $os_parent
+  String              $os_parent,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -54,8 +53,8 @@ class basic_settings::package_rabbitmq (
   if ($enable) {
     # Get source
     if ($deb_version == '822') {
-      $source_erlang  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-erlang/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_erlang}\\n"
-      $source_server  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-server/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_server}\\n"
+      $source_erlang  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-erlang/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_erlang}\\n" # lint:ignore:140chars
+      $source_server  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-server/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_server}\\n" # lint:ignore:140chars
     } else {
       $source_erlang = "deb [signed-by=${key_erlang}] https://deb1.rabbitmq.com/rabbitmq-erlang/${os_parent}/${os_name} ${os_name} main\\n"
       $source_server = "deb [signed-by=${key_server}] https://deb1.rabbitmq.com/rabbitmq-server/${os_parent}/${os_name} ${os_name} main\\n"
@@ -67,14 +66,14 @@ class basic_settings::package_rabbitmq (
 
     # Install Rabbitmq erlang repo
     exec { 'package_rabbitmq_erlang_source':
-      command => "/usr/bin/printf %b ${source_erlang_shell} > ${file_erlang_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_erlang_shell} >/dev/null; chmod 644 ${key_erlang_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_erlang_shell} > ${file_erlang_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_erlang_shell} >/dev/null; chmod 644 ${key_erlang_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_erlang_shell}",
       require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
     }
 
     # Install Rabbitmq server repo
     exec { 'package_rabbitmq_server_source':
-      command => "/usr/bin/printf %b ${source_server_shell} > ${file_server_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_server_shell} >/dev/null; chmod 644 ${key_server_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_server_shell} > ${file_server_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_server_shell} >/dev/null; chmod 644 ${key_server_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_server_shell}",
       require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
     }

@@ -1,8 +1,8 @@
 # @summary Manages the MySQL upstream APT repository, key, and pinning policy.
 #
-# This private helper writes or removes the MySQL package source, repository key,
-# and APT preference file. It supports MySQL version-specific key selection and
-# is called by `basic_settings` after OS support has been calculated.
+# lint:ignore:140chars
+# This private helper writes or removes the MySQL package source, repository key, and APT preference file. It supports MySQL version-specific key selection and is called by `basic_settings` after OS support has been calculated.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_mysql':
@@ -17,8 +17,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository, key, and preference file when `true`; removes them
-#   when `false`.
+#   Creates the repository, key, and preference file when `true`; removes them when `false`.
 #
 # @param os_name
 #   Distribution codename used in the repository suite.
@@ -27,16 +26,15 @@
 #   Distribution family used in the repository URL.
 #
 # @param version
-#   MySQL version used in repository component and key selection. The default is
-#   8.0.
+#   MySQL version used in repository component and key selection. The default is 8.0.
 #
 # @api private
 class basic_settings::package_mysql (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
   String              $os_parent,
-  Float               $version = 8.0
+  Float               $version     = 8.0,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -53,7 +51,7 @@ class basic_settings::package_mysql (
   $source_file_shell = stdlib::shell_escape($source_file)
   $file_preference_shell = stdlib::shell_escape($file_preference)
   $key_file_shell = stdlib::shell_escape($key_file)
-  $key_rebuild = "cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee ${key_file_shell} >/dev/null; chmod 644 ${key_file_shell}; /usr/bin/apt-get update" #lint:ignore:140chars
+  $key_rebuild = "cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee ${key_file_shell} >/dev/null; chmod 644 ${key_file_shell}; /usr/bin/apt-get update" # lint:ignore:140chars
 
   if ($enable) {
     # Get source name
@@ -74,14 +72,14 @@ class basic_settings::package_mysql (
 
     # Get source
     if ($deb_version == '822') {
-      $source_content  = "Types: deb\\nURIs: https://repo.mysql.com/apt/${os_parent}\\nSuites: ${os_name}\\nComponents: mysql-${version_correct}\\nSigned-By:${key_file}\\n"
+      $source_content  = "Types: deb\\nURIs: https://repo.mysql.com/apt/${os_parent}\\nSuites: ${os_name}\\nComponents: mysql-${version_correct}\\nSigned-By:${key_file}\\n" # lint:ignore:140chars
     } else {
       $source_content = "deb [signed-by=${key_file}] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version_correct}\\n"
     }
 
     # Escape generated repo and preference content as literal newline sequences before the shell writes it.
     $source_content_shell = stdlib::shell_escape("# Managed by puppet\\n${source_content}")
-    $preference_content_shell = stdlib::shell_escape("# Managed by puppet\\nPackage: mysql*\\nPin: origin repo.mysql.com\\nPin-Priority: 990\\n")
+    $preference_content_shell = stdlib::shell_escape("# Managed by puppet\\nPackage: mysql*\\nPin: origin repo.mysql.com\\nPin-Priority: 990\\n") # lint:ignore:140chars
 
     # Rebuild key
     exec { 'package_mysql_key_build':
@@ -104,14 +102,14 @@ class basic_settings::package_mysql (
 
     # Set source
     exec { 'package_mysql_source':
-      command => "/usr/bin/printf %b ${source_content_shell} > ${source_file_shell}; ${key_rebuild}", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_content_shell} > ${source_file_shell}; ${key_rebuild}",
       unless  => "/usr/bin/test -e ${source_file_shell}",
       require => [Package['apt', 'apt-transport-https', 'gnupg'], File['package_mysql_key_filename']],
     }
 
     # Set preference
     exec { 'package_mysql_preference':
-      command => "/usr/bin/printf %b ${preference_content_shell} > ${file_preference_shell}; chmod 644 ${file_preference_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${preference_content_shell} > ${file_preference_shell}; chmod 644 ${file_preference_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_preference_shell}",
       require => Exec['package_mysql_source'],
     }

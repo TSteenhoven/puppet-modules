@@ -1,7 +1,8 @@
 # @summary Creates one backend fragment for a systemd service check.
 #
-# This internal helper is called by `basic_settings::monitoring_service` after
-# the parent type has resolved package, friendly-name, and script-path settings.
+# lint:ignore:140chars
+# This internal helper is called by `basic_settings::monitoring_service` after the parent type has resolved package, friendly-name, and script-path settings.
+# lint:endignore
 # It renders one OpenITCOCKPIT custom-check fragment per service unit.
 #
 # @example Internal use through basic_settings::monitoring_service
@@ -31,8 +32,7 @@
 #   Controls whether the backend fragment is present or omitted.
 #
 # @param parent_force
-#   Forces use of the parent friendly name and script name even when the checked
-#   service title differs from the parent title.
+#   Forces use of the parent friendly name and script name even when the checked service title differs from the parent title.
 #
 # @api private
 define basic_settings::monitoring_service_part (
@@ -42,8 +42,8 @@ define basic_settings::monitoring_service_part (
   String                    $script_path,
   Optional[String]          $active_days    = undef,
   Optional[String]          $active_windows = undef,
-  Enum['present','absent']  $ensure         = present,
-  Boolean                   $parent_force   = false
+  Enum['present', 'absent'] $ensure         = present,
+  Boolean                   $parent_force   = false,
 ) {
   case $package {
     'openitcockpit': {
@@ -75,10 +75,13 @@ define basic_settings::monitoring_service_part (
         # Add fragment
         concat::fragment { "monitoring_service_part_${name}":
           target  => '/etc/openitcockpit-agent/customchecks.ini',
-          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} ${script_active_window}${script_active_days}${name}.service\ninterval = 300\ntimeout = 10\nenabled = true\n",
+          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} ${script_active_window}${script_active_days}${name}.service\ninterval = 300\ntimeout = 10\nenabled = true\n", # lint:ignore:140chars
           order   => '10',
         }
       }
+    }
+    default: {
+      # Other selections do not emit OpenITCOCKPIT registration fragments.
     }
   }
 }

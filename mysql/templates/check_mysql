@@ -7,12 +7,15 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 MYSQLADMIN=$(command -v mysqladmin 2>/dev/null) || die "mysqladmin not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-<% end -%>
+fi
 
 # Credentials are read from the local Debian-maintained defaults file unless the caller overrides it.
 DEFAULTS_FILE="/etc/mysql/debian.cnf"
@@ -155,11 +158,11 @@ var() { get_field "$1" "$VAR_OUT"; }
 # The defaults file carries local credentials; unreadable credentials make the check unusable.
 [ -r "$DEFAULTS_FILE" ] || crit "defaults-file $DEFAULTS_FILE not readable"
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 # systemd gives the direct service state before mysqladmin performs protocol checks.
 $SYSTEMDCTL is-active --quiet "mysql.service" || crit "service is not active"
 
-<% end -%>
+fi
 # mysqladmin ping confirms the daemon is accepting local administrative connections.
 $MYSQLADMIN --defaults-file="$DEFAULTS_FILE" ping >/dev/null 2>/dev/null || crit "service running but not responding"
 

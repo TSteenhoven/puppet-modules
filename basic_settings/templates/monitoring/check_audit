@@ -7,6 +7,9 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AUDITCTL=$(command -v auditctl 2>/dev/null) || die "auditctl not available"
 AUGENRULES=$(command -v augenrules 2>/dev/null) || die "augenrules not available"
@@ -17,10 +20,10 @@ CUT=$(command -v cut 2>/dev/null) || die "cut not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 JOURNALCTL=$(command -v journalctl 2>/dev/null) || die "journalctl not available"
-<% end -%>
+fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 UNAME=$(command -v uname 2>/dev/null) || die "uname not available"
@@ -170,11 +173,11 @@ crit() {
 }
 
 # Service health is checked before audit tools so a stopped daemon reports the direct cause.
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 $SYSTEMDCTL is-active --quiet "auditd" || crit "Auditd service is not active"
-<% else -%>
+else
 $PS -C auditd >/dev/null 2>&1 || crit "Auditd service is not active"
-<% end -%>
+fi
 
 # The daily audit summary is the authoritative source for account/config/anomaly counters.
 SUM=$($AUREPORT --summary --start today 00:00:00 --end now 2>/dev/null) || die "audit summary could not be read"
@@ -203,7 +206,7 @@ if [ "$ACCT" -gt 0 ] || [ "$ANOM" -gt 0 ] || [ "$CFG" -gt 0 ] || [ "$FAIL" -gt 0
 fi
 append_long "Audit event counters: account changes ${ACCT}, anomaly events ${ANOM}, config changes ${CFG}, failed syscalls ${FAIL}, failed authentications ${FAILED_AUTH}, keyed events ${KEYS}"
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 # Auditd and augenrules journal errors since boot indicate broken rule loading or runtime failures.
 JLOG=$($JOURNALCTL -b -u auditd -u augenrules --no-pager -o cat 2>/dev/null)
 ERR_COMBINED=$(printf "%s\n" "$JLOG" | $AWK '
@@ -212,14 +215,13 @@ ERR_COMBINED=$(printf "%s\n" "$JLOG" | $AWK '
         l=tolower(line)
         if (l ~ /(error|unknown)/) {
             c++
-            prev=last
-            last=line
+            errors[c]=line
         }
     }
     END{
         if (c==0) { print "0|"; exit }
-        if (prev) printf "%d|%s; %s", c, prev, last;
-        else      printf "%d|%s",      c, last
+        printf "%d|", c
+        for (i=c; i>=1; i--) printf "%s%s", (i<c ? "; " : ""), errors[i]
     }')
 ERROR_COUNT=${ERR_COMBINED%%|*}
 ERROR_SNIPPET=${ERR_COMBINED#*|}
@@ -227,11 +229,11 @@ ERROR_SNIPPET=${ERR_COMBINED#*|}
 # Journal errors override earlier OK text because they show audit runtime failure.
 if [ "${ERROR_COUNT:-0}" -gt 0 ]; then
     add_critical "journal errors since boot ${ERROR_COUNT}"
-    append_long "Latest audit journal errors: ${ERROR_SNIPPET:-unknown}"
+    append_long "Audit journal errors, newest first: ${ERROR_SNIPPET:-unknown}"
 fi
-<% else -%>
+else
 ERROR_COUNT=0
-<% end -%>
+fi
 append_long "Journal errors since boot: ${ERROR_COUNT}"
 
 # Loaded rule count verifies that auditd is enforcing something, not only running.
@@ -293,7 +295,7 @@ elif [ -r /proc/uptime ]; then
     fi
 fi
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 # Kernel change detection (previous boot)
 UPTIME_SEC=$($CUT -d. -f1 /proc/uptime 2>/dev/null)
 if [ "${UPTIME_SEC:-0}" -lt 86400 ]; then
@@ -316,14 +318,14 @@ if [ "${UPTIME_SEC:-0}" -lt 86400 ]; then
         append_long "Kernel context: previous kernel not retrieved from the previous boot journal"
     fi
 fi
-<% end -%>
+fi
 
-# Include the latest distinct audit keys so security events have immediate context.
+# Preserve distinct audit keys in recency order until the single diagnostic character limit applies.
 if [ "$KEYS" -gt 0 ]; then
     LAST_KEYS=$($AUSEARCH --start 'today 00:00:00' --end now 2>/dev/null | $GREP -o 'key="[^"]\+"' | $SED 's/^key="//; s/"$//' | $AWK 'NF && $0!="(null)"{k[n++]=$0}
         END{
-            for(i=n-1;i>=0 && c<5; i--) if(!seen[k[i]]++) list[c++]=k[i];
-            for(i=c-1;i>=0;i--) printf "%s%s", list[i], (i? ", ":"")
+            for(i=n-1;i>=0; i--) if(!seen[k[i]]++) list[c++]=k[i];
+            for(i=0;i<c;i++) printf "%s%s", (i? ", ":""), list[i]
         }')
     [ -n "$LAST_KEYS" ] && append_long "Latest distinct audit keys: ${LAST_KEYS}"
 fi

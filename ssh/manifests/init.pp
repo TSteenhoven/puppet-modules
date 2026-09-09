@@ -1,10 +1,8 @@
 # @summary Manages hardened OpenSSH server configuration and monitoring.
 #
-# This class installs OpenSSH packages, owns `/etc/ssh/sshd_config.d`, writes a
-# login banner and custom sshd configuration, supports socket-activated SSH on
-# Ubuntu releases that use `ssh.socket`, optionally configures an alternative
-# port, registers a monitoring check, and adds audit coverage for SSH
-# configuration changes and SSH client execution.
+# lint:ignore:140chars
+# This class installs OpenSSH packages, owns `/etc/ssh/sshd_config.d`, writes a login banner and custom sshd configuration, supports socket-activated SSH on Ubuntu releases that use `ssh.socket`, optionally configures an alternative port, registers a monitoring check, and adds audit coverage for SSH configuration changes and SSH client execution.
+# lint:endignore
 #
 # @example Manage SSH for key-only users
 #   class { 'ssh':
@@ -19,15 +17,13 @@
 #   }
 #
 # @param allow_users
-#   Users allowed by the generated sshd configuration. An empty list leaves the
-#   template without an explicit AllowUsers list.
+#   Users allowed by the generated sshd configuration. An empty list leaves the template without an explicit AllowUsers list.
 #
 # @param banner_text
 #   Text written to `/etc/issue.net` and referenced by sshd.
 #
 # @param check_users
-#   Optional explicit user list passed to the SSH monitoring check. `undef`
-#   derives the list from the primary and alternative allowed users.
+#   Optional explicit user list passed to the SSH monitoring check. `undef` derives the list from the primary and alternative allowed users.
 #
 # @param host_key_algorithms
 #   Host key algorithms rendered into sshd configuration.
@@ -39,8 +35,9 @@
 #   Users for whom password authentication is allowed by match rules.
 #
 # @param permit_root_login
-#   Controls `PermitRootLogin`. `false` writes `no`, `true` writes `yes`, and a
-#   string can set an explicit OpenSSH mode such as `prohibit-password`.
+# lint:ignore:140chars
+#   Controls `PermitRootLogin`. `false` writes `no`, `true` writes `yes`, and a string can set an explicit OpenSSH mode such as `prohibit-password`.
+# lint:endignore
 #
 # @param port
 #   Primary SSH port.
@@ -49,26 +46,25 @@
 #   Optional secondary SSH port, mainly used with socket activation.
 #
 # @param port_alternative_allow_users
-#   Optional AllowUsers list for the alternative port. `undef` reuses
-#   `allow_users`.
+#   Optional AllowUsers list for the alternative port. `undef` reuses `allow_users`.
 #
 # @api public
 class ssh (
-  Array                    $allow_users                    = [],
-  String                   $banner_text                    = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.", #lint:ignore:140chars
-  Optional[Array]          $check_users                    = undef,
-  Array                    $host_key_algorithms            = [
+  Array                    $allow_users                   = [],
+  String                   $banner_text                   = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.", # lint:ignore:140chars
+  Optional[Array]          $check_users                   = undef,
+  Array                    $host_key_algorithms           = [
     'ecdsa-sha2-nistp256',
     'ecdsa-sha2-nistp384',
     'ecdsa-sha2-nistp521',
     'ssh-ed25519',
   ],
-  Integer                  $idle_timeout                   = 300,
-  Array                    $password_authentication_users  = [],
-  Variant[Boolean,String]  $permit_root_login              = false,
-  Integer                  $port                           = 22,
-  Optional[Integer]        $port_alternative               = undef,
-  Optional[Array]          $port_alternative_allow_users   = undef,
+  Integer                  $idle_timeout                  = 300,
+  Array                    $password_authentication_users = [],
+  Variant[Boolean, String] $permit_root_login             = false,
+  Integer                  $port                          = 22,
+  Optional[Integer]        $port_alternative              = undef,
+  Optional[Array]          $port_alternative_allow_users  = undef,
 ) {
   # Required packages for SSHD
   package { ['openssh-server', 'openssh-client']:
@@ -104,6 +100,8 @@ class ssh (
     $check_users_complete = $allow_users
   }
   $check_users_str = join($check_users_complete, ',')
+  # User filters are inserted into a shell assignment and must remain literal data.
+  $check_users_str_shell = stdlib::shell_escape($check_users_str)
 
   # Check if SSH used socket
   $systemd_enable = defined(Package['systemd'])
@@ -159,6 +157,8 @@ class ssh (
   # Banner
   file { '/etc/issue.net':
     ensure  => file,
+    owner   => 'root',
+    group   => 'root',
     mode    => '0644',
     content => "${banner_text}\n\n",
   }

@@ -2,17 +2,19 @@
 #
 # This defined type deploys the module-shipped `docker/files/twenty.yaml` Compose file.
 # Declare `docker` before using it.
+# lint:ignore:140chars
 # The resource title becomes the Compose project name, so multiple Twenty stacks can be managed on the same host when ports and public names do not conflict.
 # When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the defined type declares `docker::compose` directly.
+# lint:endignore
 # The generated `SERVER_URL` uses `scheme` with the first `server_name`, or `host` when `server_name` is unset.
 #
 # @example Deploy Twenty with generated `.env` content
 #   class { 'docker': }
 #
 #   docker::twenty { 'twenty':
-#     database_password    => Sensitive('change-me'),
+#     database_password    => Sensitive('replace-with-secret'),
 #     host                 => 'twenty.example.org',
-#     secret_key           => Sensitive('change-me'),
+#     secret_key           => Sensitive('replace-with-secret'),
 #   }
 #
 # @example Deploy Twenty behind Nginx
@@ -20,8 +22,8 @@
 #   class { 'nginx': }
 #
 #   docker::twenty { 'twenty':
-#     database_password    => Sensitive('change-me'),
-#     secret_key           => Sensitive('change-me'),
+#     database_password    => Sensitive('replace-with-secret'),
+#     secret_key           => Sensitive('replace-with-secret'),
 #     server_name          => 'twenty.example.org',
 #     ssl_certificate      => '/etc/letsencrypt/live/twenty.example.org/fullchain.pem',
 #     ssl_certificate_key  => '/etc/letsencrypt/live/twenty.example.org/privkey.pem',
@@ -43,8 +45,7 @@
 #   PostgreSQL user written as `PG_DATABASE_USER`.
 #
 # @param ensure
-#   Controls whether the Twenty Compose project directory and service are
-#   present or absent.
+#   Controls whether the Twenty Compose project directory and service are present or absent.
 #
 # @param host
 #   Local Twenty upstream host used by Nginx when `server_name` is set.
@@ -58,8 +59,7 @@
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack
-#   critical, such as one-shot migration containers.
+#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -80,8 +80,7 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param port
-#   Local Twenty upstream port used by Nginx when `server_name` is set. The
-#   default `3000` matches the bundled Compose listener.
+#   Local Twenty upstream port used by Nginx when `server_name` is set. The default `3000` matches the bundled Compose listener.
 #
 # @param redis_url
 #   Redis connection URL written as `REDIS_URL`.
@@ -121,41 +120,40 @@
 #   Twenty storage backend written as `STORAGE_TYPE`.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to the generated
-#   Compose service. The default is `services`.
+#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is `services`.
 #
 # @api public
 define docker::twenty (
-  Sensitive[String]                             $database_password,
-  Sensitive[String]                             $secret_key,
-  Pattern[/\A[^\r\n]+\z/]                       $database_host                = 'db',
-  Integer[1, 65535]                             $database_port                = 5432,
-  Pattern[/\A[^\r\n]+\z/]                       $database_user                = 'postgres',
-  Enum['present','absent']                      $ensure                       = present,
-  Pattern[/\A[^\r\n]+\z/]                       $host                         = '127.0.0.1',
-  Pattern[/\A[^\r\n]+\z/]                       $image_tag                    = 'latest',
-  Integer                                       $monitoring_detail_limit      = 6000,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_expected_exited   = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_health_required   = [],
-  Integer                                       $monitoring_interval          = 300,
-  Boolean                                       $monitoring_orphan_critical   = false,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_profiles          = [],
-  Integer                                       $monitoring_starting_grace    = 300,
-  Integer                                       $monitoring_timeout           = 60,
-  Integer[1, 65535]                             $port                         = 3000,
-  Pattern[/\A[^\r\n]+\z/]                       $redis_url                    = 'redis://redis:6379',
-  Optional[Sensitive[String]]                   $secret_key_fallback          = undef,
-  Optional[String]                              $server_name                  = undef,
-  Optional[String]                              $ssl_certificate              = undef,
-  Optional[String]                              $ssl_certificate_key          = undef,
-  Optional[String]                              $ssl_certificate_trusted      = undef,
-  Optional[Sensitive[String]]                   $storage_s3_access_key_id     = undef,
-  Optional[Pattern[/\A[^\r\n]*\z/]]             $storage_s3_endpoint          = undef,
-  Optional[Pattern[/\A[^\r\n]*\z/]]             $storage_s3_name              = undef,
-  Optional[Pattern[/\A[^\r\n]*\z/]]             $storage_s3_region            = undef,
-  Optional[Sensitive[String]]                   $storage_s3_secret_access_key = undef,
-  Enum['local','s3']                            $storage_type                 = 'local',
-  String                                        $target                       = 'services'
+  Sensitive[String]                     $database_password,
+  Sensitive[String]                     $secret_key,
+  Pattern[/\A[^\r\n]+\z/]               $database_host                = 'db',
+  Integer[1, 65535]                     $database_port                = 5432,
+  Pattern[/\A[^\r\n]+\z/]               $database_user                = 'postgres',
+  Enum['present', 'absent']             $ensure                       = present,
+  Pattern[/\A[^\r\n]+\z/]               $host                         = '127.0.0.1',
+  Pattern[/\A[^\r\n]+\z/]               $image_tag                    = 'latest',
+  Integer                               $monitoring_detail_limit      = 6000,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $monitoring_expected_exited   = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $monitoring_health_required   = [],
+  Integer                               $monitoring_interval          = 300,
+  Boolean                               $monitoring_orphan_critical   = false,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $monitoring_profiles          = [],
+  Integer                               $monitoring_starting_grace    = 300,
+  Integer                               $monitoring_timeout           = 60,
+  Integer[1, 65535]                     $port                         = 3000,
+  Pattern[/\A[^\r\n]+\z/]               $redis_url                    = 'redis://redis:6379',
+  Optional[Sensitive[String]]           $secret_key_fallback          = undef,
+  Optional[String]                      $server_name                  = undef,
+  Optional[String]                      $ssl_certificate              = undef,
+  Optional[String]                      $ssl_certificate_key          = undef,
+  Optional[String]                      $ssl_certificate_trusted      = undef,
+  Optional[Sensitive[String]]           $storage_s3_access_key_id     = undef,
+  Optional[Pattern[/\A[^\r\n]*\z/]]     $storage_s3_endpoint          = undef,
+  Optional[Pattern[/\A[^\r\n]*\z/]]     $storage_s3_name              = undef,
+  Optional[Pattern[/\A[^\r\n]*\z/]]     $storage_s3_region            = undef,
+  Optional[Sensitive[String]]           $storage_s3_secret_access_key = undef,
+  Enum['local', 's3']                   $storage_type                 = 'local',
+  String                                $target                       = 'services',
 ) {
   # Validate required parent classes before delegating to the shared Compose wrappers.
   $docker_defined = defined(Class['docker'])
@@ -202,7 +200,7 @@ define docker::twenty (
         monitoring_timeout         => $monitoring_timeout,
         proxy_host                 => $host,
         proxy_port                 => $port,
-        proxy_scheme               => 'http', # The proxy scheme is always `http` because the Compose stack listens on HTTP, even when the public URL is HTTPS.
+        proxy_scheme               => 'http', # lint:ignore:140chars The proxy scheme is always `http` because the Compose stack listens on HTTP, even when the public URL is HTTPS.
         server_name                => $server_name_correct,
         ssl_certificate            => $ssl_certificate,
         ssl_certificate_key        => $ssl_certificate_key,

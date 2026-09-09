@@ -1,8 +1,8 @@
 # @summary Manages a generated systemd timer unit and optional timer monitoring.
 #
-# This defined type writes `/etc/systemd/system/<title>.timer`, manages timer
-# enablement and optional runtime state, and registers monitoring through
-# `basic_settings::monitoring_timer` when requested.
+# lint:ignore:140chars
+# This defined type writes `/etc/systemd/system/<title>.timer`, manages timer enablement and optional runtime state, and registers monitoring through `basic_settings::monitoring_timer` when requested.
+# lint:endignore
 #
 # @example Create a daily timer
 #   basic_settings::systemd_timer { 'example':
@@ -42,18 +42,18 @@
 #
 # @api public
 define basic_settings::systemd_timer (
-  String                                $description,
-  String                                $daemon_reload        = 'systemd_daemon_reload',
-  Boolean                               $enable               = true,
-  Enum['present','absent']              $ensure               = present,
-  Hash                                  $install              = {
+  String                               $description,
+  String                               $daemon_reload      = 'systemd_daemon_reload',
+  Boolean                              $enable             = true,
+  Enum['present', 'absent']            $ensure             = present,
+  Hash                                 $install            = {
     'WantedBy'  => 'timers.target',
   },
-  Optional[Boolean]                     $monitoring_enable    = undef,
-  Optional[String]                      $monitoring_package   = undef,
-  Optional[Enum['running','stopped']]   $state                = undef,
-  Hash                                  $timer                = {},
-  Hash                                  $unit                 = {},
+  Optional[Boolean]                    $monitoring_enable  = undef,
+  Optional[String]                     $monitoring_package = undef,
+  Optional[Enum['running', 'stopped']] $state              = undef,
+  Hash                                 $timer              = {},
+  Hash                                 $unit               = {},
 ) {
   # Check if systemd package is not defined
   if (!defined(Package['systemd'])) {

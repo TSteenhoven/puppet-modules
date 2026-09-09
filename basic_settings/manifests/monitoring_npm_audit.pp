@@ -1,9 +1,8 @@
 # @summary Registers an npm audit monitoring check for a Node.js working directory.
 #
-# This defined type adds an OpenITCOCKPIT custom check that runs the shared
-# `check_npm_audit` plugin for one application directory. It is usually created
-# automatically by `basic_settings::systemd_service` when a service starts a
-# Node.js process from a known working directory.
+# lint:ignore:140chars
+# This defined type adds an OpenITCOCKPIT custom check that runs the shared `check_npm_audit` plugin for one application directory. It is usually created automatically by `basic_settings::systemd_service` when a service starts a Node.js process from a known working directory.
+# lint:endignore
 #
 # @example Monitor a Node.js application directory
 #   basic_settings::monitoring_npm_audit { 'frontend':
@@ -20,15 +19,14 @@
 #   Human-readable check name. `undef` uses a capitalized resource title.
 #
 # @param package
-#   Monitoring package override. `undef` inherits `basic_settings::monitoring`
-#   when that class is declared.
+#   Monitoring package override. `undef` inherits `basic_settings::monitoring` when that class is declared.
 #
 # @api public
 define basic_settings::monitoring_npm_audit (
   String                    $dir,
-  Enum['present','absent']  $ensure     = present,
-  Optional[String]          $friendly   = undef,
-  Optional[String]          $package    = undef
+  Enum['present', 'absent'] $ensure   = present,
+  Optional[String]          $friendly = undef,
+  Optional[String]          $package  = undef,
 ) {
   # Get friendly name
   if ($friendly == undef) {
@@ -80,7 +78,7 @@ define basic_settings::monitoring_npm_audit (
       if ($ensure == present) {
         concat::fragment { "monitoring_npm_audit_${name}":
           target  => '/etc/openitcockpit-agent/customchecks.ini',
-          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} -d ${dir} -n ${name}\ninterval = 300\ntimeout = 10\nenabled = true\n",
+          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} -d ${dir} -n ${name}\ninterval = 300\ntimeout = 10\nenabled = true\n", # lint:ignore:140chars
           order   => '10',
         }
       }
@@ -112,7 +110,7 @@ define basic_settings::monitoring_npm_audit (
         owner   => 'root',
         group   => $gid,
         mode    => '0440',
-        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n",
+        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n", # lint:ignore:140chars
         require => Package['sudo'],
       }
     }

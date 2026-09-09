@@ -1,9 +1,9 @@
 # @summary Registers monitoring for one or more systemd services.
 #
-# This defined type installs the shared systemd-service check when needed and
-# creates OpenITCOCKPIT custom-check fragments for the requested service units.
-# It is used by service modules so monitoring output stays consistent across the
-# repository.
+# lint:ignore:140chars
+# This defined type installs the shared systemd-service check when needed and creates OpenITCOCKPIT custom-check fragments for the requested service units.
+# lint:endignore
+# It is used by service modules so monitoring output stays consistent across the repository.
 #
 # @example Monitor one service
 #   basic_settings::monitoring_service { 'nginx': }
@@ -26,8 +26,7 @@
 #   Human-readable check name. `undef` uses a capitalized resource title.
 #
 # @param package
-#   Monitoring package override. `undef` inherits `basic_settings::monitoring`
-#   when that class is declared.
+#   Monitoring package override. `undef` inherits `basic_settings::monitoring` when that class is declared.
 #
 # @param services
 #   Optional list of systemd service names. `undef` monitors the resource title.
@@ -36,10 +35,10 @@
 define basic_settings::monitoring_service (
   Optional[String]          $active_days    = undef,
   Optional[String]          $active_windows = undef,
-  Enum['present','absent']  $ensure         = present,
+  Enum['present', 'absent'] $ensure         = present,
   Optional[String]          $friendly       = undef,
   Optional[String]          $package        = undef,
-  Optional[Array]           $services       = undef
+  Optional[Array]           $services       = undef,
 ) {
   # Get friendly name
   if ($friendly == undef) {
@@ -136,7 +135,7 @@ define basic_settings::monitoring_service (
         owner   => 'root',
         group   => $gid,
         mode    => '0440',
-        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n",
+        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n", # lint:ignore:140chars
         require => Package['sudo'],
       }
     }

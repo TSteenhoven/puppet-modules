@@ -1,8 +1,8 @@
 # @summary Enables a RabbitMQ plugin idempotently.
 #
-# This defined type requires `rabbitmq`, enables the named plugin with
-# `rabbitmq-plugins`, can notify another resource after enablement, and preserves
-# RabbitMQ's enabled plugin file with service notification.
+# lint:ignore:140chars
+# This defined type requires `rabbitmq`, enables the named plugin with `rabbitmq-plugins`, can notify another resource after enablement, and preserves RabbitMQ's enabled plugin file with service notification.
+# lint:endignore
 #
 # @example Enable the management plugin
 #   rabbitmq::plugin { 'rabbitmq_management': }

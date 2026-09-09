@@ -7,24 +7,26 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 RABBITMQCTL=$(command -v rabbitmqctl 2>/dev/null) || die "rabbitmqctl not available"
 RABBITMQADMIN=$(command -v rabbitmqadmin 2>/dev/null || true)
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-<% end -%>
+fi
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 
 # Queue depth thresholds apply only to queues with consumers.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
-SUMMARY_ITEM_LIMIT=5
 WARN="25" # warning threshold for queue backlog (can be set via -w)
 CRIT="30" # critical threshold for queue backlog (via -c)
 
 # rabbitmqadmin is used only for rate metrics and needs the managed config file.
-RABBITMQADMCONF="<%= @admin_config_path %>"
+RABBITMQADMCONF=<%= @admin_config_path_shell %>
 
 # CLI options keep the same external contract as the generated custom check registration.
 USAGE_TEXT="Usage: $0 [-w <warn_threshold>] [-c <crit_threshold>] [-C <rabbitmqadmin.conf>]"
@@ -54,11 +56,11 @@ crit() {
 }
 
 # Verify the service before querying the broker so daemon failures report a direct cause.
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 $SYSTEMDCTL is-active --quiet "rabbitmq-server" || crit "service is not active"
-<% else -%>
+else
 $PS -C rabbitmq-server >/dev/null 2>&1 || crit "service is not active"
-<% end -%>
+fi
 
 # Queue depth data comes from rabbitmqctl because it is available on the local node without HTTP setup.
 QUEUE_DATA=$($RABBITMQCTL list_queues -q name messages_ready messages_unacknowledged consumers 2>/dev/null) || die "Failed to fetch queue data"
@@ -66,7 +68,6 @@ QUEUE_DATA=$($RABBITMQCTL list_queues -q name messages_ready messages_unacknowle
 # Critical queue counters and examples drive the visible state.
 CRIT_COUNT=0
 CRIT_LIST=""
-CRIT_SHOWN=0
 MAX_MSG=0
 MAX_MSG_CRIT=0
 MAX_MSG_WARN=0
@@ -78,13 +79,10 @@ LONG_OUTPUT=""
 LONG_OUTPUT_SEP="__CHECK_RABBITMQ_NL__"
 
 # Orphaned queues remain diagnostic and do not change status.
-LARGEST_ORPHAN_MSG=0
-LARGEST_ORPHAN_QUEUE=""
 NO_CONSUMER_COUNT=0
 ORPHAN_LIST=""
-ORPHAN_SHOWN=0
 
-# Aggregate counters are emitted in summary and perfdata.
+# Aggregate counters are emitted in diagnostic output and perfdata.
 QUEUE_COUNT=0
 RATE_NOTICE=""
 STATE_CODE=0
@@ -96,7 +94,6 @@ TOTAL_UNACK=0
 # Warning queue counters are kept separate so CRITICAL output can take precedence.
 WARN_COUNT=0
 WARN_LIST=""
-WARN_SHOWN=0
 
 # Append one queue item to a comma-separated list.
 append_item() {
@@ -218,37 +215,24 @@ while IFS='	' read -r QUEUE_NAME READY UNACK CONSUMERS; do
                 MAX_MSG_CRIT=$MESSAGES
                 MAX_Q_CRIT="$QUEUE_NAME"
             fi
-            if [ "$CRIT_SHOWN" -lt "$SUMMARY_ITEM_LIMIT" ]; then
-                ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
-                CRIT_LIST=$(append_item "$CRIT_LIST" "$ITEM")
-                CRIT_SHOWN=$((CRIT_SHOWN + 1))
-            fi
+            ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
+            CRIT_LIST=$(append_item "$CRIT_LIST" "$ITEM")
         elif [ "$MESSAGES" -ge "$WARN" ]; then
             WARN_COUNT=$((WARN_COUNT + 1))
             if [ "$MESSAGES" -gt "$MAX_MSG_WARN" ]; then
                 MAX_MSG_WARN=$MESSAGES
                 MAX_Q_WARN="$QUEUE_NAME"
             fi
-            if [ "$WARN_SHOWN" -lt "$SUMMARY_ITEM_LIMIT" ]; then
-                ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
-                WARN_LIST=$(append_item "$WARN_LIST" "$ITEM")
-                WARN_SHOWN=$((WARN_SHOWN + 1))
-            fi
+            ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
+            WARN_LIST=$(append_item "$WARN_LIST" "$ITEM")
         fi
     fi
 
     # Queues with messages but no consumers are surfaced for diagnosis without changing status.
     if [ "$CONSUMERS" -eq 0 ] && [ "$MESSAGES" -gt 0 ]; then
         NO_CONSUMER_COUNT=$((NO_CONSUMER_COUNT + 1))
-        if [ "$MESSAGES" -gt "$LARGEST_ORPHAN_MSG" ]; then
-            LARGEST_ORPHAN_MSG=$MESSAGES
-            LARGEST_ORPHAN_QUEUE="$QUEUE_NAME"
-        fi
-        if [ "$ORPHAN_SHOWN" -lt "$SUMMARY_ITEM_LIMIT" ]; then
-            ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
-            ORPHAN_LIST=$(append_item "$ORPHAN_LIST" "$ITEM")
-            ORPHAN_SHOWN=$((ORPHAN_SHOWN + 1))
-        fi
+        ITEM=$(queue_item "$QUEUE_NAME" "$MESSAGES")
+        ORPHAN_LIST=$(append_item "$ORPHAN_LIST" "$ITEM")
     fi
 done <<EOF
 $QUEUE_DATA
@@ -265,9 +249,6 @@ elif [ "$WARN_COUNT" -gt 0 ]; then
   MSG="$MSG, $WARN_COUNT queue(s) with elevated backlog"
   [ -n "$MAX_Q_WARN" ] && MSG="$MSG; largest $(queue_item "$MAX_Q_WARN" "$MAX_MSG_WARN")"
 fi
-
-# Core totals make an otherwise healthy result still useful for capacity trending.
-MSG="$MSG, ${QUEUE_COUNT} queue(s), ${TOTAL_MSG} message(s), ${TOTAL_CONSUMERS} consumer(s)"
 
 # Sum per-queue rates into cluster-level publish/deliver rates when the managed HTTP config is usable.
 PUBLISH_RATE=U
@@ -298,23 +279,17 @@ fi
 
 [ -n "$RATE_NOTICE" ] && MSG="$MSG, $RATE_NOTICE"
 
-# Long output keeps queue lists bounded while the short output stays compact.
-append_long "Queue totals: ${QUEUE_COUNT} queue(s), ${TOTAL_MSG} message(s), ${TOTAL_CONSUMERS} consumer(s)"
+# Preserve all queue diagnostics until the single character limit is applied below.
 if [ "$CRIT_COUNT" -gt 0 ]; then
-    MORE=$((CRIT_COUNT - CRIT_SHOWN))
-    append_long "High backlog queues: ${CRIT_LIST:-$(queue_item "$MAX_Q_CRIT" "$MAX_MSG_CRIT")}"
-    [ "$MORE" -gt 0 ] && append_long "High backlog queue details truncated: ${MORE} additional queue(s)"
+    append_long "High backlog queues: ${CRIT_LIST}"
 fi
 if [ "$WARN_COUNT" -gt 0 ]; then
-    MORE=$((WARN_COUNT - WARN_SHOWN))
-    append_long "Elevated backlog queues: ${WARN_LIST:-$(queue_item "$MAX_Q_WARN" "$MAX_MSG_WARN")}"
-    [ "$MORE" -gt 0 ] && append_long "Elevated backlog queue details truncated: ${MORE} additional queue(s)"
+    append_long "Elevated backlog queues: ${WARN_LIST}"
 fi
 if [ "$NO_CONSUMER_COUNT" -gt 0 ]; then
-    MORE=$((NO_CONSUMER_COUNT - ORPHAN_SHOWN))
-    append_long "Queues with messages but no consumers: ${ORPHAN_LIST:-$(queue_item "$LARGEST_ORPHAN_QUEUE" "$LARGEST_ORPHAN_MSG")}"
-    [ "$MORE" -gt 0 ] && append_long "No-consumer queue details truncated: ${MORE} additional queue(s)"
+    append_long "Queues with messages but no consumers: ${ORPHAN_LIST}"
 fi
+append_long "Queue totals: ${QUEUE_COUNT} queue(s), ${TOTAL_MSG} message(s), ${TOTAL_CONSUMERS} consumer(s)"
 [ -n "$RATE_NOTICE" ] && append_long "Rate metric context: ${RATE_NOTICE}"
 limit_long_output_details
 append_long ""

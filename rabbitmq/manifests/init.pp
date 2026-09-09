@@ -1,36 +1,32 @@
 # @summary Installs RabbitMQ Server and applies service integration defaults.
 #
-# This class installs Erlang and RabbitMQ, disables vendor enablement under
-# systemd, binds `rabbitmq-server.service` into the shared target ladder, applies
-# systemd hardening, creates the owned `/etc/rabbitmq/conf.d` tree, renders
-# deprecated feature configuration, and prepares a root-owned TLS directory.
+# lint:ignore:140chars
+# This class installs Erlang and RabbitMQ, disables vendor enablement under systemd, binds `rabbitmq-server.service` into the shared target ladder, applies systemd hardening, creates the owned `/etc/rabbitmq/conf.d` tree, renders deprecated feature configuration, and prepares a root-owned TLS directory.
+# lint:endignore
 #
 # @example Install RabbitMQ in the services target
 #   include rabbitmq
 #
 # @param deprecated_features
-#   RabbitMQ deprecated feature names rendered into
-#   `/etc/rabbitmq/conf.d/deprecated_features.conf`.
+#   RabbitMQ deprecated feature names rendered into `/etc/rabbitmq/conf.d/deprecated_features.conf`.
 #
 # @param limit_file
 #   `LimitNOFILE` value applied to the RabbitMQ systemd drop-in.
 #
 # @param nice_level
-#   Positive nice value converted to a negative service priority in the systemd
-#   drop-in.
+#   Positive nice value converted to a negative service priority in the systemd drop-in.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to
-#   `rabbitmq-server.service`.
+#   `basic_settings::systemd` target suffix that should bind to `rabbitmq-server.service`.
 #
 # @api public
 class rabbitmq (
-  Array     $deprecated_features  = [
+  Array   $deprecated_features = [
     'transient_nonexcl_queues',
   ],
-  Integer   $limit_file           = 10000,
-  Integer   $nice_level           = 12,
-  String    $target               = 'services'
+  Integer $limit_file          = 10000,
+  Integer $nice_level          = 12,
+  String  $target              = 'services',
 ) {
   # Set some values
   $systemd_enable = defined(Package['systemd'])

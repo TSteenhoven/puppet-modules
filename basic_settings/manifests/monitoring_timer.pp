@@ -1,9 +1,8 @@
 # @summary Registers monitoring for a systemd timer unit.
 #
-# This defined type installs the shared systemd-timer check when needed and
-# creates an OpenITCOCKPIT custom-check fragment for `<title>.timer`. It is used
-# by the local `basic_settings::systemd_timer` wrapper and by modules that manage
-# operational timers.
+# lint:ignore:140chars
+# This defined type installs the shared systemd-timer check when needed and creates an OpenITCOCKPIT custom-check fragment for `<title>.timer`. It is used by the local `basic_settings::systemd_timer` wrapper and by modules that manage operational timers.
+# lint:endignore
 #
 # @example Monitor a systemd timer
 #   basic_settings::monitoring_timer { 'automysqlbackup': }
@@ -15,14 +14,13 @@
 #   Human-readable check name. `undef` uses a capitalized resource title.
 #
 # @param package
-#   Monitoring package override. `undef` inherits `basic_settings::monitoring`
-#   when that class is declared.
+#   Monitoring package override. `undef` inherits `basic_settings::monitoring` when that class is declared.
 #
 # @api public
 define basic_settings::monitoring_timer (
-  Enum['present','absent']  $ensure     = present,
-  Optional[String]          $friendly   = undef,
-  Optional[String]          $package    = undef
+  Enum['present', 'absent'] $ensure   = present,
+  Optional[String]          $friendly = undef,
+  Optional[String]          $package  = undef,
 ) {
   # Get friendly name
   if ($friendly == undef) {
@@ -74,7 +72,7 @@ define basic_settings::monitoring_timer (
       if ($ensure == present) {
         concat::fragment { "monitoring_timer_${name}":
           target  => '/etc/openitcockpit-agent/customchecks.ini',
-          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} ${name}.timer\ninterval = 300\ntimeout = 10\nenabled = true\n",
+          content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} ${name}.timer\ninterval = 300\ntimeout = 10\nenabled = true\n", # lint:ignore:140chars
           order   => '10',
         }
       }
@@ -106,7 +104,7 @@ define basic_settings::monitoring_timer (
         owner   => 'root',
         group   => $gid,
         mode    => '0440',
-        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n",
+        content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always\n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n", # lint:ignore:140chars
         require => Package['sudo'],
       }
     }

@@ -1,6 +1,8 @@
 # @summary Manages firewall, DHCP, systemd-networkd, DNS resolver, `/etc/hosts`, LLDP, and network audit policy.
 #
+# lint:ignore:140chars
 # This class installs the selected firewall package, removes competing firewall stacks when requested, manages DHCP client behavior, optional `/etc/hosts` ownership, optional netplan and wireless packages, systemd-networkd/resolved drop-ins, networkd-dispatcher hooks, LLDP identity, monitoring checks, and audit rules for network tooling.
+# lint:endignore
 # It reads kernel and monitoring state from `basic_settings` components when they are present.
 #
 # @example Manage the default nftables-based network profile
@@ -9,27 +11,24 @@
 #   }
 #
 # @param firewall_package
-#   Firewall implementation to install and manage. Valid values are `nftables`,
-#   `iptables`, and `firewalld`.
+#   Firewall implementation to install and manage. Valid values are `nftables`, `iptables`, and `firewalld`.
 #
 # @param antivirus_package
-#   Optional antivirus integration name. Some firewall package combinations are
-#   adjusted for antivirus compatibility.
+#   Optional antivirus integration name. Some firewall package combinations are adjusted for antivirus compatibility.
 #
 # @param capabilities
 #   LLDP capabilities advertised by the host. The default is `['station']`.
 #
 # @param communication_name
-#   Optional hostname advertised through LLDP. `undef` builds a name from the OS
-#   and environment.
+#   Optional hostname advertised through LLDP. `undef` builds a name from the OS and environment.
 #
 # @param configurator_package
-#   Network configuration frontend to install. `netplan.io` installs netplan;
-#   `none` purges it.
+#   Network configuration frontend to install. `netplan.io` installs netplan; `none` purges it.
 #
 # @param dhcp_enable
-#   Enables DHCP client configuration when `true`. When `false`, the class can
-#   still retain DHCP tooling if the kernel/initramfs setup needs it.
+# lint:ignore:140chars
+#   Enables DHCP client configuration when `true`. When `false`, the class can still retain DHCP tooling if the kernel/initramfs setup needs it.
+# lint:endignore
 #
 # @param dns_dnssec
 #   DNSSEC mode rendered into the systemd-resolved drop-in.
@@ -41,8 +40,7 @@
 #   Environment label used in LLDP descriptions. The default is `production`.
 #
 # @param firewall_path
-#   Path to the iptables restore file used by the networkd-dispatcher hook when
-#   `firewall_package` is `iptables`.
+#   Path to the iptables restore file used by the networkd-dispatcher hook when `firewall_package` is `iptables`.
 #
 # @param firewall_remove
 #   Purges competing firewall packages when `true`.
@@ -54,11 +52,12 @@
 #   Additional host aliases appended to the `127.0.0.1 localhost` record when hosts management is enabled.
 #
 # @param install_options
-#   Additional APT install options merged into selected package resources.
+# lint:ignore:140chars
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
+# lint:endignore
 #
 # @param interfaces
-#   Interface name patterns used for systemd-networkd DHCP and router
-#   advertisement drop-ins.
+#   Interface name patterns used for systemd-networkd DHCP and router advertisement drop-ins.
 #
 # @param server_fdqn
 #   Fully qualified host name used by generated monitoring output.
@@ -68,28 +67,28 @@
 #
 # @api public
 class basic_settings::network (
-  Enum['nftables','iptables','firewalld']     $firewall_package,
-  Optional[String]                            $antivirus_package      = undef,
-  Array[String]                               $capabilities           = ['station'],
-  Optional[String]                            $communication_name     = undef,
-  Enum['none','netplan.io']                   $configurator_package   = 'none',
-  Boolean                                     $dhcp_enable            =  true,
-  Enum['allow-downgrade','no']                $dns_dnssec             = 'allow-downgrade',
-  Array                                       $dns_fallback           = [
+  Enum['nftables', 'iptables', 'firewalld'] $firewall_package,
+  Optional[String]                          $antivirus_package       = undef,
+  Array[String]                             $capabilities            = ['station'],
+  Optional[String]                          $communication_name      = undef,
+  Enum['none', 'netplan.io']                $configurator_package    = 'none',
+  Boolean                                   $dhcp_enable             = true,
+  Enum['allow-downgrade', 'no']             $dns_dnssec              = 'allow-downgrade',
+  Array                                     $dns_fallback            = [
     '8.8.8.8',
     '8.8.4.4',
     '2001:4860:4860::8888',
     '2001:4860:4860::8844',
   ],
-  String                                      $environment            = 'production',
-  String                                      $firewall_path          = '/etc/firewall.conf',
-  Boolean                                     $firewall_remove        = true,
-  Boolean                                     $hosts_enable           = false,
-  Array[String[1]]                            $hosts_localhost_aliases = [],
-  Array                                       $install_options        = [],
-  Array                                       $interfaces             = ['eth*', 'ens*', 'wlan*'],
-  String                                      $server_fdqn            = $facts['networking']['fqdn'],
-  Boolean                                     $wireless_enable        = false,
+  String                                    $environment             = 'production',
+  String                                    $firewall_path           = '/etc/firewall.conf',
+  Boolean                                   $firewall_remove         = true,
+  Boolean                                   $hosts_enable            = false,
+  Array[String[1]]                          $hosts_localhost_aliases = [],
+  Array                                     $install_options         = [],
+  Array                                     $interfaces              = ['eth*', 'ens*', 'wlan*'],
+  String                                    $server_fdqn             = $facts['networking']['fqdn'],
+  Boolean                                   $wireless_enable         = false,
 ) {
   # Set some default values
   $kernel_enable = defined(Class['basic_settings::kernel'])
@@ -164,7 +163,7 @@ class basic_settings::network (
   ]
 
   # Based on firewall package do special commands
-  case $firewall_package { #lint:ignore:case_without_default
+  case $firewall_package {
     'nftables': {
       $firewall_command = ''
       if ($firewall_remove) {
@@ -228,17 +227,21 @@ class basic_settings::network (
         }
       }
     }
+    default: {
+      # Other firewall selections do not need these implementation-specific resources.
+    }
   }
 
   # Install package
+  # Keep policy flags last even when caller options contain duplicate or conflicting flags.
   package { $firewall_package:
     ensure          => installed,
-    install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
+    install_options => concat($install_options, ['--no-install-recommends', '--no-install-suggests']),
   }
 
   # Remove unnecessary packages
   package { ['ifupdown', 'iw', 'netcat-traditional', 'wireless-tools']:
-    ensure  => purged,
+    ensure => purged,
   }
 
   # Install package
@@ -256,8 +259,9 @@ class basic_settings::network (
       'tcptraceroute',
       'traceroute',
     ]:
-      ensure  => installed,
-      require => Package['ifupdown'],
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['ifupdown'],
   }
 
   # Check if dhcpc is needed on this server
@@ -325,7 +329,7 @@ class basic_settings::network (
     }
     default: {
       package { 'netplan.io':
-        ensure  => purged,
+        ensure => purged,
       }
     }
   }
@@ -338,7 +342,7 @@ class basic_settings::network (
     }
   } else {
     package { 'wpasupplicant':
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
@@ -465,8 +469,10 @@ class basic_settings::network (
       file { 'firewall_networkd_dispatcher':
         ensure  => file,
         path    => "/etc/networkd-dispatcher/routable.d/${firewall_package}",
+        owner   => 'root',
+        group   => 'root',
         mode    => '0755',
-        content => "#!/bin/bash\n\ntest -r ${firewall_path} && ${firewall_command}\n\nexit 0\n",
+        content => "#!/bin/sh\n\ntest -r ${firewall_path} && ${firewall_command}\n\nexit 0\n",
         require => Package[$firewall_package],
       }
     } else {
@@ -478,6 +484,9 @@ class basic_settings::network (
             path    => '/etc/networkd-dispatcher/routable.d/iptables',
             require => Package[$firewall_package],
           }
+        }
+        default: {
+          # Other firewall selections do not need these implementation-specific resources.
         }
       }
     }
@@ -520,9 +529,10 @@ class basic_settings::network (
 
     # Check if we need to install a systemd resolved package or if it's all built-in
     if ($systemd_resolved_package) {
+      # Keep policy flags last even when caller options contain duplicate or conflicting flags.
       package { 'systemd-resolved':
         ensure          => installed,
-        install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
+        install_options => concat($install_options, ['--no-install-recommends', '--no-install-suggests']),
       }
 
       # Ensure that networkd services is always running
@@ -568,6 +578,8 @@ class basic_settings::network (
     if (defined(Package['dbus'])) {
       file { '/usr/lib/systemd/system/dbus-org.freedesktop.network1.service':
         ensure  => 'link',
+        owner   => 'root',
+        group   => 'root',
         target  => '/usr/lib/systemd/system/systemd-networkd.service',
         notify  => Exec['network_firewall_systemd_daemon_reload'],
         require => Package['dbus'],
@@ -599,6 +611,9 @@ class basic_settings::network (
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     $service_str = join($services, ' ')
+    # The monitoring template inserts these lists as shell words without evaluating their contents.
+    $service_str_shell = stdlib::shell_escape($service_str)
+    $interfaces_str_shell = stdlib::shell_escape($interfaces_str)
     basic_settings::monitoring_custom { 'network':
       content  => template('basic_settings/monitoring/check_network'),
       interval => 600 # 10 minutes

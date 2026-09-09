@@ -1,10 +1,8 @@
 # @summary Manages console assistant packages and local keyboard configuration.
 #
-# This class removes desktop assistant packages that are not useful on hardened
-# servers, optionally installs audio support, and manages `/etc/default/keyboard`
-# and `/etc/default/console-setup`. Keyboard configuration is enabled by default
-# on physical hosts and disabled by default on virtual machines unless explicitly
-# overridden.
+# lint:ignore:140chars
+# This class removes desktop assistant packages that are not useful on hardened servers, optionally installs audio support, and manages `/etc/default/keyboard` and `/etc/default/console-setup`. Keyboard configuration is enabled by default on physical hosts and disabled by default on virtual machines unless explicitly overridden.
+# lint:endignore
 #
 # @example Use the default server-oriented assistant settings
 #   include basic_settings::assistent
@@ -14,27 +12,25 @@
 #   The default is `false` because most managed servers do not need audio.
 #
 # @param keyboard_codeset
-#   Console codeset written to the console setup template. The default is
-#   `Lat15`.
+#   Console codeset written to the console setup template. The default is `Lat15`.
 #
 # @param keyboard_enable
 #   Controls whether keyboard packages and console configuration are managed.
-#   `undef` uses the host type default, `true` forces management on, and `false`
-#   purges the keyboard packages and `/etc/console-setup`.
+#   `undef` uses the host type default, `true` forces management on, and `false` purges the keyboard packages and `/etc/console-setup`.
 #
 # @param keyboard_layout
 #   Keyboard layout written to `/etc/default/keyboard`. The default is `us`.
 #
 # @api public
 class basic_settings::assistent (
-  Boolean             $audio_enable = false,
-  String              $keyboard_codeset = 'Lat15',
-  Optional[Boolean]   $keyboard_enable  = undef,
-  String              $keyboard_layout  = 'us'
+  Boolean           $audio_enable     = false,
+  String            $keyboard_codeset = 'Lat15',
+  Optional[Boolean] $keyboard_enable  = undef,
+  String            $keyboard_layout  = 'us',
 ) {
   # Remove unnecessary packages
   package { 'at-spi2-core':
-    ensure  => purged,
+    ensure => purged,
   }
 
   # Install packages
@@ -52,7 +48,7 @@ class basic_settings::assistent (
   } else {
     # Remove audio packages
     package { ['pipewire-pulse', 'wireplumber']:
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
@@ -99,7 +95,7 @@ class basic_settings::assistent (
   } else {
     # Remove unnecessary packages
     package { ['console-setup', 'keyboard-configuration']:
-      ensure  => purged,
+      ensure => purged,
     }
 
     # Remove dir

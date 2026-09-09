@@ -7,19 +7,25 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 JOURNALCTL=$(command -v journalctl 2>/dev/null) || die "journalctl not available"
-<% end -%>
+fi
 WHO=$(command -v who 2>/dev/null) || die "who not available"
 
 # Session thresholds are intentionally simple because this check is a local SSH exposure signal.
-ALLOWED_USERS="<%= @check_users_str %>"
+ALLOWED_USERS=<%= @check_users_str_shell %>
+
+# The service name is resolved from the platform's fixed SSH service selection.
+SERVICE='<%= @service %>'
 CRIT_THRESH=2      # critical session count (active)
 WARN_THRESH=1      # warning session count (active)
 LONG_OUTPUT=""
@@ -156,11 +162,11 @@ cap_csv_list() {
 }
 
 # Check the service first so daemon failures are reported before session parsing.
-<% if @systemd_enable -%>
-$SYSTEMDCTL is-active --quiet "<%= @service %>" || crit "service is not active"
-<% else -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
+$SYSTEMDCTL is-active --quiet "$SERVICE" || crit "service is not active"
+else
 $PS -C sshd >/dev/null 2>&1 || crit "service is not active"
-<% end -%>
+fi
 
 # Current sessions are classified from who(1) plus TTY process state.
 ACTIVE_SESSIONS=0
@@ -224,7 +230,7 @@ $WHO_OUTPUT
 EOF
 
 # Auth failure detection is PID-aware so retries followed by a successful login are not over-counted.
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 OUT=$($JOURNALCTL -q -o short-unix -u ssh -u sshd --since today | $AWK -v allow_users="$ALLOWED_USERS" '
 BEGIN {
     # Parse allowlist into a map for O(1) lookups.
@@ -333,7 +339,7 @@ BAD_WL_USERS=${REM%%:*}; REM=${REM#*:}
 FAIL_OTH_TOTAL=${REM%%:*}; REM=${REM#*:}
 FAIL_OTH_UNMATCHED=${REM%%:*}; REM=${REM#*:}
 ABORT_WL=${REM%%:*}; ABORT_OTH=${REM#*:}
-<% else -%>
+else
 FAIL_TOTAL=0
 FAIL_WL_UNMATCHED=0
 BAD_WL_USERS=""
@@ -341,7 +347,7 @@ FAIL_OTH_TOTAL=0
 FAIL_OTH_UNMATCHED=0
 ABORT_WL=0
 ABORT_OTH=0
-<% end -%>
+fi
 
 # Active/root/old sessions determine the primary state before softer journal signals.
 if [ "$ROOT_LOGIN" = true ] || [ "$AGE_CRIT" = true ]; then

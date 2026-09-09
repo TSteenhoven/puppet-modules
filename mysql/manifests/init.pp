@@ -1,32 +1,27 @@
 # @summary Installs and configures MySQL plus local automated backups.
 #
-# This class installs the MySQL server package, writes MySQL defaults, manages a
-# root-only grant helper, configures `automysqlbackup`, creates a hardened backup
-# service and timer, integrates with `php8::fpm`, Puppet, systemd targets,
-# monitoring, logrotate, and audit rules when those local modules are available.
-# Backup and root credentials should be supplied from Hiera or profiles as
-# sensitive data.
+# lint:ignore:140chars
+# This class installs the MySQL server package, writes MySQL defaults, manages a root-only grant helper, configures `automysqlbackup`, creates a hardened backup service and timer, integrates with `php8::fpm`, Puppet, systemd targets, monitoring, logrotate, and audit rules when those local modules are available.
+# lint:endignore
+# Backup and root credentials should be supplied from Hiera or profiles as sensitive data.
 #
 # @example Install MySQL with backups and a root password
 #   class { 'mysql':
 #     automysqlbackup_password => Sensitive('backup-password'),
-#     root_password           => 'root-password',
+#     root_password            => 'root-password',
 #   }
 #
 # @param automysqlbackup_password
-#   Password used by the generated automysqlbackup configuration. This value is
-#   sensitive because it can decrypt or protect backup material.
+#   Password used by the generated automysqlbackup configuration. This value is sensitive because it can decrypt or protect backup material.
 #
 # @param automysqlbackup_backupdir
-#   Directory where automysqlbackup stores backup output. The default is
-#   `/var/lib/automysqlbackup`.
+#   Directory where automysqlbackup stores backup output. The default is `/var/lib/automysqlbackup`.
 #
 # @param automysqlbackup_settings
 #   Hash of settings merged over the module's automysqlbackup defaults.
 #
 # @param nice_level
-#   Positive nice value converted to a negative service priority in the MySQL
-#   systemd drop-in. The default is 12.
+#   Positive nice value converted to a negative service priority in the MySQL systemd drop-in. The default is 12.
 #
 # @param package_name
 #   Service/package family name used for dependencies. The default is `mysql`.
@@ -35,23 +30,21 @@
 #   MySQL version used when no `basic_settings::package_mysql` class is present.
 #
 # @param root_password
-#   Optional root password managed through `mysql::user`. `undef` leaves root
-#   credentials unmanaged.
+#   Optional root password managed through `mysql::user`. `undef` leaves root credentials unmanaged.
 #
 # @param settings
-#   Hash of MySQL server settings merged over the module defaults and rendered
-#   into the MySQL configuration template.
+#   Hash of MySQL server settings merged over the module defaults and rendered into the MySQL configuration template.
 #
 # @api public
 class mysql (
   Sensitive[String] $automysqlbackup_password,
-  String            $automysqlbackup_backupdir  = '/var/lib/automysqlbackup',
-  Hash              $automysqlbackup_settings   = {},
-  Integer           $nice_level                 = 12,
-  String            $package_name               = 'mysql',
-  Float             $package_version            = 8.0,
-  Optional[String]  $root_password              = undef,
-  Hash              $settings                   = {},
+  String            $automysqlbackup_backupdir = '/var/lib/automysqlbackup',
+  Hash              $automysqlbackup_settings  = {},
+  Integer           $nice_level                = 12,
+  String            $package_name              = 'mysql',
+  Float             $package_version           = 8.0,
+  Optional[String]  $root_password             = undef,
+  Hash              $settings                  = {},
 ) {
   # Use systemd settings
   $basic_settings_enable = defined(Class['basic_settings'])
@@ -61,7 +54,8 @@ class mysql (
     $automysqlbackup_mail_address = $basic_settings::monitoring::mail_to
     $monitoring_package = $basic_settings::monitoring::package
   } else {
-    $automysqlbackup_host_friendly = $fdqn
+    # The standalone backup configuration must use the same structured host fact as the shared monitoring class.
+    $automysqlbackup_host_friendly = $facts['networking']['fqdn']
     $automysqlbackup_mail_address = 'root'
     $monitoring_package = 'none'
   }
@@ -122,7 +116,8 @@ class mysql (
 
     # Install MySQL server
     package { 'mysql-server':
-      ensure => present,
+      ensure          => present,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Setup audit rules
@@ -271,6 +266,9 @@ class mysql (
           install_options => ['--no-install-recommends', '--no-install-suggests'],
         }
       }
+    }
+    default: {
+      # Other compression selections do not need an additional parallel compressor.
     }
   }
 

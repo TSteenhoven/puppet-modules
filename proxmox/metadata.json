@@ -17,18 +17,7 @@
         {
             "operatingsystem": "Debian",
             "operatingsystemrelease": [
-                "11",
-                "12",
-                "13"
-            ]
-        },
-        {
-            "operatingsystem": "Ubuntu",
-            "operatingsystemrelease": [
-                "22.04",
-                "23.04",
-                "24.04",
-                "26.04"
+                "12"
             ]
         }
     ],

@@ -1,10 +1,8 @@
 # @summary Manages APT policy, unattended upgrades, package hygiene, and package audit rules.
 #
-# This class installs core package-management tooling, removes desktop/update
-# helpers that are not wanted on the target server profile, manages APT,
-# apt-listchanges, needrestart, and unattended-upgrades configuration, optionally
-# removes snapd, wires apt timers into systemd monitoring, and adds audit rules
-# for package-management commands.
+# lint:ignore:140chars
+# This class installs core package-management tooling, removes desktop/update helpers that are not wanted on the target server profile, manages APT, apt-listchanges, needrestart, and unattended-upgrades configuration, optionally removes snapd, wires apt timers into systemd monitoring, and adds audit rules for package-management commands.
+# lint:endignore
 #
 # @example Manage default package policy
 #   include basic_settings::packages
@@ -16,8 +14,7 @@
 #   }
 #
 # @param antivirus_package
-#   Optional antivirus integration name used for package-specific needrestart
-#   exceptions.
+#   Optional antivirus integration name used for package-specific needrestart exceptions.
 #
 # @param config_dir_enable
 #   Purges and owns `/etc/apt/apt.conf.d` when `true`.
@@ -61,20 +58,20 @@
 #
 # @api public
 class basic_settings::packages (
-  Optional[String]  $antivirus_package                          = undef,
-  Boolean           $config_dir_enable                          = true,
-  Enum['all','4']   $ip_version                                 = 'all',
-  Boolean           $listchanges_dir_enable                     = true,
-  String            $mail_to                                    = 'root',
-  Boolean           $needrestart_dir_enable                     = true,
-  Optional[String]  $proxy_http                                 = undef,
-  Optional[String]  $proxy_https                                = undef,
-  String            $server_fdqn                                = $facts['networking']['fqdn'],
-  Boolean           $snap_enable                                = false,
-  Optional[String]  $systemd_default_target                     = undef,
-  Optional[Array]   $unattended_upgrades_block_packages         = undef,
-  Array             $unattended_upgrades_block_packages_extra   = [],
-  Boolean           $unattended_upgrades_reboot                 = false
+  Optional[String] $antivirus_package                        = undef,
+  Boolean          $config_dir_enable                        = true,
+  Enum['all', '4'] $ip_version                               = 'all',
+  Boolean          $listchanges_dir_enable                   = true,
+  String           $mail_to                                  = 'root',
+  Boolean          $needrestart_dir_enable                   = true,
+  Optional[String] $proxy_http                               = undef,
+  Optional[String] $proxy_https                              = undef,
+  String           $server_fdqn                              = $facts['networking']['fqdn'],
+  Boolean          $snap_enable                              = false,
+  Optional[String] $systemd_default_target                   = undef,
+  Optional[Array]  $unattended_upgrades_block_packages       = undef,
+  Array            $unattended_upgrades_block_packages_extra = [],
+  Boolean          $unattended_upgrades_reboot               = false,
 ) {
   # Set some values
   $systemd_enable = defined(Package['systemd'])
@@ -343,7 +340,7 @@ class basic_settings::packages (
   }
 
   # Setup virusscanner
-  case $antivirus_package { #lint:ignore:case_without_default
+  case $antivirus_package {
     'eset': {
       # Setup needrestart rules
       file { '/etc/needrestart/conf.d/eset_efs.conf':
@@ -353,6 +350,9 @@ class basic_settings::packages (
         mode    => '0600',
         replace => false,
       }
+    }
+    default: {
+      # Other selections do not install an antivirus integration.
     }
   }
 
@@ -437,7 +437,7 @@ class basic_settings::packages (
       compress_delay => true,
     }
     basic_settings::io_logrotate { 'unattended-upgrades':
-      path      => "/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log",
+      path      => "/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log", # lint:ignore:140chars
       frequency => 'monthly',
     }
   }

@@ -1,7 +1,9 @@
 # @summary Adds one managed host record to `/etc/hosts`.
 #
 # This defined type appends a single idempotent concat fragment to the hosts file owned by `basic_settings::hosts`.
+# lint:ignore:140chars
 # The fragment title is based on the IP address and host name so duplicate records surface as duplicate Puppet resources instead of producing repeated lines in `/etc/hosts`.
+# lint:endignore
 #
 # @example Add the Puppet server to `/etc/hosts`
 #   basic_settings::hosts_entry { 'puppet':
@@ -28,15 +30,15 @@
 define basic_settings::hosts_entry (
   String                    $hostname,
   String                    $ip,
-  Optional[String[1]]       $comment = undef,
-  Enum['present','absent']  $ensure  = present,
-  String[1]                 $order   = '50',
+  Optional[String[1]]       $comment  = undef,
+  Enum['present', 'absent'] $ensure   = present,
+  String[1]                 $order    = '50',
 ) {
   if (defined(Class['basic_settings::hosts'])) {
     $hosts_require = Class['basic_settings::hosts']
     $hosts_fail_text = undef
   } else {
-    $hosts_fail_text = 'The basic_settings::hosts class must be included directly, or through basic_settings::network with hosts_enable => true, before using the basic_settings::hosts_entry defined type.'
+    $hosts_fail_text = 'The basic_settings::hosts class must be included directly, or through basic_settings::network with hosts_enable => true, before using the basic_settings::hosts_entry defined type.' # lint:ignore:140chars
   }
 
   if ($hosts_fail_text == undef) {

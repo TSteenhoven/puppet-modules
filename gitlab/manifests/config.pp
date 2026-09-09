@@ -1,8 +1,8 @@
 # @summary Manages `/etc/gitlab/gitlab.rb` for an installed GitLab instance.
 #
-# This class renders the GitLab omnibus configuration and refreshes
-# `gitlab-ctl reconfigure` when it changes. It depends on the main `gitlab`
-# class so it can reuse the resolved server FQDN and installation state.
+# lint:ignore:140chars
+# This class renders the GitLab omnibus configuration and refreshes `gitlab-ctl reconfigure` when it changes. It depends on the main `gitlab` class so it can reuse the resolved server FQDN and installation state.
+# lint:endignore
 #
 # @example Configure GitLab HTTPS and SSH settings
 #   class { 'gitlab::config':
@@ -17,12 +17,10 @@
 #   PostgreSQL shared buffer setting rendered into `gitlab.rb`.
 #
 # @param https
-#   Enables HTTPS-related GitLab configuration. When certificates are omitted,
-#   the template enables Let's Encrypt handling.
+#   Enables HTTPS-related GitLab configuration. When certificates are omitted, the template enables Let's Encrypt handling.
 #
 # @param logrotate_rotate
-#   Optional logrotate retention count. `undef` inherits
-#   `basic_settings::io::log_rotate` when available, otherwise uses 12.
+#   Optional logrotate retention count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise uses 12.
 #
 # @param puma_max_memory_mb
 #   Puma memory limit in megabytes.
@@ -40,8 +38,7 @@
 #   SMTP OpenSSL verification mode rendered into GitLab config.
 #
 # @param smtp_server
-#   SMTP server. `undef` inherits `basic_settings::smtp_server` or falls back to
-#   `127.0.0.1`.
+#   SMTP server. `undef` inherits `basic_settings::smtp_server` or falls back to `127.0.0.1`.
 #
 # @param ssh_host
 #   SSH host advertised by GitLab. `undef` uses the resolved GitLab FQDN.
@@ -57,19 +54,19 @@
 #
 # @api public
 class gitlab::config (
-  String                $database_shared_buffers    = '256MB',
-  Boolean               $https                      = false,
-  Optional[Integer]     $logrotate_rotate           = undef,
-  Integer               $puma_max_memory_mb         = 128,
-  Integer               $puma_max_threads           = 2,
-  Integer               $puma_worker_processes      = 2,
-  Integer               $sidekiq_concurrency        = 10,
-  Enum['none', 'peer']  $smtp_openssl_verify_mode   = 'none',
-  Optional[String]      $smtp_server                = undef,
-  Optional[String]      $ssh_host                   = undef,
-  Integer               $ssh_port                   = 22,
-  Optional[String]      $ssl_certificate            = undef,
-  Optional[String]      $ssl_certificate_key        = undef
+  String               $database_shared_buffers  = '256MB',
+  Boolean              $https                    = false,
+  Optional[Integer]    $logrotate_rotate         = undef,
+  Integer              $puma_max_memory_mb       = 128,
+  Integer              $puma_max_threads         = 2,
+  Integer              $puma_worker_processes    = 2,
+  Integer              $sidekiq_concurrency      = 10,
+  Enum['none', 'peer'] $smtp_openssl_verify_mode = 'none',
+  Optional[String]     $smtp_server              = undef,
+  Optional[String]     $ssh_host                 = undef,
+  Integer              $ssh_port                 = 22,
+  Optional[String]     $ssl_certificate          = undef,
+  Optional[String]     $ssl_certificate_key      = undef,
 ) {
   if (defined(Class['gitlab'])) {
     # Set variables

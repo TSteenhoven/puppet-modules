@@ -12,11 +12,11 @@ node 'monitored-host.example.org' {
   include openitcockpit
 
   class { 'openitcockpit::agent':
+    ensure                    => present,
     bind_address              => '127.0.0.1',
     cpustats_enable           => true,
     diskstats_enable          => true,
     dockerstats_enable        => false,
-    ensure                    => present,
     libvirt_enable            => false,
     memory_enable             => true,
     netstats_enable           => true,
@@ -36,8 +36,8 @@ node 'monitored-host.example.org' {
   }
 
   basic_settings::monitoring_custom { 'application_health':
-    cmd           => '--url https://127.0.0.1/health',
     ensure        => present,
+    cmd           => '--url https://127.0.0.1/health',
     friendly      => 'Application health',
     interval      => 300,
     root_required => true,

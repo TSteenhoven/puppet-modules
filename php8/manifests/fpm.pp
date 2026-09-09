@@ -1,9 +1,8 @@
 # @summary Installs and configures PHP-FPM for the selected PHP 8 version.
 #
-# This class requires `php8`, installs the matching FPM package, disables vendor
-# enablement, applies systemd hardening, integrates with Nginx and monitoring
-# when present, owns the FPM global config and pool directory, writes custom INI
-# settings, and registers logrotate for the FPM log.
+# lint:ignore:140chars
+# This class requires `php8`, installs the matching FPM package, disables vendor enablement, applies systemd hardening, integrates with Nginx and monitoring when present, owns the FPM global config and pool directory, writes custom INI settings, and registers logrotate for the FPM log.
+# lint:endignore
 #
 # @example Configure PHP-FPM
 #   class { 'php8::fpm':
@@ -11,8 +10,7 @@
 #   }
 #
 # @param errorlog
-#   Optional FPM error log path. `undef` uses the versioned default under
-#   `/var/log`.
+#   Optional FPM error log path. `undef` uses the versioned default under `/var/log`.
 #
 # @param ini_settings
 #   Hash of INI settings rendered into the FPM custom settings file. Must not include module-managed PHP INI settings such as `expose_php`.
@@ -22,9 +20,9 @@
 #
 # @api public
 class php8::fpm (
-  Optional[String]    $errorlog       = undef,
-  Hash                $ini_settings   = {},
-  Optional[String]    $pidfile        = undef
+  Optional[String] $errorlog     = undef,
+  Hash             $ini_settings = {},
+  Optional[String] $pidfile      = undef,
 ) {
   if (defined(Class['php8'])) {
     # Merge given init settings with default settings
@@ -184,7 +182,7 @@ class php8::fpm (
           path           => "/var/log/php8.${minor_version}-fpm.log",
           frequency      => 'weekly',
           compress_delay => true,
-          rotate_post    => "if [ -x /usr/lib/php/php8.${minor_version}-fpm-reopenlogs ]; then\n\t\t/usr/lib/php/php8.${minor_version}-fpm-reopenlogs;\n\tfi", #lint:ignore:140chars
+          rotate_post    => "if [ -x /usr/lib/php/php8.${minor_version}-fpm-reopenlogs ]; then\n\t\t/usr/lib/php/php8.${minor_version}-fpm-reopenlogs;\n\tfi", # lint:ignore:140chars
         }
       }
     } else {

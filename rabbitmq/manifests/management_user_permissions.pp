@@ -1,7 +1,6 @@
 # @summary Manages RabbitMQ permissions for one user and virtual host.
 #
-# This defined type requires `rabbitmq::management` and applies configure, write,
-# and read permissions with `rabbitmqctl`.
+# This defined type requires `rabbitmq::management` and applies configure, write, and read permissions with `rabbitmqctl`.
 #
 # @example Grant read/write access on the default vhost
 #   rabbitmq::management_user_permissions { 'app_default':
@@ -29,10 +28,10 @@
 # @api public
 define rabbitmq::management_user_permissions (
   String $user,
-  String $configure   = '.*',
-  String $read        = '.*',
-  String $vhost       = '/',
-  String $write       = '.*'
+  String $configure = '.*',
+  String $read      = '.*',
+  String $vhost     = '/',
+  String $write     = '.*',
 ) {
   if (defined(Class['rabbitmq::management'])) {
     # Get vhost name
@@ -55,12 +54,12 @@ define rabbitmq::management_user_permissions (
 
     # Set permissions
     exec { "rabbitmq_management_user_${user}_permissions_${vhost_name}":
-      command => "/usr/sbin/rabbitmqctl --quiet set_permissions -p ${vhost_shell} ${user_shell} ${configure_shell} ${write_shell} ${read_shell}",
-      unless  => "/usr/sbin/rabbitmqctl --quiet list_user_permissions --no-table-headers ${user_shell} | /usr/bin/grep -F -x -- ${permissions_line_shell}", #lint:ignore:140chars
+      command => "/usr/sbin/rabbitmqctl --quiet set_permissions -p ${vhost_shell} ${user_shell} ${configure_shell} ${write_shell} ${read_shell}", # lint:ignore:140chars
+      unless  => "/usr/sbin/rabbitmqctl --quiet list_user_permissions --no-table-headers ${user_shell} | /usr/bin/grep -F -x -- ${permissions_line_shell}", # lint:ignore:140chars
       require => [
         Package['grep'],
         Exec["rabbitmq_management_vhost_${vhost_name}"],
-        Exec["rabbitmq_management_user_${user}"]
+        Exec["rabbitmq_management_user_${user}"],
       ],
     }
   } else {

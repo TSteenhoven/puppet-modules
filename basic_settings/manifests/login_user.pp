@@ -1,10 +1,8 @@
 # @summary Manages a local login user, home directory, SSH material, and audit coverage.
 #
-# This defined type creates or removes a local user and optional matching group,
-# manages a tightly permissioned home directory, SSH authorized keys and private
-# key material, optional private shell startup files, and audit rules for the
-# user's `.ssh` tree when auditd is available. Passwords are handled as
-# `Sensitive` values and generated files are restricted to the managed user.
+# lint:ignore:140chars
+# This defined type creates or removes a local user and optional matching group, manages a tightly permissioned home directory, SSH authorized keys and private key material, optional private shell startup files, and audit rules for the user's `.ssh` tree when auditd is available. Passwords are handled as `Sensitive` values and generated files are restricted to the managed user.
+# lint:endignore
 #
 # @example Create a key-only user with a managed home directory
 #   basic_settings::login_user { 'deploy':
@@ -16,36 +14,32 @@
 #   }
 #
 # @param gid
-#   Primary group ID for the user and for the matching group when
-#   `disable_group` is `false`.
+#   Primary group ID for the user and for the matching group when `disable_group` is `false`.
 #
 # @param home
-#   Absolute home directory path managed for the user when `home_enable` is
-#   `true`.
+#   Absolute home directory path managed for the user when `home_enable` is `true`.
 #
 # @param password
-#   Password hash or lock marker passed to the Puppet `user` resource as a
-#   `Sensitive[String]`.
+#   Password hash or lock marker passed to the Puppet `user` resource as a `Sensitive[String]`.
 #
 # @param uid
 #   Numeric user ID for the account.
 #
 # @param authorized_keys
-#   Optional list of SSH public keys written to `authorized_keys`. `undef`
-#   purges SSH keys through the user resource; an empty array creates an empty
-#   managed file.
+# lint:ignore:140chars
+#   Optional list of SSH public keys written to `authorized_keys`. `undef` purges SSH keys through the user resource; an empty array creates an empty managed file.
+# lint:endignore
 #
 # @param bash_aliases
-#   Optional content for `.bash_aliases`. Use `default` to render the module
-#   default template.
+#   Optional content for `.bash_aliases`. Use `default` to render the module default template.
 #
 # @param bash_profile
-#   Optional content for `.profile`. Use `default` to render the module default
-#   template.
+#   Optional content for `.profile`. Use `default` to render the module default template.
 #
 # @param bashrc
-#   Optional content for `.bashrc`. Use `default` to render the module default
-#   template, with a root-specific variant for the `root` account.
+# lint:ignore:140chars
+#   Optional content for `.bashrc`. Use `default` to render the module default template, with a root-specific variant for the `root` account.
+# lint:endignore
 #
 # @param disable_group
 #   Prevents management of a matching group when `true`. The default is `false`.
@@ -60,54 +54,53 @@
 #   Controls whether the home directory and SSH/profile files are managed.
 #
 # @param home_force
-#   Passed to managed home directory file resources. Use with care because it can
-#   force removal of unmanaged content when combined with purge/recurse options.
+# lint:ignore:140chars
+#   Passed to managed home directory file resources. Use with care because it can force removal of unmanaged content when combined with purge/recurse options.
+# lint:endignore
 #
 # @param home_purge
-#   Purges unmanaged files below the home directory when `true` and recursion is
-#   enabled.
+#   Purges unmanaged files below the home directory when `true` and recursion is enabled.
 #
 # @param home_recurse
-#   Recurses through the home directory when `true`. Recursive management uses
-#   non-executable file modes while keeping directories traversable.
+# lint:ignore:140chars
+#   Recurses through the home directory when `true`. Recursive management uses non-executable file modes while keeping directories traversable.
+# lint:endignore
 #
 # @param home_source
-#   Optional file source used to seed the home directory. Must start with
-#   `puppet:///`, `file:///`, or `https://`.
+#   Optional file source used to seed the home directory. Must start with `puppet:///`, `file:///`, or `https://`.
 #
 # @param password_max_age
-#   Optional password maximum age. `undef` selects a default based on whether the
-#   account has SSH keys or a locked password.
+#   Optional password maximum age. `undef` selects a default based on whether the account has SSH keys or a locked password.
 #
 # @param private_key
-#   Optional file source for `${home}/.ssh/private.key`. Must start with
-#   `puppet:///`, `file:///`, or `https://`; the file is written with mode
-#   `0600`.
+# lint:ignore:140chars
+#   Optional file source for `${home}/.ssh/private.key`. Must start with `puppet:///`, `file:///`, or `https://`; the file is written with mode `0600`.
+# lint:endignore
 #
 # @param shell
 #   Login shell for the account. The default is `/bin/bash`.
 #
 # @api public
 define basic_settings::login_user (
-  Integer                             $gid,
-  String                              $home,
-  Sensitive[String]                   $password,
-  Integer                             $uid,
-  Optional[Array]                     $authorized_keys    = undef,
-  Optional[String]                    $bash_aliases       = undef,
-  Optional[String]                    $bash_profile       = undef,
-  Optional[String]                    $bashrc             = undef,
-  Boolean                             $disable_group      = false,
-  Enum['present','absent']            $ensure             = present,
-  Array                               $groups             = [],
-  Boolean                             $home_enable        = true,
-  Boolean                             $home_force         = false,
-  Boolean                             $home_purge         = false,
-  Boolean                             $home_recurse       = false,
-  Optional[String]                    $home_source        = undef,
-  Optional[Integer]                   $password_max_age   = undef,
-  Optional[String]                    $private_key        = undef,
-  String                              $shell              = '/bin/bash'
+  Integer                   $gid,
+  String                    $home,
+  Sensitive[String]         $password,
+  Integer                   $uid,
+  Optional[Array]           $authorized_keys  = undef,
+  Optional[String]          $bash_aliases     = undef,
+  Optional[String]          $bash_profile     = undef,
+  Optional[String]          $bashrc           = undef,
+  Boolean                   $disable_group    = false,
+  Enum['present', 'absent'] $ensure           = present,
+  Array                     $groups           = [],
+  Boolean                   $home_enable      = true,
+  Boolean                   $home_force       = false,
+  Boolean                   $home_purge       = false,
+  Boolean                   $home_recurse     = false,
+  Optional[String]          $home_source      = undef,
+  Optional[Integer]         $password_max_age = undef,
+  Optional[String]          $private_key      = undef,
+  String                    $shell            = '/bin/bash',
 ) {
   # Keep valid source input on the main path; invalid schemes are exceptional.
   if ($home_source == undef or $home_source =~ /(?i:\A(?:puppet:\/\/\/|file:\/\/\/|https:\/\/))/) {
@@ -186,6 +179,16 @@ define basic_settings::login_user (
       }
 
       if ($home_enable) {
+        # Preserve home directories during account removal while removing managed SSH and profile files.
+        $home_directory_ensure = $ensure ? {
+          'absent' => undef,
+          default  => directory,
+        }
+        $home_file_ensure = $ensure ? {
+          'absent' => 'absent',
+          default  => present,
+        }
+
         # Recursive home management uses a non-executable file mode; Puppet keeps directories traversable.
         $home_mode = $home_recurse ? {
           true    => '0600',
@@ -195,7 +198,7 @@ define basic_settings::login_user (
         # Make home dir
         if ($home_source != undef) {
           file { $home:
-            ensure  => $ensure ? { 'absent' => undef, default => directory },
+            ensure  => $home_directory_ensure,
             owner   => $uid,
             group   => $gid,
             force   => $home_force,
@@ -206,7 +209,7 @@ define basic_settings::login_user (
           }
         } else {
           file { $home:
-            ensure  => $ensure ? { 'absent' => undef, default => directory },
+            ensure  => $home_directory_ensure,
             owner   => $uid,
             group   => $gid,
             force   => $home_force,
@@ -218,7 +221,7 @@ define basic_settings::login_user (
 
         # Create ssh dir
         file { "${home}/.ssh":
-          ensure  => $ensure ? { 'absent' => undef, default => directory },
+          ensure  => $home_directory_ensure,
           owner   => $uid,
           group   => $gid,
           mode    => '0700',
@@ -228,7 +231,7 @@ define basic_settings::login_user (
         # Create authorized_keys file
         if ($authorized_keys != undef) {
           file { "${home}/.ssh/authorized_keys":
-            ensure  => $ensure ? { 'absent' => 'absent', default => present },
+            ensure  => $home_file_ensure,
             content => Sensitive.new(join($authorized_keys, "\n")),
             mode    => '0600',
             owner   => $uid,
@@ -240,7 +243,7 @@ define basic_settings::login_user (
         # Create private key file
         if ($private_key != undef) {
           file { "${home}/.ssh/private.key":
-            ensure  => $ensure ? { 'absent' => 'absent', default => present },
+            ensure  => $home_file_ensure,
             source  => $private_key,
             mode    => '0600',
             owner   => $uid,
@@ -257,7 +260,7 @@ define basic_settings::login_user (
             $bash_profile_correct = $bash_profile
           }
           file { "${home}/.profile":
-            ensure  => $ensure ? { 'absent' => 'absent', default => present },
+            ensure  => $home_file_ensure,
             content => $bash_profile_correct,
             owner   => $uid,
             group   => $gid,
@@ -278,7 +281,7 @@ define basic_settings::login_user (
             $bash_rc_correct = $bashrc
           }
           file { "${home}/.bashrc":
-            ensure  => $ensure ? { 'absent' => 'absent', default => present },
+            ensure  => $home_file_ensure,
             content => $bash_rc_correct,
             owner   => $uid,
             group   => $gid,
@@ -295,7 +298,7 @@ define basic_settings::login_user (
             $bash_aliases_correct = $bash_aliases
           }
           file { "${home}/.bash_aliases":
-            ensure  => $ensure ? { 'absent' => 'absent', default => present },
+            ensure  => $home_file_ensure,
             content => $bash_aliases_correct,
             owner   => $uid,
             group   => $gid,

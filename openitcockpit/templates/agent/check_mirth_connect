@@ -7,6 +7,9 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
@@ -16,11 +19,11 @@ SED=$(command -v sed 2>/dev/null) || die "sed not available"
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 RM=$(command -v rm 2>/dev/null) || die "rm not available"
 MV=$(command -v mv 2>/dev/null) || die "mv not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
-<% else -%>
+else
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
-<% end -%>
+fi
 
 # Connection and CLI paths are local to the Mirth installation.
 CONFIG="/opt/mirthconnect/conf/mirth-cli-config.properties"
@@ -170,11 +173,11 @@ $MKDIR -p "$STATE_DIR" 2>/dev/null || {
 umask "$OLD_UMASK"
 
 # Verify the service before invoking mccommand so daemon failures report directly.
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 $SYSTEMDCTL is-active --quiet "mcservice.service" || crit "service is not active"
-<% else -%>
+else
 $PS -C mcservice >/dev/null 2>&1 || crit "service is not active"
-<% end -%>
+fi
 
 # mccommand requires script files, so keep command input, parse artifacts, and persistent state updates private until cleanup.
 WORK_UMASK=$(umask)

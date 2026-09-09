@@ -1,9 +1,8 @@
 # @summary Manages timezone and systemd-timesyncd NTP configuration.
 #
-# This class installs and enables systemd-timesyncd when systemd is available,
-# renders `/etc/systemd/timesyncd.conf`, removes competing NTP packages, adds a
-# monitoring check when monitoring is active, and delegates timezone setting to
-# the vendored `timezone` module.
+# lint:ignore:140chars
+# This class installs and enables systemd-timesyncd when systemd is available, renders `/etc/systemd/timesyncd.conf`, removes competing NTP packages, adds a monitoring check when monitoring is active, and delegates timezone setting to the vendored `timezone` module.
+# lint:endignore
 #
 # @example Set the server timezone
 #   class { 'basic_settings::timezone':
@@ -11,20 +10,21 @@
 #   }
 #
 # @param timezone
-#   Timezone name passed to the `timezone` module, such as `UTC` or
-#   `Europe/Amsterdam`.
+#   Timezone name passed to the `timezone` module, such as `UTC` or `Europe/Amsterdam`.
 #
 # @param install_options
-#   Additional APT install options merged into systemd-timesyncd installation.
+# lint:ignore:140chars
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
+# lint:endignore
 #
 # @param ntp_extra_pools
 #   Additional NTP pools prepended to the OS default pool list.
 #
 # @api public
 class basic_settings::timezone (
-  String              $timezone,
-  Array               $install_options = [],
-  Array               $ntp_extra_pools = []
+  String $timezone,
+  Array  $install_options = [],
+  Array  $ntp_extra_pools = [],
 ) {
   # Get some values
   $monitoring_enable = defined(Class['basic_settings::monitoring']);
@@ -39,9 +39,10 @@ class basic_settings::timezone (
     }
 
     # Install package
+    # Keep policy flags last even when caller options contain duplicate or conflicting flags.
     package { 'systemd-timesyncd':
       ensure          => installed,
-      install_options => union($install_options, ['--no-install-recommends', '--no-install-suggests']),
+      install_options => concat($install_options, ['--no-install-recommends', '--no-install-suggests']),
     }
 
     # Get OS name

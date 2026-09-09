@@ -1,21 +1,27 @@
 # @summary Manages `/etc/hosts` from deterministic concat fragments.
 #
+# lint:ignore:140chars
 # This class owns `/etc/hosts`, writes the standard IPv4 and IPv6 localhost records, and emits a normalized `127.0.1.1` record from the configured short hostname and fully qualified host name.
+# lint:endignore
 # `basic_settings::network` declares this class when hosts management is enabled.
 #
 # @example Manage the standard hosts file
 #   class { 'basic_settings::hosts':
-#     server_fdqn => 'docker.production.starlet-dc.nl',
+#     server_fdqn => 'server01.example.org',
 #   }
 #
 # @param hostname
+# lint:ignore:140chars
 #   Short hostname used for the `127.0.1.1` record. The default comes from Facter and falls back to the first label of `server_fdqn` when unset.
+# lint:endignore
 #
 # @param localhost_aliases
 #   Additional host aliases appended to the `127.0.0.1 localhost` record. Every array item must be one non-empty host token.
 #
 # @param server_fdqn
+# lint:ignore:140chars
 #   Fully qualified host name used as an optional alias on the `127.0.1.1` record. When it is unset or equal to `hostname`, the alias is omitted.
+# lint:endignore
 #
 # @api public
 class basic_settings::hosts (
@@ -96,7 +102,7 @@ class basic_settings::hosts (
     # Keep the default IPv6 localhost records after all default IPv4 records.
     concat::fragment { 'hosts_ipv6_defaults':
       target  => '/etc/hosts',
-      content => "\n# The following lines are desirable for IPv6 capable hosts\n::1     ip6-localhost ip6-loopback\nfe00::0 ip6-localnet\nff00::0 ip6-mcastprefix\nff02::1 ip6-allnodes\nff02::2 ip6-allrouters\n\n",
+      content => "\n# The following lines are desirable for IPv6 capable hosts\n::1     ip6-localhost ip6-loopback\nfe00::0 ip6-localnet\nff00::0 ip6-mcastprefix\nff02::1 ip6-allnodes\nff02::2 ip6-allrouters\n\n", # lint:ignore:140chars
       order   => '03',
     }
   } else {

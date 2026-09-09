@@ -1,24 +1,22 @@
 # @summary Installs Certbot and manages shared Let's Encrypt client defaults.
 #
-# This class installs Certbot, adjusts the `certbot.service` systemd priority
-# when systemd is present, derives the notification email address, configures
-# logrotate for Certbot logs when available, and writes `/etc/letsencrypt/cli.ini`.
+# lint:ignore:140chars
+# This class installs Certbot, adjusts the `certbot.service` systemd priority when systemd is present, derives the notification email address, configures logrotate for Certbot logs when available, and writes `/etc/letsencrypt/cli.ini`.
+# lint:endignore
 #
 # @example Install Certbot defaults
 #   include letsencrypt
 #
 # @param mail_to
-#   Email address used by the Certbot CLI configuration. `undef` inherits
-#   monitoring mail when available, otherwise uses `root`.
+#   Email address used by the Certbot CLI configuration. `undef` inherits monitoring mail when available, otherwise uses `root`.
 #
 # @param nice_level
-#   Positive nice value converted to a negative service priority in the systemd
-#   drop-in. The default is 8.
+#   Positive nice value converted to a negative service priority in the systemd drop-in. The default is 8.
 #
 # @api public
 class letsencrypt (
-  Optional[String]  $mail_to    = undef,
-  Integer           $nice_level = 8
+  Optional[String] $mail_to    = undef,
+  Integer          $nice_level = 8,
 ) {
   # Install certbot
   package { 'certbot':

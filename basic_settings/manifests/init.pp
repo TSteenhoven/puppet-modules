@@ -1,25 +1,20 @@
 # @summary Orchestrates the shared baseline for hardened Debian and Ubuntu servers.
 #
-# The main `basic_settings` class is the repository foundation. It manages base
-# APT sources, systemd target composition, monitoring, security tooling, package
-# hygiene, kernel and network defaults, timezone, locale, login policy, Puppet
-# integration, and optional upstream package repositories for local service
-# modules. Many service modules read state from this class when it is present, so
-# changes here can affect service ordering, monitoring, package sources, and host
-# hardening across the catalog.
+# lint:ignore:140chars
+# The main `basic_settings` class is the repository foundation. It manages base APT sources, systemd target composition, monitoring, security tooling, package hygiene, kernel and network defaults, timezone, locale, login policy, Puppet integration, and optional upstream package repositories for local service modules. Many service modules read state from this class when it is present, so changes here can affect service ordering, monitoring, package sources, and host hardening across the catalog.
+# lint:endignore
 #
 # @example Build a web host baseline
 #   class { 'basic_settings':
-#     nginx_enable            => true,
-#     mysql_enable            => true,
-#     monitoring_package      => 'openitcockpit',
+#     nginx_enable               => true,
+#     mysql_enable               => true,
+#     monitoring_package         => 'openitcockpit',
 #     monitoring_package_install => true,
-#     systemd_ntp_extra_pools => ['ntp.example.org'],
+#     systemd_ntp_extra_pools    => ['ntp.example.org'],
 #   }
 #
 # @param antivirus_package
-#   Optional antivirus integration name used by kernel, network, package, and
-#   security components for compatibility exceptions.
+#   Optional antivirus integration name used by kernel, network, package, and security components for compatibility exceptions.
 #
 # @param backports
 #   Enables the OS backports repository when the detected platform allows it.
@@ -43,8 +38,7 @@
 #   Enables local documentation packages through `basic_settings::locale`.
 #
 # @param environment
-#   Environment label used by login and network templates. The default is
-#   `production`.
+#   Environment label used by login and network templates. The default is `production`.
 #
 # @param firewall_package
 #   Firewall implementation passed to `basic_settings::network`.
@@ -77,12 +71,10 @@
 #   Enables DHCP client configuration through the network class.
 #
 # @param ip_ra_enable
-#   Enables IPv6 router advertisement handling when DHCP and IP version settings
-#   allow it.
+#   Enables IPv6 router advertisement handling when DHCP and IP version settings allow it.
 #
 # @param ip_ra_learn_prefix
-#   Controls whether router-advertised prefixes are learned by kernel/network
-#   configuration.
+#   Controls whether router-advertised prefixes are learned by kernel/network configuration.
 #
 # @param ip_version
 #   Selects IPv4-only (`4`) or dual-stack (`all`) behavior.
@@ -98,8 +90,7 @@
 #   `undef` lets the kernel class use its built-in RAM profile list.
 #
 # @param kernel_mglru_enable
-#   Controls Multi-Gen LRU. `true` uses the default, `false` disables it, and an
-#   integer sets a custom `min_ttl_ms`.
+#   Controls Multi-Gen LRU. `true` uses the default, `false` disables it, and an integer sets a custom `min_ttl_ms`.
 #
 # @param kernel_network_mode
 #   Kernel network hardening mode passed to sysctl templates.
@@ -108,8 +99,7 @@
 #   Initramfs implementation selected for the kernel class.
 #
 # @param kernel_security_lockdown
-#   Kernel lockdown setting. `true` maps to `integrity`, `false` maps to `none`,
-#   and a string is treated as an explicit lockdown mode.
+#   Kernel lockdown setting. `true` maps to `integrity`, `false` maps to `none`, and a string is treated as an explicit lockdown mode.
 #
 # @param kernel_swap_free_profiles
 #   Optional SwapFree threshold profiles passed to `basic_settings::kernel`.
@@ -122,8 +112,7 @@
 #   TCP Fast Open sysctl value passed to `basic_settings::kernel`.
 #
 # @param keyboard_enable
-#   Optional override for console keyboard management in
-#   `basic_settings::assistent`.
+#   Optional override for console keyboard management in `basic_settings::assistent`.
 #
 # @param locale_enable
 #   Enables full locale package management through `basic_settings::locale`.
@@ -141,8 +130,9 @@
 #   MongoDB version used when the MongoDB repository is enabled.
 #
 # @param monitoring_package
-#   Monitoring backend to configure. `none` disables generated monitoring
-#   integration and `openitcockpit` enables OpenITCOCKPIT custom checks.
+# lint:ignore:140chars
+#   Monitoring backend to configure. `none` disables generated monitoring integration and `openitcockpit` enables OpenITCOCKPIT custom checks.
+# lint:endignore
 #
 # @param monitoring_package_install
 #   Installs the monitoring agent package when the selected backend supports it.
@@ -184,8 +174,7 @@
 #   OpenITCOCKPIT repository family to configure, either `agent` or `server`.
 #
 # @param openjdk_enable
-#   Installs OpenJDK packages independently of Puppet Server requirements when
-#   supported.
+#   Installs OpenJDK packages independently of Puppet Server requirements when supported.
 #
 # @param openjdk_version
 #   OpenJDK major version to install, or `default` for the OS default JDK.
@@ -206,8 +195,9 @@
 #   Optional HTTPS proxy rendered into APT configuration.
 #
 # @param puppet_repo
-#   Optional override for Puppet package layout. `undef` lets the class choose
-#   `remote` when Vox Pupuli is enabled and supported, otherwise `distro`.
+# lint:ignore:140chars
+#   Optional override for Puppet package layout. `undef` lets the class choose `remote` when Vox Pupuli is enabled and supported, otherwise `distro`.
+# lint:endignore
 #
 # @param puppetserver_enable
 #   Enables Puppet Server/OpenVox Server package and service integration.
@@ -222,8 +212,7 @@
 #   Enables management of RabbitMQ upstream APT repositories when supported.
 #
 # @param server_fdqn
-#   Fully qualified host name passed to monitoring, security, package, and
-#   network templates. The default comes from Facter.
+#   Fully qualified host name passed to monitoring, security, package, and network templates. The default comes from Facter.
 #
 # @param server_timezone
 #   Timezone passed to `basic_settings::timezone`. The default is `UTC`.
@@ -232,12 +221,10 @@
 #   SMTP relay hostname used by modules that render application mail settings.
 #
 # @param snap_enable
-#   Enables snapd in package management. Ubuntu Pro may force this on when Pro is
-#   enabled.
+#   Enables snapd in package management. Ubuntu Pro may force this on when Pro is enabled.
 #
 # @param sudoers_dir_enable
-#   Allows `basic_settings::login` to own and purge `/etc/sudoers.d`. Set to
-#   `false` on hosts with existing unmanaged sudoers snippets.
+#   Allows `basic_settings::login` to own and purge `/etc/sudoers.d`. Set to `false` on hosts with existing unmanaged sudoers snippets.
 #
 # @param sury_enable
 #   Enables management of the Sury/Ondrej PHP APT repository when supported.
@@ -261,8 +248,7 @@
 #   Controls whether unattended-upgrades may reboot the host automatically.
 #
 # @param usb_any_requirements
-#   USB monitoring entries where any one matching device satisfies the
-#   requirement.
+#   USB monitoring entries where any one matching device satisfies the requirement.
 #
 # @param usb_expected
 #   USB monitoring entries expected to be present.
@@ -284,89 +270,89 @@
 #
 # @api public
 class basic_settings (
-  Optional[String]                      $antivirus_package                          = undef,
-  Boolean                               $backports                                  = false,
-  String                                $cluster_id                                 = 'core',
-  Optional[String]                      $communication_name                         = undef,
-  Optional[String]                      $description                                = undef,
-  Enum['allow-downgrade','no']          $dns_dnssec                                 = 'allow-downgrade',
-  Boolean                               $docker_enable                              = false,
-  Boolean                               $docs_enable                                = false,
-  String                                $environment                                = 'production',
-  String                                $firewall_package                           = 'nftables',
-  Boolean                               $firewall_remove                            = true,
-  Boolean                               $getty_enable                               = false,
-  Boolean                               $gitlab_enable                              = false,
-  Boolean                               $guest_agent_enable                         = false,
-  Enum['none','kiosk','adwaita-icon']   $gui_mode                                   = 'none',
-  Boolean                               $hosts_enable                               = false,
-  Array[String[1]]                      $hosts_localhost_aliases                    = [],
-  Enum['none','netplan.io']             $ip_configurator_package                    = 'none',
-  Boolean                               $ip_dhcp_enable                             = true,
-  Boolean                               $ip_ra_enable                               = true,
-  Boolean                               $ip_ra_learn_prefix                         = true,
-  Enum['all','4']                       $ip_version                                 = 'all',
-  Integer                               $kernel_connection_max                      = 4096,
-  Integer                               $kernel_hugepages                           = 0,
-  Optional[Array[Hash]]                 $kernel_memory_available_profiles           = undef,
-  Variant[Boolean,Integer[0]]           $kernel_mglru_enable                        = true,
-  String                                $kernel_network_mode                        = 'strict',
-  Enum['initramfs','dracut']            $kernel_ram_disk_package                    = 'initramfs',
-  Variant[Boolean,String]               $kernel_security_lockdown                   = true,
-  Optional[Array[Hash]]                 $kernel_swap_free_profiles                  = undef,
-  String                                $kernel_tcp_congestion_control              = 'brr',
-  Integer                               $kernel_tcp_fastopen                        = 3,
-  Optional[Boolean]                     $keyboard_enable                            = undef,
-  Boolean                               $locale_enable                              = false,
-  Boolean                               $lvm_enable                                 = false,
-  String                                $mail_package                               = 'postfix',
-  Boolean                               $mongodb_enable                             = false,
-  Float                                 $mongodb_version                            = 8.0,
-  Enum['none','openitcockpit']          $monitoring_package                         = 'none',
-  Boolean                               $monitoring_package_install                 = false,
-  Boolean                               $mozilla_enable                             = false,
-  Boolean                               $mysql_enable                               = false,
-  Float                                 $mysql_version                              = 8.0,
-  Array                                 $network_interfaces                         = ['eth*', 'ens*', 'wlan*'],
-  Boolean                               $nginx_enable                               = false,
-  Boolean                               $nodejs_enable                              = false,
-  Integer                               $nodejs_version                             = 20,
-  Boolean                               $non_free                                   = false,
-  Boolean                               $openitcockpit_enable                       = false,
-  Optional[String]                      $openitcockpit_license                      = undef,
-  Boolean                               $openitcockpit_nightly                      = false,
-  Enum['agent','server']                $openitcockpit_package                      = 'agent',
-  Boolean                               $openjdk_enable                             = false,
-  String                                $openjdk_version                            = 'default',
-  Boolean                               $pro_enable                                 = false,
-  Boolean                               $pro_monitoring_enable                      = false,
-  Boolean                               $proxmox_enable                             = false,
-  Optional[String]                      $proxy_http                                 = undef,
-  Optional[String]                      $proxy_https                                = undef,
-  Optional[Enum['distro','remote']]     $puppet_repo                                = undef,
-  Boolean                               $puppetserver_enable                        = false,
-  Enum['512mb','1gb','2gb']             $puppetserver_jvm_memory                    = '2gb',
-  Enum['openvox','perforce']            $puppetserver_source                        = 'perforce',
-  Boolean                               $rabbitmq_enable                            = false,
-  String                                $server_fdqn                                = $facts['networking']['fqdn'],
-  String                                $server_timezone                            = 'UTC',
-  String                                $smtp_server                                = 'localhost',
-  Boolean                               $snap_enable                                = false,
-  Boolean                               $sudoers_dir_enable                         = true,
-  Boolean                               $sury_enable                                = false,
-  String                                $systemd_default_target                     = 'helpers',
-  String                                $systemd_notify_mail                        = 'root',
-  Array                                 $systemd_ntp_extra_pools                    = [],
-  Optional[Array]                       $unattended_upgrades_block_packages         = undef,
-  Array                                 $unattended_upgrades_block_packages_extra   = [],
-  Boolean                               $unattended_upgrades_reboot                 = false,
-  Array                                 $usb_any_requirements                       = [],
-  Array                                 $usb_expected                               = [],
-  Array                                 $usb_whitelist                              = [],
-  Boolean                               $voxpupuli_enable                           = false,
-  Optional[String]                      $vulnerabilities_package                    = undef,
-  Optional[String]                      $vulnerabilities_user                       = undef,
-  Boolean                               $wireless_enable                            = false
+  Optional[String]                      $antivirus_package                        = undef,
+  Boolean                               $backports                                = false,
+  String                                $cluster_id                               = 'core',
+  Optional[String]                      $communication_name                       = undef,
+  Optional[String]                      $description                              = undef,
+  Enum['allow-downgrade', 'no']         $dns_dnssec                               = 'allow-downgrade',
+  Boolean                               $docker_enable                            = false,
+  Boolean                               $docs_enable                              = false,
+  String                                $environment                              = 'production',
+  String                                $firewall_package                         = 'nftables',
+  Boolean                               $firewall_remove                          = true,
+  Boolean                               $getty_enable                             = false,
+  Boolean                               $gitlab_enable                            = false,
+  Boolean                               $guest_agent_enable                       = false,
+  Enum['none', 'kiosk', 'adwaita-icon'] $gui_mode                                 = 'none',
+  Boolean                               $hosts_enable                             = false,
+  Array[String[1]]                      $hosts_localhost_aliases                  = [],
+  Enum['none', 'netplan.io']            $ip_configurator_package                  = 'none',
+  Boolean                               $ip_dhcp_enable                           = true,
+  Boolean                               $ip_ra_enable                             = true,
+  Boolean                               $ip_ra_learn_prefix                       = true,
+  Enum['all', '4']                      $ip_version                               = 'all',
+  Integer                               $kernel_connection_max                    = 4096,
+  Integer                               $kernel_hugepages                         = 0,
+  Optional[Array[Hash]]                 $kernel_memory_available_profiles         = undef,
+  Variant[Boolean, Integer[0]]          $kernel_mglru_enable                      = true,
+  String                                $kernel_network_mode                      = 'strict',
+  Enum['initramfs', 'dracut']           $kernel_ram_disk_package                  = 'initramfs',
+  Variant[Boolean, String]              $kernel_security_lockdown                 = true,
+  Optional[Array[Hash]]                 $kernel_swap_free_profiles                = undef,
+  String                                $kernel_tcp_congestion_control            = 'brr',
+  Integer                               $kernel_tcp_fastopen                      = 3,
+  Optional[Boolean]                     $keyboard_enable                          = undef,
+  Boolean                               $locale_enable                            = false,
+  Boolean                               $lvm_enable                               = false,
+  String                                $mail_package                             = 'postfix',
+  Boolean                               $mongodb_enable                           = false,
+  Float                                 $mongodb_version                          = 8.0,
+  Enum['none', 'openitcockpit']         $monitoring_package                       = 'none',
+  Boolean                               $monitoring_package_install               = false,
+  Boolean                               $mozilla_enable                           = false,
+  Boolean                               $mysql_enable                             = false,
+  Float                                 $mysql_version                            = 8.0,
+  Array                                 $network_interfaces                       = ['eth*', 'ens*', 'wlan*'],
+  Boolean                               $nginx_enable                             = false,
+  Boolean                               $nodejs_enable                            = false,
+  Integer                               $nodejs_version                           = 20,
+  Boolean                               $non_free                                 = false,
+  Boolean                               $openitcockpit_enable                     = false,
+  Optional[String]                      $openitcockpit_license                    = undef,
+  Boolean                               $openitcockpit_nightly                    = false,
+  Enum['agent', 'server']               $openitcockpit_package                    = 'agent',
+  Boolean                               $openjdk_enable                           = false,
+  String                                $openjdk_version                          = 'default',
+  Boolean                               $pro_enable                               = false,
+  Boolean                               $pro_monitoring_enable                    = false,
+  Boolean                               $proxmox_enable                           = false,
+  Optional[String]                      $proxy_http                               = undef,
+  Optional[String]                      $proxy_https                              = undef,
+  Optional[Enum['distro', 'remote']]    $puppet_repo                              = undef,
+  Boolean                               $puppetserver_enable                      = false,
+  Enum['512mb', '1gb', '2gb']           $puppetserver_jvm_memory                  = '2gb',
+  Enum['openvox', 'perforce']           $puppetserver_source                      = 'perforce',
+  Boolean                               $rabbitmq_enable                          = false,
+  String                                $server_fdqn                              = $facts['networking']['fqdn'],
+  String                                $server_timezone                          = 'UTC',
+  String                                $smtp_server                              = 'localhost',
+  Boolean                               $snap_enable                              = false,
+  Boolean                               $sudoers_dir_enable                       = true,
+  Boolean                               $sury_enable                              = false,
+  String                                $systemd_default_target                   = 'helpers',
+  String                                $systemd_notify_mail                      = 'root',
+  Array                                 $systemd_ntp_extra_pools                  = [],
+  Optional[Array]                       $unattended_upgrades_block_packages       = undef,
+  Array                                 $unattended_upgrades_block_packages_extra = [],
+  Boolean                               $unattended_upgrades_reboot               = false,
+  Array                                 $usb_any_requirements                     = [],
+  Array                                 $usb_expected                             = [],
+  Array                                 $usb_whitelist                            = [],
+  Boolean                               $voxpupuli_enable                         = false,
+  Optional[String]                      $vulnerabilities_package                  = undef,
+  Optional[String]                      $vulnerabilities_user                     = undef,
+  Boolean                               $wireless_enable                          = false,
 ) {
   # Get puppet prefix
   case $puppetserver_source {
@@ -377,6 +363,9 @@ class basic_settings (
     'openvox': {
       $puppetserver_prefix = 'openvox-'
       $puppetserver_master = 'openvox-server'
+    }
+    default: {
+      # The public enum restricts this selector to the supported package families.
     }
   }
 
@@ -674,7 +663,7 @@ class basic_settings (
   }
 
   # Basic system packages; This packages needed to be installed first
-  package { ['apt', 'apt-transport-https', 'bc', 'coreutils', 'curl', 'dpkg', 'findutils', 'grep', 'gnupg', 'jq', 'lsb-release', 'kmod', 'sed', 'util-linux']:
+  package { ['apt', 'apt-transport-https', 'bc', 'coreutils', 'curl', 'dpkg', 'findutils', 'grep', 'gnupg', 'jq', 'lsb-release', 'kmod', 'sed', 'util-linux']: # lint:ignore:140chars
     ensure          => installed,
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
@@ -838,7 +827,7 @@ class basic_settings (
     unattended_upgrades_reboot               => $unattended_upgrades_reboot,
     require                                  => [
       File['/etc/apt/sources.list'],
-      Class['basic_settings::monitoring']
+      Class['basic_settings::monitoring'],
     ],
   }
 

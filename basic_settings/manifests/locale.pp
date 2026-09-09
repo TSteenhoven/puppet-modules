@@ -1,9 +1,8 @@
 # @summary Manages locale, dictionary, and optional documentation packages.
 #
-# This class keeps the server locale minimal by default. When enabled, it
-# installs locale and dictionary packages and removes the static default locale
-# file. When disabled, it purges locale dictionaries and writes `LANG=C.UTF-8` to
-# `/etc/default/locale`.
+# lint:ignore:140chars
+# This class keeps the server locale minimal by default. When enabled, it installs locale and dictionary packages and removes the static default locale file. When disabled, it purges locale dictionaries and writes `LANG=C.UTF-8` to `/etc/default/locale`.
+# lint:endignore
 #
 # @example Keep the minimal default locale
 #   include basic_settings::locale
@@ -16,22 +15,20 @@
 #   }
 #
 # @param dictionary
-#   Dictionary package suffix used as `w<dictionary>` when locale support is
-#   enabled. The default is `american`.
+#   Dictionary package suffix used as `w<dictionary>` when locale support is enabled. The default is `american`.
 #
 # @param docs_enable
 #   Installs manual page packages when `true` and `enable` is also `true`.
 #   Otherwise those documentation packages are purged.
 #
 # @param enable
-#   Enables full locale package management when `true`; keeps the minimal
-#   `C.UTF-8` setup when `false`.
+#   Enables full locale package management when `true`; keeps the minimal `C.UTF-8` setup when `false`.
 #
 # @api public
 class basic_settings::locale (
-  String    $dictionary     = 'american',
-  Boolean   $docs_enable    = false,
-  Boolean   $enable         = false
+  String  $dictionary  = 'american',
+  Boolean $docs_enable = false,
+  Boolean $enable      = false,
 ) {
   # Check if packages are needed
   if ($enable) {
@@ -42,17 +39,19 @@ class basic_settings::locale (
 
     # Remove default locale file
     file { '/etc/default/locale':
-      ensure  => absent,
+      ensure => absent,
     }
   } else {
     # Remove packages
     package { ['dictionaries-common', 'locales', 'wamerican', 'wbritish']:
-      ensure  => purged,
+      ensure => purged,
     }
 
     # Install default locale file
     file { '/etc/default/locale':
       ensure  => file,
+      owner   => 'root',
+      group   => 'root',
       mode    => '0644',
       content => "LANG=C.UTF-8\n",
     }
@@ -66,7 +65,7 @@ class basic_settings::locale (
     }
   } else {
     package { ['manpages', 'manpages-dev', 'man-db']:
-      ensure  => purged,
+      ensure => purged,
     }
   }
 }

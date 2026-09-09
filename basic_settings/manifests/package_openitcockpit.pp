@@ -1,8 +1,8 @@
 # @summary Manages OpenITCOCKPIT server or agent APT repository access.
 #
-# This private helper writes or removes the OpenITCOCKPIT APT source, signing
-# key, and root-only APT authentication file. It supports server and agent
-# repositories plus stable or nightly channels.
+# lint:ignore:140chars
+# This private helper writes or removes the OpenITCOCKPIT APT source, signing key, and root-only APT authentication file. It supports server and agent repositories plus stable or nightly channels.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_openitcockpit':
@@ -17,8 +17,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates repository/authentication files and imports the key when `true`;
-#   removes them when `false`.
+#   Creates repository/authentication files and imports the key when `true`; removes them when `false`.
 #
 # @param os_name
 #   Distribution codename used by the server repository.
@@ -30,21 +29,20 @@
 #   OpenITCOCKPIT repository family to manage: usually `agent` or `server`.
 #
 # @param license
-#   Optional repository license token. `undef` uses the community license token
-#   currently encoded by the module.
+#   Optional repository license token. `undef` uses the community license token currently encoded by the module.
 #
 # @param nightly
 #   Uses the nightly repository channel when `true`; otherwise uses stable.
 #
 # @api private
 class basic_settings::package_openitcockpit (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
   String              $os_parent,
   String              $package,
-  Optional[String]    $license = undef,
-  Boolean             $nightly = false
+  Optional[String]    $license     = undef,
+  Boolean             $nightly     = false,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -115,7 +113,7 @@ class basic_settings::package_openitcockpit (
 
     # Install openitcockpit repo
     exec { 'package_openitcockpit_source':
-      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL https://packages5.openitcockpit.io/repokey.txt | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL https://packages5.openitcockpit.io/repokey.txt | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
       require => [File['package_openitcockpit_license'], Package['curl']],
     }

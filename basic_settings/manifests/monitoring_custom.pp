@@ -1,9 +1,8 @@
 # @summary Registers a custom monitoring script with the configured monitoring backend.
 #
-# This defined type writes or removes a root-owned plugin script and registers it
-# in OpenITCOCKPIT `customchecks.ini` when that backend is active. It centralizes
-# plugin file permissions, scheduling metadata, and optional sudoers support for
-# checks that need elevated privileges.
+# lint:ignore:140chars
+# This defined type writes or removes a root-owned plugin script and registers it in OpenITCOCKPIT `customchecks.ini` when that backend is active. It centralizes plugin file permissions, scheduling metadata, and optional sudoers support for checks that need elevated privileges.
+# lint:endignore
 #
 # @example Register a custom OpenITCOCKPIT check
 #   basic_settings::monitoring_custom { 'example':
@@ -13,8 +12,7 @@
 #   }
 #
 # @param cmd
-#   Optional arguments appended after the managed script path in the generated
-#   command.
+#   Optional arguments appended after the managed script path in the generated command.
 #
 # @param content
 #   Optional inline script content. Mutually exclusive in practice with `source`.
@@ -29,31 +27,30 @@
 #   Check interval in seconds. The default is 300.
 #
 # @param package
-#   Monitoring package override. `undef` inherits `basic_settings::monitoring`
-#   when that class is declared.
+#   Monitoring package override. `undef` inherits `basic_settings::monitoring` when that class is declared.
 #
 # @param root_required
-#   Indicates whether the check requires root privileges. When a non-root plugin
-#   owner is used by a backend, this controls sudoers generation.
+# lint:ignore:140chars
+#   Indicates whether the check requires root privileges. When a non-root plugin owner is used by a backend, this controls sudoers generation.
+# lint:endignore
 #
 # @param source
-#   Optional file source for the plugin script. Must start with `puppet:///`,
-#   `file:///`, or `https://`.
+#   Optional file source for the plugin script. Must start with `puppet:///`, `file:///`, or `https://`.
 #
 # @param timeout
 #   Check timeout in seconds. The default is 30.
 #
 # @api public
 define basic_settings::monitoring_custom (
-  Optional[String]          $cmd            = undef,
-  Optional[String]          $content        = undef,
-  Enum['present','absent']  $ensure         = present,
-  Optional[String]          $friendly       = undef,
-  Integer                   $interval       = 300,
-  Optional[String]          $package        = undef,
-  Boolean                   $root_required  = true,
-  Optional[String]          $source         = undef,
-  Integer                   $timeout        = 30
+  Optional[String]          $cmd           = undef,
+  Optional[String]          $content       = undef,
+  Enum['present', 'absent'] $ensure        = present,
+  Optional[String]          $friendly      = undef,
+  Integer                   $interval      = 300,
+  Optional[String]          $package       = undef,
+  Boolean                   $root_required = true,
+  Optional[String]          $source        = undef,
+  Integer                   $timeout       = 30,
 ) {
   # Keep valid input on the main path so validation failures stay exceptional.
   if ($source == undef or $content == undef) {
@@ -112,7 +109,7 @@ define basic_settings::monitoring_custom (
           if ($ensure == present) {
             concat::fragment { "monitoring_plugin_${name}":
               target  => '/etc/openitcockpit-agent/customchecks.ini',
-              content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${command}\ninterval = ${interval}\ntimeout = ${timeout}\nenabled = true\n",
+              content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${command}\ninterval = ${interval}\ntimeout = ${timeout}\nenabled = true\n", # lint:ignore:140chars
               order   => '10',
             }
           }
@@ -144,7 +141,7 @@ define basic_settings::monitoring_custom (
             owner   => 'root',
             group   => 'root',
             mode    => '0440',
-            content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always \n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n",
+            content => "# Managed by puppet\nCmnd_Alias ${sudo_cmnd} = ${script_path} * \nDefaults!${sudo_cmnd} !mail_always \n${uid} ALL=(root) NOPASSWD: ${sudo_cmnd}\n", # lint:ignore:140chars
             require => Package['sudo'],
           }
         }

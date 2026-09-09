@@ -1,8 +1,7 @@
 # @summary Manages the Sury/Ondrej PHP APT repository.
 #
 # This private helper writes or removes the PHP package source and signing key.
-# Ubuntu systems use the Ondrej PPA key path; Debian systems install the Sury
-# archive keyring package through a root-only temporary file.
+# Ubuntu systems use the Ondrej PPA key path; Debian systems install the Sury archive keyring package through a root-only temporary file.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_sury':
@@ -16,8 +15,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository and imports its key when `true`; removes repository
-#   files when `false`.
+#   Creates the repository and imports its key when `true`; removes repository files when `false`.
 #
 # @param os_name
 #   Distribution codename used in the repository suite.
@@ -27,10 +25,10 @@
 #
 # @api private
 class basic_settings::package_sury (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
-  String              $os_parent
+  String              $os_parent,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -73,14 +71,14 @@ class basic_settings::package_sury (
       'ubuntu': {
         # Write the repo definition and import the signing key directly for Ubuntu systems.
         exec { 'package_sury_source':
-          command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6' | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+          command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6' | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
           unless  => "/usr/bin/test -e ${file_shell}",
           require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
         }
       }
       default: {
         # Install the archive keyring through a root-only tempfile and always clean it up on exit.
-        $source_install_script = "set -e; umask 077; tmpfile=\$(/usr/bin/mktemp /root/debsuryorg-archive-keyring.XXXXXX.deb) || exit 1; trap \"rm -f \\\"\$tmpfile\\\"\" EXIT; /usr/bin/curl -fsSL https://packages.sury.org/debsuryorg-archive-keyring.deb -o \"\$tmpfile\"; dpkg -i \"\$tmpfile\"; /usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/apt-get update" #lint:ignore:140chars
+        $source_install_script = "set -e; umask 077; tmpfile=\$(/usr/bin/mktemp /root/debsuryorg-archive-keyring.XXXXXX.deb) || exit 1; trap \"rm -f \\\"\$tmpfile\\\"\" EXIT; /usr/bin/curl -fsSL https://packages.sury.org/debsuryorg-archive-keyring.deb -o \"\$tmpfile\"; dpkg -i \"\$tmpfile\"; /usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/apt-get update" # lint:ignore:140chars
 
         # Escape the complete bash script before passing it to bash -c.
         $source_install_script_shell = stdlib::shell_escape($source_install_script)

@@ -1,17 +1,14 @@
 # @summary Manages auditd, AppArmor, AIDE defaults, and security monitoring hooks.
 #
-# This class installs and enables auditd and AppArmor, writes auditd and AIDE
-# configuration files, registers baseline audit rules, creates the `auditmail`
-# systemd service and timer, and adds monitoring checks when the shared
-# monitoring class is active. Antivirus integrations can add audit exclusions and
-# monitoring plugins.
+# lint:ignore:140chars
+# This class installs and enables auditd and AppArmor, writes auditd and AIDE configuration files, registers baseline audit rules, creates the `auditmail` systemd service and timer, and adds monitoring checks when the shared monitoring class is active. Antivirus integrations can add audit exclusions and monitoring plugins.
+# lint:endignore
 #
 # @example Enable the default security baseline
 #   include basic_settings::security
 #
 # @param antivirus_package
-#   Optional antivirus integration name. Supported values add package-specific
-#   audit exclusions and monitoring checks.
+#   Optional antivirus integration name. Supported values add package-specific audit exclusions and monitoring checks.
 #
 # @param mail_to
 #   Recipient used by security notification templates. The default is `root`.
@@ -21,9 +18,9 @@
 #
 # @api public
 class basic_settings::security (
-  Optional[String]  $antivirus_package        = undef,
-  String            $mail_to                  = 'root',
-  String            $server_fdqn              = $facts['networking']['fqdn']
+  Optional[String] $antivirus_package = undef,
+  String           $mail_to           = 'root',
+  String           $server_fdqn       = $facts['networking']['fqdn'],
 ) {
   # Set some values
   $systemd_enable = defined(Package['systemd'])
@@ -74,7 +71,7 @@ class basic_settings::security (
   }
 
   # Setup virusscanner
-  case $antivirus_package { #lint:ignore:case_without_default
+  case $antivirus_package {
     'eset': {
       # Setup audit rules
       basic_settings::security_audit { 'antivirus':
@@ -94,6 +91,9 @@ class basic_settings::security (
           timeout  => 60,
         }
       }
+    }
+    default: {
+      # Other selections do not configure an antivirus integration.
     }
   }
 
@@ -116,6 +116,8 @@ class basic_settings::security (
   if (!defined(File['/etc/audit/rules.d'])) {
     file { '/etc/audit/rules.d':
       ensure  => directory,
+      owner   => 'root',
+      group   => 'root',
       recurse => true,
       force   => true,
       purge   => true,

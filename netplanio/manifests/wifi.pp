@@ -1,20 +1,18 @@
 # @summary Manages one netplan WiFi YAML file.
 #
-# This defined type renders `/etc/netplan/<title>.yaml` for a WiFi interface,
-# installs `wpasupplicant` when needed, stores generated WiFi configuration as
-# sensitive content, and disables runtime power management for the interface
-# device to avoid connectivity problems.
+# lint:ignore:140chars
+# This defined type renders `/etc/netplan/<title>.yaml` for a WiFi interface, installs `wpasupplicant` when needed, stores generated WiFi configuration as sensitive content, and disables runtime power management for the interface device to avoid connectivity problems.
+# lint:endignore
 #
 # @example Configure a DHCP WiFi interface
 #   netplanio::wifi { 'wlan0':
 #     access_points => {
-#       'ExampleSSID' => { 'password' => 'change-me' },
+#       'ExampleSSID' => { 'password' => lookup('profile::wifi_password') },
 #     },
 #   }
 #
 # @param access_points
-#   Netplan access point hash. This can contain WiFi passwords and is rendered as
-#   sensitive file content.
+#   Netplan access point hash. This can contain WiFi passwords and is rendered as sensitive file content.
 #
 # @param addresses
 #   Optional list of addresses rendered into the interface configuration.
@@ -37,12 +35,12 @@
 # @api public
 define netplanio::wifi (
   Hash                      $access_points,
-  Optional[Array]           $addresses       = undef,
-  Optional[Boolean]         $dhcp_enable     = undef,
-  Enum['present','absent']  $ensure          = present,
-  Optional[String]          $interface       = undef,
-  Optional[String]          $ip_version      = undef,
-  Boolean                   $optional        = false,
+  Optional[Array]           $addresses     = undef,
+  Optional[Boolean]         $dhcp_enable   = undef,
+  Enum['present', 'absent'] $ensure        = present,
+  Optional[String]          $interface     = undef,
+  Optional[String]          $ip_version    = undef,
+  Boolean                   $optional      = false,
 ) {
   if (defined(Class['netplanio'])) {
     if ($ensure == present) {

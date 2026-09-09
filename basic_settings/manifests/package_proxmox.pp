@@ -1,8 +1,8 @@
 # @summary Manages the Proxmox VE no-subscription APT repository.
 #
-# This private helper writes or removes the Proxmox VE package source and
-# signing key. It is called by `basic_settings` after OS support has been
-# calculated.
+# lint:ignore:140chars
+# This private helper writes or removes the Proxmox VE package source and signing key. It is called by `basic_settings` after OS support has been calculated.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_proxmox':
@@ -16,8 +16,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository and imports its key when `true`; removes both when
-#   `false`.
+#   Creates the repository and imports its key when `true`; removes both when `false`.
 #
 # @param os_name
 #   Distribution codename used in the repository suite.
@@ -27,10 +26,10 @@
 #
 # @api private
 class basic_settings::package_proxmox (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
-  String              $os_parent
+  String              $os_parent,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -49,7 +48,7 @@ class basic_settings::package_proxmox (
   if ($enable) {
     # Get source
     if ($deb_version == '822') {
-      $source  = "Types: deb\\nURIs: http://download.proxmox.com/debian/pve\\nSuites: ${os_name}\\nComponents: pve-no-subscription\\nSigned-By:${key}\\n"
+      $source  = "Types: deb\\nURIs: http://download.proxmox.com/debian/pve\\nSuites: ${os_name}\\nComponents: pve-no-subscription\\nSigned-By:${key}\\n" # lint:ignore:140chars
     } else {
       $source = "deb [signed-by=${key}] http://download.proxmox.com/debian/pve ${os_name} pve-no-subscription\\n"
     }
@@ -60,7 +59,7 @@ class basic_settings::package_proxmox (
 
     # Install proxmox repo
     exec { 'package_proxmox_source':
-      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSLo ${key_shell} ${key_url_shell}; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSLo ${key_shell} ${key_url_shell}; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
       require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
     }

@@ -1,8 +1,8 @@
 # @summary Manages the MongoDB upstream APT repository and server package.
 #
-# This private helper writes or removes the MongoDB package source and signing
-# key, and installs or purges `mongodb-org-server` with the repository state. It
-# is called by `basic_settings` after OS support has been calculated.
+# lint:ignore:140chars
+# This private helper writes or removes the MongoDB package source and signing key, and installs or purges `mongodb-org-server` with the repository state. It is called by `basic_settings` after OS support has been calculated.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_mongodb':
@@ -17,8 +17,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository, imports its key, and installs the server package when
-#   `true`; removes them when `false`.
+#   Creates the repository, imports its key, and installs the server package when `true`; removes them when `false`.
 #
 # @param os_name
 #   Distribution codename used in the repository suite.
@@ -31,11 +30,11 @@
 #
 # @api private
 class basic_settings::package_mongodb (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
   String              $os_parent,
-  Float               $version = 8.0
+  Float               $version     = 8.0,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -54,7 +53,7 @@ class basic_settings::package_mongodb (
   if ($enable) {
     # Get source
     if ($deb_version == '822') {
-      $source  = "Types: deb\\nURIs: https://repo.mongodb.org/apt/${os_parent}\\nSuites: ${os_name}/mongodb-org/${version}\\nComponents: main\\nSigned-By:${key}\\n"
+      $source  = "Types: deb\\nURIs: https://repo.mongodb.org/apt/${os_parent}\\nSuites: ${os_name}/mongodb-org/${version}\\nComponents: main\\nSigned-By:${key}\\n" # lint:ignore:140chars
     } else {
       $source = "deb [signed-by=${key}] https://repo.mongodb.org/apt/${os_parent} ${os_name}/mongodb-org/${version} main\\n"
     }
@@ -65,7 +64,7 @@ class basic_settings::package_mongodb (
 
     # Install mongodb repo
     exec { 'package_mongodb_source':
-      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL ${key_url_shell} | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL ${key_url_shell} | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
       require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
     }
@@ -79,7 +78,7 @@ class basic_settings::package_mongodb (
   } else {
     # Remove mongodb-org-server package
     package { 'mongodb-org-server':
-      ensure  => purged,
+      ensure => purged,
     }
 
     # Remove mongodb repo

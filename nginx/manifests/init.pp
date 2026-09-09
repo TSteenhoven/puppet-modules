@@ -1,10 +1,8 @@
 # @summary Installs and configures the Nginx service baseline.
 #
-# This class installs Nginx, removes Apache, optionally installs the Certbot
-# Nginx plugin, disables vendor service enablement under systemd, binds Nginx
-# into the shared target ladder, applies service hardening, manages global Nginx
-# configuration and owned config directories, prepares secure SSL/security
-# fallback directories, and adds monitoring and logrotate integration.
+# lint:ignore:140chars
+# This class installs Nginx, removes Apache, optionally installs the Certbot Nginx plugin, disables vendor service enablement under systemd, binds Nginx into the shared target ladder, applies service hardening, manages global Nginx configuration and owned config directories, prepares secure SSL/security fallback directories, and adds monitoring and logrotate integration.
+# lint:endignore
 #
 # @example Install Nginx with default security.txt fallback settings
 #   include nginx
@@ -28,27 +26,22 @@
 #   `LimitNOFILE` value applied to the Nginx systemd drop-in.
 #
 # @param nice_level
-#   Positive nice value converted to a negative service priority in the systemd
-#   drop-in.
+#   Positive nice value converted to a negative service priority in the systemd drop-in.
 #
 # @param package
-#   Nginx package flavor to install. `nginx` purges `nginx-full`; `nginx-full`
-#   installs both package names.
+#   Nginx package flavor to install. `nginx` purges `nginx-full`; `nginx-full` installs both package names.
 #
 # @param run_group
-#   Runtime group used for writable/cache paths and group-readable security.txt
-#   fallback files.
+#   Runtime group used for writable/cache paths and group-readable security.txt fallback files.
 #
 # @param run_user
 #   Runtime user used for Nginx log and cache directories.
 #
 # @param securitytxt_contacts
-#   Default security.txt contact list inherited by vhosts when they do not set
-#   vhost-specific contacts.
+#   Default security.txt contact list inherited by vhosts when they do not set vhost-specific contacts.
 #
 # @param securitytxt_enable
-#   Global default controlling whether vhosts create a managed security.txt
-#   fallback.
+#   Global default controlling whether vhosts create a managed security.txt fallback.
 #
 # @param securitytxt_encryption
 #   Optional global Encryption URL inherited by vhosts.
@@ -82,28 +75,28 @@
 #
 # @api public
 class nginx (
-  Array                       $events_directives                = [],
-  Array                       $global_directives                = [],
-  Array                       $http_directives                  = [],
-  Integer                     $keepalive_requests               = 1000,
-  String                      $keepalive_timeout                = '75s',
-  Integer                     $limit_file                       = 10000,
-  Integer                     $nice_level                       = 10,
-  Enum['nginx','nginx-full']  $package                          = 'nginx',
-  String                      $run_group                        = 'www-data',
-  String                      $run_user                         = 'www-data',
-  Optional[Array]             $securitytxt_contacts             = undef,
-  Boolean                     $securitytxt_enable               = true,
-  Optional[String]            $securitytxt_encryption           = undef,
-  Integer                     $securitytxt_expires_days         = 365,
-  Optional[String]            $securitytxt_policy               = undef,
-  Optional[Array]             $securitytxt_preferred_languages  = ['nl', 'en'],
-  Boolean                     $ssl_prefer_server_ciphers        = true,
-  String                      $ssl_protocols                    = 'TLSv1.2 TLSv1.3',
-  String                      $target                           = 'services',
-  Integer                     $types_hash_max_size              = 2048,
-  Integer                     $variables_hash_bucket_size       = 128,
-  Integer                     $variables_hash_max_size          = 2048
+  Array                       $events_directives               = [],
+  Array                       $global_directives               = [],
+  Array                       $http_directives                 = [],
+  Integer                     $keepalive_requests              = 1000,
+  String                      $keepalive_timeout               = '75s',
+  Integer                     $limit_file                      = 10000,
+  Integer                     $nice_level                      = 10,
+  Enum['nginx', 'nginx-full'] $package                         = 'nginx',
+  String                      $run_group                       = 'www-data',
+  String                      $run_user                        = 'www-data',
+  Optional[Array]             $securitytxt_contacts            = undef,
+  Boolean                     $securitytxt_enable              = true,
+  Optional[String]            $securitytxt_encryption          = undef,
+  Integer                     $securitytxt_expires_days        = 365,
+  Optional[String]            $securitytxt_policy              = undef,
+  Optional[Array]             $securitytxt_preferred_languages = ['nl', 'en'],
+  Boolean                     $ssl_prefer_server_ciphers       = true,
+  String                      $ssl_protocols                   = 'TLSv1.2 TLSv1.3',
+  String                      $target                          = 'services',
+  Integer                     $types_hash_max_size             = 2048,
+  Integer                     $variables_hash_bucket_size      = 128,
+  Integer                     $variables_hash_max_size         = 2048,
 ) {
   # Set some values
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
@@ -226,24 +219,30 @@ class nginx (
     basic_settings::monitoring_service { 'nginx': }
   }
 
-  # Create log file
+  # Workers own the logs, and the local logrotate wrapper recreates them for this same runtime user.
   file { '/var/log/nginx':
     ensure  => directory,
     owner   => $run_user,
+    group   => $run_group,
+    mode    => '0750',
     require => Package['nginx'],
   }
 
-  # Create cache directory
+  # Keep the cache traversable by the configured worker identity without granting access to other users.
   file { '/var/cache/nginx':
     ensure  => directory,
     owner   => $run_user,
     group   => $run_group,
+    mode    => '0750',
     require => Package['nginx'],
   }
 
-  # Create nginx config file
+  # The privileged Nginx master loads configuration that may contain private upstream settings.
   file { '/etc/nginx/nginx.conf':
     ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
     content => template('nginx/global.conf'),
     notify  => Service['nginx'],
     require => Package['nginx'],
@@ -252,6 +251,9 @@ class nginx (
   # Create sites config directory
   file { [$config, '/etc/nginx/sites-enabled']:
     ensure  => directory,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
     purge   => true,
     force   => true,
     recurse => true,

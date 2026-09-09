@@ -1,9 +1,8 @@
 # @summary Writes a custom auditd rule fragment.
 #
-# This defined type ensures auditd and `/etc/audit/rules.d` exist, then writes
-# `/etc/audit/rules.d/<order>-<title>.rules` from the shared template. It is the
-# repository-wide helper for adding package, service, and configuration audit
-# coverage without duplicating file ownership and service notification logic.
+# lint:ignore:140chars
+# This defined type ensures auditd and `/etc/audit/rules.d` exist, then writes `/etc/audit/rules.d/<order>-<title>.rules` from the shared template. It is the repository-wide helper for adding package, service, and configuration audit coverage without duplicating file ownership and service notification logic.
+# lint:endignore
 #
 # @example Add a custom audit rule
 #   basic_settings::security_audit { 'example':
@@ -14,8 +13,7 @@
 #   Controls whether the audit rule fragment is present or absent.
 #
 # @param order
-#   Numeric filename prefix used to control audit rule ordering. The default is
-#   25.
+#   Numeric filename prefix used to control audit rule ordering. The default is 25.
 #
 # @param rule_options
 #   Options appended to generated suspicious-package audit rules.
@@ -28,11 +26,11 @@
 #
 # @api public
 define basic_settings::security_audit (
-  Enum['present','absent']  $ensure                     = present,
-  Integer                   $order                      = 25,
-  Array                     $rule_options               = [],
-  Array                     $rule_suspicious_packages   = [],
-  Array                     $rules                      = []
+  Enum['present', 'absent'] $ensure                   = present,
+  Integer                   $order                    = 25,
+  Array                     $rule_options             = [],
+  Array                     $rule_suspicious_packages = [],
+  Array                     $rules                    = [],
 ) {
   # Check if auditd package is not defined
   if (!defined(Package['auditd'])) {
@@ -51,10 +49,12 @@ define basic_settings::security_audit (
     }
   }
 
-  # Create audit rule dir */
+  # The helper also supports callers without the full security class and owns the complete rule-fragment directory in that case.
   if (!defined(File['/etc/audit/rules.d'])) {
     file { '/etc/audit/rules.d':
       ensure  => directory,
+      owner   => 'root',
+      group   => 'root',
       recurse => true,
       force   => true,
       purge   => true,

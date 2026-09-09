@@ -1,9 +1,8 @@
 # @summary Requests or removes a Certbot certificate.
 #
-# This defined type runs Certbot for a named certificate after the `letsencrypt`
-# class has installed shared defaults. It supports idempotent creation based on
-# the certificate domain list and idempotent deletion based on the certificate
-# name.
+# lint:ignore:140chars
+# This defined type runs Certbot for a named certificate after the `letsencrypt` class has installed shared defaults. It supports idempotent creation based on the certificate domain list and idempotent deletion based on the certificate name.
+# lint:endignore
 #
 # @example Request an nginx certificate
 #   letsencrypt::certificate { 'www.example.org':
@@ -21,9 +20,9 @@
 #
 # @api public
 define letsencrypt::certificate (
-  Array                       $domains,
-  Enum['present','absent']    $ensure     = present,
-  String                      $plugin     = 'nginx',
+  Array                     $domains,
+  Enum['present', 'absent'] $ensure  = present,
+  String                    $plugin  = 'nginx',
 ) {
   if (defined(Class['letsencrypt'])) {
     # Try to get require
@@ -52,7 +51,10 @@ define letsencrypt::certificate (
         $domain_list_find = join($domain_sort, ' ')
 
         # Escape domain arguments and grep pattern before certbot commands use them.
-        $domain_args_shell = join($domain_sort.map |$domain| { "-d ${stdlib::shell_escape($domain)}" }, ' ')
+        $domain_args_shell = join($domain_sort.map |$domain| {
+          $domain_shell = stdlib::shell_escape($domain)
+          "-d ${domain_shell}"
+        }, ' ')
         $domain_find_shell = stdlib::shell_escape("Domains: ${domain_list_find}")
 
         # Check if fullchain.pem and privkey.pem exists

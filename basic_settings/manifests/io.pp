@@ -1,10 +1,8 @@
 # @summary Manages storage utilities, log rotation support, and IO audit rules.
 #
-# This class installs common storage and compression utilities, removes packages
-# that are not expected on the target server profile, optionally manages LVM,
-# multipath, and NFS server packages, disables floppy support, and tunes journald
-# output through a systemd drop-in when systemd is present. It also adds audit
-# coverage for storage and logrotate tooling when auditd is managed.
+# lint:ignore:140chars
+# This class installs common storage and compression utilities, removes packages that are not expected on the target server profile, optionally manages LVM, multipath, and NFS server packages, disables floppy support, and tunes journald output through a systemd drop-in when systemd is present. It also adds audit coverage for storage and logrotate tooling when auditd is managed.
+# lint:endignore
 #
 # @example Use the default IO profile
 #   include basic_settings::io
@@ -15,28 +13,27 @@
 #   }
 #
 # @param log_rotate
-#   Default rotation count used by `basic_settings::io_logrotate` when that
-#   defined type does not receive an explicit `rotate` value. The default is 14.
+# lint:ignore:140chars
+#   Default rotation count used by `basic_settings::io_logrotate` when that defined type does not receive an explicit `rotate` value. The default is 14.
+# lint:endignore
 #
 # @param lvm_enable
-#   Installs and audits LVM tooling when `true`; purges the `lvm2` package when
-#   `false`.
+#   Installs and audits LVM tooling when `true`; purges the `lvm2` package when `false`.
 #
 # @param multipath_enable
-#   Installs multipath tooling, manages `/etc/multipath.conf`, enables the
-#   `multipathd` service, and adds monitoring when available. `false` purges the
-#   multipath packages.
+# lint:ignore:140chars
+#   Installs multipath tooling, manages `/etc/multipath.conf`, enables the `multipathd` service, and adds monitoring when available. `false` purges the multipath packages.
+# lint:endignore
 #
 # @param nfs_server_enable
-#   Installs `nfs-kernel-server` and `rpcbind` when `true`; purges them when
-#   `false`.
+#   Installs `nfs-kernel-server` and `rpcbind` when `true`; purges them when `false`.
 #
 # @api public
 class basic_settings::io (
-  Integer $log_rotate = 14,
-  Boolean $lvm_enable = true,
-  Boolean $multipath_enable = false,
-  Boolean $nfs_server_enable = false
+  Integer $log_rotate        = 14,
+  Boolean $lvm_enable        = true,
+  Boolean $multipath_enable  = false,
+  Boolean $nfs_server_enable = false,
 ) {
   # Create list of packages that is suspicious
   $default_packages = [
@@ -57,7 +54,7 @@ class basic_settings::io (
 
   # Remove package for connection with Windows environment / device
   package { ['ntfs-3g', 'smbclient']:
-    ensure  => purged,
+    ensure => purged,
   }
 
   # Check if we need LVM
@@ -121,7 +118,7 @@ class basic_settings::io (
     $suspicious_packages_root = $default_packages_root
   } else {
     package { 'lvm2':
-      ensure  => purged,
+      ensure => purged,
     }
     $suspicious_packages = $default_packages
     $suspicious_packages_root = $default_packages_root
@@ -160,7 +157,7 @@ class basic_settings::io (
   } else {
     # Remove multipath
     package { ['multipath-tools', 'multipath-tools-boot']:
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
@@ -172,7 +169,7 @@ class basic_settings::io (
     }
   } else {
     package { ['nfs-kernel-server', 'rpcbind']:
-      ensure  => purged,
+      ensure => purged,
     }
   }
 

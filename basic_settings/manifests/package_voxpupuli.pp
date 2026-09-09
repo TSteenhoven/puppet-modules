@@ -1,8 +1,7 @@
 # @summary Manages the Vox Pupuli OpenVox APT repository.
 #
 # This private helper writes or removes the OpenVox APT source and signing key.
-# It is called by `basic_settings` when OpenVox packages should be available for
-# Puppet agent or server installation.
+# It is called by `basic_settings` when OpenVox packages should be available for Puppet agent or server installation.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_voxpupuli':
@@ -16,8 +15,7 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository and imports its key when `true`; removes both when
-#   `false`.
+#   Creates the repository and imports its key when `true`; removes both when `false`.
 #
 # @param os_parent
 #   Distribution family used in the OpenVox repository suite.
@@ -27,10 +25,10 @@
 #
 # @api private
 class basic_settings::package_voxpupuli (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_parent,
-  String              $os_version
+  String              $os_version,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -62,7 +60,7 @@ class basic_settings::package_voxpupuli (
 
     # Install voxpupuli repo
     exec { 'package_voxpupuli_source':
-      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSLo ${key_shell} https://apt.voxpupuli.org/openvox-keyring.gpg; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSLo ${key_shell} https://apt.voxpupuli.org/openvox-keyring.gpg; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
       require => Package['apt', 'apt-transport-https', 'curl'],
     }

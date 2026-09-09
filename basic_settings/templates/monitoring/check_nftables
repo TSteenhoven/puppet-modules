@@ -7,19 +7,21 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 NFT=$(command -v nft 2>/dev/null) || die "nft not available"
 SORT=$(command -v sort 2>/dev/null) || die "sort not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-<% end -%>
+fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 
 # Dynamic blacklist set counts and rendered long-output sections.
 BL_ITEMS=0
 FILTER_SECTION_COUNT=0
-FILTER_ITEMS_LIMIT=${FILTER_ITEMS_LIMIT:-50}
 LONG_OUTPUT=""
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 LONG_OUTPUT_SEP="__CHECK_NFT_NL__"
@@ -34,10 +36,6 @@ TABLE_EMPTY=""
 TOTAL_RULES=0
 
 # Keep potentially large blacklist sections bounded while preserving the summary count.
-case "$FILTER_ITEMS_LIMIT" in
-    ''|*[!0-9]*) FILTER_ITEMS_LIMIT=50 ;;
-esac
-[ "$FILTER_ITEMS_LIMIT" -ge 1 ] || FILTER_ITEMS_LIMIT=50
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;
 esac
@@ -180,7 +178,7 @@ collect_set_items_csv() {
     '
 }
 
-# Render one filter-set section in the long output.
+# Render every acquired filter address; the shared character limit bounds the complete diagnostic body.
 append_filter_section() {
     label=$1
     set_name=$2
@@ -197,22 +195,16 @@ append_filter_section() {
     IFS=','
     set -- $items_csv
     IFS=$old_ifs
-    shown_count=0
     for item do
-        shown_count=$((shown_count + 1))
-        [ "$shown_count" -le "$FILTER_ITEMS_LIMIT" ] || continue
         append_long "- $item"
     done
-    if [ "$item_count" -gt "$FILTER_ITEMS_LIMIT" ]; then
-        append_long "... truncated to ${FILTER_ITEMS_LIMIT} of ${item_count} addresses"
-    fi
 }
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 # Verify the service when systemd is available before reading the live ruleset.
 $SYSTEMCTL is-active --quiet "nftables" || crit "service is not active"
 
-<% end -%>
+fi
 
 # Reading the live ruleset validates nft access without assuming a loadable kernel module.
 RULESET=$($NFT list ruleset 2>/dev/null) || crit "ruleset cannot be read"

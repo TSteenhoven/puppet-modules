@@ -1,6 +1,8 @@
 # @summary Manages the NodeSource APT repository and Node.js package.
 #
+# lint:ignore:140chars
 # This private helper writes or removes the NodeSource APT source and signing key, installs or purges `nodejs`, refreshes APT on repository changes, restricts npm and npx execution to the `nodejs` group, and adds audit coverage for npm-related tooling when auditd is present.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_node':
@@ -13,18 +15,16 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository, imports its key, and installs Node.js when `true`;
-#   removes them when `false`.
+#   Creates the repository, imports its key, and installs Node.js when `true`; removes them when `false`.
 #
 # @param version
-#   Node.js major version used in the NodeSource repository URL. The default is
-#   20.
+#   Node.js major version used in the NodeSource repository URL. The default is 20.
 #
 # @api private
 class basic_settings::package_node (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
-  Integer             $version = 20
+  Integer             $version     = 20,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -76,7 +76,7 @@ class basic_settings::package_node (
 
     # Download and install the repository signing key in a dedicated keyring file.
     exec { 'package_node_key':
-      command => "/usr/bin/curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}", #lint:ignore:140chars
+      command => "/usr/bin/curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${key_shell}",
       notify  => Exec['package_node_source_reload'],
       require => [Package['apt'], Package['apt-transport-https'], Package['curl'], Package['gnupg']],
@@ -128,7 +128,7 @@ class basic_settings::package_node (
   } else {
     # Remove nodejs package
     package { 'nodejs':
-      ensure  => purged,
+      ensure => purged,
     }
 
     # Remove the local npm permission helper when Node.js package management is disabled.

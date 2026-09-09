@@ -118,29 +118,29 @@ node 'web-example.example.org' {
   }
 
   nginx::server { 'app.example.org':
-    client_max_body_size       => '32m',
-    content_security_policy    => "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'",
-    docroot                    => '/var/www/app.example.org/public',
-    fastcgi_read_timeout       => 120,
-    http2_enable               => true,
-    http3_enable               => false,
-    http_enable                => true,
-    https_enable               => true,
-    https_force                => true,
-    php_fpm_enable             => true,
-    php_fpm_uri                => 'unix:/run/php/php-fpm-app.sock',
-    referrer_policy            => 'same-origin',
-    securitytxt_contacts       => ['mailto:security@example.org'],
-    securitytxt_policy         => 'https://example.org/responsible-disclosure',
-    server_name                => 'app.example.org www.app.example.org',
-    ssl_certificate            => '/etc/letsencrypt/live/app.example.org/fullchain.pem',
-    ssl_certificate_key        => '/etc/letsencrypt/live/app.example.org/privkey.pem',
-    ssl_certificate_trusted    => '/etc/letsencrypt/live/app.example.org/chain.pem',
-    strict_transport_security  => 'max-age=31536000; includeSubDomains',
-    try_files                  => '$uri $uri/ /index.php?$query_string',
-    x_content_type_options     => 'nosniff',
-    x_frame_options            => 'SAMEORIGIN',
-    require                    => [Class['nginx'], Class['php8::fpm']],
+    client_max_body_size      => '32m',
+    content_security_policy   => "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'",
+    docroot                   => '/var/www/app.example.org/public',
+    fastcgi_read_timeout      => 120,
+    http2_enable              => true,
+    http3_enable              => false,
+    http_enable               => true,
+    https_enable              => true,
+    https_force               => true,
+    php_fpm_enable            => true,
+    php_fpm_uri               => 'unix:/run/php/php-fpm-app.sock',
+    referrer_policy           => 'same-origin',
+    securitytxt_contacts      => ['mailto:security@example.org'],
+    securitytxt_policy        => 'https://example.org/responsible-disclosure',
+    server_name               => 'app.example.org www.app.example.org',
+    ssl_certificate           => '/etc/letsencrypt/live/app.example.org/fullchain.pem',
+    ssl_certificate_key       => '/etc/letsencrypt/live/app.example.org/privkey.pem',
+    ssl_certificate_trusted   => '/etc/letsencrypt/live/app.example.org/chain.pem',
+    strict_transport_security => 'max-age=31536000; includeSubDomains',
+    try_files                 => '$uri $uri/ /index.php?$query_string',
+    x_content_type_options    => 'nosniff',
+    x_frame_options           => 'SAMEORIGIN',
+    require                   => [Class['nginx'], Class['php8::fpm']],
   }
 }
 
@@ -150,13 +150,13 @@ node 'proxy-example.example.org' {
   }
 
   nginx::server { 'app-proxy.example.org':
-    access_log             => '/var/log/nginx/app_proxy_access.log combined buffer=32k flush=1m',
-    docroot                => undef,
-    error_log              => '/var/log/nginx/app_proxy_error.log',
-    http2_enable           => true,
-    https_enable           => true,
-    https_force            => true,
-    location_directives    => [
+    access_log          => '/var/log/nginx/app_proxy_access.log combined buffer=32k flush=1m',
+    docroot             => undef,
+    error_log           => '/var/log/nginx/app_proxy_error.log',
+    http2_enable        => true,
+    https_enable        => true,
+    https_force         => true,
+    location_directives => [
       'proxy_pass https://127.0.0.1:8443;',
       'proxy_ssl_verify off;',
       'proxy_set_header Host $host;',
@@ -164,7 +164,7 @@ node 'proxy-example.example.org' {
       'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
       'proxy_set_header X-Forwarded-Proto $scheme;',
     ],
-    locations              => [
+    locations           => [
       {
         path                => '/wss/',
         location_directives => [
@@ -176,11 +176,11 @@ node 'proxy-example.example.org' {
         ],
       },
     ],
-    php_fpm_enable         => false,
-    server_name            => 'app-proxy.example.org',
-    ssl_certificate        => '/etc/letsencrypt/live/app-proxy.example.org/fullchain.pem',
-    ssl_certificate_key    => '/etc/letsencrypt/live/app-proxy.example.org/privkey.pem',
-    try_files              => false,
-    require                => Class['nginx'],
+    php_fpm_enable      => false,
+    server_name         => 'app-proxy.example.org',
+    ssl_certificate     => '/etc/letsencrypt/live/app-proxy.example.org/fullchain.pem',
+    ssl_certificate_key => '/etc/letsencrypt/live/app-proxy.example.org/privkey.pem',
+    try_files           => false,
+    require             => Class['nginx'],
   }
 }

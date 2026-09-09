@@ -1,8 +1,8 @@
 # @summary Manages a systemd-networkd `.network` file.
 #
-# This defined type writes `/etc/systemd/network/<title>.network` from the shared
-# template and notifies a daemon-reload exec. It is used for repository-managed
-# DHCP and router-advertisement policy that complements the network module.
+# lint:ignore:140chars
+# This defined type writes `/etc/systemd/network/<title>.network` from the shared template and notifies a daemon-reload exec. It is used for repository-managed DHCP and router-advertisement policy that complements the network module.
+# lint:endignore
 #
 # @example Disable DHCP for matching interfaces
 #   basic_settings::systemd_network { '90-dhcpc':
@@ -28,7 +28,7 @@
 # @api public
 define basic_settings::systemd_network (
   String                    $daemon_reload  = 'systemd_daemon_reload',
-  Enum['present','absent']  $ensure         = present,
+  Enum['present', 'absent'] $ensure         = present,
   String                    $interface      = 'ens*',
   Hash                      $ipv6_accept_ra = {},
   Hash                      $network        = {},

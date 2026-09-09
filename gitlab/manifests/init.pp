@@ -1,15 +1,12 @@
 # @summary Installs GitLab EE and integrates it with local systemd, monitoring, and audit policy.
 #
-# This class installs GitLab EE with the provided initial root credentials,
-# optionally relocates `/opt/gitlab`, manages the SSL directory, disables vendor
-# service enablement when systemd integration is available, binds GitLab into the
-# shared target ladder, adds monitoring, and installs audit exclusions for known
-# GitLab runtime behavior. The root password is used during installation and is
-# passed to the install command as sensitive content.
+# lint:ignore:140chars
+# This class installs GitLab EE with the provided initial root credentials, optionally relocates `/opt/gitlab`, manages the SSL directory, disables vendor service enablement when systemd integration is available, binds GitLab into the shared target ladder, adds monitoring, and installs audit exclusions for known GitLab runtime behavior. The root password is used during installation and is passed to the install command as sensitive content.
+# lint:endignore
 #
 # @example Install GitLab with an explicit FQDN
 #   class { 'gitlab':
-#     root_password => 'change-me',
+#     root_password => lookup('gitlab::root_password'),
 #     server_fdqn   => 'gitlab.example.org',
 #   }
 #
@@ -17,28 +14,24 @@
 #   Initial GitLab root password used by the package install command.
 #
 # @param install_dir
-#   Optional replacement target for `/opt/gitlab`. When set, the class creates
-#   the directory and symlinks `/opt/gitlab` to it.
+#   Optional replacement target for `/opt/gitlab`. When set, the class creates the directory and symlinks `/opt/gitlab` to it.
 #
 # @param nice_level
-#   Positive nice value converted to a negative service priority in the systemd
-#   drop-in. The default is 12.
+#   Positive nice value converted to a negative service priority in the systemd drop-in. The default is 12.
 #
 # @param root_email
-#   Initial GitLab root email. `undef` inherits monitoring mail when available,
-#   otherwise uses `root@<server_fdqn>`.
+#   Initial GitLab root email. `undef` inherits monitoring mail when available, otherwise uses `root@<server_fdqn>`.
 #
 # @param server_fdqn
-#   External GitLab FQDN used for `EXTERNAL_URL`. `undef` inherits
-#   `basic_settings::server_fdqn` or the Facter FQDN.
+#   External GitLab FQDN used for `EXTERNAL_URL`. `undef` inherits `basic_settings::server_fdqn` or the Facter FQDN.
 #
 # @api public
 class gitlab (
-  String              $root_password,
-  Optional[String]    $install_dir    = undef,
-  Integer             $nice_level     = 12,
-  Optional[String]    $root_email     = undef,
-  Optional[String]    $server_fdqn    = undef
+  String           $root_password,
+  Optional[String] $install_dir   = undef,
+  Integer          $nice_level    = 12,
+  Optional[String] $root_email    = undef,
+  Optional[String] $server_fdqn   = undef,
 ) {
   # Set some values
   $suspicious_packages = ['/usr/bin/gitlab-ctl']
@@ -88,6 +81,8 @@ class gitlab (
     # Create symlink
     file { '/opt/gitlab':
       ensure  => 'link',
+      owner   => 'root',
+      group   => 'root',
       target  => $install_dir,
       force   => true,
       require => File['gitlab_install_dir'],
@@ -105,7 +100,7 @@ class gitlab (
   $root_email_correct_shell = stdlib::shell_escape($root_email_correct)
   $root_password_shell = stdlib::shell_escape($root_password)
   $external_url_shell = stdlib::shell_escape("http://${server_fdqn_correct}")
-  $gitlab_install_script = "GITLAB_ROOT_EMAIL=${root_email_correct_shell} GITLAB_ROOT_PASSWORD=${root_password_shell} EXTERNAL_URL=${external_url_shell} /usr/bin/apt-get install gitlab-ee" #lint:ignore:140chars
+  $gitlab_install_script = "GITLAB_ROOT_EMAIL=${root_email_correct_shell} GITLAB_ROOT_PASSWORD=${root_password_shell} EXTERNAL_URL=${external_url_shell} /usr/bin/apt-get install gitlab-ee" # lint:ignore:140chars
 
   # Escape the complete install script before passing it to sh -c.
   $gitlab_install_script_shell = stdlib::shell_escape($gitlab_install_script)
@@ -192,11 +187,11 @@ class gitlab (
     basic_settings::security_audit { 'gitlab_exclude':
       rules   => [
         # GitLab's bundled Prometheus periodically probes TSDB metadata; interrupted reads in that data directory are expected.
-        '-a never,exit -F arch=b32 -S open,openat,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', #lint:ignore:140chars
-        '-a never,exit -F arch=b64 -S openat,openat2,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', #lint:ignore:140chars
+        '-a never,exit -F arch=b32 -S open,openat,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', # lint:ignore:140chars
+        '-a never,exit -F arch=b64 -S openat,openat2,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', # lint:ignore:140chars
         # User-systemd setup for the GitLab account creates runtime markers, transient xattrs, and mount probes.
-        '-a never,exit -F arch=b32 -S mknodat,mount,umount2,chmod,fchmod,fchmodat,chown,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', #lint:ignore:140chars
-        '-a never,exit -F arch=b64 -S mknodat,mount,umount2,fchmod,fchmodat,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', #lint:ignore:140chars
+        '-a never,exit -F arch=b32 -S mknodat,mount,umount2,chmod,fchmod,fchmodat,chown,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', # lint:ignore:140chars
+        '-a never,exit -F arch=b64 -S mknodat,mount,umount2,fchmod,fchmodat,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', # lint:ignore:140chars
         # GitLab SSH sessions call systemctl for user-manager state checks; systemd-owned configuration writes remain audited.
         '-a never,exit -F arch=b32 -F exe=/usr/bin/systemctl -F auid=git',
         '-a never,exit -F arch=b64 -F exe=/usr/bin/systemctl -F auid=git',

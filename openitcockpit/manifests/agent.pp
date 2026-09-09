@@ -1,10 +1,8 @@
 # @summary Installs and configures the OpenITCOCKPIT monitoring agent.
 #
-# This class manages the OpenITCOCKPIT agent package, service wiring, custom
-# check directories, persistent check state, `customchecks.ini`, and
-# `/etc/openitcockpit-agent/config.ini`. Defaults are conservative: the agent
-# binds to localhost, Prometheus export is disabled, and push-mode TLS
-# verification is enabled.
+# lint:ignore:140chars
+# This class manages the OpenITCOCKPIT agent package, service wiring, custom check directories, persistent check state, `customchecks.ini`, and `/etc/openitcockpit-agent/config.ini`. Defaults are conservative: the agent binds to localhost, Prometheus export is disabled, and push-mode TLS verification is enabled.
+# lint:endignore
 #
 # @example Configure push mode
 #   class { 'openitcockpit::agent':
@@ -26,8 +24,7 @@
 #   Enables Docker statistics collection.
 #
 # @param ensure
-#   Installs and configures the agent when `present`; purges the package when
-#   `absent`.
+#   Installs and configures the agent when `present`; purges the package when `absent`.
 #
 # @param libvirt_enable
 #   Enables libvirt statistics collection.
@@ -51,8 +48,7 @@
 #   Optional proxy URL rendered into the agent configuration.
 #
 # @param push_apikey
-#   Sensitive API key used for push mode. Push mode is only enabled when this,
-#   `push_url`, and `push_enable` are all set.
+#   Sensitive API key used for push mode. Push mode is only enabled when this, `push_url`, and `push_enable` are all set.
 #
 # @param push_enable
 #   Enables push mode when `true` and the required URL/API key are present.
@@ -61,8 +57,7 @@
 #   OpenITCOCKPIT server URL used for push mode.
 #
 # @param sensorstats_enable
-#   Optional sensor statistics override. `undef` enables sensors on physical
-#   hosts and disables them on virtual machines.
+#   Optional sensor statistics override. `undef` enables sensors on physical hosts and disables them on virtual machines.
 #
 # @param services_enable
 #   Enables service statistics collection.
@@ -78,26 +73,26 @@
 #
 # @api public
 class openitcockpit::agent (
-  String                      $bind_address               = '127.0.0.1',
-  Boolean                     $cpustats_enable            = true,
-  Boolean                     $diskstats_enable           = true,
-  Boolean                     $dockerstats_enable         = true,
-  Enum['present','absent']    $ensure                     = present,
-  Boolean                     $libvirt_enable             = true,
-  Boolean                     $memory_enable              = true,
-  Boolean                     $netstats_enable            = true,
-  Boolean                     $ntp_enable                 = true,
-  Boolean                     $processstats_enable        = true,
-  Boolean                     $prometheus_enable          = false,
-  Optional[String]            $proxy                      = undef,
-  Optional[Sensitive[String]] $push_apikey                = undef,
-  Boolean                     $push_enable                = false,
-  Optional[String]            $push_url                   = undef,
-  Optional[Boolean]           $sensorstats_enable         = undef,
-  Boolean                     $services_enable            = true,
-  Boolean                     $swap_enable                = true,
-  Boolean                     $userstats_enable           = true,
-  Boolean                     $verify_server_certificate  = true
+  String                      $bind_address              = '127.0.0.1',
+  Boolean                     $cpustats_enable           = true,
+  Boolean                     $diskstats_enable          = true,
+  Boolean                     $dockerstats_enable        = true,
+  Enum['present', 'absent']   $ensure                    = present,
+  Boolean                     $libvirt_enable            = true,
+  Boolean                     $memory_enable             = true,
+  Boolean                     $netstats_enable           = true,
+  Boolean                     $ntp_enable                = true,
+  Boolean                     $processstats_enable       = true,
+  Boolean                     $prometheus_enable         = false,
+  Optional[String]            $proxy                     = undef,
+  Optional[Sensitive[String]] $push_apikey               = undef,
+  Boolean                     $push_enable               = false,
+  Optional[String]            $push_url                  = undef,
+  Optional[Boolean]           $sensorstats_enable        = undef,
+  Boolean                     $services_enable           = true,
+  Boolean                     $swap_enable               = true,
+  Boolean                     $userstats_enable          = true,
+  Boolean                     $verify_server_certificate = true,
 ) {
   # Set variables
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
@@ -201,6 +196,8 @@ class openitcockpit::agent (
         # Create symlink
         file { '/usr/lib/systemd/system/openitcockpit-agent.service':
           ensure  => 'link',
+          owner   => 'root',
+          group   => 'root',
           target  => '/etc/openitcockpit-agent/init/openitcockpit-agent.service',
           force   => true,
           notify  => Exec['openitcockpit_agent_systemd_daemon_reload'],

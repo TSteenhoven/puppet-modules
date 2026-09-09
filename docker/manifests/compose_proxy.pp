@@ -1,10 +1,8 @@
 # @summary Deploys one Docker Compose project behind an Nginx reverse proxy.
 #
-# This defined type wraps `docker::compose` and adds an `nginx::server` vhost for
-# applications that should be reachable through Nginx. It keeps Compose
-# deployment behavior in one place and centralizes the common reverse-proxy
-# directives used by Docker-backed applications. Declare `docker` and `nginx`
-# before using this defined type directly.
+# lint:ignore:140chars
+# This defined type wraps `docker::compose` and adds an `nginx::server` vhost for applications that should be reachable through Nginx. It keeps Compose deployment behavior in one place and centralizes the common reverse-proxy directives used by Docker-backed applications. Declare `docker` and `nginx` before using this defined type directly.
+# lint:endignore
 #
 # @example Proxy a Compose stack over local HTTPS without validating the upstream certificate
 #   class { 'docker': }
@@ -35,9 +33,9 @@
 #   CSP header value passed to `nginx::server`.
 #
 # @param ensure
-#   Controls the Compose project state. The Nginx vhost is declared when this is
-#   `present`; when this is `absent`, only the Compose project removal is
-#   delegated.
+# lint:ignore:140chars
+#   Controls the Compose project state. The Nginx vhost is declared when this is `present`; when this is `absent`, only the Compose project removal is delegated.
+# lint:endignore
 #
 # @param env_content
 #   Optional `.env` content passed to `docker::compose`.
@@ -61,8 +59,7 @@
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack
-#   critical.
+#   Container names that are allowed to be exited without making the stack critical.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -83,28 +80,31 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param project_directories
+# lint:ignore:140chars
 #   Optional single-segment directories passed to `docker::compose` for creation below the Compose project directory. Values may override owner, group, and mode.
+# lint:endignore
 #
 # @param proxy_extra_directives
 #   Additional directives appended to the generated Nginx proxy location.
 #
 # @param proxy_host
-#   Local upstream host used by Nginx for `proxy_pass`. The default is
-#   `127.0.0.1`.
+#   Local upstream host used by Nginx for `proxy_pass`. The default is `127.0.0.1`.
 #
 # @param proxy_read_timeout
 #   Nginx proxy read timeout for long-lived requests and websocket sessions.
 #
 # @param proxy_scheme
-#   Upstream scheme used by Nginx. The default is `https` so local proxy traffic
-#   is encrypted unless the caller explicitly opts out with `http`.
+# lint:ignore:140chars
+#   Upstream scheme used by Nginx. The default is `https` so local proxy traffic is encrypted unless the caller explicitly opts out with `http`.
+# lint:endignore
 #
 # @param proxy_ssl_trusted_certificate
 #   Optional CA bundle path for verifying HTTPS upstream certificates.
 #
 # @param proxy_ssl_verify
-#   Verifies HTTPS upstream certificates when `true`. The default is `false` so
-#   locally encrypted upstreams with self-signed certificates keep working.
+# lint:ignore:140chars
+#   Verifies HTTPS upstream certificates when `true`. The default is `false` so locally encrypted upstreams with self-signed certificates keep working.
+# lint:endignore
 #
 # @param proxy_websocket
 #   Adds common websocket upgrade directives when `true`.
@@ -135,50 +135,50 @@
 #
 # @api public
 define docker::compose_proxy (
-  String                                        $compose_source,
-  Integer[1, 65535]                             $proxy_port,
-  String                                        $server_name,
-  Optional[String]                              $client_max_body_size          = undef,
-  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]      $compose_checksum              = undef,
-  Variant[Boolean,String]                       $content_security_policy       = true,
-  Enum['present','absent']                      $ensure                        = present,
-  Optional[Variant[String, Sensitive[String]]]  $env_content                   = undef,
-  Optional[String]                              $env_source                    = undef,
-  Boolean                                       $http2_enable                  = true,
-  Boolean                                       $http3_enable                  = true,
-  Boolean                                       $http_enable                   = true,
-  Boolean                                       $https_force                   = true,
-  Integer                                       $monitoring_detail_limit       = 6000,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_expected_exited    = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_health_required    = [],
-  Integer                                       $monitoring_interval           = 300,
-  Boolean                                       $monitoring_orphan_critical    = false,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_profiles           = [],
-  Integer                                       $monitoring_starting_grace     = 300,
-  Integer                                       $monitoring_timeout            = 60,
+  String                                       $compose_source,
+  Integer[1, 65535]                            $proxy_port,
+  String                                       $server_name,
+  Optional[String]                             $client_max_body_size          = undef,
+  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum              = undef,
+  Variant[Boolean, String]                     $content_security_policy       = true,
+  Enum['present', 'absent']                    $ensure                        = present,
+  Optional[Variant[String, Sensitive[String]]] $env_content                   = undef,
+  Optional[String]                             $env_source                    = undef,
+  Boolean                                      $http2_enable                  = true,
+  Boolean                                      $http3_enable                  = true,
+  Boolean                                      $http_enable                   = true,
+  Boolean                                      $https_force                   = true,
+  Integer                                      $monitoring_detail_limit       = 6000,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited    = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required    = [],
+  Integer                                      $monitoring_interval           = 300,
+  Boolean                                      $monitoring_orphan_critical    = false,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles           = [],
+  Integer                                      $monitoring_starting_grace     = 300,
+  Integer                                      $monitoring_timeout            = 60,
   Hash[Pattern[/\A[A-Za-z0-9_.-]+\z/], Struct[{
         Optional[owner] => String[1],
         Optional[group] => String[1],
         Optional[mode]  => Pattern[/\A[0-7]{4}\z/],
-  }]]                                           $project_directories           = {},
-  Array[String]                                 $proxy_extra_directives        = [],
-  Pattern[/\A[^\r\n]+\z/]                       $proxy_host                    = '127.0.0.1',
-  Pattern[/\A[^\r\n]+\z/]                       $proxy_read_timeout            = '86400',
-  Enum['http','https']                          $proxy_scheme                  = 'https',
-  Optional[String]                              $proxy_ssl_trusted_certificate = undef,
-  Boolean                                       $proxy_ssl_verify              = false,
-  Boolean                                       $proxy_websocket               = true,
-  Variant[Boolean,String]                       $referrer_policy               = true,
-  Optional[String]                              $ssl_certificate               = undef,
-  Optional[String]                              $ssl_certificate_key           = undef,
-  Optional[String]                              $ssl_certificate_trusted       = undef,
-  Variant[Boolean,String]                       $strict_transport_security     = true,
-  String                                        $target                        = 'services',
-  Variant[Boolean,String]                       $x_content_type_options        = true,
-  Variant[Boolean,String]                       $x_frame_options               = true
+  }]]                                          $project_directories           = {},
+  Array[String]                                $proxy_extra_directives        = [],
+  Pattern[/\A[^\r\n]+\z/]                      $proxy_host                    = '127.0.0.1',
+  Pattern[/\A[^\r\n]+\z/]                      $proxy_read_timeout            = '86400',
+  Enum['http', 'https']                        $proxy_scheme                  = 'https',
+  Optional[String]                             $proxy_ssl_trusted_certificate = undef,
+  Boolean                                      $proxy_ssl_verify              = false,
+  Boolean                                      $proxy_websocket               = true,
+  Variant[Boolean, String]                     $referrer_policy               = true,
+  Optional[String]                             $ssl_certificate               = undef,
+  Optional[String]                             $ssl_certificate_key           = undef,
+  Optional[String]                             $ssl_certificate_trusted       = undef,
+  Variant[Boolean, String]                     $strict_transport_security     = true,
+  String                                       $target                        = 'services',
+  Variant[Boolean, String]                     $x_content_type_options        = true,
+  Variant[Boolean, String]                     $x_frame_options               = true,
 ) {
-  # Check if nginx class is included for proxy vhost creation
-  if (defined(Class['nginx'])) {
+  # The proxy composes resources owned by both parent classes and orders the stack after Docker.
+  if (defined(Class['nginx']) and defined(Class['docker'])) {
     # Construct the proxy upstream URL for use in the generated Nginx configuration.
     $proxy_upstream = "${proxy_scheme}://${proxy_host}:${proxy_port}"
 
@@ -287,6 +287,6 @@ define docker::compose_proxy (
       }
     }
   } else {
-    fail('docker::compose_proxy requires the nginx class before it can create a reverse proxy vhost.')
+    fail('docker::compose_proxy requires the docker and nginx classes before composing the stack and reverse proxy vhost.')
   }
 }

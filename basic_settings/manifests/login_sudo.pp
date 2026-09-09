@@ -1,8 +1,8 @@
 # @summary Writes a sudoers.d rule with repository-standard ownership and mode.
 #
-# This defined type installs sudo when needed and writes a single sudoers snippet
-# under `/etc/sudoers.d`. It is used by service modules that need controlled
-# command delegation while keeping sudoers files root-owned and mode `0440`.
+# lint:ignore:140chars
+# This defined type installs sudo when needed and writes a single sudoers snippet under `/etc/sudoers.d`. It is used by service modules that need controlled command delegation while keeping sudoers files root-owned and mode `0440`.
+# lint:endignore
 #
 # @example Allow a command for a service account
 #   basic_settings::login_sudo { 'example':

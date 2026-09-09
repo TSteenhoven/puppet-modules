@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 # Managed by puppet
 
-# Check if shell is non login shell
+# A non-login su session does not read profile.d, so PAM invokes the shared login notification explicitly.
 if [ "$PAM_SERVICE" = "su" ]; then
     SH=$(command -v sh 2>/dev/null)
     if [ -n "$SH" ]; then

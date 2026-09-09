@@ -1,19 +1,15 @@
 # @summary Creates, updates, or removes an Authentik admin user in a Docker Compose stack.
 #
-# This defined type talks directly to the running Authentik `server` Compose
-# service with `ak shell`. When `ensure` is `present`, it creates the user when
-# missing, activates existing users, updates the requested email and password,
-# and ensures membership of a superuser group. When `ensure` is `absent`, it
-# removes the requested user. The password is accepted as `Sensitive[String]`
-# and the generated Puppet `exec` command and guard are also marked sensitive so
-# the secret is not written to normal Puppet output.
+# lint:ignore:140chars
+# This defined type talks directly to the running Authentik `server` Compose service with `ak shell`. When `ensure` is `present`, it creates the user when missing, activates existing users, updates the requested email and password, and ensures membership of a superuser group. When `ensure` is `absent`, it removes the requested user. The password is accepted as `Sensitive[String]` and the generated Puppet `exec` command and guard are also marked sensitive so the secret is not written to normal Puppet output.
+# lint:endignore
 #
-# Declare `docker::authentik` or an equivalent `docker::compose` stack with the
-# same `compose_name`. The stack must already be running; this resource does not
-# start or restart Authentik.
+# lint:ignore:140chars
+# Declare `docker::authentik` or an equivalent `docker::compose` stack with the same `compose_name`. The stack must already be running; this resource does not start or restart Authentik.
+# lint:endignore
 #
 # @example Create or repair an Authentik admin account
-#   docker::authentik_admin { 'kevin.admin':
+#   docker::authentik_admin { 'example.admin':
 #     compose_name => 'authentik',
 #     email        => 'info@example.org',
 #     password     => Sensitive('replace-with-admin-password'),
@@ -22,8 +18,8 @@
 #
 # @example Remove the bundled Authentik bootstrap admin account
 #   docker::authentik_admin { 'remove-akadmin':
-#     compose_name => 'authentik',
 #     ensure       => absent,
+#     compose_name => 'authentik',
 #     username     => 'akadmin',
 #     require      => Docker::Authentik['authentik'],
 #   }
@@ -32,8 +28,7 @@
 #   Title of the managed `docker::compose` resource for the Authentik stack.
 #
 # @param email
-#   Email address to set on the Authentik user. Required when `ensure` is
-#   `present`; ignored when `ensure` is `absent`.
+#   Email address to set on the Authentik user. Required when `ensure` is `present`; ignored when `ensure` is `absent`.
 #
 # @param ensure
 #   Controls whether the Authentik user is present or absent.
@@ -42,9 +37,9 @@
 #   Authentik group that should grant superuser access to the managed user.
 #
 # @param password
-#   Password assigned to the Authentik user. Required when `ensure` is `present`;
-#   ignored when `ensure` is `absent`. Supply it from Hiera or a profile as a
-#   `Sensitive[String]` value.
+# lint:ignore:140chars
+#   Password assigned to the Authentik user. Required when `ensure` is `present`; ignored when `ensure` is `absent`. Supply it from Hiera or a profile as a `Sensitive[String]` value.
+# lint:endignore
 #
 # @param timeout
 #   Maximum time in seconds for each Docker Compose operation.
@@ -54,13 +49,13 @@
 #
 # @api public
 define docker::authentik_admin (
-  Pattern[/\A[A-Za-z0-9_.-]+\z/]              $compose_name,
-  Optional[Pattern[/\A[^\r\n]+\z/]]           $email       = undef,
-  Enum['present','absent']                    $ensure      = present,
-  Pattern[/\A[^\r\n]+\z/]                     $group_name  = 'authentik Admins',
-  Optional[Sensitive[String]]                 $password    = undef,
-  Integer[1]                                  $timeout     = 120,
-  Optional[Pattern[/\A[A-Za-z0-9@._+-]+\z/]]  $username    = undef
+  Pattern[/\A[A-Za-z0-9_.-]+\z/]             $compose_name,
+  Optional[Pattern[/\A[^\r\n]+\z/]]          $email        = undef,
+  Enum['present', 'absent']                  $ensure       = present,
+  Pattern[/\A[^\r\n]+\z/]                    $group_name   = 'authentik Admins',
+  Optional[Sensitive[String]]                $password     = undef,
+  Integer[1]                                 $timeout      = 120,
+  Optional[Pattern[/\A[A-Za-z0-9@._+-]+\z/]] $username     = undef,
 ) {
   # Resolve the best currently visible catalog anchor without assuming wrapper bodies have already been evaluated.
   $compose_defined = defined(Docker::Compose[$compose_name])
@@ -76,7 +71,7 @@ define docker::authentik_admin (
     $compose_require = Docker::Authentik[$compose_name]
     $compose_contract_fail_text = undef
   } else {
-    $compose_contract_fail_text = "docker::authentik_admin requires Docker::Compose[${compose_name}], Docker::Compose_proxy[${compose_name}], or Docker::Authentik[${compose_name}] in the catalog."
+    $compose_contract_fail_text = "docker::authentik_admin requires Docker::Compose[${compose_name}], Docker::Compose_proxy[${compose_name}], or Docker::Authentik[${compose_name}] in the catalog." # lint:ignore:140chars
   }
 
   if ($compose_contract_fail_text == undef) {

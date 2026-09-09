@@ -1,11 +1,10 @@
 # @summary Deploys and monitors one Docker Compose project as a systemd service.
 #
-# This defined type creates a root-only project directory under `/opt/docker`,
-# manages optional `.env` content and project-local directories, syncs and validates a Compose file from an
-# HTTPS, local file, or Puppet file-server source, and creates a
-# `docker-compose-<title>.service` when the shared systemd wrapper is available.
-# It also registers a stack-level monitoring check so container health can be
-# evaluated separately from the orchestration unit.
+# lint:ignore:140chars
+# This defined type creates a root-only project directory under `/opt/docker`, manages optional `.env` content and project-local directories, syncs and validates a Compose file from an HTTPS, local file, or Puppet file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
+# lint:endignore
+# It also registers a stack-level monitoring check so container health can be evaluated separately from the orchestration unit.
+# Declare `docker` before deploying a present stack; removal of a project directory does not require that class.
 #
 # @example Deploy a Compose stack from a Puppet file source
 #   docker::compose { 'example':
@@ -19,32 +18,29 @@
 #   }
 #
 # @param compose_checksum
-#   Optional SHA256 checksum for the Compose file. This is most useful for HTTPS
-#   sources where unexpected upstream changes should fail the Puppet run.
+# lint:ignore:140chars
+#   Optional SHA256 checksum for the Compose file. This is most useful for HTTPS sources where unexpected upstream changes should fail the Puppet run.
+# lint:endignore
 #
 # @param compose_source
-#   Compose file source. Must start with `https://`, `file:///`, or
-#   `puppet:///` when `ensure` is `present`.
+#   Compose file source. Must start with `https://`, `file:///`, or `puppet:///` when `ensure` is `present`.
 #
 # @param ensure
-#   Controls whether the Compose project directory and service are present or
-#   absent.
+#   Controls whether the Compose project directory and service are present or absent.
 #
 # @param env_content
-#   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit
-#   `Sensitive[String]` values are passed through.
+#   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit `Sensitive[String]` values are passed through.
 #
 # @param env_source
-#   Optional Puppet-compatible source for the `.env` file. When set, it takes
-#   precedence over `env_content` and must start with `https://`, `file:///`, or
-#   `puppet:///`.
+# lint:ignore:140chars
+#   Optional Puppet-compatible source for the `.env` file. When set, it takes precedence over `env_content` and must start with `https://`, `file:///`, or `puppet:///`.
+# lint:endignore
 #
 # @param monitoring_detail_limit
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack
-#   critical, such as one-shot migration containers.
+#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -65,33 +61,34 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param project_directories
+# lint:ignore:140chars
 #   Optional single-segment directories created below the Compose project directory before the systemd service starts. Values may override owner, group, and mode. Only the directory entry is managed; contents remain unmanaged.
+# lint:endignore
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to the generated
-#   Compose service. The default is `services`.
+#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is `services`.
 #
 # @api public
 define docker::compose (
-  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]      $compose_checksum            = undef,
-  Optional[String]                              $compose_source              = undef,
-  Enum['present','absent']                      $ensure                      = present,
-  Optional[Variant[String, Sensitive[String]]]  $env_content                 = undef,
-  Optional[String]                              $env_source                  = undef,
-  Integer                                       $monitoring_detail_limit     = 6000,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_expected_exited  = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_health_required  = [],
-  Integer                                       $monitoring_interval         = 300,
-  Boolean                                       $monitoring_orphan_critical  = false,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $monitoring_profiles         = [],
-  Integer                                       $monitoring_starting_grace   = 300,
-  Integer                                       $monitoring_timeout          = 60,
+  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum           = undef,
+  Optional[String]                             $compose_source             = undef,
+  Enum['present', 'absent']                    $ensure                     = present,
+  Optional[Variant[String, Sensitive[String]]] $env_content                = undef,
+  Optional[String]                             $env_source                 = undef,
+  Integer                                      $monitoring_detail_limit    = 6000,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required = [],
+  Integer                                      $monitoring_interval        = 300,
+  Boolean                                      $monitoring_orphan_critical = false,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles        = [],
+  Integer                                      $monitoring_starting_grace  = 300,
+  Integer                                      $monitoring_timeout         = 60,
   Hash[Pattern[/\A[A-Za-z0-9_.-]+\z/], Struct[{
         Optional[owner] => String[1],
         Optional[group] => String[1],
         Optional[mode]  => Pattern[/\A[0-7]{4}\z/],
-  }]]                                           $project_directories         = {},
-  String                                        $target                      = 'services'
+  }]]                                          $project_directories        = {},
+  String                                       $target                     = 'services',
 ) {
   # Validate the compose name to avoid issues with file paths and systemd unit names.
   if ($name =~ /\A[a-zA-Z0-9_.-]+\z/) {
@@ -107,7 +104,8 @@ define docker::compose (
 
     # Check if ensure is present to determine if the compose stack should be deployed or removed.
     if ($ensure == present) {
-      if ($compose_source != undef) {
+      # Deployment consumes Docker's package resources; cleanup below can run without the parent class.
+      if ($compose_source != undef and defined(Class['docker'])) {
         # Only support https, local file, and Puppet file-server sources so Compose content is not fetched over plain HTTP.
         if ($compose_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/) {
           # Determine the content of the environment file based on the provided parameters.
@@ -134,7 +132,9 @@ define docker::compose (
             default => $compose_checksum.downcase(),
           }
 
+          # lint:ignore:140chars
           # Check if monitoring is enabled to determine if the compose service should be configured with failure monitoring for integration with the monitoring stack.
+          # lint:endignore
           $monitoring_enable = defined(Class['basic_settings::monitoring'])
           if ($monitoring_enable) {
             $monitoring_package = $basic_settings::monitoring::package
@@ -211,9 +211,9 @@ define docker::compose (
           }
 
           # Keep Compose commands local; other defined types consume the managed File aliases above.
-          $compose_config_command = "/usr/bin/docker compose --project-directory ${project_directory}${compose_env_command} --file % config --quiet"
-          $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans"
-          $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans"
+          $compose_config_command = "/usr/bin/docker compose --project-directory ${project_directory}${compose_env_command} --file % config --quiet" # lint:ignore:140chars
+          $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans" # lint:ignore:140chars
+          $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
 
           # Sync and validate the compose file before it is promoted into the project directory.
           file { $compose_file:
@@ -289,7 +289,9 @@ define docker::compose (
               require            => $service_require,
             }
 
+            # lint:ignore:140chars
             # If the target is not 'services', create a dependency on the specified target to allow for flexible ordering of the compose stack in relation to other systemd services and targets.
+            # lint:endignore
             basic_settings::systemd_drop_in { "${service_name}_dependency":
               target_unit   => "${basic_settings::systemd::cluster_id}-${target}.target",
               unit          => {
@@ -321,7 +323,7 @@ define docker::compose (
           fail('docker::compose compose_source must start with https://, file:///, or puppet:///')
         }
       } else {
-        fail('docker::compose requires compose_source when ensure is present.')
+        fail('docker::compose requires the docker class and compose_source when ensure is present.')
       }
     } else {
       # Remove the directory for docker-compose

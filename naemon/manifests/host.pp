@@ -1,9 +1,8 @@
 # @summary Manages one Naemon host configuration file.
 #
-# This defined type writes a host configuration file below the directory
-# prepared by the `naemon` class and notifies the `naemon` service. It must be
-# used only after the `naemon` class has resolved package paths and webserver
-# ownership.
+# lint:ignore:140chars
+# This defined type writes a host configuration file below the directory prepared by the `naemon` class and notifies the `naemon` service. It must be used only after the `naemon` class has resolved package paths and webserver ownership.
+# lint:endignore
 #
 # @example Add a Naemon host with custom checks
 #   naemon::host { 'web01':
@@ -28,9 +27,9 @@
 # @api public
 define naemon::host (
   String                    $address,
-  Hash                      $checks     = {},
-  Enum['present','absent']  $ensure     = present,
-  Optional[String]          $friendly   = undef
+  Hash                      $checks   = {},
+  Enum['present', 'absent'] $ensure   = present,
+  Optional[String]          $friendly = undef,
 ) {
   if (defined(Class['naemon'])) {
     # Create host file

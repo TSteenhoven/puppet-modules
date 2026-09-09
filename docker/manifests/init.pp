@@ -1,15 +1,13 @@
 # @summary Installs the Docker engine package.
 #
 # This class installs Docker CE using the package name selected by `edition`.
-# Repository setup is expected to be handled separately, commonly through
-# `basic_settings` with `docker_enable => true`.
+# Repository setup is expected to be handled separately, commonly through `basic_settings` with `docker_enable => true`.
 #
 # @example Install Docker CE
 #   class { 'docker': }
 #
 # @param edition
-#   Docker edition to install. The only supported value is `ce`, which installs
-#   the `docker-ce` package.
+#   Docker edition to install. The only supported value is `ce`, which installs the `docker-ce` package.
 #
 # @api public
 class docker (

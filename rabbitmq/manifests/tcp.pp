@@ -1,9 +1,9 @@
 # @summary Manages RabbitMQ AMQP TCP and TLS listener configuration.
 #
 # This class requires `rabbitmq` and writes `/etc/rabbitmq/conf.d/tcp.conf`.
-# When all certificate paths are provided, TLS is enabled and plain TCP follows
-# `tcp_enable`; otherwise TLS is disabled and plain TCP is forced on so the
-# broker remains reachable.
+# lint:ignore:140chars
+# When all certificate paths are provided, TLS is enabled and plain TCP follows `tcp_enable`; otherwise TLS is disabled and plain TCP is forced on so the broker remains reachable.
+# lint:endignore
 #
 # @example Enable TLS and disable plain TCP
 #   class { 'rabbitmq::tcp':
@@ -32,18 +32,17 @@
 #   TLS protocol list rendered into RabbitMQ configuration.
 #
 # @param tcp_enable
-#   Enables the plain TCP listener when TLS is available. Plain TCP is forced on
-#   when TLS certificate inputs are incomplete.
+#   Enables the plain TCP listener when TLS is available. Plain TCP is forced on when TLS certificate inputs are incomplete.
 #
 # @param tcp_port
 #   Plain AMQP listener port.
 #
 # @api public
 class rabbitmq::tcp (
-  Optional[String]    $ssl_ca_certificate     = undef,
-  Optional[String]    $ssl_certificate        = undef,
-  Optional[String]    $ssl_certificate_key    = undef,
-  Array               $ssl_ciphers            = [
+  Optional[String] $ssl_ca_certificate  = undef,
+  Optional[String] $ssl_certificate     = undef,
+  Optional[String] $ssl_certificate_key = undef,
+  Array            $ssl_ciphers         = [
     'TLS_AES_256_GCM_SHA384',
     'TLS_AES_128_GCM_SHA256',
     'TLS_CHACHA20_POLY1305_SHA256',
@@ -57,10 +56,10 @@ class rabbitmq::tcp (
     'ECDHE-RSA-AES256-GCM-SHA384',
     'ECDHE-RSA-CHACHA20-POLY1305',
   ],
-  Integer             $ssl_port               = 5671,
-  Array               $ssl_protocols          = ['tlsv1.3', 'tlsv1.2'],
-  Boolean             $tcp_enable             = false,
-  Integer             $tcp_port               = 5672
+  Integer          $ssl_port            = 5671,
+  Array            $ssl_protocols       = ['tlsv1.3', 'tlsv1.2'],
+  Boolean          $tcp_enable          = false,
+  Integer          $tcp_port            = 5672,
 ) {
   if (defined(Class['rabbitmq'])) {
     # Check if all cert variables are given

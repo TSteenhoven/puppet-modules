@@ -1,10 +1,8 @@
 # @summary Manages a systemd drop-in file for a unit or daemon configuration.
 #
-# This defined type writes `<path>/<target_unit>.d/<title>.conf` from the shared
-# drop-in template, creates the drop-in directory when needed, and notifies the
-# selected daemon-reload exec. It is used throughout the repository to add
-# service ordering, failure hooks, and hardening settings without replacing
-# vendor units.
+# lint:ignore:140chars
+# This defined type writes `<path>/<target_unit>.d/<title>.conf` from the shared drop-in template, creates the drop-in directory when needed, and notifies the selected daemon-reload exec. It is used throughout the repository to add service ordering, failure hooks, and hardening settings without replacing vendor units.
+# lint:endignore
 #
 # @example Add a service hardening drop-in
 #   basic_settings::systemd_drop_in { 'example_settings':
@@ -28,8 +26,7 @@
 #   Key/value settings rendered into the `[Mount]` section.
 #
 # @param path
-#   Base directory containing the target unit or daemon configuration. The
-#   default is `/etc/systemd/system`.
+#   Base directory containing the target unit or daemon configuration. The default is `/etc/systemd/system`.
 #
 # @param resolve
 #   Key/value settings rendered into a resolved configuration drop-in section.
@@ -48,17 +45,17 @@
 #
 # @api public
 define basic_settings::systemd_drop_in (
-  String $target_unit,
-  String                    $daemon_reload      = 'systemd_daemon_reload',
-  Enum['present','absent']  $ensure             = present,
-  Hash                      $journal            = {},
-  Hash                      $mount              = {},
-  String                    $path               = '/etc/systemd/system',
-  Hash                      $resolve            = {},
-  Hash                      $service            = {},
-  Hash                      $socket             = {},
-  Hash                      $timer              = {},
-  Hash                      $unit               = {}
+  String                    $target_unit,
+  String                    $daemon_reload = 'systemd_daemon_reload',
+  Enum['present', 'absent'] $ensure        = present,
+  Hash                      $journal       = {},
+  Hash                      $mount         = {},
+  String                    $path          = '/etc/systemd/system',
+  Hash                      $resolve       = {},
+  Hash                      $service       = {},
+  Hash                      $socket        = {},
+  Hash                      $timer         = {},
+  Hash                      $unit          = {},
 ) {
   # Check if systemd package is not defined
   if (!defined(Package['systemd'])) {

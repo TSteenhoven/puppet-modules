@@ -1,0 +1,35 @@
+name: Puppet standard
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Puppet lint and regression tests
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE_IGNORE_CONFIG: '1'
+      BUNDLE_VERSION: system
+      BUNDLE_FROZEN: 'true'
+      BUNDLE_PATH: vendor/bundle
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the locked development bundle
+        run: bundle install
+      - name: Check the complete first-party scope
+        run: bundle exec puppet-lint .
+      - name: Test plugins, native syntax, examples and behavior
+        run: bundle exec rake spec

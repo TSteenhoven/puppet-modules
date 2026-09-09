@@ -1,8 +1,8 @@
 # @summary Manages Ubuntu Pro client packages and optional monitoring tooling.
 #
-# This class applies only on Ubuntu. It installs Ubuntu Pro client packages,
-# preserves the installer-managed ESM APT hook, optionally installs Landscape
-# monitoring tooling, and adds logrotate coverage when logrotate is available.
+# lint:ignore:140chars
+# This class applies only on Ubuntu. It installs Ubuntu Pro client packages, preserves the installer-managed ESM APT hook, optionally installs Landscape monitoring tooling, and adds logrotate coverage when logrotate is available.
+# lint:endignore
 #
 # @example Install Ubuntu Pro client packages
 #   class { 'basic_settings::pro':
@@ -10,20 +10,18 @@
 #   }
 #
 # @param enable
-#   Indicates that Ubuntu Pro support is desired. When combined with snap support
-#   the class ensures Pro client tooling is installed.
+#   Indicates that Ubuntu Pro support is desired. When combined with snap support the class ensures Pro client tooling is installed.
 #
 # @param monitoring_enable
-#   Installs Landscape monitoring packages when `true` and `enable` is also
-#   `true`; purges them otherwise.
+#   Installs Landscape monitoring packages when `true` and `enable` is also `true`; purges them otherwise.
 #
 # @api public
 class basic_settings::pro (
   Boolean $enable            = false,
-  Boolean $monitoring_enable = false
+  Boolean $monitoring_enable = false,
 ) {
   # Get OS name
-  case $facts['os']['name'] { #lint:ignore:case_without_default
+  case $facts['os']['name'] {
     'Ubuntu': {
       # Install advantage tools
       package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:
@@ -58,7 +56,7 @@ class basic_settings::pro (
       } else {
         # Remove monitoring tools
         package { ['landscape-common']:
-          ensure          => purged,
+          ensure => purged,
         }
       }
 
@@ -77,6 +75,9 @@ class basic_settings::pro (
           frequency => 'monthly',
         }
       }
+    }
+    default: {
+      # Ubuntu Pro does not apply to other operating systems.
     }
   }
 }

@@ -1,8 +1,8 @@
 # @summary Manages a RabbitMQ queue through rabbitmqadmin.
 #
-# This defined type requires `rabbitmq::management` and declares, deletes, or
-# reconciles a queue in the selected vhost. It can manage durability, queue type,
-# and arbitrary queue arguments.
+# lint:ignore:140chars
+# This defined type requires `rabbitmq::management` and declares, deletes, or reconciles a queue in the selected vhost. It can manage durability, queue type, and arbitrary queue arguments.
+# lint:endignore
 #
 # @example Create a quorum queue
 #   rabbitmq::management_queue { 'jobs':
@@ -10,8 +10,7 @@
 #   }
 #
 # @param arguments
-#   Optional RabbitMQ queue arguments. When `type` is set, it is merged into this
-#   hash as `x-queue-type`.
+#   Optional RabbitMQ queue arguments. When `type` is set, it is merged into this hash as `x-queue-type`.
 #
 # @param durable
 #   Controls queue durability. The default is `true`.
@@ -27,11 +26,11 @@
 #
 # @api public
 define rabbitmq::management_queue (
-  Optional[Data]              $arguments  = undef,
-  Boolean                     $durable    = true,
-  Enum['present','absent']    $ensure     = present,
-  Optional[String]            $type       = undef,
-  String                      $vhost      = '/'
+  Optional[Data]            $arguments = undef,
+  Boolean                   $durable   = true,
+  Enum['present', 'absent'] $ensure    = present,
+  Optional[String]          $type      = undef,
+  String                    $vhost     = '/',
 ) {
   if (defined(Class['rabbitmq::management'])) {
     # Escape rabbitmqadmin arguments before building queue commands and guards.
@@ -67,7 +66,7 @@ define rabbitmq::management_queue (
         $name_durable_pattern_shell = stdlib::shell_escape("|${name}|${durable_ucfirstvalue}|")
 
         # Set create command
-        $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare queue ${name_arg_shell} ${durable_arg_shell}" #lint:ignore:140chars
+        $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare queue ${name_arg_shell} ${durable_arg_shell}" # lint:ignore:140chars
 
         # Set type
         if ($type == undef) {
@@ -111,14 +110,14 @@ define rabbitmq::management_queue (
         # Check if durable of the exchange is the same
         exec { "rabbitmq_management_queue_${name}_durable":
           command => "${delete} && ${create_correct}",
-          unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} list queues name durable | /usr/bin/grep ${name_shell} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${name_durable_pattern_shell}", #lint:ignore:140chars
+          unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} list queues name durable | /usr/bin/grep ${name_shell} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${name_durable_pattern_shell}", # lint:ignore:140chars
           require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]],
         }
 
         # Check if arguments of the exchange is the same
         exec { "rabbitmq_management_queue_${name}_arguments":
           command => "${delete} && ${create_correct}",
-          unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep ${name_json_pattern_shell} | /usr/bin/grep ${arguments_pattern_shell}", #lint:ignore:140chars
+          unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep ${name_json_pattern_shell} | /usr/bin/grep ${arguments_pattern_shell}", # lint:ignore:140chars
           require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]],
         }
       }

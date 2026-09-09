@@ -1,8 +1,8 @@
 # @summary Manages a RabbitMQ binding through rabbitmqadmin.
 #
-# This defined type requires `rabbitmq::management` and declares or deletes a
-# binding between an exchange and queue. It also reconciles the routing key when
-# one is supplied.
+# lint:ignore:140chars
+# This defined type requires `rabbitmq::management` and declares or deletes a binding between an exchange and queue. It also reconciles the routing key when one is supplied.
+# lint:endignore
 #
 # @example Bind an exchange to a queue
 #   rabbitmq::management_binding { 'failure_binding':
@@ -28,11 +28,11 @@
 #
 # @api public
 define rabbitmq::management_binding (
-  String                      $destination,
-  String                      $source,
-  Enum['present','absent']    $ensure         = present,
-  Optional[String]            $routing_key    = undef,
-  String                      $vhost          = '/'
+  String                    $destination,
+  String                    $source,
+  Enum['present', 'absent'] $ensure      = present,
+  Optional[String]          $routing_key = undef,
+  String                    $vhost       = '/',
 ) {
   if (defined(Class['rabbitmq::management'])) {
     # Escape rabbitmqadmin arguments before building binding commands and guards.
@@ -43,8 +43,8 @@ define rabbitmq::management_binding (
     $binding_pattern_shell = stdlib::shell_escape("|${source}|${destination}|")
 
     # Set commands
-    $find = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_pattern_shell}" #lint:ignore:140chars
-    $delete = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} delete binding ${source_arg_shell} ${destination_arg_shell}" #lint:ignore:140chars
+    $find = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_pattern_shell}" # lint:ignore:140chars
+    $delete = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} delete binding ${source_arg_shell} ${destination_arg_shell}"
 
     case $ensure {
       'present': {
@@ -56,7 +56,7 @@ define rabbitmq::management_binding (
         }
 
         # Set create command
-        $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare binding ${source_arg_shell} ${destination_arg_shell}" #lint:ignore:140chars
+        $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare binding ${source_arg_shell} ${destination_arg_shell}" # lint:ignore:140chars
         if ($routing_key == undef) {
           $create_correct = $create
         } else {
@@ -73,7 +73,7 @@ define rabbitmq::management_binding (
             Package['coreutils'],
             Package['grep'],
             Exec['rabbitmq_management_admin_cli'],
-            Exec["rabbitmq_management_vhost_${vhost_name}"]
+            Exec["rabbitmq_management_vhost_${vhost_name}"],
           ],
         }
 
@@ -83,7 +83,7 @@ define rabbitmq::management_binding (
           $binding_routing_key_pattern_shell = stdlib::shell_escape("|${source}|${destination}|${routing_key}|")
           exec { "rabbitmq_management_binding_${name}_routing_key":
             command => "${delete} && ${create_correct}",
-            unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination routing_key | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_routing_key_pattern_shell}", #lint:ignore:140chars
+            unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination routing_key | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_routing_key_pattern_shell}", # lint:ignore:140chars
             require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
           }
         }

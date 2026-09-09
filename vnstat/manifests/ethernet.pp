@@ -1,10 +1,8 @@
 # @summary Adds vnStat configuration for one ethernet interface.
 #
-# This defined type appends optional concat fragments to `/etc/vnstat.conf` and
-# `/etc/vnstat-monitoring.conf`. Use it for interface-specific configuration
-# that should stay outside the global vnStat defaults, such as a known
-# technical speed cap for `MaxBW<interface>` or 95th percentile monitoring
-# thresholds.
+# lint:ignore:140chars
+# This defined type appends optional concat fragments to `/etc/vnstat.conf` and `/etc/vnstat-monitoring.conf`. Use it for interface-specific configuration that should stay outside the global vnStat defaults, such as a known technical speed cap for `MaxBW<interface>` or 95th percentile monitoring thresholds.
+# lint:endignore
 #
 # @example Configure a known maximum bandwidth for one interface
 #   vnstat::ethernet { 'ens192':
@@ -19,38 +17,36 @@
 #   }
 #
 # @param bandwidth_max
-#   Optional value for `MaxBW<interface>` in Mbit/s. Set this to the real
-#   technical interface speed, not a purchased traffic bundle or alert limit.
+# lint:ignore:140chars
+#   Optional value for `MaxBW<interface>` in Mbit/s. Set this to the real technical interface speed, not a purchased traffic bundle or alert limit.
+# lint:endignore
 #   `undef` omits the interface-specific vnStat bandwidth fragment.
 #
 # @param ensure
-#   Controls whether the concat fragment is emitted. `absent` omits the
-#   fragment from the compiled configuration.
+#   Controls whether the concat fragment is emitted. `absent` omits the fragment from the compiled configuration.
 #
 # @param interface
-#   Interface name used in generated vnStat directives. `undef` uses the
-#   resource title.
+#   Interface name used in generated vnStat directives. `undef` uses the resource title.
 #
 # @param order
-#   Concat fragment order. The default `50` places interface fragments after the
-#   base vnStat configuration.
+#   Concat fragment order. The default `50` places interface fragments after the base vnStat configuration.
 #
 # @param p95_critical
 #   Optional 95th percentile critical threshold in Mbit/s for this interface.
-#   `undef` inherits the class-level threshold when one is configured. The
-#   monitoring fragment uses the effective inherited value when either 95th
-#   percentile threshold is configured for the interface or class.
+# lint:ignore:140chars
+#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective inherited value when either 95th percentile threshold is configured for the interface or class.
+# lint:endignore
 #
 # @param p95_warning
 #   Optional 95th percentile warning threshold in Mbit/s for this interface.
-#   `undef` inherits the class-level threshold when one is configured. The
-#   monitoring fragment uses the effective inherited value when either 95th
-#   percentile threshold is configured for the interface or class.
+# lint:ignore:140chars
+#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective inherited value when either 95th percentile threshold is configured for the interface or class.
+# lint:endignore
 #
 # @api public
 define vnstat::ethernet (
   Optional[Integer[0, 50000]] $bandwidth_max = undef,
-  Enum['present','absent']    $ensure        = 'present',
+  Enum['present', 'absent']   $ensure        = 'present',
   Optional[String[1]]         $interface     = undef,
   String[1]                   $order         = '50',
   Optional[Integer[1]]        $p95_critical  = undef,

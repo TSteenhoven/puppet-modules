@@ -1,12 +1,8 @@
 # @summary Manages one Nginx virtual host.
 #
-# This defined type renders `/etc/nginx/conf.d/<title>.conf`, optional fallback
-# `security.txt` content, HTTP/HTTPS listeners, redirects, PHP-FPM locations,
-# static or reverse-proxy locations, TLS settings, and secure-by-default response
-# headers. Applications can override or disable individual headers when they
-# intentionally manage those headers themselves. Strict CSP or HSTS settings can
-# break applications that depend on external scripts, stylesheets, APIs, iframes,
-# analytics, or legacy TLS clients, so vhost-specific overrides should be tested.
+# lint:ignore:140chars
+# This defined type renders `/etc/nginx/conf.d/<title>.conf`, optional fallback `security.txt` content, HTTP/HTTPS listeners, redirects, PHP-FPM locations, static or reverse-proxy locations, TLS settings, and secure-by-default response headers. Applications can override or disable individual headers when they intentionally manage those headers themselves. Strict CSP or HSTS settings can break applications that depend on external scripts, stylesheets, APIs, iframes, analytics, or legacy TLS clients, so vhost-specific overrides should be tested.
+# lint:endignore
 #
 # @example Static HTTPS vhost with secure defaults
 #   nginx::server { 'www.example.org':
@@ -30,8 +26,7 @@
 #   }
 #
 # @param access_log
-#   Optional access log directive value. `undef` lets the template use its
-#   default behavior.
+#   Optional access log directive value. `undef` lets the template use its default behavior.
 #
 # @param acme_enable
 #   Enables ACME challenge handling in the vhost template.
@@ -40,15 +35,15 @@
 #   Controls whether directory access is allowed by the generated root location.
 #
 # @param backlog
-#   Listener backlog behavior. `-1` disables explicit backlog, `0` inherits the
-#   kernel connection limit, and values greater than zero set a custom backlog.
+# lint:ignore:140chars
+#   Listener backlog behavior. `-1` disables explicit backlog, `0` inherits the kernel connection limit, and values greater than zero set a custom backlog.
+# lint:endignore
 #
 # @param client_max_body_size
 #   Optional `client_max_body_size` value for the vhost.
 #
 # @param content_security_policy
-#   CSP header value. `true` uses the module default, a string sets a vhost
-#   policy, and `false` disables the managed header.
+#   CSP header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the managed header.
 #
 # @param default_server
 #   Marks this vhost as the default server for generated listen directives.
@@ -57,8 +52,7 @@
 #   Additional raw directives rendered at the server context.
 #
 # @param docroot
-#   Document root for static/PHP locations. `undef` is common for pure reverse
-#   proxy vhosts.
+#   Document root for static/PHP locations. `undef` is common for pure reverse proxy vhosts.
 #
 # @param error_log
 #   Optional error log directive value.
@@ -130,8 +124,7 @@
 #   FastCGI upstream URI, commonly a Unix socket.
 #
 # @param redirect_certificate
-#   Optional certificate path for the redirect server. `undef` inherits the main
-#   certificate when available.
+#   Optional certificate path for the redirect server. `undef` inherits the main certificate when available.
 #
 # @param redirect_certificate_key
 #   Optional key path for the redirect server. `undef` inherits the main key.
@@ -167,8 +160,7 @@
 #   Optional TLS protocol string for the redirect server.
 #
 # @param referrer_policy
-#   Referrer-Policy header value. `true` uses the module default, a string sets a
-#   vhost policy, and `false` disables the managed header.
+#   Referrer-Policy header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the managed header.
 #
 # @param restart_service
 #   Notifies the Nginx service when the vhost file changes if `true`.
@@ -177,8 +169,7 @@
 #   Enables `reuseport` on generated listen directives.
 #
 # @param securitytxt_contacts
-#   Vhost-specific security.txt contacts. `undef` inherits the class default or
-#   monitoring mail fallback.
+#   Vhost-specific security.txt contacts. `undef` inherits the class default or monitoring mail fallback.
 #
 # @param securitytxt_enable
 #   Vhost-specific security.txt switch. `undef` inherits the class default.
@@ -196,8 +187,7 @@
 #   Optional vhost-specific Preferred-Languages list.
 #
 # @param server_name
-#   Space-separated Nginx `server_name` value. `undef` lets the title act as the
-#   primary name for fallback values.
+#   Space-separated Nginx `server_name` value. `undef` lets the title act as the primary name for fallback values.
 #
 # @param ssl_buffer_size
 #   Optional `ssl_buffer_size` value.
@@ -230,82 +220,78 @@
 #   Optional `ssl_session_timeout` value.
 #
 # @param strict_transport_security
-#   HSTS header value. `true` uses the module default, a string sets a vhost
-#   value, and `false` disables the managed header.
+#   HSTS header value. `true` uses the module default, a string sets a vhost value, and `false` disables the managed header.
 #
 # @param try_files
-#   Root-location `try_files` behavior. `true` uses `$uri $uri/ =404`, a string
-#   supplies custom arguments, and `false` omits the directive.
+#   Root-location `try_files` behavior. `true` uses `$uri $uri/ =404`, a string supplies custom arguments, and `false` omits the directive.
 #
 # @param x_content_type_options
-#   X-Content-Type-Options header value. `true` uses `nosniff`, a string sets a
-#   vhost value, and `false` disables the managed header.
+#   X-Content-Type-Options header value. `true` uses `nosniff`, a string sets a vhost value, and `false` disables the managed header.
 #
 # @param x_frame_options
-#   X-Frame-Options header value. `true` uses `SAMEORIGIN`, a string sets a
-#   vhost value, and `false` disables the managed header.
+#   X-Frame-Options header value. `true` uses `SAMEORIGIN`, a string sets a vhost value, and `false` disables the managed header.
 #
 # @api public
 define nginx::server (
-  Optional[String]         $access_log                       = undef,
-  Boolean                  $acme_enable                      = false,
-  Boolean                  $allow_directories                = false,
-  Integer                  $backlog                          = -1, # Global settings; -1: Disabled, 0: Kernel; >0: Custom value
-  Optional[String]         $client_max_body_size             = undef,
-  Variant[Boolean,String]  $content_security_policy          = true,
-  Boolean                  $default_server                   = false,
-  Array                    $directives                       = [],
-  Optional[String]         $docroot                          = undef,
-  Optional[String]         $error_log                        = undef,
-  Optional[Integer]        $fastcgi_read_timeout             = undef,
-  Integer                  $fastopen                         = 0, # Global settings
-  Boolean                  $http2_enable                     = true,
-  Boolean                  $http3_enable                     = true,
-  Boolean                  $http_enable                      = true,
-  Boolean                  $http_ipv6                        = true,
-  Integer                  $http_port                        = 80,
-  Boolean                  $https_enable                     = false,
-  Boolean                  $https_force                      = false,
-  Boolean                  $https_ipv6                       = true,
-  Integer                  $https_port                       = 443,
-  Optional[String]         $ip                               = undef,
-  Optional[String]         $ipv6                             = undef,
-  Optional[String]         $keepalive_request_file           = undef,
-  Array                    $location_directives              = [],
-  Boolean                  $location_internal                = false,
-  Array                    $locations                        = [],
-  Array                    $php_fpm_directives               = [],
-  Boolean                  $php_fpm_enable                   = true,
-  String                   $php_fpm_location                 = '~* \.php$',
-  String                   $php_fpm_location_inc             = '~* \.php.inc$',
-  String                   $php_fpm_uri                      = 'unix:/run/php/php-fpm.sock',
-  Optional[String]         $redirect_certificate             = undef,
-  Optional[String]         $redirect_certificate_key         = undef,
-  Optional[String]         $redirect_certificate_trusted     = undef,
-  Optional[String]         $redirect_from                    = undef,
-  Optional[String]         $redirect_http_port               = undef,
-  Optional[String]         $redirect_https_port              = undef,
-  Optional[String]         $redirect_ip                      = undef,
-  Optional[String]         $redirect_ipv6                    = undef,
-  Optional[Array]          $redirect_ssl_ciphers             = undef,
-  Optional[Hash]           $redirect_ssl_conf_command        = undef,
-  Optional[String]         $redirect_ssl_ocsp                = undef,
-  Optional[String]         $redirect_ssl_protocols           = undef,
-  Variant[Boolean,String]  $referrer_policy                  = true,
-  Boolean                  $restart_service                  = true,
-  Boolean                  $reuseport                        = false, # Global settings
-  Optional[Array]          $securitytxt_contacts             = undef,
-  Optional[Boolean]        $securitytxt_enable               = undef,
-  Optional[String]         $securitytxt_encryption           = undef,
-  Optional[Integer]        $securitytxt_expires_days         = undef,
-  Optional[String]         $securitytxt_policy               = undef,
-  Optional[Array]          $securitytxt_preferred_languages  = undef,
-  Optional[String]         $server_name                      = undef,
-  Optional[Integer]        $ssl_buffer_size                  = undef,
-  Optional[String]         $ssl_certificate                  = undef,
-  Optional[String]         $ssl_certificate_key              = undef,
-  Optional[String]         $ssl_certificate_trusted          = undef,
-  Array                    $ssl_ciphers                      = [
+  Optional[String]         $access_log                      = undef,
+  Boolean                  $acme_enable                     = false,
+  Boolean                  $allow_directories               = false,
+  Integer                  $backlog                         = -1, # Global settings; -1: Disabled, 0: Kernel; >0: Custom value
+  Optional[String]         $client_max_body_size            = undef,
+  Variant[Boolean, String] $content_security_policy         = true,
+  Boolean                  $default_server                  = false,
+  Array                    $directives                      = [],
+  Optional[String]         $docroot                         = undef,
+  Optional[String]         $error_log                       = undef,
+  Optional[Integer]        $fastcgi_read_timeout            = undef,
+  Integer                  $fastopen                        = 0, # Global settings
+  Boolean                  $http2_enable                    = true,
+  Boolean                  $http3_enable                    = true,
+  Boolean                  $http_enable                     = true,
+  Boolean                  $http_ipv6                       = true,
+  Integer                  $http_port                       = 80,
+  Boolean                  $https_enable                    = false,
+  Boolean                  $https_force                     = false,
+  Boolean                  $https_ipv6                      = true,
+  Integer                  $https_port                      = 443,
+  Optional[String]         $ip                              = undef,
+  Optional[String]         $ipv6                            = undef,
+  Optional[String]         $keepalive_request_file          = undef,
+  Array                    $location_directives             = [],
+  Boolean                  $location_internal               = false,
+  Array                    $locations                       = [],
+  Array                    $php_fpm_directives              = [],
+  Boolean                  $php_fpm_enable                  = true,
+  String                   $php_fpm_location                = '~* \.php$',
+  String                   $php_fpm_location_inc            = '~* \.php.inc$',
+  String                   $php_fpm_uri                     = 'unix:/run/php/php-fpm.sock',
+  Optional[String]         $redirect_certificate            = undef,
+  Optional[String]         $redirect_certificate_key        = undef,
+  Optional[String]         $redirect_certificate_trusted    = undef,
+  Optional[String]         $redirect_from                   = undef,
+  Optional[String]         $redirect_http_port              = undef,
+  Optional[String]         $redirect_https_port             = undef,
+  Optional[String]         $redirect_ip                     = undef,
+  Optional[String]         $redirect_ipv6                   = undef,
+  Optional[Array]          $redirect_ssl_ciphers            = undef,
+  Optional[Hash]           $redirect_ssl_conf_command       = undef,
+  Optional[String]         $redirect_ssl_ocsp               = undef,
+  Optional[String]         $redirect_ssl_protocols          = undef,
+  Variant[Boolean, String] $referrer_policy                 = true,
+  Boolean                  $restart_service                 = true,
+  Boolean                  $reuseport                       = false, # Global settings
+  Optional[Array]          $securitytxt_contacts            = undef,
+  Optional[Boolean]        $securitytxt_enable              = undef,
+  Optional[String]         $securitytxt_encryption          = undef,
+  Optional[Integer]        $securitytxt_expires_days        = undef,
+  Optional[String]         $securitytxt_policy              = undef,
+  Optional[Array]          $securitytxt_preferred_languages = undef,
+  Optional[String]         $server_name                     = undef,
+  Optional[Integer]        $ssl_buffer_size                 = undef,
+  Optional[String]         $ssl_certificate                 = undef,
+  Optional[String]         $ssl_certificate_key             = undef,
+  Optional[String]         $ssl_certificate_trusted         = undef,
+  Array                    $ssl_ciphers                     = [
     'TLS_AES_128_GCM_SHA256',
     'TLS_AES_256_GCM_SHA384',
     'TLS_CHACHA20_POLY1305_SHA256',
@@ -316,9 +302,9 @@ define nginx::server (
     'ECDHE-ECDSA-CHACHA20-POLY1305',
     'ECDHE-RSA-CHACHA20-POLY1305',
     'DHE-RSA-AES128-GCM-SHA256',
-    'DHE-RSA-AES256-GCM-SHA384','DHE-RSA-CHACHA20-POLY1305',
+    'DHE-RSA-AES256-GCM-SHA384', 'DHE-RSA-CHACHA20-POLY1305',
   ],
-  Hash                     $ssl_conf_command                 = {
+  Hash                     $ssl_conf_command                = {
     'Ciphersuites' => [
       'TLS_AES_128_GCM_SHA256',
       'TLS_AES_256_GCM_SHA384',
@@ -336,14 +322,14 @@ define nginx::server (
       'RSA+SHA256',
     ],
   },
-  Boolean                  $ssl_ocsp                         = false,
-  Optional[String]         $ssl_protocols                    = undef,
-  Optional[String]         $ssl_session_cache                = undef,
-  Optional[String]         $ssl_session_timeout              = undef,
-  Variant[Boolean,String]  $strict_transport_security        = true,
-  Variant[Boolean,String]  $try_files                        = true,
-  Variant[Boolean,String]  $x_content_type_options           = true,
-  Variant[Boolean,String]  $x_frame_options                  = true
+  Boolean                  $ssl_ocsp                        = false,
+  Optional[String]         $ssl_protocols                   = undef,
+  Optional[String]         $ssl_session_cache               = undef,
+  Optional[String]         $ssl_session_timeout             = undef,
+  Variant[Boolean, String] $strict_transport_security       = true,
+  Variant[Boolean, String] $try_files                       = true,
+  Variant[Boolean, String] $x_content_type_options          = true,
+  Variant[Boolean, String] $x_frame_options                 = true,
 ) {
   if (defined(Class['nginx'])) {
     # Create security.txt file path

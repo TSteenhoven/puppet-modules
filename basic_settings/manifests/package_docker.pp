@@ -1,8 +1,8 @@
 # @summary Manages the Docker upstream APT repository.
 #
-# This private helper writes or removes the Docker APT source and signing key,
-# supporting both classic `.list` files and deb822 `.sources` files. It is called
-# by `basic_settings` after OS support has been calculated.
+# lint:ignore:140chars
+# This private helper writes or removes the Docker APT source and signing key, supporting both classic `.list` files and deb822 `.sources` files. It is called by `basic_settings` after OS support has been calculated.
+# lint:endignore
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_docker':
@@ -16,22 +16,20 @@
 #   APT source format to manage: `list` or `822`.
 #
 # @param enable
-#   Creates the repository and imports its key when `true`; removes both when
-#   `false`.
+#   Creates the repository and imports its key when `true`; removes both when `false`.
 #
 # @param os_name
 #   Distribution codename used in the repository suite.
 #
 # @param os_parent
-#   Distribution family used in the repository URL, such as `debian` or
-#   `ubuntu`.
+#   Distribution family used in the repository URL, such as `debian` or `ubuntu`.
 #
 # @api private
 class basic_settings::package_docker (
-  Enum['list','822']  $deb_version,
+  Enum['list', '822'] $deb_version,
   Boolean             $enable,
   String              $os_name,
-  String              $os_parent
+  String              $os_parent,
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
@@ -64,7 +62,7 @@ class basic_settings::package_docker (
 
     # Install docker repo
     exec { 'package_docker_source':
-      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL ${key_url_shell} | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", #lint:ignore:140chars
+      command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL ${key_url_shell} | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
       require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
     }

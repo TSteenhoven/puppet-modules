@@ -1,10 +1,8 @@
 # @summary Manages login policy, sudo defaults, PAM hooks, MOTD, and getty state.
 #
-# This class installs core login tooling, creates the `wheel` group, manages
-# sudoers and PAM configuration, controls console getty availability, and adds
-# audit coverage for login, PAM, sudoers, and optional vulnerability-scanner
-# exceptions. These changes affect interactive access and should be reviewed
-# carefully on existing hosts with local sudo customizations.
+# lint:ignore:140chars
+# This class installs core login tooling, creates the `wheel` group, manages sudoers and PAM configuration, controls console getty availability, and adds audit coverage for login, PAM, sudoers, and optional vulnerability-scanner exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo customizations.
+# lint:endignore
 #
 # @example Manage the default hardened login profile
 #   include basic_settings::login
@@ -15,28 +13,25 @@
 #   }
 #
 # @param environment
-#   Environment label used in generated login messages and templates. The
-#   default is `production`.
+#   Environment label used in generated login messages and templates. The default is `production`.
 #
 # @param getty_enable
 #   Controls whether `getty@tty*` is enabled unless `gui_mode` forces getty on.
 #   The default is `false`.
 #
 # @param gui_mode
-#   Selects GUI-related login behavior. `none` keeps the server minimal,
-#   `kiosk` enables getty and installs related session packages, and
-#   `adwaita-icon` is handled by the parent class for icon package selection.
+# lint:ignore:140chars
+#   Selects GUI-related login behavior. `none` keeps the server minimal, `kiosk` enables getty and installs related session packages, and `adwaita-icon` is handled by the parent class for icon package selection.
+# lint:endignore
 #
 # @param hostname
 #   Hostname used by generated login templates. The default comes from Facter.
 #
 # @param mail_to
-#   Mail recipient used by notification templates and related login hooks. The
-#   default is `root`.
+#   Mail recipient used by notification templates and related login hooks. The default is `root`.
 #
 # @param server_fdqn
-#   Fully qualified server name used in generated messages. The default comes
-#   from Facter.
+#   Fully qualified server name used in generated messages. The default comes from Facter.
 #
 # @param sudoers_banner_text
 #   Text written to `/etc/sudoers.lecture` and shown during sudo prompts.
@@ -46,29 +41,27 @@
 #   Set this to `false` on hosts where existing sudoers snippets must remain.
 #
 # @param vulnerabilities_package
-#   Optional vulnerability scanner integration name. Currently only recognized
-#   values are handled by explicit case branches.
+#   Optional vulnerability scanner integration name. Currently only recognized values are handled by explicit case branches.
 #
 # @param vulnerabilities_user
-#   User account for the vulnerability scanner integration. It is only used when
-#   `vulnerabilities_package` is also set.
+#   User account for the vulnerability scanner integration. It is only used when `vulnerabilities_package` is also set.
 #
 # @api public
 class basic_settings::login (
-  String                                $environment              = 'production',
-  Boolean                               $getty_enable             = false,
-  Enum['none','kiosk','adwaita-icon']   $gui_mode                 = 'none',
-  String                                $hostname                 = $facts['networking']['hostname'],
-  String                                $mail_to                  = 'root',
-  String                                $server_fdqn              = $facts['networking']['fqdn'],
-  String                                $sudoers_banner_text      = "WARNING: You are running this command with elevated privileges.\nThis action is registered and sent to the server administrator(s). Unauthorized access will be fully investigated and reported to law enforcement authorities.",
-  Boolean                               $sudoers_dir_enable       = false,
-  Optional[String]                      $vulnerabilities_package  = undef,
-  Optional[String]                      $vulnerabilities_user     = undef,
+  String                                $environment             = 'production',
+  Boolean                               $getty_enable            = false,
+  Enum['none', 'kiosk', 'adwaita-icon'] $gui_mode                = 'none',
+  String                                $hostname                = $facts['networking']['hostname'],
+  String                                $mail_to                 = 'root',
+  String                                $server_fdqn             = $facts['networking']['fqdn'],
+  String                                $sudoers_banner_text     = "WARNING: You are running this command with elevated privileges.\nThis action is registered and sent to the server administrator(s). Unauthorized access will be fully investigated and reported to law enforcement authorities.", # lint:ignore:140chars
+  Boolean                               $sudoers_dir_enable      = false,
+  Optional[String]                      $vulnerabilities_package = undef,
+  Optional[String]                      $vulnerabilities_user    = undef,
 ) {
   # Remove unnecessary packages
   package { ['tmux', 'xdg-user-dirs', 'xauth', 'x11-utils']:
-    ensure  => purged,
+    ensure => purged,
   }
 
   # Install packages
@@ -137,7 +130,7 @@ class basic_settings::login (
   } else {
     # Remove polkitd package
     package { 'polkitd':
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
@@ -150,7 +143,7 @@ class basic_settings::login (
   } else {
     # Remove session-migration package
     package { 'session-migration':
-      ensure  => purged,
+      ensure => purged,
     }
   }
 
@@ -212,6 +205,8 @@ class basic_settings::login (
   # Sudoers banner by password prompt
   file { '/etc/sudoers.lecture':
     ensure  => file,
+    owner   => 'root',
+    group   => 'root',
     mode    => '0644',
     content => "${sudoers_banner_text}\n\n",
     require => Package['sudo'],
@@ -231,6 +226,9 @@ class basic_settings::login (
   if ($sudoers_dir_enable) {
     file { '/etc/sudoers.d':
       ensure  => directory,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0440',
       purge   => true,
       recurse => true,
       force   => true,
@@ -245,12 +243,15 @@ class basic_settings::login (
   if ($facts['os']['name'] == 'Ubuntu') {
     # Install packages
     package { 'update-motd':
-      ensure  => installed,
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Disable motd news
     file { '/etc/default/motd-news':
       ensure  => file,
+      owner   => 'root',
+      group   => 'root',
       mode    => '0600',
       content => "ENABLED=0\n",
       require => Package['update-motd'],
@@ -319,7 +320,7 @@ class basic_settings::login (
 
   # Check if we have vulnerabilities package and user
   if ($vulnerabilities_package != undef and $vulnerabilities_user != undef) {
-    case $vulnerabilities_package { #lint:ignore:case_without_default
+    case $vulnerabilities_package {
       'rapid7': {
         # Create sudoers file
         file { "/etc/sudoers.d/${sudoers_prefix}90-vulnerabilities":
@@ -327,7 +328,7 @@ class basic_settings::login (
           owner   => 'root',
           group   => 'root',
           mode    => '0440',
-          content => "# Managed by puppet\nUser_Alias R7 = ${vulnerabilities_user}\nCmnd_Alias R7_BASH_CMD = /bin/bash, /bin/bash -c *\nR7 ALL=(ALL) ALL, NOMAIL: R7_BASH_CMD\n",
+          content => "# Managed by puppet\nUser_Alias R7 = ${vulnerabilities_user}\nCmnd_Alias R7_BASH_CMD = /bin/bash, /bin/bash -c *\nR7 ALL=(ALL) ALL, NOMAIL: R7_BASH_CMD\n", # lint:ignore:140chars
           require => Package['sudo'],
         }
 
@@ -341,6 +342,9 @@ class basic_settings::login (
           ],
           order => 2,
         }
+      }
+      default: {
+        # Other selections do not install a vulnerability scanner.
       }
     }
   }

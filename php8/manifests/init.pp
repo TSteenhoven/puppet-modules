@@ -1,9 +1,8 @@
 # @summary Installs PHP 8 core packages and selected extensions.
 #
-# This class installs the selected PHP 8 minor version, common/opcache packages,
-# optional extension packages, and default shared files used by PHP CLI/FPM
-# consumers. It is deliberately package-focused; CLI and FPM service
-# configuration lives in `php8::cli` and `php8::fpm`.
+# lint:ignore:140chars
+# This class installs the selected PHP 8 minor version, common/opcache packages, optional extension packages, and default shared files used by PHP CLI/FPM consumers. It is deliberately package-focused; CLI and FPM service configuration lives in `php8::cli` and `php8::fpm`.
+# lint:endignore
 #
 # @example Install PHP 8.2 with common web extensions
 #   class { 'php8':
@@ -44,34 +43,34 @@
 #
 # @api public
 class php8 (
-  Boolean   $apcu               = false,
-  Boolean   $bcmath             = false,
-  Boolean   $bz2                = false,
-  Boolean   $curl               = false,
-  Boolean   $gd                 = false,
-  Boolean   $gearman            = false,
-  Boolean   $gmp                = false,
-  Boolean   $imagick            = false,
-  Boolean   $imap               = false,
-  Boolean   $intl               = false,
-  Boolean   $ldap               = false,
-  Boolean   $mbstring           = false,
-  Boolean   $mcrypt             = false,
-  Integer   $minor_version      = 2,
-  Boolean   $msgpack            = false,
-  Boolean   $mysql              = false,
-  Boolean   $readline           = false,
-  Boolean   $redis              = false,
-  Boolean   $rrd                = false,
-  Boolean   $skip_default_files = false,
-  Boolean   $soap               = false,
-  Boolean   $sqlite3            = false,
-  Boolean   $sybase             = false,
-  Boolean   $uploadprogress     = false,
-  Boolean   $xdebug             = false,
-  Boolean   $xml                = false,
-  Boolean   $xmlrpc             = false,
-  Boolean   $zip                = false
+  Boolean $apcu               = false,
+  Boolean $bcmath             = false,
+  Boolean $bz2                = false,
+  Boolean $curl               = false,
+  Boolean $gd                 = false,
+  Boolean $gearman            = false,
+  Boolean $gmp                = false,
+  Boolean $imagick            = false,
+  Boolean $imap               = false,
+  Boolean $intl               = false,
+  Boolean $ldap               = false,
+  Boolean $mbstring           = false,
+  Boolean $mcrypt             = false,
+  Integer $minor_version      = 2,
+  Boolean $msgpack            = false,
+  Boolean $mysql              = false,
+  Boolean $readline           = false,
+  Boolean $redis              = false,
+  Boolean $rrd                = false,
+  Boolean $skip_default_files = false,
+  Boolean $soap               = false,
+  Boolean $sqlite3            = false,
+  Boolean $sybase             = false,
+  Boolean $uploadprogress     = false,
+  Boolean $xdebug             = false,
+  Boolean $xml                = false,
+  Boolean $xmlrpc             = false,
+  Boolean $zip                = false,
 ) {
   # Install common php packages,
   package { ["php8.${minor_version}", "php8.${minor_version}-common", "php8.${minor_version}-opcache"]:

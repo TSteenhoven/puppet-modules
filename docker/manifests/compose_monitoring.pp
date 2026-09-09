@@ -1,9 +1,8 @@
 # @summary Registers monitoring for a Docker Compose project.
 #
-# This helper builds the command line for the shared `check_compose` plugin and
-# registers it through `basic_settings::monitoring_custom`. It is normally called
-# by `docker::compose`, but can be used directly for externally managed Compose
-# projects that still need the repository's monitoring behavior.
+# lint:ignore:140chars
+# This helper builds the command line for the shared `check_compose` plugin and registers it through `basic_settings::monitoring_custom`. It is normally called by `docker::compose`, but can be used directly for externally managed Compose projects that still need the repository's monitoring behavior.
+# lint:endignore
 #
 # @example Monitor an existing Compose project
 #   docker::compose_monitoring { 'example':
@@ -55,20 +54,20 @@
 #
 # @api public
 define docker::compose_monitoring (
-  Pattern[/\A\/[A-Za-z0-9._\/-]+\z/]            $project_directory,
-  Array[String]                                 $compose_files     = [],
-  Integer                                       $detail_limit      = 6000,
-  Enum['present','absent']                      $ensure            = present,
-  Optional[String]                              $env_file          = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $expected_exited   = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $health_required   = [],
-  Integer                                       $interval          = 300,
-  Boolean                                       $orphan_critical   = false,
-  Optional[String]                              $package           = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]         $profiles          = [],
-  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]      $project_name      = undef,
-  Integer                                       $starting_grace    = 300,
-  Integer                                       $timeout           = 60
+  Pattern[/\A\/[A-Za-z0-9._\/-]+\z/]       $project_directory,
+  Array[String]                            $compose_files     = [],
+  Integer                                  $detail_limit      = 6000,
+  Enum['present', 'absent']                $ensure            = present,
+  Optional[String]                         $env_file          = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $expected_exited   = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $health_required   = [],
+  Integer                                  $interval          = 300,
+  Boolean                                  $orphan_critical   = false,
+  Optional[String]                         $package           = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $profiles          = [],
+  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $project_name      = undef,
+  Integer                                  $starting_grace    = 300,
+  Integer                                  $timeout           = 60,
 ) {
   if ($name =~ /\A[a-zA-Z0-9_.-]+\z/) {
     # Set command arguments for the stack-specific service check.

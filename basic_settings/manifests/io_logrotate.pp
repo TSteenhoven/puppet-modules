@@ -1,9 +1,8 @@
 # @summary Manages a root-owned logrotate snippet.
 #
-# This defined type writes `/etc/logrotate.d/<title>` from the module template
-# and ensures the logrotate package and configuration directory exist when they
-# are not already managed. It centralizes the repository's secure logrotate file
-# ownership and mode defaults.
+# lint:ignore:140chars
+# This defined type writes `/etc/logrotate.d/<title>` from the module template and ensures the logrotate package and configuration directory exist when they are not already managed. It centralizes the repository's secure logrotate file ownership and mode defaults.
+# lint:endignore
 #
 # @example Rotate an application log daily
 #   basic_settings::io_logrotate { 'example-app':
@@ -12,19 +11,16 @@
 #   }
 #
 # @param frequency
-#   Rotation frequency accepted by logrotate. Valid values are `daily`, `weekly`,
-#   or `monthly`.
+#   Rotation frequency accepted by logrotate. Valid values are `daily`, `weekly`, or `monthly`.
 #
 # @param path
-#   One or more log paths rendered into the logrotate stanza. Multiline strings
-#   may be used for multiple paths.
+#   One or more log paths rendered into the logrotate stanza. Multiline strings may be used for multiple paths.
 #
 # @param compress
 #   Enables log compression when `true`. The default is `true`.
 #
 # @param compress_delay
-#   Enables delayed compression when `true`, leaving the most recent rotated log
-#   uncompressed. The default is `false`.
+#   Enables delayed compression when `true`, leaving the most recent rotated log uncompressed. The default is `false`.
 #
 # @param create_group
 #   Group used by the logrotate `create` directive. The default is `root`.
@@ -33,15 +29,13 @@
 #   Mode used by the logrotate `create` directive. The default is `600`.
 #
 # @param create_user
-#   Optional user used by the logrotate `create` directive. When omitted, the
-#   template uses the module default behavior.
+#   Optional user used by the logrotate `create` directive. When omitted, the template uses the module default behavior.
 #
 # @param ensure
 #   Controls whether the logrotate snippet is present or absent.
 #
 # @param rotate
-#   Optional rotation count. `undef` inherits `basic_settings::io::log_rotate`
-#   when available, otherwise it falls back to 12.
+#   Optional rotation count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise it falls back to 12.
 #
 # @param rotate_copy
 #   Enables copy-based rotation when `true`. The default is `false`.
@@ -57,19 +51,19 @@
 #
 # @api public
 define basic_settings::io_logrotate (
-  Enum['daily', 'weekly', 'monthly']  $frequency,
-  String                              $path,
-  Boolean                             $compress       = true,
-  Boolean                             $compress_delay = false,
-  String                              $create_group   = 'root',
-  String                              $create_mode    = '600',
-  Optional[String]                    $create_user    = undef,
-  Enum['present','absent']            $ensure         = present,
-  Optional[Integer]                   $rotate         = undef,
-  Boolean                             $rotate_copy    = false,
-  Optional[String]                    $rotate_post    = undef,
-  Boolean                             $skip_empty     = true,
-  Boolean                             $skip_missing   = true
+  Enum['daily', 'weekly', 'monthly'] $frequency,
+  String                             $path,
+  Boolean                            $compress       = true,
+  Boolean                            $compress_delay = false,
+  String                             $create_group   = 'root',
+  String                             $create_mode    = '600',
+  Optional[String]                   $create_user    = undef,
+  Enum['present', 'absent']          $ensure         = present,
+  Optional[Integer]                  $rotate         = undef,
+  Boolean                            $rotate_copy    = false,
+  Optional[String]                   $rotate_post    = undef,
+  Boolean                            $skip_empty     = true,
+  Boolean                            $skip_missing   = true,
 ) {
   # Check if logrotate package is not defined
   if (!defined(Package['logrotate'])) {

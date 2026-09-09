@@ -1,14 +1,12 @@
 # @summary Enables RabbitMQ management and manages local admin access.
 #
-# This class requires `rabbitmq`, enables the management plugin, optionally
-# creates the `guest` administrator account, writes management listener
-# configuration, installs `rabbitmqadmin`, creates the default vhost, and adds
-# monitoring and audit coverage. TLS for the management listener can be supplied
-# directly or inherited from `rabbitmq::tcp`.
+# lint:ignore:140chars
+# This class requires `rabbitmq`, enables the management plugin, optionally creates the `guest` administrator account, writes management listener configuration, installs `rabbitmqadmin`, creates the default vhost, and adds monitoring and audit coverage. TLS for the management listener can be supplied directly or inherited from `rabbitmq::tcp`.
+# lint:endignore
 #
 # @example Enable management with a non-default admin password
 #   class { 'rabbitmq::management':
-#     admin_password     => 'change-me',
+#     admin_password     => lookup('rabbitmq::admin_password'),
 #     default_queue_type => 'quorum',
 #   }
 #
@@ -16,8 +14,7 @@
 #   Path to the generated `rabbitmqadmin` config file.
 #
 # @param admin_enable
-#   Creates the `guest` admin user, permissions, config file, and CLI when
-#   `true`; removes the CLI when `false`.
+#   Creates the `guest` admin user, permissions, config file, and CLI when `true`; removes the CLI when `false`.
 #
 # @param admin_password
 #   Password assigned to the generated `guest` admin account.
@@ -48,17 +45,17 @@
 #
 # @api public
 class rabbitmq::management (
-  String              $admin_config_path      = '/etc/rabbitmq/rabbitmqadmin.conf',
-  Boolean             $admin_enable           = true,
-  String              $admin_password         = 'guest',
-  String              $default_queue_type     = 'classic',
-  Integer             $port                   = 15672,
-  Optional[String]    $ssl_ca_certificate     = undef,
-  Optional[String]    $ssl_certificate        = undef,
-  Optional[String]    $ssl_certificate_key    = undef,
-  Optional[String]    $ssl_ciphers            = undef,
-  Integer             $ssl_port               = 15671,
-  Optional[String]    $ssl_protocols          = undef
+  String           $admin_config_path   = '/etc/rabbitmq/rabbitmqadmin.conf',
+  Boolean          $admin_enable        = true,
+  String           $admin_password      = 'guest',
+  String           $default_queue_type  = 'classic',
+  Integer          $port                = 15672,
+  Optional[String] $ssl_ca_certificate  = undef,
+  Optional[String] $ssl_certificate     = undef,
+  Optional[String] $ssl_certificate_key = undef,
+  Optional[String] $ssl_ciphers         = undef,
+  Integer          $ssl_port            = 15671,
+  Optional[String] $ssl_protocols       = undef,
 ) {
   if (defined(Class['rabbitmq'])) {
     # Delete guest user
@@ -185,6 +182,8 @@ class rabbitmq::management (
 
     # Create service check
     if ($rabbitmq::monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      # Preserve the configured path as data at the rendered shell assignment boundary.
+      $admin_config_path_shell = stdlib::shell_escape($admin_config_path)
       basic_settings::monitoring_custom { 'rabbitmq':
         ensure   => present,
         content  => template('rabbitmq/check_rabbitmq'),

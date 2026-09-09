@@ -1,7 +1,8 @@
 # @summary Manages one Naemon hostgroup configuration file.
 #
-# This defined type writes a hostgroup configuration file below the directory
-# prepared by the `naemon` class and notifies the `naemon` service.
+# lint:ignore:140chars
+# This defined type writes a hostgroup configuration file below the directory prepared by the `naemon` class and notifies the `naemon` service.
+# lint:endignore
 #
 # @example Add a hostgroup
 #   naemon::hostgroup { 'webservers':
@@ -17,7 +18,7 @@
 # @api public
 define naemon::hostgroup (
   Optional[String]          $description = undef,
-  Enum['present','absent']  $ensure      = present
+  Enum['present', 'absent'] $ensure      = present,
 ) {
   if (defined(Class['naemon'])) {
     # Create host file

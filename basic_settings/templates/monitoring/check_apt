@@ -7,6 +7,9 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 APTGET=$(command -v apt-get 2>/dev/null) || die "apt-get not available"
 APTCACHE=$(command -v apt-cache 2>/dev/null) || die "apt-cache not available"
@@ -21,16 +24,15 @@ SORT=$(command -v sort 2>/dev/null) || die "sort not available"
 TIMEOUT=$(command -v timeout 2>/dev/null || true)
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 CHMOD=$(command -v chmod 2>/dev/null || true)
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-<% end -%>
+fi
 
 # Managed input files and cache locations used by the APT check.
 BLACKLIST_FILE="<%= @apt_settings_file %>"
 CHANGELOG_CACHE_DIR=/var/cache/check_apt/changelogs
 CHANGELOG_FETCH_TIMEOUT=${CHANGELOG_FETCH_TIMEOUT:-6}
 CHANGELOG_GROUP_LIMIT=${CHANGELOG_GROUP_LIMIT:-10}
-CHANGELOG_MAX_LINES=${CHANGELOG_MAX_LINES:-120}
 CHANGELOG_TOTAL_BUDGET=${CHANGELOG_TOTAL_BUDGET:-20}
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 SECURITY_PACKAGE_SUMMARY_LIMIT=${SECURITY_PACKAGE_SUMMARY_LIMIT:-10}
@@ -79,9 +81,6 @@ esac
 case "$CHANGELOG_GROUP_LIMIT" in
     ''|*[!0-9]*) die "changelog group limit must be numeric" ;;
 esac
-case "$CHANGELOG_MAX_LINES" in
-    ''|*[!0-9]*) die "changelog line limit must be numeric" ;;
-esac
 case "$CHANGELOG_TOTAL_BUDGET" in
     ''|*[!0-9]*) die "changelog runtime budget must be numeric" ;;
 esac
@@ -94,7 +93,6 @@ esac
 [ "$GRACE" -ge 1 ] || die "metadata-age grace period must be at least 1"
 [ "$CHANGELOG_FETCH_TIMEOUT" -ge 1 ] || die "changelog fetch timeout must be at least 1"
 [ "$CHANGELOG_GROUP_LIMIT" -ge 1 ] || die "changelog group limit must be at least 1"
-[ "$CHANGELOG_MAX_LINES" -ge 1 ] || die "changelog line limit must be at least 1"
 [ "$CHANGELOG_TOTAL_BUDGET" -ge 1 ] || die "changelog runtime budget must be at least 1"
 [ "$DETAIL_LIMIT" -ge 1 ] || die "long-output detail character limit must be at least 1"
 [ "$SECURITY_PACKAGE_SUMMARY_LIMIT" -ge 1 ] || die "security package summary limit must be at least 1"
@@ -255,14 +253,6 @@ filter_changelog_since() {
     '
 }
 
-# Cap changelog output to a predictable number of lines.
-truncate_changelog() {
-    $AWK -v max="$CHANGELOG_MAX_LINES" '
-        NR <= max { print; next }
-        NR == max + 1 { print "... (truncated)"; exit }
-    '
-}
-
 # Simulate the upgrade without taking dpkg locks so the check stays read-only.
 APT_SIM_OUTPUT=$(LC_ALL=C DEBIAN_FRONTEND=noninteractive $APTGET -s -o Debug::NoLocking=1 -o APT::Get::Show-Upgraded=true -o Debug::pkgProblemResolver=yes dist-upgrade 2>&1)
 APT_SIM_RC=$?
@@ -398,7 +388,7 @@ else
     STATE_CODE=3
 fi
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 # Check apt automation units so disabled unattended updates are visible.
 APT_AUTOMATION_CHECKED=1
 if $SYSTEMCTL is-active --quiet apt-daily.timer; then
@@ -416,12 +406,12 @@ if $SYSTEMCTL is-active --quiet unattended-upgrades.service; then
 else
     UNATTENDED_ACTIVE=0
 fi
-<% else -%>
+else
 APT_AUTOMATION_CHECKED=0
 TIMER_DAILY_ACTIVE=0
 TIMER_UPGRADE_ACTIVE=0
 UNATTENDED_ACTIVE=0
-<% end -%>
+fi
 
 # Start the summary with only meaningful freshness and update causes; the healthy path is filled in after all optional causes have been evaluated.
 MSG="APT"
@@ -539,7 +529,7 @@ EOF
                         while IFS='|' read -r source_pkg first_pkg oldver newver packages; do
                             [ -n "$source_pkg" ] || continue
 
-                            # Stop changelog work early so the monitoring check keeps bounded runtime and output.
+                            # Bound external changelog retrieval work separately from the single diagnostic character limit.
                             NOW=$($DATE +%s)
                             ELAPSED=$((NOW - CHECK_START))
                             if [ "$ELAPSED" -ge "$CHANGELOG_TOTAL_BUDGET" ]; then
@@ -561,7 +551,7 @@ EOF
 
                             # Reuse cached changelogs when possible; fetches are best-effort diagnostics.
                             if [ -r "$CACHE_FILE" ]; then
-                                RAW_CHANGELOG=$($SED -n '1,2000p' "$CACHE_FILE" 2>/dev/null)
+                                RAW_CHANGELOG=$($SED -n 'p' "$CACHE_FILE" 2>/dev/null)
                             else
                                 RAW_CHANGELOG=$(PAGER=cat LC_ALL=C DEBIAN_FRONTEND=noninteractive $TIMEOUT "$CHANGELOG_FETCH_TIMEOUT" "$APTGET" changelog "${first_pkg}=${newver}" 2>&1)
                                 FETCH_RC=$?
@@ -599,8 +589,8 @@ EOF
                                 continue
                             fi
 
-                            # Only show changelog entries newer than the installed version, capped above.
-                            FILTERED_CHANGELOG=$(printf '%s\n' "$RAW_CHANGELOG" | filter_changelog_since "$oldver" | truncate_changelog | $SED 's/^/  /')
+                            # Select newer entries; the single character limit applies to the complete diagnostic body later.
+                            FILTERED_CHANGELOG=$(printf '%s\n' "$RAW_CHANGELOG" | filter_changelog_since "$oldver" | $SED 's/^/  /')
                             if [ -z "$FILTERED_CHANGELOG" ]; then
                                 append_long "  No newer changelog entries found."
                                 continue

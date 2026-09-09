@@ -7,6 +7,9 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 CAT=$(command -v cat 2>/dev/null) || die "cat not available"
@@ -14,12 +17,12 @@ DIG=$(command -v dig 2>/dev/null) || die "dig not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 IP=$(command -v ip 2>/dev/null) || die "ip not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 NETWORKCTL=$(command -v networkctl 2>/dev/null)  || die "networkctl not available"
-<% else -%>
+else
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
-<% end -%>
+fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 
 # Summary state and DNS options are shared by interface and service checks.
@@ -36,7 +39,7 @@ HAS_V6=0
 # Interface filter input and bounded long-output state.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 IF_FILTERS=""
-IF_LIST="<%= @interfaces_str %>"
+IF_LIST=<%= @interfaces_str_shell %>
 
 # IPv4 address class counters are emitted as global perfdata.
 IPV4_CGNAT=0
@@ -58,7 +61,7 @@ IPV6_ULA=0
 LONG_OUTPUT=""
 LONG_OUTPUT_SEP="__CHECK_NETWORK_NL__"
 SERVICES_IDS=""
-SERVICES_LIST="<%= @service_str %>"
+SERVICES_LIST=<%= @service_str_shell %>
 SERVICES=""
 STATE_CODE=0
 SVC_ACTIVE=0
@@ -192,13 +195,22 @@ iface_matches() {
     return 1
 }
 
+# Select the configured service backend and preserve its success or failure status for each service.
+service_active() {
+    if [ "$SYSTEMD_ENABLE" = true ]; then
+        $SYSTEMDCTL is-active --quiet "$1"
+    else
+        $PS -C "$1" >/dev/null 2>&1
+    fi
+}
+
 # Extract Wi-Fi SSID/BSSID from networkctl output when systemd-networkd is available.
 wifi_info() {
     _IF="$1"
     _SSID=""
     _BSSID=""
 
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
     # Pull the AP line from networkctl
     _OUT=$(SYSTEMD_PAGER=cat SYSTEMD_COLORS=0 $NETWORKCTL status "$_IF" --no-pager 2>/dev/null)
     _LINE=$(printf '%s\n' "$_OUT" | $AWK '
@@ -218,7 +230,7 @@ wifi_info() {
         [ "$_SSID"  = "(null)" ] && _SSID=""
         [ "$_BSSID" = "00:00:00:00:00:00" ] && _BSSID=""
     fi
-<% end -%>
+fi
 
     # Escape any quotes in SSID to keep long output readable.
     [ -n "$_SSID" ] && _SSID=$(printf '%s' "$_SSID" | $SED 's/"/\\"/g')
@@ -245,11 +257,7 @@ fi
 if [ -n "$SERVICES_LIST" ]; then
     for SVC in $SERVICES_LIST; do
         SVC_TOTAL=$((SVC_TOTAL + 1))
-<% if @systemd_enable -%>
-        if $SYSTEMDCTL is-active --quiet "$SVC"; then
-<% else -%>
-        if $PS -C "$SVC" >/dev/null 2>&1; then
-<% end -%>
+        if service_active "$SVC"; then
             SVC_ACTIVE=$((SVC_ACTIVE + 1))
         else
             SVC_INACTIVE=$((SVC_INACTIVE + 1))

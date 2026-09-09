@@ -7,15 +7,18 @@ die() {
     exit 3
 }
 
+# Puppet selects whether systemd dependencies and unit inspection apply to this check.
+SYSTEMD_ENABLE='<%= @systemd_enable %>'
+
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 CUT=$(command -v cut 2>/dev/null) || die "cut not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
-<% end -%>
+fi
 TAIL=$(command -v tail 2>/dev/null) || die "tail not available"
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 WC=$(command -v wc 2>/dev/null) || die "wc not available"
@@ -195,11 +198,11 @@ parse_scan_csv() {
 }
 
 # Verify the ESET service before checking daemon internals.
-<% if @systemd_enable -%>
+if [ "$SYSTEMD_ENABLE" = true ]; then
 $SYSTEMDCTL is-active --quiet "efs.service" || crit "service is not active"
-<% else -%>
+else
 $PS -C efs >/dev/null 2>&1 || crit "service is not active"
-<% end -%>
+fi
 
 # Core daemon checks catch partial ESET failures that systemd may not expose.
 DAEMONS="oaeventd scand updated logd confd licensed utild sysinfod"

@@ -1,9 +1,8 @@
 # @summary Grants or revokes MySQL privileges for one user and object scope.
 #
-# This defined type delegates privilege checks and changes to the module's
-# root-only grant helper script. It escapes all dynamic command arguments before
-# building shell commands and supports MySQL 8 privilege-list compatibility for
-# `ALL PRIVILEGES`.
+# lint:ignore:140chars
+# This defined type delegates privilege checks and changes to the module's root-only grant helper script. It escapes all dynamic command arguments before building shell commands and supports MySQL 8 privilege-list compatibility for `ALL PRIVILEGES`.
+# lint:endignore
 #
 # @example Grant privileges on one database
 #   mysql::grant { 'app':
@@ -28,22 +27,22 @@
 #   MySQL host part for the account. The default is `localhost`.
 #
 # @param privileges
-#   Privilege list to grant or revoke. The list is sorted before comparison so
-#   privilege order does not affect idempotency. The default is
-#   `['ALL PRIVILEGES']`.
+# lint:ignore:140chars
+#   Privilege list to grant or revoke. The list is sorted before comparison so privilege order does not affect idempotency. The default is `['ALL PRIVILEGES']`.
+# lint:endignore
 #
 # @param table
 #   Table scope for the privilege. The default is `*`.
 #
 # @api public
 define mysql::grant (
-  Enum['present','absent']    $ensure,
-  String                      $username,
-  String                      $database     = '*',
-  Boolean                     $grant_option = false,
-  String                      $hostname     = 'localhost',
-  Array                       $privileges   = ['ALL PRIVILEGES'],
-  String                      $table        = '*'
+  Enum['present', 'absent'] $ensure,
+  String                    $username,
+  String                    $database     = '*',
+  Boolean                   $grant_option = false,
+  String                    $hostname     = 'localhost',
+  Array                     $privileges   = ['ALL PRIVILEGES'],
+  String                    $table        = '*',
 ) {
   if (defined(Class['mysql'])) {
     # Set requirements
@@ -68,19 +67,19 @@ define mysql::grant (
       if ($database != '*') {
         $check_all_priv = $priv_str
       } else {
-        $check_all_priv = 'ALTER, ALTER ROUTINE, CREATE, CREATE ROLE, CREATE ROUTINE, CREATE TABLESPACE, CREATE TEMPORARY TABLES, CREATE USER, CREATE VIEW, DELETE, DROP, DROP ROLE, EVENT, EXECUTE, FILE, INDEX, INSERT, LOCK TABLES, PROCESS, REFERENCES, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE, SELECT, SHOW DATABASES, SHOW VIEW, SHUTDOWN, SUPER, TRIGGER, UPDATE' #lint:ignore:140chars
+        $check_all_priv = 'ALTER, ALTER ROUTINE, CREATE, CREATE ROLE, CREATE ROUTINE, CREATE TABLESPACE, CREATE TEMPORARY TABLES, CREATE USER, CREATE VIEW, DELETE, DROP, DROP ROLE, EVENT, EXECUTE, FILE, INDEX, INSERT, LOCK TABLES, PROCESS, REFERENCES, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE, SELECT, SHOW DATABASES, SHOW VIEW, SHUTDOWN, SUPER, TRIGGER, UPDATE' # lint:ignore:140chars
       }
 
       # Escape version-specific privilege strings before building wrapper arguments.
       $check_all_priv_shell = stdlib::shell_escape($check_all_priv)
       $priv_str_shell = stdlib::shell_escape($priv_str)
-      $check_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${check_all_priv_shell} ${grant_option_num_shell}"
-      $grant_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${check_all_priv_shell} ${grant_option_num_shell} ${priv_str_shell}"
+      $check_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${check_all_priv_shell} ${grant_option_num_shell}" # lint:ignore:140chars
+      $grant_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${check_all_priv_shell} ${grant_option_num_shell} ${priv_str_shell}" # lint:ignore:140chars
     } else {
       # Escape the privilege string before building wrapper arguments.
       $priv_str_shell = stdlib::shell_escape($priv_str)
-      $check_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${priv_str_shell} ${grant_option_num_shell}"
-      $grant_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${priv_str_shell} ${grant_option_num_shell} ${priv_str_shell}"
+      $check_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${priv_str_shell} ${grant_option_num_shell}" # lint:ignore:140chars
+      $grant_script_args = "${username_shell} ${hostname_shell} ${database_shell} ${table_shell} ${priv_str_shell} ${grant_option_num_shell} ${priv_str_shell}" # lint:ignore:140chars
     }
 
     # Run query

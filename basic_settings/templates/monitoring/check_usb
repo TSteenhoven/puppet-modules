@@ -25,7 +25,7 @@ WC=$(command -v wc 2>/dev/null)   || die "wc not available"
 # Missing/required checks use the active lists so alerts only happen when the current time/day says the rule matters.
 # Any-required input and active/configured match state.
 ANYREQ_IDS="" # -a CSV
-ANYREQ_LIST="<%= @usb_any_requirements_correct %>"
+ANYREQ_LIST=<%= @usb_any_requirements_shell %>
 ANYREQ_ACTIVE_REQUIREMENT_LIST=""
 ANYREQ_MATCHED_LIST=""
 ANYREQ_OK=1
@@ -38,7 +38,7 @@ ANYREQ_VP_IDS_ACTIVE=""
 
 # Expected devices are both an authorization source and an active presence requirement.
 EXPECTED_IDS="" # -e CSV
-EXPECTED_LIST="<%= @usb_expected_correct %>"
+EXPECTED_LIST=<%= @usb_expected_shell %>
 EXPECTED_LIST_MISSING=""
 EXPECTED_MISSING_COUNT=0
 EXPECTED_PRESENT_COUNT=0
@@ -67,7 +67,7 @@ UNAUTHORIZED_DEV_LIST=""
 WHITELISTED_COUNT=0
 WHITELISTED_DEV_LIST=""
 WHITELIST_IDS="" # -w CSV
-WHITELIST_LIST="<%= @usb_whitelist_correct %>"
+WHITELIST_LIST=<%= @usb_whitelist_shell %>
 WHITELIST_SERIALS_ACTIVE=""
 WHITELIST_VP_IDS_ACTIVE=""
 

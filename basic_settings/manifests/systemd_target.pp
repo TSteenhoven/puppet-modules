@@ -1,8 +1,8 @@
 # @summary Manages a generated systemd target unit.
 #
-# This defined type writes `/etc/systemd/system/<title>.target` from the shared
-# template. It is the building block for the target ladder used by service
-# modules to bind workloads into predictable startup phases.
+# lint:ignore:140chars
+# This defined type writes `/etc/systemd/system/<title>.target` from the shared template. It is the building block for the target ladder used by service modules to bind workloads into predictable startup phases.
+# lint:endignore
 #
 # @example Create an isolatable target
 #   basic_settings::systemd_target { 'core-services':
@@ -27,8 +27,7 @@
 #   Key/value settings rendered into the `[Install]` section.
 #
 # @param stronger_requirements
-#   Controls whether the template uses stronger dependency semantics for parent
-#   target relationships.
+#   Controls whether the template uses stronger dependency semantics for parent target relationships.
 #
 # @param unit
 #   Additional key/value settings rendered into the `[Unit]` section.
@@ -37,11 +36,11 @@
 define basic_settings::systemd_target (
   String                    $description,
   Array                     $parent_targets,
-  Boolean                   $allow_isolate          = false,
-  Enum['present','absent']  $ensure                 = present,
-  Hash                      $install                = {},
-  Boolean                   $stronger_requirements  = true,
-  Hash                      $unit                   = {}
+  Boolean                   $allow_isolate         = false,
+  Enum['present', 'absent'] $ensure                = present,
+  Hash                      $install               = {},
+  Boolean                   $stronger_requirements = true,
+  Hash                      $unit                  = {},
 ) {
   # Check if systemd package is not defined
   if (!defined(Package['systemd'])) {

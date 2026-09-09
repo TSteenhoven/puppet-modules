@@ -1,10 +1,8 @@
 # @summary Prepares shared monitoring plumbing and failure notifications.
 #
-# This class installs mail tooling for systemd failure notifications, writes the
-# shared monitoring notification helper, and, when requested, prepares the
-# OpenITCOCKPIT agent custom-check directory and `customchecks.ini`. Other
-# modules use this class as the central source for monitoring package selection,
-# notification mail, and sudoers-directory policy.
+# lint:ignore:140chars
+# This class installs mail tooling for systemd failure notifications, writes the shared monitoring notification helper, and, when requested, prepares the OpenITCOCKPIT agent custom-check directory and `customchecks.ini`. Other modules use this class as the central source for monitoring package selection, notification mail, and sudoers-directory policy.
+# lint:endignore
 #
 # @example Enable OpenITCOCKPIT custom checks without installing the agent package
 #   class { 'basic_settings::monitoring':
@@ -12,37 +10,33 @@
 #   }
 #
 # @param mail_package
-#   Mail transport service installed and enabled for failure notifications. The
-#   default is `postfix`.
+#   Mail transport service installed and enabled for failure notifications. The default is `postfix`.
 #
 # @param mail_to
-#   Default recipient address for the shared monitoring notification helper and
-#   systemd failure notification mail. The default is `root`.
+#   Default recipient address for the shared monitoring notification helper and systemd failure notification mail. The default is `root`.
 #
 # @param package
-#   Monitoring integration to configure. `none` disables generated monitoring
-#   checks; `openitcockpit` writes OpenITCOCKPIT custom-check configuration.
+# lint:ignore:140chars
+#   Monitoring integration to configure. `none` disables generated monitoring checks; `openitcockpit` writes OpenITCOCKPIT custom-check configuration.
+# lint:endignore
 #
 # @param package_install
-#   Installs and wires the `openitcockpit-agent` package when `true` and
-#   `package` is `openitcockpit`.
+#   Installs and wires the `openitcockpit-agent` package when `true` and `package` is `openitcockpit`.
 #
 # @param server_fdqn
-#   Fully qualified host name used in notification subjects. The default comes
-#   from Facter.
+#   Fully qualified host name used in notification subjects. The default comes from Facter.
 #
 # @param sudoers_dir_enable
-#   Mirrors the login sudoers.d ownership policy so generated monitoring sudoers
-#   snippets are named consistently with the rest of the host.
+#   Mirrors the login sudoers.d ownership policy so generated monitoring sudoers snippets are named consistently with the rest of the host.
 #
 # @api public
 class basic_settings::monitoring (
-  String                        $mail_package         = 'postfix',
-  String                        $mail_to              = 'root',
-  Enum['none','openitcockpit']  $package              = 'none',
-  Boolean                       $package_install      = false,
-  String                        $server_fdqn          = $facts['networking']['fqdn'],
-  Boolean                       $sudoers_dir_enable   = false
+  String                        $mail_package       = 'postfix',
+  String                        $mail_to            = 'root',
+  Enum['none', 'openitcockpit'] $package            = 'none',
+  Boolean                       $package_install    = false,
+  String                        $server_fdqn        = $facts['networking']['fqdn'],
+  Boolean                       $sudoers_dir_enable = false,
 ) {
   # Set some default values
   $systemd_enable = defined(Package['systemd'])
@@ -94,6 +88,9 @@ class basic_settings::monitoring (
         command => '/usr/bin/newaliases',
         creates => '/etc/aliases.db',
       }
+    }
+    default: {
+      # Other mail implementations do not use the managed aliases database.
     }
   }
 
@@ -245,6 +242,9 @@ class basic_settings::monitoring (
         content => "# Managed by puppet\n[default]\n",
         order   => '01',
       }
+    }
+    default: {
+      # Other selections do not register an OpenITCOCKPIT backend.
     }
   }
 

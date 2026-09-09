@@ -1,8 +1,8 @@
 # @summary Manages one netplan ethernet YAML file.
 #
-# This defined type renders `/etc/netplan/<title>.yaml` for an ethernet
-# interface, inheriting DHCP and IP-version defaults from the `netplanio` class
-# unless explicitly overridden. Changes notify the shared `netplan apply` exec.
+# lint:ignore:140chars
+# This defined type renders `/etc/netplan/<title>.yaml` for an ethernet interface, inheriting DHCP and IP-version defaults from the `netplanio` class unless explicitly overridden. Changes notify the shared `netplan apply` exec.
+# lint:endignore
 #
 # @example Configure a static ethernet interface
 #   netplanio::ethernet { 'ens18':
@@ -33,18 +33,20 @@
 #   Sets the netplan `optional` flag for the interface.
 #
 # @param routes
+# lint:ignore:140chars
 #   Optional route hash keyed by destination. Every destination maps to a hash containing at least `via`, for example `{ 'default' => { 'via' => '192.0.2.1' } }`.
+# lint:endignore
 #
 # @api public
 define netplanio::ethernet (
-  Optional[Array]           $addresses       = undef,
-  Optional[Boolean]         $dhcp_enable     = undef,
-  Enum['present','absent']  $ensure          = present,
-  Optional[String]          $interface       = undef,
-  Optional[String]          $ip_version      = undef,
-  Optional[Hash]            $nameservers     = undef,
-  Boolean                   $optional        = false,
-  Optional[Hash]            $routes          = undef,
+  Optional[Array]           $addresses   = undef,
+  Optional[Boolean]         $dhcp_enable = undef,
+  Enum['present', 'absent'] $ensure      = present,
+  Optional[String]          $interface   = undef,
+  Optional[String]          $ip_version  = undef,
+  Optional[Hash]            $nameservers = undef,
+  Boolean                   $optional    = false,
+  Optional[Hash]            $routes      = undef,
 ) {
   if (defined(Class['netplanio'])) {
     if ($ensure) {
@@ -108,7 +110,7 @@ define netplanio::ethernet (
     } else {
       # Remove config
       file { "/etc/netplan/${name}.yaml":
-        ensure  => absent,
+        ensure => absent,
       }
     }
   } else {

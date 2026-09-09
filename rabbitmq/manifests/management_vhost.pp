@@ -1,7 +1,6 @@
 # @summary Manages a RabbitMQ virtual host and default queue type.
 #
-# This defined type requires `rabbitmq::management` and creates, deletes, or
-# reconciles a virtual host's default queue type metadata.
+# This defined type requires `rabbitmq::management` and creates, deletes, or reconciles a virtual host's default queue type metadata.
 #
 # @example Create a quorum-default vhost
 #   rabbitmq::management_vhost { 'app':
@@ -16,8 +15,8 @@
 #
 # @api public
 define rabbitmq::management_vhost (
-  Enum['present','absent']    $ensure     = present,
-  String                      $type       = 'classic'
+  Enum['present', 'absent'] $ensure = present,
+  String                    $type   = 'classic',
 ) {
   if (defined(Class['rabbitmq::management'])) {
     # Get exec name
@@ -47,7 +46,7 @@ define rabbitmq::management_vhost (
         # Check if type of the vhost is the same
         exec { "rabbitmq_management_vhost_${exec_name}_type":
           command => "/usr/sbin/rabbitmqctl update_vhost_metadata ${name_shell} --default-queue-type ${type_shell}",
-          unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name_shell} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep ${name_type_pattern_shell}", #lint:ignore:140chars
+          unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name_shell} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep ${name_type_pattern_shell}", # lint:ignore:140chars
           require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${exec_name}"]],
         }
       }

@@ -29,9 +29,9 @@ node 'database.example.org' {
   }
 
   mysql::database { 'app':
+    ensure  => present,
     charset => 'utf8mb4',
     collate => 'utf8mb4_unicode_ci',
-    ensure  => present,
     import  => '/root/imports/app.sql',
     require => Class['mysql'],
   }
@@ -46,8 +46,8 @@ node 'database.example.org' {
   }
 
   mysql::grant { 'app_rw':
-    database     => 'app',
     ensure       => present,
+    database     => 'app',
     grant_option => false,
     hostname     => 'localhost',
     privileges   => ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
@@ -84,13 +84,13 @@ node 'rabbitmq.example.org' {
   }
 
   class { 'rabbitmq::management':
-    admin_config_path   => '/etc/rabbitmq/rabbitmqadmin.conf',
-    admin_enable        => true,
-    admin_password      => lookup('rabbitmq::admin_password'),
-    default_queue_type  => 'quorum',
-    port                => 15672,
-    ssl_port            => 15671,
-    require             => Class['rabbitmq::tcp'],
+    admin_config_path  => '/etc/rabbitmq/rabbitmqadmin.conf',
+    admin_enable       => true,
+    admin_password     => lookup('rabbitmq::admin_password'),
+    default_queue_type => 'quorum',
+    port               => 15672,
+    ssl_port           => 15671,
+    require            => Class['rabbitmq::tcp'],
   }
 
   rabbitmq::management_vhost { 'app':
@@ -107,28 +107,28 @@ node 'rabbitmq.example.org' {
   }
 
   rabbitmq::management_queue { 'failure_messages':
-    durable => true,
     ensure  => present,
+    durable => true,
     type    => 'quorum',
     vhost   => 'app',
     require => Rabbitmq::Management_exchange['failure_exchange'],
   }
 
   rabbitmq::management_queue { 'result_messages':
+    ensure    => present,
     arguments => {
       'x-dead-letter-exchange'    => 'failure_exchange',
       'x-dead-letter-routing-key' => 'failure_messages',
     },
     durable   => true,
-    ensure    => present,
     type      => 'quorum',
     vhost     => 'app',
     require   => Rabbitmq::Management_exchange['failure_exchange'],
   }
 
   rabbitmq::management_binding { 'failure_binding':
-    destination => 'failure_messages',
     ensure      => present,
+    destination => 'failure_messages',
     routing_key => 'failure_messages',
     source      => 'failure_exchange',
     vhost       => 'app',
@@ -168,16 +168,16 @@ node 'network-usage.example.org' {
   }
 
   vnstat::ethernet { 'lan':
-    bandwidth_max => 1000,
     ensure        => present,
+    bandwidth_max => 1000,
     interface     => 'ens192',
     order         => '50',
     require       => Class['vnstat'],
   }
 
   vnstat::ethernet { 'wan':
-    bandwidth_max => 10000,
     ensure        => present,
+    bandwidth_max => 10000,
     interface     => 'ens224',
     order         => '60',
     p95_critical  => 8000,

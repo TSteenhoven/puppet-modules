@@ -220,9 +220,9 @@ De class kan belangrijke serverconfiguratie en conflicterende pakketten vervange
 
 ```puppet
 class { 'basic_settings':
-  hosts_enable              => true,
-  server_fdqn               => 'server01.example.org',
-  systemd_ntp_extra_pools   => ['ntp.example.org'],
+  hosts_enable            => true,
+  server_fdqn             => 'server01.example.org',
+  systemd_ntp_extra_pools => ['ntp.example.org'],
 }
 ```
 
@@ -742,4 +742,6 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 ## Contributie
 
-Pull requests en meldingen zijn welkom. Houd een wijziging bij de module waar deze bij hoort, werk voorbeelden en Puppet Strings bij wanneer openbare parameters veranderen en controleer de gevolgen voor beveiliging, monitoring en systemd volgens [`AGENTS.md`](AGENTS.md).
+Gebruik op macOS de nieuwste stabiele Ruby via `brew install ruby` en zet die vóór de systeem-Ruby in je PATH. De meegeleverde macOS-Ruby is te oud voor het ontwikkelgereedschap. De [macOS-installatiestappen](.tools/lint/README.md#ruby-op-macos) beschrijven de juiste paden en controles.
+
+Pull requests en meldingen zijn welkom. De [projectconfiguratie en plugins van Puppet-lint](.tools/lint/README.md) bepalen de codestandaard voor alle eigen modules en uitvoerbare voorbeelden. Voer vanuit de repositoryroot `bundle install`, `bundle exec puppet-lint .` en `bundle exec rake spec` uit. Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. De tests nemen documentatievoorbeelden mee; aanvullende functionele validatie en inhoudelijke review blijven nodig. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces en de algemene beveiligingsverantwoordelijkheden.

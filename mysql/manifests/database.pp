@@ -1,9 +1,8 @@
 # @summary Creates or optionally drops a MySQL database.
 #
-# This defined type uses the MySQL defaults file prepared by the `mysql` class to
-# create a database with the requested charset and collation, optionally import a
-# SQL file after creation, or drop the database only when explicit destruction is
-# allowed.
+# lint:ignore:140chars
+# This defined type uses the MySQL defaults file prepared by the `mysql` class to create a database with the requested charset and collation, optionally import a SQL file after creation, or drop the database only when explicit destruction is allowed.
+# lint:endignore
 #
 # @example Create a UTF-8 database
 #   mysql::database { 'app':
@@ -20,19 +19,18 @@
 #   Default collation used in the `CREATE DATABASE` statement.
 #
 # @param destroy
-#   Allows the database to be dropped when `ensure` is `absent`. The default is
-#   `false` to avoid accidental data loss.
+#   Allows the database to be dropped when `ensure` is `absent`. The default is `false` to avoid accidental data loss.
 #
 # @param import
 #   Optional SQL file path imported after database creation.
 #
 # @api public
 define mysql::database (
-  Enum['present','absent']    $ensure,
-  String                      $charset  = 'utf8',
-  String                      $collate  = 'utf8_general_ci',
-  Boolean                     $destroy  = false,
-  Optional[String]            $import   = undef,
+  Enum['present', 'absent'] $ensure,
+  String                    $charset = 'utf8',
+  String                    $collate = 'utf8_general_ci',
+  Boolean                   $destroy = false,
+  Optional[String]          $import  = undef,
 ) {
   if (defined(Class['mysql'])) {
     # Set requirements
@@ -64,13 +62,13 @@ define mysql::database (
         }
 
         # Escape the CREATE DATABASE query before passing it to mysql -e.
-        $create_database_query_shell = stdlib::shell_escape("CREATE DATABASE `${title}` DEFAULT CHARACTER SET = '${charset}' DEFAULT COLLATE = '${collate}';")
+        $create_database_query_shell = stdlib::shell_escape("CREATE DATABASE `${title}` DEFAULT CHARACTER SET = '${charset}' DEFAULT COLLATE = '${collate}';") # lint:ignore:140chars
 
         # Create database through the shell provider so escaped SQL semicolons and guard pipelines stay intact.
         exec { "mysql_create_database_${title}":
           provider => shell,
-          unless   => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -NBe ${show_databases_query_shell} | /usr/bin/grep -qx ${database_shell}",
-          command  => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -e ${create_database_query_shell}", #lint:ignore:140chars
+          unless   => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -NBe ${show_databases_query_shell} | /usr/bin/grep -qx ${database_shell}", # lint:ignore:140chars
+          command  => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -e ${create_database_query_shell}",
           notify   => $notify,
         }
       }
@@ -82,7 +80,7 @@ define mysql::database (
           # Drop database through the shell provider so escaped SQL semicolons and guard pipelines stay intact.
           exec { "mysql_drop_database_${title}":
             provider => shell,
-            onlyif   => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -NBe ${show_databases_query_shell} | /usr/bin/grep -qx ${database_shell}",
+            onlyif   => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -NBe ${show_databases_query_shell} | /usr/bin/grep -qx ${database_shell}", # lint:ignore:140chars
             command  => "/usr/bin/mysql --defaults-file=${defaults_file_shell} -e ${drop_database_query_shell}",
           }
         } else {
