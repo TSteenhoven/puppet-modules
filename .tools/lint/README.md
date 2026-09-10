@@ -1,14 +1,18 @@
 # Puppet-lint
 
-Met Puppet-lint controleer je de Puppet-code in dit project. De standaardchecks worden aangevuld met eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De tests controleren daarnaast voorbeelden, catalogi, templates en monitoringgedrag.
+Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De bijbehorende tests controleren ook voorbeelden, catalogi, templates en monitoringgedrag.
 
-De hulpmiddelen staan in `.tools`, zodat je ze niet verwart met de Puppet-modules. Voer de commando's voor deze repository uit vanuit de hoofdmap. Gebruik je de linter in een ander project, volg dan [de stappen voor dat project](#de-linter-gebruiken-in-een-ander-puppet-project). De instellingen staan in [`.puppet-lint.rc`](../../.puppet-lint.rc) en de eigen checks in [`lib/puppet-lint/plugins/`](lib/puppet-lint/plugins/).
+Deze handleiding helpt je de controles te installeren, uit te voeren en meldingen op te lossen. De [naslag](#naslag) beschrijft hoe de controles werken en welke codeafspraken en reviewcriteria gelden. Gebruik je de moduleverzameling in een ander Puppet-project, volg dan [de stappen voor dat project](#de-linter-gebruiken-in-een-ander-puppet-project).
 
 ## Inhoudsopgave
 
+- [Benodigde omgeving](#benodigde-omgeving)
 - [Installatie](#installatie)
   - [Ruby op macOS](#ruby-op-macos)
+  - [Gems installeren](#gems-installeren)
 - [Code controleren](#code-controleren)
+  - [Een melding oplossen](#een-melding-oplossen)
+- [Versies bijwerken](#versies-bijwerken)
 - [De linter gebruiken in een ander Puppet-project](#de-linter-gebruiken-in-een-ander-puppet-project)
   - [Benodigdheden](#benodigdheden)
   - [Installatie in je project](#installatie-in-je-project)
@@ -17,15 +21,23 @@ De hulpmiddelen staan in `.tools`, zodat je ze niet verwart met de Puppet-module
   - [Aanvullende tests](#aanvullende-tests)
   - [Controle in CI](#controle-in-ci)
   - [Problemen oplossen](#problemen-oplossen)
-- [Versies bijwerken](#versies-bijwerken)
-- [Werking van de controles](#werking-van-de-controles)
-- [Beschikbare projectchecks](#beschikbare-projectchecks)
-- [Lange regels](#lange-regels)
-- [Parameters en resources](#parameters-en-resources)
-- [Commentaar en documentatie](#commentaar-en-documentatie)
-- [Bestanden en beveiliging](#bestanden-en-beveiliging)
-- [Gedeelde services en systemd](#gedeelde-services-en-systemd)
-- [Shellscripts en monitoring](#shellscripts-en-monitoring)
+- [Naslag](#naslag)
+  - [Werking van de controles](#werking-van-de-controles)
+  - [Beschikbare projectchecks](#beschikbare-projectchecks)
+  - [Lange regels](#lange-regels)
+  - [Parameters en resources](#parameters-en-resources)
+  - [Commentaar en documentatie](#commentaar-en-documentatie)
+  - [Bestanden en beveiliging](#bestanden-en-beveiliging)
+  - [Gedeelde services en systemd](#gedeelde-services-en-systemd)
+  - [Shellscripts en monitoring](#shellscripts-en-monitoring)
+
+## Benodigde omgeving
+
+Je hebt Git, de nieuwste stabiele Ruby en de nieuwste stabiele Bundler nodig. Werk in een volledige checkout van deze repository, inclusief de verborgen bestanden en Git-submodules. De installatie hieronder haalt de submodules op en installeert de gems die de controles gebruiken.
+
+Voer de commando's voor deze repository uit vanuit de hoofdmap. Het ontwikkelgereedschap staat onder `.tools`, apart van de Puppet-modules. De ontwikkelomgeving bepaalt niet welke Puppet- of OpenVox-versies op beheerde servers worden ondersteund; daarvoor gelden de modulemetadata en de [project-README](../../README.md#ondersteuning-en-compatibiliteit).
+
+De controles passen geen catalogi toe en hebben geen productiegeheimen of verbindingen met beheerde servers nodig. Catalogustests gebruiken nagebootste facts; monitoringtests gebruiken vervangers voor servicecommando's.
 
 ## Installatie
 
@@ -33,9 +45,9 @@ Gebruik de nieuwste stabiele Ruby en Bundler. Richt op macOS eerst Ruby in met d
 
 ### Ruby op macOS
 
-De Ruby die macOS meelevert is te oud voor deze ontwikkelomgeving. Installeer de nieuwste stabiele Ruby met de [Homebrew-formule `ruby`](https://formulae.brew.sh/formula/ruby).
+De Ruby die macOS meelevert is te oud voor deze ontwikkelomgeving. De stappen hieronder gebruiken de nieuwste stabiele Ruby uit de [Homebrew-formule `ruby`](https://formulae.brew.sh/formula/ruby) en gaan uit van zsh. Gebruik je een Ruby-versiebeheerder zoals rbenv of mise, installeer en activeer de nieuwste stabiele Ruby daarmee en ga door naar [Gems installeren](#gems-installeren).
 
-Installeer eerst [Homebrew](https://brew.sh/) als het commando `brew` nog niet beschikbaar is. Voer daarna uit:
+Controleer de [macOS-vereisten van Homebrew](https://docs.brew.sh/Installation#macos-requirements), waaronder de benodigde Command Line Tools voor Xcode. Installeer [Homebrew](https://brew.sh/) als `brew` nog niet beschikbaar is en volg ook de aanwijzingen voor de shellconfiguratie. Voer daarna dit blok uit in je huidige terminal:
 
 ```sh
 brew install ruby
@@ -45,9 +57,11 @@ ruby --version
 command -v ruby
 ```
 
-Controleer met `ruby --version` welke versie actief is en dat `command -v ruby` naar Homebrew wijst, niet naar `/usr/bin/ruby`. De eerste `export` kiest Homebrew-Ruby. De tweede maakt de commando's beschikbaar die je daarna met `gem install` installeert. `brew --prefix` kiest het juiste pad voor zowel Apple Silicon als Intel.
+De eerste `export` kiest Homebrew-Ruby. De tweede vraagt die Ruby waar gemcommando's worden geïnstalleerd en voegt ook die map aan PATH toe. Zo zijn de commando's beschikbaar die je straks met `gem install` installeert. Met `brew --prefix ruby` hoef je het installatiepad niet vast te leggen op Apple Silicon of Intel; de beschikbaarheid van Ruby voor jouw macOS-versie en architectuur volgt uit de Homebrew-formule.
 
-Voeg de twee `export PATH=...`-regels ook in deze volgorde aan `~/.zshrc` toe om ze in nieuwe macOS-terminals te gebruiken. Laat ze na eventuele Homebrew-initialisatie staan. Gebruik je een Ruby-versiebeheerder zoals rbenv of mise, installeer en activeer de nieuwste stabiele Ruby daarmee.
+Controleer in de uitvoer welke Ruby-versie actief is. `command -v ruby` moet naar Homebrew wijzen en niet naar `/usr/bin/ruby`.
+
+Voor nieuwe zsh-terminals zet je dezelfde twee `export PATH=...`-regels, in dezelfde volgorde, in `~/.zshrc`. Plaats ze na eventuele Homebrew-initialisatie en behoud de `$(...)`-expressies letterlijk, zodat iedere nieuwe terminal de paden opnieuw bepaalt. Open daarna een nieuwe terminal en herhaal `ruby --version` en `command -v ruby`.
 
 ### Gems installeren
 
@@ -60,7 +74,9 @@ export BUNDLE_VERSION=system
 bundle install
 ```
 
-`gem install bundler` installeert de nieuwste stabiele Bundler. Met `BUNDLE_VERSION=system` gebruik je de geïnstalleerde versie, ook wanneer `BUNDLED WITH` in de lockfile een oudere versie noemt. De [Gemfile](../../Gemfile) bevat geen vaste gemversies. `Gemfile.lock` bewaart wel de geteste combinatie, zodat `bundle install` lokaal en in CI dezelfde gems installeert.
+`gem install bundler` installeert de nieuwste stabiele Bundler. Met `BUNDLE_VERSION=system` gebruik je de geïnstalleerde versie, ook wanneer `BUNDLED WITH` in de lockfile een oudere versie noemt. Zet deze variabele ook in een nieuwe terminal voordat je de bundle gebruikt.
+
+De [Gemfile](../../Gemfile) bevat geen vaste gemversies. [`Gemfile.lock`](../../Gemfile.lock) bewaart wel de geteste combinatie, zodat `bundle install` lokaal en in CI dezelfde gems installeert. Het ophalen van nieuwere versies staat apart onder [Versies bijwerken](#versies-bijwerken).
 
 Krijg je een Bundler-fout met `/System/Library/Frameworks/Ruby.framework` of `/usr/bin/bundle` in de melding, dan gebruikt je terminal nog de macOS-installatie. Controleer eerst `ruby --version`, `command -v ruby` en `command -v bundle` en herstel de PATH-instelling hierboven. Bundler installeren met de oude systeem-Ruby of `sudo gem install` lost die versieverschillen niet op.
 
@@ -68,7 +84,7 @@ Naast Puppet-lint worden twee bestaande lintplugins, OpenVox, `metadata-json-lin
 
 ## Code controleren
 
-Voer na je wijzigingen de volledige lintscan en tests uit. De afsluitende `.` geeft aan dat Puppet-lint de repository moet scannen; laat die ook staan wanneer je extra CLI-opties meegeeft.
+Voer na de installatie de volgende controles uit vanuit de hoofdmap van deze repository. Herhaal ze na je wijzigingen:
 
 ```sh
 bundle exec puppet-lint .
@@ -76,16 +92,51 @@ bundle exec rake spec
 git diff --check
 ```
 
-Controleer een gewijzigd manifest ook rechtstreeks met de Puppet-parser. Voor modulemetadata is een aparte validator beschikbaar:
+De lintscan zoekt afwijkingen van de automatische codechecks. De tests controleren daarnaast onder meer voorbeelden, catalogi, templates en monitoringgedrag. Met `git diff --check` controleer je de wijzigingen op whitespacefouten. De afsluitende `.` bij Puppet-lint geeft aan dat de hele repository moet worden gescand; laat die ook staan wanneer je extra CLI-opties meegeeft.
+
+Controleer ieder gewijzigd Puppet-manifest ook rechtstreeks met de parser:
 
 ```sh
 bundle exec puppet parser validate path/to/manifest.pp
+```
+
+Vervang `path/to/manifest.pp` door het pad van het gewijzigde bestand. Heb je modulemetadata aangepast, controleer dan ook het betreffende bestand:
+
+```sh
 bundle exec metadata-json-lint module/metadata.json
 ```
 
-Een geslaagde lintscan betekent dat de code aan de automatische checks voldoet. Controleer bij gewijzigd gedrag ook wat Puppet op de server gaat doen: welke bestanden veranderen, welke services herstarten en welke rechten of verbindingen nodig zijn. Test een normaal gebruik en een praktisch foutgeval. Raak je een gedeelde bouwsteen, neem dan ook de modules mee die deze gebruiken.
+Vervang `module/metadata.json` door het pad van dat bestand.
 
-De afspraken hieronder vormen samen met de configuratie en plugins de codestandaard. Puppet Strings bij de classes en defined types beschrijven hun concrete parameters en gedrag. [`AGENTS.md`](../../AGENTS.md) beschrijft het werkproces. AI-agents laten hun gecontroleerde wijzigingen in de werkboom staan; een mens beoordeelt en commit ze.
+Een geslaagde lintscan betekent dat de code aan de automatische checks voldoet. Beoordeel bij gewijzigd gedrag ook wat Puppet op de server gaat doen: welke bestanden veranderen, welke services herstarten en welke rechten of verbindingen nodig zijn. Test een normaal gebruik en een praktisch foutgeval. Raak je een gedeelde bouwsteen, neem dan ook de modules mee die deze gebruiken. Het werkproces en de vereiste review staan in [`AGENTS.md`](../../AGENTS.md).
+
+### Een melding oplossen
+
+Een lintmelding noemt het bestand, de regel, de kolom, de checknaam en de oorzaak. Ook een waarschuwing laat de scan mislukken. De eigen checks vind je op naam onder [Beschikbare projectchecks](#beschikbare-projectchecks); de bijbehorende codeafspraken staan verderop in de naslag. Voor standaardchecks kun je de [uitleg van Puppet-lint](https://puppetlabs.github.io/puppet-lint/#checks) raadplegen.
+
+1. Bekijk de genoemde regel samen met het parameterblok, de resource of het commando waar deze bij hoort.
+2. Herstel de oorzaak volgens de betreffende afspraak. Voor een bewust lange regel volg je de gerichte uitzondering onder [Lange regels](#lange-regels).
+3. Voer de volledige lintscan en tests opnieuw uit. Controleer een gewijzigd manifest ook met de parser zoals hierboven beschreven.
+
+Stopt de linter voordat hij code kan controleren, herstel dan eerst de installatie. Controleer bij Ruby- of Bundler-fouten de actieve Ruby en de stappen onder [Gems installeren](#gems-installeren). Bij een ontbrekende plugin moeten de volledige checkout, de geïnstalleerde bundle en de werkmap kloppen. Onder [Werking van de controles](#werking-van-de-controles) lees je welke configuratiebestanden de CLI laadt en hoe je uitsluitend de projectconfiguratie gebruikt.
+
+## Versies bijwerken
+
+Bij de eerste installatie gebruikt Bundler de versies uit de lockfile. Wil je die combinatie bijwerken, voer dan het volgende uit vanuit de hoofdmap van deze repository, met de nieuwste stabiele Ruby actief:
+
+```sh
+gem install bundler
+BUNDLE_VERSION=system bundle update --all
+bundle exec puppet-lint .
+bundle exec rake spec
+git diff -- Gemfile.lock
+```
+
+[`bundle update --all`](https://bundler.io/man/bundle-update.1.html) kiest de nieuwste stabiele gems die onderling en met de ingestelde Ruby-versie passen. Gems kunnen zelf beperkingen aan hun afhankelijkheden stellen. Gebruik geen prereleases voor de gewone ontwikkelomgeving.
+
+Controleer de gewijzigde lockfile en eventuele codeaanpassingen in de review. `bundle install` gebruikt daarna steeds die geteste combinatie.
+
+Werk op macOS Ruby bij met `brew update` en `brew upgrade ruby`. Open daarna een nieuwe terminal, zodat ook het pad voor gemcommando's opnieuw wordt bepaald, en volg opnieuw [Gems installeren](#gems-installeren). Draai na een Ruby-update de volledige lintscan en testsuite.
 
 ## De linter gebruiken in een ander Puppet-project
 
@@ -144,11 +195,13 @@ Deze installatie levert ook de aanvullende lintplugins en de OpenVox-parser. Hee
 
 De `BUNDLE_*`-instellingen houden de installatie gescheiden van je andere Ruby-projecten:
 
-- `BUNDLE_GEMFILE` kiest de Gemfile van de moduleverzameling.
-- `BUNDLE_PATH` kiest de aparte installatiemap voor de gems.
-- `BUNDLE_IGNORE_CONFIG=1` negeert persoonlijke en lokale Bundler-configuratiebestanden.
-- `BUNDLE_FROZEN=true` voorkomt dat Bundler de lockfile tijdens de installatie wijzigt.
-- `BUNDLE_VERSION=system` gebruikt de geïnstalleerde Bundler.
+| Instelling | Gevolg |
+| --- | --- |
+| `BUNDLE_GEMFILE` | Kiest de Gemfile van de moduleverzameling. |
+| `BUNDLE_PATH` | Kiest de aparte installatiemap voor de gems. |
+| `BUNDLE_IGNORE_CONFIG=1` | Negeert persoonlijke en lokale Bundler-configuratiebestanden. |
+| `BUNDLE_FROZEN=true` | Voorkomt dat Bundler de lockfile tijdens de installatie wijzigt. |
+| `BUNDLE_VERSION=system` | Gebruikt de geïnstalleerde Bundler. |
 
 De haakjes rond het installatieblok zorgen dat deze instellingen alleen binnen dat blok gelden. Daarna kun je je gewone projectcommando's blijven gebruiken.
 
@@ -236,7 +289,9 @@ Het voorbeeld zoekt eerst in je eigen `modules/` en daarna in `global-modules/`.
 
 Geef volledige, bestaande paden op. Vervang `$codedir`, `$basemodulepath` en relatieve paden door de overeenkomstige mappen op je eigen computer of CI-runner. De linter leest geen `environment.conf` en haalt geen instellingen van productieservers op. Gebruiken je environments verschillende modulepaden, controleer de code dan per environment met de bijbehorende paden. Eén gecombineerde lijst kan een andere versie van een module kiezen dan Puppet op de server.
 
-Het script geeft `module_dirs` via `PROJECT_LINT_MODULEPATH` aan de check door. Op macOS en Linux worden de paden gescheiden door `:`. Spaties zijn toegestaan; een `:` in een mapnaam niet. Een leeg, relatief of niet-bestaand modulepad geeft een fout. Zonder deze variabele zoekt de check alleen in de gedeelde moduleverzameling, waarbij `concat`, `debconf`, `reboot`, `stdlib` en `timezone` worden overgeslagen. Afzonderlijke eigen modules worden dan niet gevonden.
+Het script geeft `module_dirs` via `PROJECT_LINT_MODULEPATH` aan de check door. Op macOS en Linux worden de paden gescheiden door `:`. Spaties zijn toegestaan; een `:` in een mapnaam niet. Een leeg, relatief of niet-bestaand modulepad geeft een fout.
+
+Zonder deze variabele zoekt de check alleen in de gedeelde moduleverzameling, waarbij `concat`, `debconf`, `reboot`, `stdlib` en `timezone` worden overgeslagen. Afzonderlijke eigen modules worden dan niet gevonden.
 
 De check gebruikt eerst declaraties uit het bestand dat wordt gecontroleerd. Voor andere aanroepen kiest hij de eerste modulemap met de gevraagde modulenaam. Daarna volgt hij de gebruikelijke Puppet-indeling:
 
@@ -342,25 +397,17 @@ De uitvoer moet de `project_*`-checks bevatten. Controleer bij de eerste inricht
 
 De tests van de gedeelde linter voeren het script uit deze handleiding ook uit in een apart voorbeeldproject. Ze controleren onder meer een genest pad met spaties en het overslaan van persoonlijke lintinstellingen.
 
-## Versies bijwerken
+## Naslag
 
-Gebruik dit wanneer je nieuwe versies van het ontwikkelgereedschap wilt ophalen:
+De afspraken in deze naslag vormen samen met [`.puppet-lint.rc`](../../.puppet-lint.rc) en de [projectplugins](lib/puppet-lint/plugins/) de codestandaard. De tabellen helpen je een lintmelding terug te vinden; de overige secties beschrijven ook criteria die je zelf bij de review moet beoordelen. Puppet Strings bij classes en defined types beschrijven hun concrete parameters en gedrag.
 
-```sh
-gem install bundler
-BUNDLE_VERSION=system bundle update --all
-bundle exec puppet-lint .
-bundle exec rake spec
-git diff -- Gemfile.lock
-```
+Voor de dagelijkse controles kun je terug naar [Code controleren](#code-controleren).
 
-[`bundle update --all`](https://bundler.io/man/bundle-update.1.html) kiest de nieuwste stabiele gems die onderling en met de ingestelde Ruby-versie passen. Gems kunnen zelf beperkingen aan hun afhankelijkheden stellen. Controleer de gewijzigde lockfile en eventuele codeaanpassingen voordat een mens ze commit. `bundle install` blijft daarna die geteste combinatie gebruiken. Gebruik geen prereleases voor de gewone ontwikkelomgeving.
+### Werking van de controles
 
-Werk op macOS Ruby bij met `brew update` en `brew upgrade ruby`. Open daarna een nieuwe terminal, zodat ook het pad voor gemcommando's opnieuw wordt bepaald, en installeer de gems opnieuw. Draai na een Ruby-update de volledige lintscan en testsuite. De ontwikkelversie zegt niets extra's over ondersteunde Puppet- of OpenVox-versies op beheerde servers; controleer daarvoor de modulemetadata en de project-README.
+Puppet-lint laadt de eigen plugins via `--load`. Alle standaardchecks blijven actief, ook wanneer een update nieuwe checks toevoegt. Daarnaast is `class_inherits_from_params_class` ingeschakeld. De uitzonderingen die Puppet-lint zelf standaard uit laat staan worden toegelicht bij [Beschikbare projectchecks](#beschikbare-projectchecks).
 
-## Werking van de controles
-
-Puppet-lint laadt de eigen plugins via `--load`. Alle standaardchecks blijven actief, ook wanneer een update nieuwe checks toevoegt. Daarnaast is `class_inherits_from_params_class` ingeschakeld. Een ontbrekende plugin of een lintwaarschuwing laat het commando mislukken. De uitvoer vermeldt bestand, regel, kolom en checknaam. Met `bundle exec puppet-lint --json .` krijg je JSON-uitvoer.
+Een ontbrekende plugin of een lintwaarschuwing laat het commando mislukken. De uitvoer vermeldt bestand, regel, kolom en checknaam. Met `bundle exec puppet-lint --json .` krijg je JSON-uitvoer.
 
 De [CLI](https://puppetlabs.github.io/puppet-lint/) leest eerst de systeemconfiguratie, daarna je persoonlijke instellingen en ten slotte de repositoryconfiguratie. Expliciete CLI-opties gaan voor. Als je persoonlijke instellingen bijvoorbeeld automatisch repareren inschakelen, kun je uitsluitend de projectconfiguratie gebruiken:
 
@@ -372,13 +419,15 @@ De volledige scan vindt nieuwe manifests en bestanden in `examples/` automatisch
 
 ERB-templates met een YAML-extensie worden niet als ruwe YAML gecontroleerd: ze worden pas geldige YAML na het renderen. De tests controleren hun templatesyntaxis wel. Puppet-voorbeelden in Strings en Markdown, inclusief deze verborgen `.tools`-map, worden met dezelfde lintchecks en Puppet-parser gecontroleerd.
 
-De tests roepen bestaande validators rechtstreeks aan: `puppet parser validate`, `metadata-json-lint`, Ruby met `-c` en de gebruikte shell met `-n`. Catalogustests gebruiken nagebootste Debian- en Ubuntu-facts en passen geen catalogi toe. Monitoringtests gebruiken gecontroleerde vervangers voor servicecommando's en benaderen geen beheerde hosts. Je hebt geen historische checkout, migratiescript of fixturegenerator nodig.
+De tests roepen bestaande validators rechtstreeks aan: `puppet parser validate`, `metadata-json-lint`, Ruby met `-c` en de gebruikte shell met `-n`. Voor catalogustests worden Debian- en Ubuntu-facts nagebootst. De isolatie van catalogus- en monitoringtests is beschreven onder [Benodigde omgeving](#benodigde-omgeving).
 
-[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, lintscan en tests uit. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren. CI heeft alleen leesrechten, bewaart geen checkoutcredentials en maakt geen wijzigingen of commits.
+[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, lintscan en tests uit. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren.
+
+CI heeft alleen leesrechten, bewaart geen checkoutcredentials en maakt geen wijzigingen of commits.
 
 De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/actions/checkout) en [`ruby/setup-ruby@v1`](https://github.com/ruby/setup-ruby). Die volgen updates binnen hun hoofdversie. Een nieuwe hoofdversie moet apart in de workflow worden gekozen. Bundler wordt rechtstreeks met `gem install bundler` geïnstalleerd. Een update binnen deze versies kan daardoor invloed hebben op een volgende CI-run zonder dat onze workflow is aangepast.
 
-## Beschikbare projectchecks
+### Beschikbare projectchecks
 
 | Check | Wat wordt gecontroleerd? |
 | --- | --- |
@@ -399,7 +448,7 @@ Gebruik twee spaties voor inspringing, uitgelijnde pijlen en enkele aanhalingste
 
 De projectchecks voor documentatie en parametervolgorde vullen de standaardchecks aan. Puppet-lint laat de optionele checks voor 80 tekens, booleans tussen aanhalingstekens en code op hoofdniveau standaard uitgeschakeld. Dat past bij onze 140-tekengrens, daemonstrings zoals `'true'` en uitvoerbare profielen. Schakel geen correcte check uit om bestaande code niet te hoeven herstellen en maak geen uitzonderingslijst voor oude modules of stijlachterstand.
 
-## Lange regels
+### Lange regels
 
 De `140chars`-check blijft aan. Zet achter iedere bewust langere Puppet-regel `# lint:ignore:140chars`. Dit geldt ook voor lange URL's en templateaanroepen die Puppet-lint zelf al uitzondert. Plaats de markering buiten stringwaarden. Staat er al commentaar achter de code, zet dan de markering direct na de `#`, vóór de bestaande toelichting.
 
@@ -407,73 +456,89 @@ Rond een lange commentaarregel, of een reeks lange commentaarregels, gebruik je 
 
 Zet nooit lintmarkeringen in gegenereerde strings of heredoc-inhoud. Heeft een waarde over meerdere regels een uitzondering nodig, plaats dan het kleinst mogelijke blok buiten de waarde. Puppet-code die uit een documentatievoorbeeld wordt gehaald heeft een eigen markering nodig wanneer die code boven 140 tekens komt.
 
-## Parameters en resources
+### Parameters en resources
 
-### Parameters en instellingen
+#### Parameters en instellingen
 
-Houd classes en defined types klein genoeg om ze los of samen te gebruiken. Geef publieke parameters een expliciet datatype: een passend ingebouwd type of een typealias. Verplichte parameters hebben geen default en geen buitenste `Optional[...]`; optionele parameters hebben ten minste één daarvan. `Optional[...]` zonder default staat dus bij de optionele parameters, maar je moet de waarde bij een aanroep nog steeds meegeven. Voeg geen default toe alleen om de sortering te veranderen.
+Houd classes en defined types klein genoeg om ze los of samen te gebruiken. Geef publieke parameters een expliciet datatype: een passend ingebouwd type of een typealias.
 
-Begin namen met het onderwerp en zet nadere aanduidingen achteraan, zoals `bandwidth_max`, `p95_warning` en `secret_key_fallback`. Gebruik snake_case. Laat een naam alleen met een cijfer beginnen als dat op alle ondersteunde runtimes is getest. Moet een default een eerdere parameter lezen, licht die afwijkende volgorde dan toe achter de parameter.
+Voor de parametervolgorde komen verplichte parameters eerst en optionele daarna, alfabetisch binnen elke groep. Verplichte parameters hebben geen default en geen buitenste `Optional[...]`; optionele parameters hebben ten minste één daarvan. `Optional[...]` zonder default staat dus bij de optionele parameters, maar je moet de waarde bij een aanroep nog steeds meegeven. Voeg geen default toe alleen om de sortering te veranderen.
+
+De normale volgorde kan afwijken als de standaardwaarde van een parameter een andere parameter nodig heeft. Die andere parameter moet dan eerder staan, zodat Puppet de waarde kan gebruiken. Schuift deze parameter daardoor naar voren ten opzichte van de normale volgorde, dan hoort de reden in commentaar achter die parameter te staan, met de naam van de parameter die ervan afhankelijk is. `project_parameter_order` controleert ook of die toelichting aanwezig is.
+
+Begin namen met het onderwerp en zet nadere aanduidingen achteraan, zoals `bandwidth_max`, `p95_warning` en `secret_key_fallback`. Gebruik snake_case. Laat een naam alleen met een cijfer beginnen als dat op alle ondersteunde runtimes is getest.
 
 Gebruik voor een beveiligingsinstelling met een veilige default, uitschakelmogelijkheid en eigen waarde één `Variant[Boolean, String]` of een passende beperkte scalarvariant. Daarbij kiest `true` de veilige default, laat `false` de uitvoer weg en geeft een scalar de eigen waarde. Bereken de uitkomst eenmaal in een duidelijke `*_correct`-variabele voor de template. Splits dit alleen in enable/custom/value-parameters wanneer compatibiliteit dat vereist.
 
-### Voorwaarden en validatie
+#### Voorwaarden en validatie
 
-Zet het eigenlijke werk in de positieve tak: resources maken, een aanwezige waarde verwerken of invoer normaliseren. Zet fouten, waarschuwingen en eenvoudige terugvalwaarden in de laatste `else`. Een defined type dat een parentclass nodig heeft controleert `defined(Class['...'])`, houdt alle afhankelijke code binnen die geldige tak en faalt duidelijk als de class ontbreekt. Gebruik een benoemd `defined(...)`-resultaat opnieuw wanneer je het vaker nodig hebt.
+Zet het eigenlijke werk in de positieve tak: resources maken, een aanwezige waarde verwerken of invoer normaliseren. Zet fouten, waarschuwingen en eenvoudige terugvalwaarden in de laatste `else`.
 
-Valideer een optionele instelling alleen wanneer deze wordt uitgevoerd of in gegenereerde configuratie wordt overgenomen. Een niet-ingestelde optionele waarde is geen fout. Laat de validatie één korte benoemde foutmelding of `undef` opleveren, maak resources in de geldige tak en faal in de laatste `else`. Plaats geen losse `fail(...)` halverwege de opbouw van waarden of resources. Een template mag de ruwe parameter gebruiken om te bepalen of een lokale regel nodig is, maar schrijft de berekende waarde wanneer overerving geldt.
+Een defined type dat een parentclass nodig heeft controleert `defined(Class['...'])`. Houd alle afhankelijke code binnen die geldige tak en faal duidelijk als de class ontbreekt. Gebruik een benoemd `defined(...)`-resultaat opnieuw wanneer je het vaker nodig hebt.
 
-### Resources en afhankelijkheden
+Valideer een optionele instelling alleen wanneer deze wordt uitgevoerd of in gegenereerde configuratie wordt overgenomen. Een niet-ingestelde optionele waarde is geen fout. Laat de validatie één korte benoemde foutmelding of `undef` opleveren, maak resources in de geldige tak en faal in de laatste `else`. Plaats geen losse `fail(...)` halverwege de opbouw van waarden of resources.
 
-Gebruik één resource met vooraf berekende `undef`-attributen wanneer alleen optionele attributen verschillen. Zorg dat `source` en `content` niet tegelijk gevuld kunnen zijn. Deel een buitenste guard wanneer meerdere resources dezelfde voorwaarde hebben en houd eigen controles daarbinnen. Combineer arrays met `concat(...)`. Een eenmalig gebruikte lokale variabele moet betekenis toevoegen of de code duidelijker maken.
+Een template mag de ruwe parameter gebruiken om te bepalen of een lokale regel nodig is, maar schrijft de berekende waarde wanneer overerving geldt.
 
-Een `defined(...)`-controle ziet alleen wat tijdens evaluatie al bekend is, niet de toekomstige eindcatalogus. Koppel `require` daarom pas na een geslaagde controle aan een geaccepteerde resource of gedocumenteerd anker. Levert een wrapper de afhankelijkheid, controleer dan achtereenvolgens de directe resource, de wrapper en de parentwrapper. Bouw geen paden, poorten, bestandsnamen of unitnamen van een andere bouwsteen opnieuw op als een resource, alias, servicetitel of geaccepteerde API die waarde beschikbaar maakt. Test de daadwerkelijke afspraak tussen beide resources.
+#### Resources en afhankelijkheden
+
+Gebruik één resource met vooraf berekende `undef`-attributen wanneer alleen optionele attributen verschillen. Zorg dat `source` en `content` niet tegelijk gevuld kunnen zijn. Deel een buitenste guard wanneer meerdere resources dezelfde voorwaarde hebben en houd eigen controles daarbinnen.
+
+Combineer arrays met `concat(...)`. Een lokale variabele die je maar één keer gebruikt moet betekenis toevoegen of de code duidelijker maken.
+
+Een `defined(...)`-controle ziet alleen wat tijdens evaluatie al bekend is, niet de toekomstige eindcatalogus. Koppel `require` daarom pas na een geslaagde controle aan een geaccepteerde resource of gedocumenteerd anker. Levert een wrapper de afhankelijkheid, controleer dan achtereenvolgens de directe resource, de wrapper en de parentwrapper.
+
+Bouw geen paden, poorten, bestandsnamen of unitnamen van een andere bouwsteen opnieuw op als een resource, alias, servicetitel of geaccepteerde API die waarde beschikbaar maakt. Test de daadwerkelijke afspraak tussen beide resources.
 
 Voeg geen ongedocumenteerde gemaksparameters toe nadat een interface-uitbreiding is afgewezen. Gebruik de geaccepteerde interface of stabiele externe runtimemetadata.
 
-### Volgorde en meldingen
+#### Volgorde en meldingen
 
 Behoud expliciete `require`-, `notify`- en `subscribe`-relaties. Zoek bij een cycle uit welke catalogusrelatie of containment die veroorzaakt en herstel die relatie bij de bron. Vervang haar niet door een los `systemctl`-, `service`- of reloadcommando. Behoud meldingen zoals `notify => Service['nginx']` en koppel brede ordering waar nodig aan een kleinere stabiele resource.
 
 Houd monitoring en audit bij de bijbehorende resource. Monitoringspecifieke configuratie hoort bij de monitoringsectie van het manifest, behalve wanneer het bestand de daemon zelf configureert.
 
-## Commentaar en documentatie
+### Commentaar en documentatie
 
-Schrijf codecommentaar in het Engels. Leg uit waarom de code nodig is, welke beperkingen gelden en welke gevolgen de code heeft. Herhaal niet alleen wat de volgende regel doet. Houd één zin op één fysieke regel; gebruik aparte regels voor echte lijsten, voorbeelden en syntaxis. Verwijder willekeurige regelafbrekingen in nabij commentaar dat je raakt.
+Codecommentaar helpt de lezer begrijpen waarom de code nodig is, welke beperkingen gelden en welke gevolgen de code heeft. Een herhaling van wat de volgende regel doet is daarvoor niet voldoende. Schrijf dit commentaar in het Engels, met iedere zin op één fysieke regel. Echte lijsten, voorbeelden en syntaxis krijgen aparte regels. Verwijder bij een wijziging ook willekeurige regelafbrekingen in het nabije commentaar dat je raakt.
 
 Geef bij niet-vanzelfsprekende resourcegroepen, execs, afgeleide waarden, voorwaardelijke directives, gedelegeerde resources en opruimroutes een korte toelichting. Doe hetzelfde bij helpers en templatelogica. Benoem waar nodig de invoer, uitvoer of gevolgen voor exitcodes. Dat is vooral nuttig bij escaping, parsing, classificatie, samenvoegen van resultaten, terugvalgedrag en uitvoeropbouw.
 
 Verdeel lange reeksen defaults, drempels, statuswaarden, tellers, paden, rechten, commando's en relaties in herkenbare groepen. Vergelijk geraakt commentaar met goed gedocumenteerde bestaande code en verwijder verouderde, dubbele of overbodige uitleg. Kopieer geen projectbeleid naar implementatiecommentaar.
 
-### Puppet Strings
+#### Puppet Strings
 
 Documenteer elke publieke class en elk publiek defined type direct boven de declaratie. Voeg een eenregelige `@summary`, één `@param` per parameter in declaratievolgorde en een eenvoudig uitvoerbaar `@example` toe. Markeer nieuwe classes, defined types en functies als publieke of private API.
 
-Beschrijf wat een parameter betekent, hoe de default werkt en wat bijzondere waarden zoals `undef`, `true` en `false` doen. Neem beperkingen, afhankelijkheden, gegenereerde resources, terugvalgedrag en gevolgen voor beveiliging of compatibiliteit mee. De linter controleert de aanwezigheid en volgorde van tags; beoordeel zelf of de uitleg klopt en volledig is.
+De parameteruitleg moet duidelijk maken wat een parameter betekent, hoe de default werkt en wat bijzondere waarden zoals `undef`, `true` en `false` doen. Daarbij horen ook de beperkingen, afhankelijkheden, gegenereerde resources, het terugvalgedrag en de gevolgen voor beveiliging of compatibiliteit. De linter controleert de aanwezigheid en volgorde van tags; of de uitleg klopt en volledig is, blijft onderdeel van de inhoudelijke review.
 
-### Waar de uitleg hoort
+#### Waar de uitleg hoort
 
-De project-README beschrijft het basisgebruik en wat beheerders vóór gebruik moeten weten. Puppet Strings beschrijven de interfaces. Uitgebreide combinaties horen in `examples/`, en lokale implementatieafspraken blijven bij het script of de template. Deze README en de project-README zijn Nederlands; overige technische documentatie is Engels.
+De [documentatieafspraken in `AGENTS.md`](../../AGENTS.md#documentation) bepalen de taal en de verdeling tussen gebruikershandleiding, toolinghandleiding, Puppet Strings en uitgebreide voorbeelden. Lokale implementatieafspraken blijven bij het script of de template.
 
-Houd één volledige bron voor elk technisch gegeven. Dupliceer geen complete parameterreferenties of grote voorbeelden. Maak geen handmatige `REFERENCE.md` of `docs/`-boom voor informatie die Puppet Strings kan genereren. Voeg alleen een ADR toe wanneer dat is gevraagd of al gebruikelijk is.
+Maak geen handmatige `REFERENCE.md` of `docs/`-boom voor informatie die Puppet Strings kan genereren. Voeg alleen een ADR toe wanneer dat is gevraagd of al gebruikelijk is.
 
-Hergebruik waar mogelijk een bestaand voorbeeldscenario. Voorbeelden moeten uitvoerbaar zijn met de genoemde voorwaarden en alleen de nodige parameters tonen. Gebruik `example.org`, documentatieadressen en `replace-with-...`-waarden. Gebruik `Sensitive(...)` waar het datatype dat ondersteunt en afgeschermde Hiera voor oude String-interfaces; neem geen organisatiegegevens op.
+Hergebruik waar mogelijk een bestaand voorbeeldscenario. Voorbeelden moeten uitvoerbaar zijn met de genoemde voorwaarden en alleen de nodige parameters tonen. Volg voor voorbeeldwaarden, `Sensitive(...)` en Hiera de [uitleg in de project-README](../../README.md#gebruik-van-voorbeelden-en-parameterdocumentatie) en de [beveiligingsregels in `AGENTS.md`](../../AGENTS.md#security-and-privacy).
 
 Werk bij een wijziging de geraakte voorbeelden en documentatie mee bij. Vergelijk Strings, defaults, relaties en gegenereerde configuratie met het manifest. Verandert monitoringgedrag voor beheerders, controleer dan ook het checkoverzicht in de project-README.
 
-## Bestanden en beveiliging
+### Bestanden en beveiliging
 
-### Templates en bestandsbronnen
+#### Templates en bestandsbronnen
 
-Render met ERB via `template(...)`. Gebruik één template als bestanden alleen in een klein optioneel onderdeel verschillen. Splits ze wanneer formaat of verantwoordelijkheid wezenlijk anders is. Lever statische bestanden via `puppet:///modules/...`; bronvalidatie moet `puppet:///` toestaan wanneer modulebestanden geldige invoer zijn. Houd paden en titels voorspelbaar en test de gerenderde varianten bij hun werkelijke gebruiker.
+Render met ERB via `template(...)`. Gebruik één template als bestanden alleen in een klein optioneel onderdeel verschillen. Splits ze wanneer formaat of verantwoordelijkheid wezenlijk anders is.
 
-### Pakketten en mappen
+Lever statische bestanden via `puppet:///modules/...`; bronvalidatie moet `puppet:///` toestaan wanneer modulebestanden geldige invoer zijn. Houd paden en titels voorspelbaar en test de gerenderde varianten bij hun werkelijke gebruiker.
+
+#### Pakketten en mappen
 
 APT-installaties eindigen met `['--no-install-recommends', '--no-install-suggests']`, tenzij een concreet pakket een afwijking nodig heeft. Gebruik `concat(...)` om deze opties achter aangeleverde opties te zetten. Deduplicatie met `union(...)` garandeert niet dat de voorgeschreven opties achteraan blijven staan.
 
-Gebruik recursieve purge, force en recurse alleen voor mappen die volledig van de module zijn. Behoud `replace => false` op bestanden die een installer of eenmalige initialisatie aanmaakt. Geef een gemengde boom niet recursief uitvoerrechten: beheer mappen en gewone bestanden apart. Een private boom zonder uitvoerbare bestanden mag recursief `0600` gebruiken; Puppet voegt zoekrechten toe aan de mappen. Gebruik voor geëxporteerde applicatiebomen normaal `0750` voor mappen en `0640` voor bestanden, tenzij de applicatie aantoonbaar andere rechten nodig heeft.
+Gebruik recursieve purge, force en recurse alleen voor mappen die volledig van de module zijn. Behoud `replace => false` op bestanden die een installer of eenmalige initialisatie aanmaakt.
 
-### Eigenaars en rechten
+Geef een gemengde boom niet recursief uitvoerrechten: beheer mappen en gewone bestanden apart. Een private boom zonder uitvoerbare bestanden mag recursief `0600` gebruiken; Puppet voegt zoekrechten toe aan de mappen. Gebruik voor geëxporteerde applicatiebomen normaal `0750` voor mappen en `0640` voor bestanden, tenzij de applicatie aantoonbaar andere rechten nodig heeft.
+
+#### Eigenaars en rechten
 
 Controleer wie een bestand tijdens uitvoering moet lezen of schrijven en welke bovenliggende mappen bereikbaar moeten zijn. Stel eigenaars, groepen en modi expliciet in. Houd geheimen en gevoelige configuratie buiten bereik van andere gebruikers. Gebruik als uitgangspunt:
 
@@ -485,19 +550,23 @@ Controleer wie een bestand tijdens uitvoering moet lezen of schrijven en welke b
 | Systemd-unit | `0644` waar systemd dat nodig heeft |
 | Statisch terugvalbestand voor een service | Root als eigenaar, de servicegroep en `0640`; zo nodig `0710` voor bovenliggende mappen |
 
-Houd SSH-homes en `.ssh` privé. Geef uitvoerrechten alleen aan uitvoerbare bestanden. Leg wereldleesbare of groepsschrijfbare toegang uit. Een publiek bereikbaar HTTP-bestand hoeft lokaal niet voor iedereen leesbaar te zijn. Linux-symlinks vereisen expliciet eigenaarschap, maar hebben geen afzonderlijk bruikbare chmod-modus; beveilig hun doelen.
+Houd SSH-homes en `.ssh` privé. Geef uitvoerrechten alleen aan uitvoerbare bestanden. Leg wereldleesbare of groepsschrijfbare toegang uit. Een publiek bereikbaar HTTP-bestand hoeft lokaal niet voor iedereen leesbaar te zijn.
+
+Linux-symlinks vereisen expliciet eigenaarschap, maar hebben geen afzonderlijk bruikbare chmod-modus; beveilig hun doelen.
 
 Controleer sudo-, logrotate-, audit-, monitoring- en servicepaden tegen de echte uitvoeringsidentiteit. Gebruik waar nodig `Sensitive[...]` of `Sensitive.new(...)` voor gevoelige inhoud en commando's, zodat die niet via rapporten uitlekken.
 
-### Shellcommando's in Puppet
+#### Shellcommando's in Puppet
 
 Interpoleer geen ruwe Puppet-waarden in exec-commando's, `onlyif` of `unless`. Bereid dynamische shellwoorden voor met `stdlib::shell_escape(...)`, noem ze `*_shell` en gebruik ze zonder extra aanhalingstekens als shellwoord. Escape runtimevariabelen en substituties in dubbele Puppet-strings, zoals `\$tmpdir`, `\$1` en `\$(...)`.
 
 Elke echte shellparserlaag heeft één quotinggrens nodig. Een script opgebouwd uit ge-escapete woorden krijgt zelf eenmaal quoting als buitenste `-c`-argument; escape dezelfde laag niet dubbel. Een statisch script mag eenmaal als geheel worden ge-escapet. Test samengestelde commando's met letterlijke waarden die spaties, aanhalingstekens en shelltekens bevatten. Dat een waarde ge-escapet is, bewijst nog niet dat ze op de juiste plaats in het commando wordt gebruikt.
 
-Behoud afsluitende SQL-puntkomma's. Escape de hele SQL-string en gebruik `provider => shell` wanneer puntkomma's of guards anders als aparte commando's worden gelezen. Gebruik bij voorkeur `/usr/bin/printf %s ${value_shell}` voor dynamische inhoud. Bewust voorbereide regeleinden mogen als letterlijke `\n` worden vastgelegd, eenmaal ge-escapet en met `printf %b` worden gedecodeerd. Gebruik voor willekeurige gebruikers- of runtime-inhoud over meerdere regels een bestand of template.
+Behoud afsluitende SQL-puntkomma's. Escape de hele SQL-string en gebruik `provider => shell` wanneer puntkomma's of guards anders als aparte commando's worden gelezen.
 
-### Afhankelijkheden, audit en transport
+Gebruik bij voorkeur `/usr/bin/printf %s ${value_shell}` voor dynamische inhoud. Bewust voorbereide regeleinden mogen als letterlijke `\n` worden vastgelegd, eenmaal ge-escapet en met `printf %b` worden gedecodeerd. Gebruik voor willekeurige gebruikers- of runtime-inhoud over meerdere regels een bestand of template.
+
+#### Afhankelijkheden, audit en transport
 
 Gebruik bij voorkeur de bestaande lokale modules. De runtimeafhankelijkheden blijven beperkt tot `stdlib`, `concat`, `reboot`, `timezone` en `debconf`, tenzij een eis aantoonbaar niet goed lokaal kan worden ingevuld. Voeg geen externe Docker-, MySQL-, Nginx- of RabbitMQ-module toe alleen omdat die vergelijkbare functies heeft. Beoordeel bij nieuwe gevoelige onderdelen ook pakketbeleid, integratie, monitoring en audit.
 
@@ -505,13 +574,13 @@ Leg bij gewijzigde audituitzonderingen uit welk legitiem gedrag wordt uitgezonde
 
 Reverse proxies en verbindingen tussen services gebruiken standaard versleuteling. HTTP is een expliciete gedocumenteerde keuze voor een upstream zonder TLS. Certificaatproblemen zijn geen reden om versleuteling uit te schakelen. Gebruik bij lokale of self-signed upstreams versleuteling met een bewust afgebakende keuze voor vertrouwen en verificatie. Licht een minder streng vertrouwens-, rechten- of sandboxmodel bij de code toe, en ook in de project-README als beheerders dat vooraf moeten weten.
 
-## Gedeelde services en systemd
+### Gedeelde services en systemd
 
 `basic_settings` beheert de gedeelde serverbasis: pakketten en APT-bronnen, systemd, monitoring, loginbeleid, beveiligingsgereedschap, pakketonderhoud, kernel, netwerk, tijdzone en Puppet-runtimegedrag. Laat andere modules hierop aansluiten.
 
 Gebruik de bestaande bouwstenen `basic_settings::systemd_target`, `systemd_drop_in`, `systemd_service`, `systemd_timer`, `systemd_network`, `monitoring_service`, `monitoring_custom`, `monitoring_timer`, `monitoring_npm_audit`, `security_audit`, `io_logrotate` en `login_sudo` voor hun eigen taken.
 
-### Targets en monitoring
+#### Targets en monitoring
 
 Behoud de targetladder `${cluster_id}-system`, `${cluster_id}-storage`, `${cluster_id}-services`, `${cluster_id}-production`, `${cluster_id}-helpers` en `${cluster_id}-require-services`. Een geïntegreerde service schakelt vendor-enablement uit, gebruikt de gedeelde drop-in-wrapper en bindt aan het passende target. Bij actieve monitoring wordt `OnFailure=notify-failed@%i.service` toegevoegd.
 
@@ -519,13 +588,17 @@ Controleer bij een wijziging zowel gegenereerde units als lokale wrappers, vendo
 
 Monitoring gebruikt het centrale OpenITCOCKPIT-agentmodel. Plugins staan onder `/etc/openitcockpit-agent/plugins`. Bouw `customchecks.ini` met `concat` en `concat::fragment` en laat de gedeelde monitoringtypes services, timers en eigen checks registreren. Dupliceer die registratie niet in featuremodules.
 
-### Servicebeveiliging
+#### Servicebeveiliging
 
 Beoordeel beveiligingsopties per concrete `.service`, ook bij de service achter een timer, socket of path. Service-uitvoeringsopties horen niet in targets, mounts, sockets, timers of daemonconfiguratie van journald, resolved en timesyncd.
 
-Bepaal eerst de uiteindelijke unit en de bijbehorende Puppet-code of template. Loop daarna alle Exec-fasen na: gebruikers, groepen en aanvullende groepen, capabilities, sudo/setuid, schrijfbare paden, bestanden, sockets, logs, tijdelijke opslag, apparaten, hometoegang, credentials, netwerk en pakketgedrag. Neem ook de runtime, plugins, JIT/VM's en procesinspectie mee.
+Werk bij de beoordeling vanuit de service die uiteindelijk wordt uitgevoerd:
 
-Leg per kandidaat vast of je deze toepast, niet toepast of nader onderzoekt, met een reden. Een bekende native oneshot zonder bijzondere afhankelijkheden is eenvoudiger te beoordelen dan provisioning, pakketbeheer, Puppet, GitLab omnibus, Certbot-hooks, SSH-sessies, monitoringexecutors, OpenITCOCKPIT of back-up- en herstelsoftware. Gedeelde bestanden, apparaten, capabilities, JIT/plugins en helpers die privileges wijzigen vragen extra aandacht. Kies een gerichte uitzondering wanneer een optie de service zou breken.
+1. Bepaal de uiteindelijke unit en de bijbehorende Puppet-code of template.
+2. Loop alle Exec-fasen na. Controleer gebruikers, groepen en aanvullende groepen, capabilities en sudo/setuid. Breng ook schrijfbare paden, bestanden, sockets, logs, tijdelijke opslag, apparaten, hometoegang, credentials, netwerk en pakketgedrag in beeld. Neem de runtime, plugins, JIT/VM's en procesinspectie mee.
+3. Leg per overwogen beveiligingsoptie vast of je deze toepast, niet toepast of nader onderzoekt, met een reden. Gebruik de tabel hieronder om de gevolgen te beoordelen en kies een gerichte uitzondering wanneer een optie de service zou breken.
+
+Een bekende native oneshot zonder bijzondere afhankelijkheden is eenvoudiger te beoordelen dan provisioning, pakketbeheer, Puppet, GitLab omnibus, Certbot-hooks, SSH-sessies, monitoringexecutors, OpenITCOCKPIT of back-up- en herstelsoftware. Gedeelde bestanden, apparaten, capabilities, JIT/plugins en helpers die privileges wijzigen vragen extra aandacht.
 
 | Optie | Controleer vooral |
 | --- | --- |
@@ -547,11 +620,13 @@ Leg per kandidaat vast of je deze toepast, niet toepast of nader onderzoekt, met
 | `ProtectProc=invisible` | Inspectie van processen van andere gebruikers, supervisors, monitoring, inventarisatie, beveiliging, debugging, ptrace, hostmounts van `/proc` en hidepid-ondersteuning per mount. |
 | `UMask=0077` | Gedeelde of groepsleesbare bestanden, groepsschrijfbare mappen, sockets, logs, webbestanden, back-ups, overdracht via deployment- of tijdelijke bestanden en pakketgedrag dat een ander masker vereist. |
 
-Zet `UMask=0077` voor private uitvoer expliciet in de servicespecifieke hash bij de sandboxinstellingen. Laat de instelling weg als het normale `0022`-gedrag nodig is. Licht een afwijkend gedeeld masker zoals `0027` bij de service toe. Verberg geen masker of andere beveiligingsdefault in een generieke wrapper. Controleer bij gewijzigde wrapperbeveiliging iedere bekende gebruiker; valideer die of geef per service een gedocumenteerde uitschakelmogelijkheid.
+Zet `UMask=0077` voor private uitvoer expliciet in de servicespecifieke hash bij de sandboxinstellingen. Laat de instelling weg als het normale `0022`-gedrag nodig is. Licht een afwijkend gedeeld masker zoals `0027` bij de service toe.
 
-## Shellscripts en monitoring
+Verberg geen masker of andere beveiligingsdefault in een generieke wrapper. Een wijziging aan wrapperbeveiliging raakt ook de services die deze wrapper gebruiken. Controleer daarom iedere bekende gebruiker; valideer die of geef per service een gedocumenteerde uitschakelmogelijkheid.
 
-### Opbouw van een check
+### Shellscripts en monitoring
+
+#### Opbouw van een check
 
 Nieuwe scripts en templates gebruiken POSIX `#!/bin/sh`, tenzij Bash-functies nodig zijn. Monitoringchecks blijven POSIX en gebruiken Nagios-exitcodes. Gebruik daarin geen arrays, `[[ ... ]]`, `(( ... ))`, `function`, process substitution, here-strings, `pipefail`, `read -d` of Bash-specifieke expansies.
 
@@ -570,25 +645,35 @@ Gebruik deze opbouw:
 
 Zoek afhankelijkheden rechtstreeks met `COMMAND=$(command -v command 2>/dev/null) || die ...`. Roep `$COMMAND` zonder aanhalingstekens aan op de commandopositie en quote de data-argumenten, tests en toekenningen. Gebruik shellbuiltins rechtstreeks en `printf` in plaats van `echo`.
 
-Geef elke CLI-optie een eigen case-tak met toekenning. Eindig met één usage-/fouttak voor ongeldige opties en hulp, inclusief `-h` wanneer deze is gedeclareerd. Lange uitvoer staat standaard aan; voeg alleen op verzoek schakelaars daarvoor toe.
+Geef elke CLI-optie een eigen case-tak met toekenning. Eindig met één usage-/fouttak voor ongeldige opties en hulp, inclusief `-h` wanneer deze is gedeclareerd.
 
-### Invoer en configuratie
+Lange uitvoer staat standaard aan; voeg alleen op verzoek schakelaars daarvoor toe.
+
+#### Invoer en configuratie
 
 Een check die Puppet-data nodig heeft is een ERB-template met directe shelltoekenningen. Beperk ERB tot variabele-invoeging en Puppet-voorbereiding tot defaults, serialisatie en shellveilige waarden. Voeg alleen een checkconfiguratiebestand of parser toe als dat gevraagd is of al gebruikelijk is.
 
-Geef iedere beheerde waarde één leidende invoerroute. Dupliceer deze niet tussen CLI en configuratie zonder compatibiliteitsreden. Gebruik CLI-opties voor runtimefilters en drempels die niet via configuratie worden beheerd. Lees bij voorkeur de effectieve daemonconfiguratie, zoals `vnstat --showconfig`, in plaats van dubbele opties, sysfs-terugvalroutes of aparte checkinstellingen. Valideer drempelsyntaxis, eenheden, omvang, volgorde en runtimebetekenis in de shellcheck.
+Geef iedere beheerde waarde één leidende invoerroute. Dupliceer deze niet tussen CLI en configuratie zonder compatibiliteitsreden. Gebruik CLI-opties voor runtimefilters en drempels die niet via configuratie worden beheerd.
 
-### Waarden en helpers
+Lees bij voorkeur de effectieve daemonconfiguratie, zoals `vnstat --showconfig`, in plaats van dubbele opties, sysfs-terugvalroutes of aparte checkinstellingen. Valideer drempelsyntaxis, eenheden, omvang, volgorde en runtimebetekenis in de shellcheck.
 
-Groepeer defaults, drempels, statuswaarden, tellers, samenvattingen, perfdata, paden, rechten, commando's en relaties met een korte toelichting. Voeg een helper toe wanneer die betekenis geeft aan de taak, validatie of opmaak centraliseert of wezenlijke duplicatie wegneemt. Verpak niet zonder zo'n reden één append, toekenning of printf. Houd eenmalige logica inline wanneer dat duidelijker is en zet inhoudelijke verwerking vóór kleine terugvaltakken.
+#### Waarden en helpers
 
-Gebruik shellvariabelen en printf voor begrensde tellers, perfdata, sorteerbuffers en diagnoses. Gebruik tijdelijke bestanden en mktemp alleen wanneer een commando een bestand vereist of data te groot of onveilig is voor variabelen. Ruim tijdelijke bestanden op. Zet geen letterlijke lege regels in gequote toekenningen; gebruik printf-formaten en ge-escapete regeleinden. Serialiseer lijsten bewust als CSV en metadata van commandosubstitutie met expliciete markeertokens in plaats van regeleindetrucs.
+Groepeer defaults, drempels, statuswaarden, tellers, samenvattingen, perfdata, paden, rechten, commando's en relaties met een korte toelichting.
 
-### Uitvoer voor beheerders
+Een helper is nuttig wanneer die betekenis geeft aan de taak, validatie of opmaak centraliseert of wezenlijke duplicatie wegneemt. Voeg niet alleen voor één append, toekenning of printf een helper toe zonder zo'n reden. Houd eenmalige logica inline wanneer dat duidelijker is en zet inhoudelijke verwerking vóór kleine terugvaltakken.
 
-De eerste regel moet begrijpelijk zijn zonder de volledige uitvoer te openen. Noem de gecontroleerde service, unit, module, interface of resource. Vermeld bij een fout of onduidelijke uitkomst het belangrijkste geraakte object, de directe oorzaak en of escalatie waarschijnlijk nodig is.
+Gebruik shellvariabelen en printf voor begrensde tellers, perfdata, sorteerbuffers en diagnoses. Gebruik tijdelijke bestanden en mktemp alleen wanneer een commando een bestand vereist of data te groot of onveilig is voor variabelen. Ruim tijdelijke bestanden op.
 
-Begin de regel niet met een Nagios-statuswoord en label oorzakenlijsten niet met statusnamen; de exitcode geeft de machinestatus. Meld bij een gezonde check dat het onderdeel normaal werkt. Laat nulcategorieën, drempelinventarissen, beslislabels, beslisredenen en perfdata-achtige fragmenten weg. Gedetailleerde tellers horen in perfdata of lange uitvoer.
+Zet geen letterlijke lege regels in gequote toekenningen; gebruik printf-formaten en ge-escapete regeleinden. Serialiseer lijsten bewust als CSV en metadata van commandosubstitutie met expliciete markeertokens in plaats van regeleindetrucs.
+
+#### Uitvoer voor beheerders
+
+De eerste regel moet begrijpelijk zijn zonder de volledige uitvoer te openen. Daarin staat welke service, unit, module, interface of resource wordt gecontroleerd. Bij een fout of onduidelijke uitkomst noemt die regel ook het belangrijkste geraakte object, de directe oorzaak en of escalatie waarschijnlijk nodig is.
+
+De exitcode geeft de machinestatus. Begin de eerste regel daarom niet met een Nagios-statuswoord en label oorzakenlijsten niet met statusnamen. Meld bij een gezonde check dat het onderdeel normaal werkt.
+
+Laat in de eerste regel nulcategorieën, drempelinventarissen, beslislabels, beslisredenen en perfdata-achtige fragmenten weg. Gedetailleerde tellers horen in perfdata of lange uitvoer.
 
 Maak onderscheid tussen configuratiefouten, runtimefouten, contextuele waarschuwingen en onbekende of onduidelijke toestanden. Vermeld de reikwijdte van een bewust beperkte check. Informatie buiten die reikwijdte mag de exitcode niet veranderen.
 
@@ -596,17 +681,21 @@ Zet de belangrijkste diagnosesectie eerst. Beschrijf het geraakte onderdeel, de 
 
 Eindig niet-triviale lange uitvoer met `Interpretation:`. Leg daar feitelijk uit hoe de getoonde gegevens, reikwijdte en context gelezen moeten worden, zonder perfdata te herhalen.
 
-### Veilige en begrensde uitvoer
+#### Veilige en begrensde uitvoer
 
 Onderzoek de echte uitvoerroute voordat je normalisatie toevoegt. Dat is alleen nodig wanneer runtimegegevens, externe data of bewuste scheidingen onveilige pipes of ongewenste lege regels kunnen veroorzaken. Licht een niet-vanzelfsprekende bewerking toe en bewerk vaste veilige tekst niet onnodig.
 
-Maak ruwe `|`-tekens veilig zodra dynamische data de lange uitvoer ingaat. Nagios kan ook op vervolgregels tekst na een pipe als perfdata lezen. Gebruik geen lege regels aan begin of einde en geen opeenvolgende lege regels. Zet precies één lege regel tussen afzonderlijke secties.
+Nagios kan ook op vervolgregels tekst na een pipe als perfdata lezen. Maak ruwe `|`-tekens daarom veilig zodra dynamische data de lange uitvoer ingaat.
 
-Gebruik één configureerbare afkapmethode per diagnoseblok. Stapel geen item-, regel-, blok- en tekenlimieten op dezelfde verzamelde diagnose. Een ander uitvoerkanaal mag een eigen limiet hebben als het niet dezelfde gegevens afkapt. Begrens bij relevante UI-limieten het totale aantal tekens boven `Interpretation:` en zet de afkapmelding vóór die laatste uitleg, zodat de vervolgstap zichtbaar blijft.
+Gebruik geen lege regels aan begin of einde en geen opeenvolgende lege regels. Zet precies één lege regel tussen afzonderlijke secties.
+
+Gebruik één configureerbare afkapmethode per diagnoseblok. Stapel geen item-, regel-, blok- en tekenlimieten op dezelfde verzamelde diagnose. Een ander uitvoerkanaal mag een eigen limiet hebben als het niet dezelfde gegevens afkapt.
+
+Begrens bij relevante UI-limieten het totale aantal tekens boven `Interpretation:` en zet de afkapmelding vóór die laatste uitleg, zodat de vervolgstap zichtbaar blijft.
 
 Grenzen voor dataverzameling, zoals APT-ophaal-, groeps- en tijdslimieten of het journalvenster van de Puppet-agent, begrenzen extern werk of invoer. Ze begrenzen niet de al verzamelde diagnose. Leg het verschil uit en behoud zichtbare meldingen over afgekorte uitvoer.
 
-### Perfdata en compatibiliteit
+#### Perfdata en compatibiliteit
 
 Labels beginnen met een kleine letter en gebruiken compacte, stabiele snake_case-namen met alleen kleine letters, cijfers en underscores. Zet eenheden in de UOM (`%`, `B`, `s`, `Mbps`), niet in voor- of achtervoegsels van labels. Gebruik puntkomma's alleen tot en met het laatste ingevulde optionele veld.
 

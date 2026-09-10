@@ -742,4 +742,8 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 ## Contributie
 
-Pull requests en meldingen zijn welkom. De [projectconfiguratie en plugins van Puppet-lint](.tools/lint/README.md) bepalen de codestandaard voor alle eigen modules en uitvoerbare voorbeelden. Je kunt [dezelfde linter ook in je eigen Puppet-project gebruiken](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project). Voer vanuit de hoofdmap van deze repository `bundle install`, `bundle exec puppet-lint .` en `bundle exec rake spec` uit. Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. De tests nemen documentatievoorbeelden mee; aanvullende functionele validatie en inhoudelijke review blijven nodig. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces en de algemene beveiligingsverantwoordelijkheden.
+Pull requests en meldingen zijn welkom. De [lintconfiguratie, plugins en reviewcriteria](.tools/lint/README.md#naslag) bepalen de codestandaard voor alle eigen modules en uitvoerbare voorbeelden. Je kunt [dezelfde linter ook in je eigen Puppet-project gebruiken](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project).
+
+Richt eerst de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in. Voer daarna vanuit de hoofdmap van deze repository `bundle install`, `bundle exec puppet-lint .` en `bundle exec rake spec` uit. Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. De lint-README legt uit [hoe je de controles uitvoert en meldingen oplost](.tools/lint/README.md#code-controleren).
+
+De tests nemen documentatievoorbeelden mee; aanvullende functionele validatie en inhoudelijke review blijven nodig. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces en de algemene beveiligingsverantwoordelijkheden.

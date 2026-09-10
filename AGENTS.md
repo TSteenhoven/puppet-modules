@@ -68,19 +68,23 @@ For Puppet code conventions, [the project puppet-lint configuration](.puppet-lin
 
 ### README Content
 
-- Apply progressive disclosure in this order: purpose, standard usage, main properties, risks and limitations, compact example, then expanded examples or Puppet Strings.
-- Keep the README complete enough for operator decisions without turning it into an exhaustive parameter or implementation reference.
-- Do not duplicate complete parameter lists, fallback chains, internal script behavior, per-check output contracts, or developer-only detail in the README.
-- Put security- and compatibility-critical operational expectations in the README when users must know them before use.
+- Apply README content guidance to the purpose and audience of the document; do not impose the same outline on module overviews and tooling guides.
+- Keep the root README focused on using the modules and making operational decisions, without turning it into an exhaustive parameter or implementation reference.
+- Keep `.tools/lint/README.md` focused on using the validation tooling, with a clearly separated reference for the code conventions and review criteria it owns.
+- Do not duplicate complete parameter lists, fallback chains, internal script behavior, or per-check output contracts; keep their full descriptions in Puppet Strings or the relevant script or template.
+- Keep developer-only implementation detail out of the root user guide; include it in the tooling guide only when it supports a relevant task or its authoritative reference.
+- Keep required prerequisites and security- or compatibility-critical conditions beside the action they affect.
+- Refer concisely to `AGENTS.md` for agent workflow rather than repeating that policy in a README.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
-- Maintain a `## Inhoudsopgave` near the top with main-section links and nested module links.
+- Maintain a `## Inhoudsopgave` near the top with main-section links and nested links for modules or tooling tasks, as appropriate.
 - Do not label the table of contents `Legenda`.
-- Add a README detail only when users need it before use, it changes a security or compatibility decision, or the basic example requires it.
+- Add detail to the root README only when users need it before use, it changes a security or compatibility decision, or the basic example requires it.
 
 ### README Module Sections
 
 - Each main module section must explain its purpose before internal detail.
-- Include no more than five to eight important properties.
+- Apply progressive disclosure to module sections: purpose, standard usage, main properties, risks and limitations, compact example, then expanded examples or Puppet Strings.
+- Select no more than five to eight important properties as an upper limit, not a quota to fill.
 - State pre-use conditions, operational risks, and limitations.
 - Include one compact basic example.
 - Link to a relevant scenario in `examples/` and point to Puppet Strings.
@@ -89,23 +93,37 @@ For Puppet code conventions, [the project puppet-lint configuration](.puppet-lin
 
 ### README Style
 
-- Use the root `README.md` as the writing reference for both the root README and `.tools/lint/README.md`; match its direct, practical, infrastructure-focused tone.
+- Write as an experienced colleague explaining the task to a technically competent reader who is new to this project.
+- Use representative root `README.md` prose as a reference for a direct, practical, infrastructure-focused tone, not as a template or automatic proof of quality; do not reproduce awkward or over-compressed wording merely for consistency.
 - Write ordinary, accessible Dutch around exact code identifiers; prefer familiar Dutch words over unnecessary English or abstract tooling terminology.
 - Address the reader directly.
-- Keep each paragraph focused on one action, decision, or practical consequence.
-- Explain unavoidable metadata or implementation terminology before using it.
+- Organize usage guidance around the reader's task rather than the order of implementation details or review requirements.
+- Give each paragraph one coherent topic; do not compress independent instructions into dense prose merely to avoid lists or shorten the document.
+- Describe concrete actions, conditions and consequences; explain non-obvious choices where the explanation helps the reader act correctly.
+- Keep necessary technical terminology and exact identifiers; explain project-specific concepts before using them instead of replacing precise terms with vague alternatives.
+- Use headings, lists and tables when they help navigation or comparison; do not add content to fill a template or make sections look uniform.
 - Preserve intentional author viewpoints, warnings, and project context when reorganizing content.
-- Do not replace concrete operational language with generic boilerplate, stock transitions, or uncommon synonyms.
+- Preserve natural connections between sentences without generic boilerplate, stock transitions, uncommon synonyms, promotional language or forced informality.
 - Start README prose list items with a capital letter.
 - Preserve the case of identifiers, module names, class names, paths, and literals.
-- Do not shorten the README at the expense of operational knowledge.
-- Compare changed prose in `.tools/lint/README.md` with representative root README sections before completing the documentation review.
+- Preserve technical requirements, exceptions, safeguards and operational knowledge during editorial changes; improve their placement and explanation rather than weakening or removing them.
 
 ### Markdown
 
 - Do not hard-wrap prose in Markdown files.
 - Keep each prose paragraph or list item on one physical line unless Markdown syntax, a table, or a code block requires line breaks.
+- The no-hard-wrap rule governs physical line breaks, not paragraph length; separate distinct topics with normal paragraph breaks.
 - Keep documentation professional, concrete, and focused on operational impact and risk.
+
+### Editorial Review
+
+- Review the complete affected reading path, including surrounding headings and paragraphs, rather than only the changed lines.
+- Check whether a new reader can identify the prerequisites, next action and expected outcome without reconstructing missing context.
+- Check that commands, paths, options and references in the prose match the accompanying examples and current implementation.
+- Read explanatory passages aloud or review them as continuous prose; rewrite awkward phrasing and unexplained topic changes without changing technical meaning.
+- Compare changed lint-README prose with representative root README passages, assessing both against the README Style guidance.
+- Include a short representative passage in the review for owner feedback; use an owner-accepted passage as a concrete style reference.
+- Treat automated checks as technical validation, not proof that the explanation is clear or pleasant to read; assess whether the text supports the reader's task without AI-detection scores, word blacklists, sentence quotas or fixed paragraph lengths.
 
 ## Validation And Testing
 
@@ -206,7 +224,7 @@ git diff --check
 ### Code And Documentation
 
 - Confirm that centralized comment, implementation, and documentation rules were followed.
-- Confirm that nearby affected documentation is accurate, non-duplicative, and unambiguous.
+- Complete the [Editorial Review](#editorial-review) and confirm that affected documentation is accurate, non-duplicative, and unambiguous.
 - Confirm that the central lint solution and its required review evidence cover changed public interfaces.
 - Confirm that required user-facing README changes are in Dutch.
 
