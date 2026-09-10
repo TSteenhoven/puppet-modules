@@ -39,9 +39,11 @@ PuppetLint.new_check(:project_suppressions) do
       # Match actual control comments; mentioning a directive in prose or a string does not suppress a check.
       next unless token.value.strip.match?(/\Alint:(?:ignore|endignore)\b/)
       controls = token.value.strip.split.take_while { |word| word.start_with?('lint:') }
-      next if controls == ['lint:ignore:140chars'] || controls == ['lint:endignore']
+      next if controls == ['lint:endignore']
+      allowed = %w[lint:ignore:140chars lint:ignore:puppet_url_without_modules]
+      next if controls.any? && controls.all? { |control| allowed.include?(control) }
 
-      notify(:error, message: 'Only targeted 140chars suppressions are allowed; fix other lint violations', line: token.line, column: token.column)
+      notify(:error, message: 'Only targeted 140chars and puppet_url_without_modules suppressions are allowed; fix other lint violations', line: token.line, column: token.column)
     end
   end
 end

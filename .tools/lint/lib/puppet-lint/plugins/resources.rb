@@ -75,6 +75,21 @@ PuppetLint.new_check(:project_packages) do
   end
 end
 
+# Keep mount validation active when a source locally ignores the stricter puppet_url_without_modules check.
+PuppetLint.new_check(:project_puppet_urls) do
+  def check
+    tokens.each do |token|
+      # Keep the upstream scope: literal strings and the fixed prefix before interpolation, including source arrays.
+      next unless [:SSTRING, :STRING, :DQPRE].include?(token.type) && token.value.start_with?('puppet://')
+      next if token.value.match?(%r{\Apuppet://[^/]*/(?:modules|files)/})
+
+      notify(:warning, message: 'puppet:// URL must use a modules/ or files/ mount', line: token.line, column: token.column)
+    end
+  end
+
+  # No automatic fix: choosing a mount changes the source and requires knowledge of the fileserver layout.
+end
+
 PuppetLint.new_check(:project_files) do
   include ProjectLint::ResourceCheck
 

@@ -115,7 +115,7 @@ Een geslaagde lintscan betekent dat de code aan de automatische checks voldoet. 
 Een lintmelding noemt het bestand, de regel, de kolom, de checknaam en de oorzaak. Ook een waarschuwing laat de scan mislukken. De eigen checks vind je op naam onder [Beschikbare projectchecks](#beschikbare-projectchecks); de bijbehorende codeafspraken staan verderop in de naslag. Voor standaardchecks kun je de [uitleg van Puppet-lint](https://puppetlabs.github.io/puppet-lint/#checks) raadplegen.
 
 1. Bekijk de genoemde regel samen met het parameterblok, de resource of het commando waar deze bij hoort.
-2. Herstel de oorzaak volgens de betreffende afspraak. Voor een bewust lange regel volg je de gerichte uitzondering onder [Lange regels](#lange-regels).
+2. Herstel de oorzaak volgens de betreffende afspraak. Voor een bewust lange regel volg je de gerichte uitzondering onder [Lange regels](#lange-regels). Voor een Puppet-fileservermount volg je de uitleg bij [bestandsbronnen](#templates-en-bestandsbronnen).
 3. Voer de volledige lintscan en tests opnieuw uit. Controleer een gewijzigd manifest ook met de parser zoals hierboven beschreven.
 
 Stopt de linter voordat hij code kan controleren, herstel dan eerst de installatie. Controleer bij Ruby- of Bundler-fouten de actieve Ruby en de stappen onder [Gems installeren](#gems-installeren). Bij een ontbrekende plugin moeten de volledige checkout, de geïnstalleerde bundle en de werkmap kloppen. Onder [Werking van de controles](#werking-van-de-controles) lees je welke configuratiebestanden de CLI laadt en hoe je uitsluitend de projectconfiguratie gebruikt.
@@ -277,6 +277,8 @@ Bij een lintfout zie je het volledige pad naar je eigen bestand, de regel, de ko
 
 Het script gebruikt met `--no-config --config .puppet-lint.rc` alleen de centrale lintconfiguratie. Instellingen van het systeem, je persoonlijke instellingen en een eigen `.puppet-lint.rc` worden overgeslagen. `--ignore-paths=` vervangt alleen de bestandsuitsluitingen van de moduleverzameling: je hebt de te controleren bestanden al met `source_dirs` gekozen. De lintregels blijven gelijk.
 
+Gebruik je een Puppet-fileservermount, volg dan de uitleg over de gerichte ignore bij [bestandsbronnen](#templates-en-bestandsbronnen). Beide bronchecks blijven standaard actief; de aanvullende check controleert de mount ook op regels met die ignore.
+
 Deze scan controleert alleen `.pp`-bestanden. YAML, templates, documentatievoorbeelden en bestanden die zelf een symlink zijn vragen aparte controles. De optie `--relative` in de centrale configuratie gaat over de indeling van modules; foutmeldingen blijven het volledige bestandspad tonen.
 
 Je kunt het script ook vanuit een andere werkmap starten. Geef dan het volledige pad naar `.tools/lint.rb` op. Het optionele manifestpad blijft gerekend vanaf de hoofdmap van je project. Geef geen extra lintopties mee en voeg geen eigen lintregels toe.
@@ -395,7 +397,7 @@ De uitvoer moet de `project_*`-checks bevatten. Controleer bij de eerste inricht
 3. Vervang de inhoud door `$values = [1] + [2]` en voer hetzelfde commando opnieuw uit. Je moet nu een foutcode krijgen en `project_arrays` bij je eigen bestand zien.
 4. Verwijder het tijdelijke bestand. Bewaar opzettelijk ongeldige testbestanden alleen buiten de mappen die je op stijl controleert.
 
-De tests van de gedeelde linter voeren het script uit deze handleiding ook uit in een apart voorbeeldproject. Ze controleren onder meer een genest pad met spaties en het overslaan van persoonlijke lintinstellingen.
+De tests van de gedeelde linter voeren het script uit deze handleiding ook uit in een apart voorbeeldproject. Ze controleren onder meer een genest pad met spaties, het overslaan van persoonlijke lintinstellingen en geldige en ongeldige mounts in Puppet-bestandsbronnen.
 
 ## Naslag
 
@@ -406,6 +408,8 @@ Voor de dagelijkse controles kun je terug naar [Code controleren](#code-controle
 ### Werking van de controles
 
 Puppet-lint laadt de eigen plugins via `--load`. Alle standaardchecks blijven actief, ook wanneer een update nieuwe checks toevoegt. Daarnaast is `class_inherits_from_params_class` ingeschakeld. De uitzonderingen die Puppet-lint zelf standaard uit laat staan worden toegelicht bij [Beschikbare projectchecks](#beschikbare-projectchecks).
+
+Voor [bestandsbronnen](#templates-en-bestandsbronnen) draait `project_puppet_urls` naast de standaardcheck `puppet_url_without_modules`. De aanvullende check staat in de beheerde plugin `resources.rb`; geïnstalleerde gems worden niet aangepast.
 
 Een ontbrekende plugin of een lintwaarschuwing laat het commando mislukken. De uitvoer vermeldt bestand, regel, kolom en checknaam. Met `bundle exec puppet-lint --json .` krijg je JSON-uitvoer.
 
@@ -437,12 +441,13 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_layout` | Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_packages` | APT-installaties gebruiken de afgesproken opties, rekening houdend met verwijderresources, providers en lokale defaults. Bij samengestelde opties moeten de voorgeschreven opties achteraan blijven staan. |
 | `project_files` | Eigenaars en modi zijn expliciet, recursieve modi maken bestanden niet onnodig uitvoerbaar en `source` en `content` sluiten elkaar aantoonbaar uit. Overgeërfde of onopgeloste waarden kunnen extra cataloguscontrole vragen. |
+| `project_puppet_urls` | Puppet-URL's beginnen met een toegestane mount volgens de afspraken voor [bestandsbronnen](#templates-en-bestandsbronnen), ook wanneer de standaardcheck lokaal wordt genegeerd. Deze aanvullende check herschrijft bronnen niet automatisch. |
 | `project_arrays` | Arrays worden niet met `+` samengevoegd. Optelling van getallen en hashes blijft toegestaan. |
 | `project_templates` | Templates gebruiken ERB. EPP-aanroepen worden gemeld; tekst en commentaar mogen EPP wel noemen. |
 | `project_positive_flow` | Een guard begint niet met een fouttak wanneer de andere tak het eigenlijke werk bevat. De check beoordeelt niet iedere validatie- of normalisatietak. |
 | `project_shell` | Dynamische exec-commando's en guards gebruiken waarden die via `stdlib::shell_escape` zijn voorbereid. Alleen een naam met `_shell` is geen bewijs van veilige escaping. |
 | `project_interface_calls` | Aanroepen passen bij de declaratie in dezelfde bron of het eigen autoloadpad. Verplichte `Optional[...]`-argumenten blijven verplicht. Splat, defaults en containment vragen daarnaast catalogustests. |
-| `project_suppressions` | Alleen gerichte `140chars`-uitzonderingen zijn toegestaan. Andere lintfouten moeten worden hersteld. |
+| `project_suppressions` | Alleen gerichte uitzonderingen voor `140chars` en `puppet_url_without_modules` zijn toegestaan, eventueel samen. Andere lintfouten moeten worden hersteld. |
 
 Gebruik twee spaties voor inspringing, uitgelijnde pijlen en enkele aanhalingstekens voor letterlijke strings. Dubbele aanhalingstekens zijn nodig voor interpolatie of escapes. Houd de volgorde van resources en gegenereerde configuratie bewust en controleerbaar. Bereken selectors vóór de resourcedeclaratie.
 
@@ -528,7 +533,23 @@ Werk bij een wijziging de geraakte voorbeelden en documentatie mee bij. Vergelij
 
 Render met ERB via `template(...)`. Gebruik één template als bestanden alleen in een klein optioneel onderdeel verschillen. Splits ze wanneer formaat of verantwoordelijkheid wezenlijk anders is.
 
-Lever statische bestanden via `puppet:///modules/...`; bronvalidatie moet `puppet:///` toestaan wanneer modulebestanden geldige invoer zijn. Houd paden en titels voorspelbaar en test de gerenderde varianten bij hun werkelijke gebruiker.
+Lever statische modulebestanden via `puppet:///modules/...`. Gebruik `puppet:///files/...` voor bestanden uit een fileservermount met de naam `files`. Die mount moet op de Puppet-server zijn ingericht en de benodigde toegang toestaan voordat je de bron gebruikt.
+
+De standaardcheck `puppet_url_without_modules` blijft actief en meldt bronnen buiten `modules/`. Voeg bij een bewuste `files`-bron `# lint:ignore:puppet_url_without_modules` toe aan de bronregel. Zo markeer je alleen die plek als uitzondering:
+
+```puppet
+file { '/tmp/example-app.tar.gz':
+  ensure => file,
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0600',
+  source => 'puppet:///files/example/app.tar.gz', # lint:ignore:puppet_url_without_modules
+}
+```
+
+De aanvullende check `project_puppet_urls` accepteert `modules/` en `files/` en blijft ook op de gemarkeerde regel actief. Een andere of ontbrekende mount, zoals bij `puppet:///invalid/example/app.tar.gz`, geeft dus nog steeds een waarschuwing en laat de scan mislukken. Dezelfde mountcontrole geldt voor Puppet-URL's met een expliciete servernaam. De mountnaam moet gevolgd worden door `/`; `files_backup/` geldt dus niet als `files/`.
+
+De check beoordeelt strings die met `puppet://` beginnen, ook in bronarrays en vóór interpolatie in het vervolgpad. Hij rekent dynamische delen niet uit en controleert geen bestandsinhoud, beschikbaarheid of serverrechten. Controleer die bij de functionele validatie. Bronvalidatie in modules moet `puppet:///` toestaan wanneer deze bestanden geldige invoer zijn. Houd paden en titels voorspelbaar en test de gerenderde varianten bij hun werkelijke gebruiker.
 
 #### Pakketten en mappen
 

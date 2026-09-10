@@ -7,13 +7,32 @@ class CliTest < Minitest::Test
 
   def test_default_and_project_checks_are_present_and_enabled
     refute_match(/--only-checks\b/, File.read('.puppet-lint.rc'))
+    assert PuppetLint.configuration.puppet_url_without_modules_enabled?
     enabled = PuppetLint.configuration.checks.select { |check| PuppetLint.configuration.public_send("#{check}_enabled?") }
-    %i[140chars documentation parameter_order selector_inside_resource single_quote_string_with_variables class_inherits_from_params_class project_arrays project_documentation project_files project_interface_calls project_layout project_packages project_parameter_alignment project_parameter_order project_positive_flow project_shell project_suppressions project_templates].each do |check|
+    %i[140chars documentation parameter_order selector_inside_resource single_quote_string_with_variables class_inherits_from_params_class project_arrays project_documentation project_files project_interface_calls project_layout project_packages project_parameter_alignment project_parameter_order project_positive_flow project_puppet_urls project_shell project_suppressions project_templates].each do |check|
       assert_includes enabled, check
     end
     output, _, status = cli('--list-checks')
     assert status.success?
     enabled.each { |check| assert_includes output.lines.map(&:strip), check.to_s }
+  end
+
+  def test_puppet_source_ignore_keeps_the_additional_check_active_with_fix
+    Dir.mktmpdir('lint_source_') do |directory|
+      file = File.join(directory, 'source.pp')
+      %w[files invalid].each do |mount|
+        code = "$source = 'puppet:///#{mount}/example/app.tar.gz' # lint:ignore:puppet_url_without_modules\n"
+        File.write(file, code)
+        output, errors, status = cli('--fix', file)
+        if mount == 'invalid'
+          refute status.success?, output + errors
+          assert_includes output, 'project_puppet_urls'
+        else
+          assert status.success?, output + errors
+        end
+        assert_equal code, File.read(file)
+      end
+    end
   end
 
   def test_a_new_default_check_is_not_disabled_by_the_project_configuration

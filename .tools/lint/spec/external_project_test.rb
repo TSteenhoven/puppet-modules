@@ -85,6 +85,20 @@ class ExternalProjectTest < Minitest::Test
                    chdir: directory, unsetenv_others: true)
   end
 
+  def assert_interface_call_lines(expected_lines)
+    # GitHub Actions adds annotations to the ordinary log; each finding still counts once.
+    [nil, 'synthetic'].each do |action|
+      output, errors, status = run_script('manifests/site.pp', extra_env: { 'GITHUB_ACTION' => action })
+      refute status.success?, output + errors
+      expected = expected_lines.map { |line| "#{File.realpath(File.join(@project, 'manifests/site.pp'))}:#{line}" }
+      actual = output.scan(/^(.+:\d+):\d+: project_interface_calls: warning:/).flatten
+      assert_equal expected, actual, output + errors
+
+      annotations = output.lines.grep(/^::warning .* \(check: project_interface_calls\)$/)
+      assert_equal(action ? expected_lines.length : 0, annotations.length, output + errors)
+    end
+  end
+
   def test_readme_entry_point_checks_only_own_files_and_ignores_personal_configuration
     # Redirect only Ruby's home lookup in the subprocess; never write to the account's personal configuration.
     write('personal/.puppet-lint.rc', "--invalid-personal-option\n--fix\n")
@@ -128,25 +142,48 @@ class ExternalProjectTest < Minitest::Test
 
   def test_external_interfaces_follow_module_order_and_keep_dependencies_outside_style_scope
     write('manifests/site.pp', "class { 'profile': }\nclass { 'shared': }\n")
-    output, errors, status = run_script('manifests/site.pp')
-    refute status.success?, output + errors
-    assert_equal 2, output.scan('project_interface_calls').length
+    assert_interface_call_lines([1, 2])
 
     # An earlier module shadows the whole later module, even when a nested manifest is absent.
     FileUtils.mkdir_p(File.join(@tooling, 'profile/manifests'))
     File.write(File.join(@tooling, 'profile/manifests/init.pp'), 'class profile {}')
     File.write(File.join(@tooling, 'profile/manifests/item.pp'), 'define profile::item (String $value) {}')
     write('manifests/site.pp', "class { 'profile': }\nprofile::item { 'synthetic': }\n")
-    output, errors, status = run_script('manifests/site.pp')
-    refute status.success?, output + errors
-    assert_equal 1, output.scan('project_interface_calls').length
+    assert_interface_call_lines([1])
 
     script = File.join(@project, '.tools/lint.rb')
     File.write(script, File.read(script).sub("[File.join(project_root, 'modules'), lint_root]", "[lint_root, File.join(project_root, 'modules')]"))
-    output, errors, status = run_script('manifests/site.pp')
-    refute status.success?, output + errors
-    assert_equal 1, output.scan('project_interface_calls').length
-    assert_match(/site\.pp:2:.*project_interface_calls/, output)
+    assert_interface_call_lines([2])
+  end
+
+  def test_readme_entry_point_requires_a_files_ignore_and_keeps_mount_validation_active
+    [
+      ['modules', false, nil],
+      ['files', false, 'puppet_url_without_modules'],
+      ['files', true, nil],
+      ['invalid', true, 'project_puppet_urls'],
+    ].each do |mount, ignore, expected_check|
+      control = ignore ? ' # lint:ignore:puppet_url_without_modules' : ''
+      write('manifests/site.pp', <<~PUPPET)
+        file { '/tmp/synthetic-app.tar.gz':
+          ensure => file,
+          owner  => 'root',
+          group  => 'root',
+          mode   => '0600',
+          source => 'puppet:///#{mount}/example/app.tar.gz',#{control}
+        }
+      PUPPET
+      output, errors, status = run_script
+      assert_includes output, '2 own manifests'
+      if expected_check
+        refute status.success?, output + errors
+        checks = output.scan(/^.+:6:13: (\w+): warning:/).flatten
+        assert_equal [expected_check], checks, output + errors
+      else
+        assert status.success?, output + errors
+      end
+      refute_includes output, 'project_suppressions'
+    end
   end
 
   def test_explicit_modulepath_also_resolves_vendored_names_without_following_escaping_symlinks
