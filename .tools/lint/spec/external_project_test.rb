@@ -17,6 +17,9 @@ class ExternalProjectTest < Minitest::Test
     script = readme[/^```ruby\n(.*?)^```/m, 1]
     refute_nil script
     write('.tools/lint.rb', script.sub("'global-modules'", "'dependencies/shared modules/puppet-modules'"))
+    config = readme[/^```text\n(--load=.*?)^```/m, 1]
+    refute_nil config
+    write('.puppet-lint.rc', config.sub('global-modules/', 'dependencies/shared modules/puppet-modules/'))
     write('modules/profile/manifests/init.pp', <<~'PUPPET')
       # @summary Provides a synthetic local interface.
       # @param value A synthetic input.
@@ -39,14 +42,15 @@ class ExternalProjectTest < Minitest::Test
         value => 'synthetic',
       }
     PUPPET
-    %w[spec/fixtures/invalid.pp modules/vendor/manifests/init.pp .cache/invalid.pp].each do |path|
+    %w[spec/fixtures/invalid.pp modules/vendor/manifests/init.pp vendor/bundle/invalid.pp].each do |path|
       write(path, "$values = [1] + [2]\n")
     end
     write('Gemfile', "raise 'The consumer bundle must not be loaded'\n")
-    write('.puppet-lint.rc', "--invalid-consumer-option\n")
 
     # Reuse installed, locked gems without network access or modifying the developer's bundle.
-    gem_home = File.join(@project, '.cache/puppet-lint', 'ruby', RbConfig::CONFIG.fetch('ruby_version'))
+    FileUtils.mkdir_p(File.join(@tooling, '.bundle'))
+    File.write(File.join(@tooling, '.bundle/config'), "BUNDLE_PATH: vendor/bundle\n")
+    gem_home = File.join(@tooling, 'vendor/bundle', 'ruby', RbConfig::CONFIG.fetch('ruby_version'))
     Bundler.load.specs.each do |spec|
       next if spec.name == 'bundler'
 
@@ -79,10 +83,16 @@ class ExternalProjectTest < Minitest::Test
     File.write(path, code)
   end
 
-  def run_script(*arguments, extra_env: {}, directory: @project)
-    env = Bundler.unbundled_env.merge(extra_env)
-    Open3.capture3(env, RbConfig.ruby, File.join(@project, '.tools/lint.rb'), *arguments,
-                   chdir: directory, unsetenv_others: true)
+  def run_project(*command, extra_env: {}, directory: @project)
+    # Keep personal and CI Bundler settings outside the synthetic project's configuration.
+    env = Bundler.unbundled_env.reject { |key, _| key.start_with?('BUNDLE_') }
+    env['BUNDLE_USER_HOME'] = File.join(@project, 'personal-bundle')
+    env.merge!(extra_env)
+    Open3.capture3(env, *command, chdir: directory, unsetenv_others: true)
+  end
+
+  def run_script(*arguments, **options)
+    run_project(RbConfig.ruby, File.join(@project, '.tools/lint.rb'), *arguments, **options)
   end
 
   def assert_interface_call_lines(expected_lines)
@@ -138,6 +148,63 @@ class ExternalProjectTest < Minitest::Test
     assert_equal "$values = [1] + [2]\n", File.read(File.join(@project, 'manifests/site.pp'))
     assert_equal "raise 'The consumer bundle must not be loaded'\n", File.read(File.join(@project, 'Gemfile'))
     refute File.exist?(File.join(@project, 'Gemfile.lock'))
+    refute File.exist?(File.join(@project, '.cache'))
+    refute File.exist?(File.join(@tooling, '.cache'))
+  end
+
+  def test_readme_entry_point_uses_the_bundle_path_from_the_ci_environment
+    File.write(File.join(@tooling, '.bundle/config'), "BUNDLE_PATH: missing-gems\n")
+    output, errors, status = run_script(extra_env: {
+      'BUNDLE_IGNORE_CONFIG' => '1',
+      'BUNDLE_PATH' => 'vendor/bundle',
+    })
+    assert status.success?, output + errors
+    assert_includes output, '2 own manifests'
+    refute File.exist?(File.join(@project, '.cache'))
+    refute File.exist?(File.join(@tooling, '.cache'))
+  end
+
+  def test_consumer_configuration_is_required_and_shared_changes_take_effect
+    File.open(File.join(@tooling, '.puppet-lint.rc'), 'a') do |config|
+      config.puts '--log-format=shared:%{check}:%{line}: %{message}'
+    end
+    write('manifests/site.pp', "$values = [1] + [2]\n")
+    output, errors, status = run_script('manifests/site.pp')
+    refute status.success?, output + errors
+    assert_includes output, 'shared:project_arrays:1:'
+
+    File.open(File.join(@project, '.puppet-lint.rc'), 'a') { |config| config.puts '--invalid-consumer-option' }
+    output, errors, status = run_script
+    refute status.success?, output + errors
+    assert_includes output + errors, 'invalid-consumer-option'
+
+    FileUtils.rm(File.join(@project, '.puppet-lint.rc'))
+    output, errors, status = run_script
+    refute status.success?, output + errors
+    assert_includes errors, 'Missing project lint file'
+  end
+
+  def test_consumer_configuration_works_with_the_standard_cli_and_relative_manifest_paths
+    env = {
+      'BUNDLE_GEMFILE' => File.join(@tooling, 'Gemfile'),
+      'BUNDLE_FROZEN' => 'true',
+      'BUNDLE_VERSION' => 'system',
+    }
+    command = ['bundle', 'exec', 'puppet-lint', '--no-config', '--config', '.puppet-lint.rc', 'manifests/site.pp']
+    write('manifests/site.pp', "$values = concat([1], [2])\n")
+    output, errors, status = run_project(*command, extra_env: env)
+    assert status.success?, output + errors
+
+    write('manifests/site.pp', "$values = [1] + [2]\n")
+    output, errors, status = run_project(*command, extra_env: env)
+    refute status.success?, output + errors
+    assert_includes output, 'manifests/site.pp:1:'
+    assert_includes output, 'project_arrays'
+
+    FileUtils.rm(File.join(@tooling, '.puppet-lint.rc'))
+    output, errors, status = run_project(*command, extra_env: env)
+    refute status.success?, output + errors
+    assert_includes errors, 'Missing shared lint file'
   end
 
   def test_external_interfaces_follow_module_order_and_keep_dependencies_outside_style_scope
