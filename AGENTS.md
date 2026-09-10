@@ -89,14 +89,17 @@ For Puppet code conventions, [the project puppet-lint configuration](.puppet-lin
 
 ### README Style
 
-- Match the current direct, practical, infrastructure-focused tone.
-- Write ordinary, accessible Dutch around exact code identifiers.
+- Use the root `README.md` as the writing reference for both the root README and `.tools/lint/README.md`; match its direct, practical, infrastructure-focused tone.
+- Write ordinary, accessible Dutch around exact code identifiers; prefer familiar Dutch words over unnecessary English or abstract tooling terminology.
+- Address the reader directly.
+- Keep each paragraph focused on one action, decision, or practical consequence.
 - Explain unavoidable metadata or implementation terminology before using it.
 - Preserve intentional author viewpoints, warnings, and project context when reorganizing content.
 - Do not replace concrete operational language with generic boilerplate, stock transitions, or uncommon synonyms.
 - Start README prose list items with a capital letter.
 - Preserve the case of identifiers, module names, class names, paths, and literals.
 - Do not shorten the README at the expense of operational knowledge.
+- Compare changed prose in `.tools/lint/README.md` with representative root README sections before completing the documentation review.
 
 ### Markdown
 

@@ -1,15 +1,29 @@
 require_relative '../../model'
+require 'pathname'
 
 module ProjectLint
   # Resolve only the interface actually called, using Puppet's conventional manifest path and native AST.
   module Interfaces
+    EXPLICIT_MODULEPATH = ENV.key?('PROJECT_LINT_MODULEPATH')
+    ROOTS = ENV.fetch('PROJECT_LINT_MODULEPATH', File.expand_path('../../../../..', __dir__)).split(File::PATH_SEPARATOR, -1).map do |path|
+      unless Pathname.new(path).absolute? && File.directory?(path)
+        raise ArgumentError, 'PROJECT_LINT_MODULEPATH must contain existing absolute module directories'
+      end
+
+      File.realpath(path)
+    end.freeze
+    raise ArgumentError, 'PROJECT_LINT_MODULEPATH must not be empty' if ROOTS.empty?
+
     def self.find(name)
       return unless name.match?(/\A[a-z][a-z0-9_]*(?:::[a-z][a-z0-9_]*)*\z/)
 
       parts = name.split('::')
-      return if %w[concat debconf reboot stdlib timezone].include?(parts.first)
+      return if !EXPLICIT_MODULEPATH && %w[concat debconf reboot stdlib timezone].include?(parts.first)
 
-      root = File.expand_path('../../../../..', __dir__)
+      # Puppet selects the first module directory, even if a later copy contains the missing manifest.
+      root = ROOTS.find { |directory| File.directory?(File.join(directory, parts.first)) }
+      return unless root
+
       suffix = parts.length == 1 ? 'init' : parts.drop(1).join('/')
       path = File.join(root, parts.first, 'manifests', "#{suffix}.pp")
       return unless File.file?(path) && File.realpath(path).start_with?("#{root}/")
