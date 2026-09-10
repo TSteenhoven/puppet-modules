@@ -1,4 +1,5 @@
 require_relative 'test_helper'
+require 'fileutils'
 
 class CliTest < Minitest::Test
   def cli(*arguments)
@@ -9,7 +10,7 @@ class CliTest < Minitest::Test
     refute_match(/--only-checks\b/, File.read('.puppet-lint.rc'))
     assert PuppetLint.configuration.puppet_url_without_modules_enabled?
     enabled = PuppetLint.configuration.checks.select { |check| PuppetLint.configuration.public_send("#{check}_enabled?") }
-    %i[140chars documentation parameter_order selector_inside_resource single_quote_string_with_variables class_inherits_from_params_class project_arrays project_documentation project_files project_interface_calls project_layout project_packages project_parameter_alignment project_parameter_order project_positive_flow project_puppet_urls project_shell project_suppressions project_templates].each do |check|
+    %i[140chars documentation parameter_order selector_inside_resource single_quote_string_with_variables class_inherits_from_params_class project_arrays project_class_check_reuse project_comment_spacing project_documentation project_files project_if_sections project_interface_calls project_layout project_monitoring_backend project_packages project_parameter_alignment project_parameter_order project_positive_flow project_puppet_urls project_resource_sections project_shell project_suppressions project_templates project_variable_sections].each do |check|
       assert_includes enabled, check
     end
     output, _, status = cli('--list-checks')
@@ -32,6 +33,241 @@ class CliTest < Minitest::Test
         end
         assert_equal code, File.read(file)
       end
+    end
+  end
+
+  def test_section_checks_fail_without_inventing_comments_with_fix
+    Dir.mktmpdir('lint_sections_') do |directory|
+      file = File.join(directory, 'sections.pp')
+      code = <<~'PUPPET'
+        $enabled = true
+        # Keep the synthetic notification conditional.
+        if $enabled {
+          notify { 'first': }
+        }
+        notify { 'second': }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, errors
+      assert_includes output, 'project_comment_spacing'
+      assert_includes output, 'project_resource_sections'
+      assert_equal code, File.read(file)
+    end
+  end
+
+  def test_opening_brace_spacing_fails_even_after_a_line_length_suppression
+    Dir.mktmpdir('lint_opening_braces_') do |directory|
+      file = File.join(directory, 'spacing.pp')
+      code = <<~'PUPPET'
+        # Check the outer prerequisite.
+        if $active { # lint:ignore:140chars
+
+          # Check the nested prerequisite.
+          if $ready {
+            notice('Ready')
+          }
+        }
+      PUPPET
+      [[], ['--fix']].each do |options|
+        File.write(file, code)
+        output, errors, status = cli(*options, file)
+        refute status.success?, output + errors
+        assert_equal 1, output.lines.count { |line| line.include?('project_layout') }, output
+        assert_includes output, ':3:1: project_layout: warning: Remove blank lines immediately after an opening brace'
+        assert_equal code, File.read(file)
+      end
+
+      File.write(file, code.sub("\n\n", "\n"))
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+    end
+  end
+
+  def test_variable_sections_fail_without_inventing_an_explanation_with_fix
+    Dir.mktmpdir('lint_variables_') do |directory|
+      file = File.join(directory, 'variables.pp')
+      code = <<~'PUPPET'
+        # Prepare the label.
+        $first = 'example'
+        $second = $first
+        $timeout = 30
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, errors
+      assert_equal 1, output.lines.count { |line| line.include?('project_variable_sections') }, output
+      assert_equal code, File.read(file)
+    end
+  end
+
+  def test_if_sections_fail_without_inventing_or_moving_comments_with_fix
+    Dir.mktmpdir('lint_conditions_') do |directory|
+      file = File.join(directory, 'conditions.pp')
+      codes = [
+        "if $active { notice('Active') }\n",
+        "$enabled = true\n$active = $enabled\n\n# Explain the active operation.\nif $active { notice('Active') }\n",
+      ]
+      codes.each do |code|
+        File.write(file, code)
+        output, errors, status = cli('--fix', file)
+        refute status.success?, errors
+        assert_equal 1, output.lines.count { |line| line.include?('project_if_sections') }, output
+        assert_equal code, File.read(file)
+        File.write(file, "# Explain the operation and its prerequisites.\n#{code}")
+        output, errors, status = cli(file)
+        assert status.success?, output + errors
+      end
+    end
+  end
+
+  def test_block_variable_sections_offer_a_review_hint_without_moving_assignments_with_fix
+    Dir.mktmpdir('lint_block_variables_') do |directory|
+      file = File.join(directory, 'variables.pp')
+      code = <<~'PUPPET'
+        # Prepare arguments only for the active check.
+        if $active {
+          $config_shell = stdlib::shell_escape($config)
+
+          # Escape the check limits.
+          $timeout_shell = stdlib::shell_escape(String($timeout))
+        }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, output + errors
+      assert_equal 1, output.lines.count { |line| line.include?('project_variable_sections') }, output
+      assert_includes output, 'section at line 5'
+      assert_includes output, 'checking purpose and evaluation order'
+      assert_equal code, File.read(file)
+
+      corrected = code.sub("  $config_shell = stdlib::shell_escape($config)\n\n", '')
+      corrected = corrected.sub('  # Escape the check limits.', "  # Escape the configuration path and check limits.\n  $config_shell = stdlib::shell_escape($config)")
+      File.write(file, corrected)
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+    end
+  end
+
+  def test_branch_order_fails_without_rewriting_conditions_with_fix
+    Dir.mktmpdir('lint_branches_') do |directory|
+      file = File.join(directory, 'branches.pp')
+      code = <<~'PUPPET'
+        # Select the appropriate handling for the current state.
+        if $active {
+          notice('Unavailable')
+        } else {
+          # Prepare the fallback values used by the alternative path.
+          $first = 1
+          $second = 2
+        }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, errors
+      assert_equal 1, output.lines.count { |line| line.include?('project_positive_flow') }, output
+      assert_equal code, File.read(file)
+    end
+  end
+
+  def test_validation_structure_checks_enclosing_blocks_without_rewriting_them
+    Dir.mktmpdir('lint_validation_flow_') do |directory|
+      file = File.join(directory, 'example.pp')
+      code = <<~'PUPPET'
+        class example {
+          if $parent {
+            if $valid {
+              notice('Valid')
+            } else {
+              warning('Invalid settings')
+            }
+          } else {
+            fail('Missing parent')
+          }
+          notify { 'outside-validation': }
+        }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--only-checks', 'project_positive_flow', '--fix', file)
+      refute status.success?, output + errors
+      assert_includes output, 'no implementation may follow'
+      assert_equal 2, output.lines.count { |line| line.include?('project_positive_flow') }, output
+      assert_equal code, File.read(file)
+
+      corrected = code.sub("  notify { 'outside-validation': }\n", '')
+      corrected = corrected.sub("      notice('Valid')", "      notice('Valid')\n      notify { 'inside-validation': }")
+      File.write(file, corrected)
+      output, errors, status = cli('--only-checks', 'project_positive_flow', file)
+      assert status.success?, output + errors
+    end
+  end
+
+  def test_monitoring_backend_check_does_not_rewrite_backend_conditions_with_fix
+    Dir.mktmpdir('lint_monitoring_backend_') do |directory|
+      file = File.join(directory, 'monitoring.pp')
+      code = <<~'PUPPET'
+        # Register the check when monitoring is active.
+        $active = $basic_settings::monitoring::package == 'synthetic_backend'
+        if $active {
+          basic_settings::monitoring_custom { 'synthetic': }
+        }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, output + errors
+      assert_equal 1, output.lines.count { |line| line.include?('project_monitoring_backend') }, output
+      assert_equal code, File.read(file)
+      File.write(file, code.sub("== 'synthetic_backend'", "!= 'none'"))
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+    end
+  end
+
+  def test_class_check_reuse_does_not_change_evaluation_order_with_fix
+    Dir.mktmpdir('lint_class_checks_') do |directory|
+      file = File.join(directory, 'example.pp')
+      declarations = [
+        "$enabled = defined(Class['synthetic']); notice($enabled)",
+        "notice(defined(Class['synthetic'])); include synthetic; notice(defined(Class['synthetic']))",
+      ]
+      declarations.each do |body|
+        code = "class example { #{body} }\n"
+        File.write(file, code)
+        output, errors, status = cli('--only-checks', 'project_class_check_reuse', '--fix', file)
+        refute status.success?, output + errors
+        assert_equal 1, output.lines.count { |line| line.include?('project_class_check_reuse') }, output
+        assert_equal code, File.read(file)
+      end
+    end
+  end
+
+  def test_class_check_consumers_are_resolved_in_the_configured_modulepath
+    Dir.mktmpdir('lint_class_consumers_') do |directory|
+      FileUtils.mkdir_p(File.join(directory, 'example/manifests'))
+      FileUtils.mkdir_p(File.join(directory, 'example/templates'))
+      FileUtils.mkdir_p(File.join(directory, 'consumer/manifests'))
+      file = File.join(directory, 'example/manifests/init.pp')
+      template = File.join(directory, 'example/templates/state.erb')
+      File.write(file, <<~'PUPPET')
+        class example {
+          $enabled = defined(Class['synthetic'])
+          notice($enabled, template('example/state.erb'))
+        }
+      PUPPET
+      File.write(template, '<%= @enabled %>')
+      command = [Gem.bin_path('puppet-lint', 'puppet-lint'), '--only-checks', 'project_class_check_reuse', file]
+      env = { 'PROJECT_LINT_MODULEPATH' => directory }
+      output, errors, status = Open3.capture3(env, *command)
+      assert status.success?, output + errors
+
+      File.write(template, '@enabled<%# @enabled is only mentioned in a comment. %>')
+      output, errors, status = Open3.capture3(env, *command)
+      refute status.success?, output + errors
+      assert_includes output, 'used only once'
+
+      File.write(File.join(directory, 'consumer/manifests/init.pp'), 'class consumer { notice($example::enabled) }')
+      output, errors, status = Open3.capture3(env, *command)
+      assert status.success?, output + errors
     end
   end
 

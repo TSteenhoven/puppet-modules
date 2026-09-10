@@ -46,8 +46,10 @@ class basic_settings::package_openitcockpit (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/openitcockpit.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/openitcockpit.list'
   }
 
@@ -58,42 +60,53 @@ class basic_settings::package_openitcockpit (
   $file_shell = stdlib::shell_escape($file)
   $key_shell = stdlib::shell_escape($key)
 
+  # Install the selected OpenITCOCKPIT repository or remove its managed source when disabled.
   if ($enable) {
     # Check if package is server or agent
     if ($package == 'server') {
       # Set url
       if ($nightly) {
+        # Select the nightly package channel.
         $url = "https://packages5.openitcockpit.io/openitcockpit/${os_name}/nightly"
       } else {
+        # Select the stable package channel.
         $url = "https://packages5.openitcockpit.io/openitcockpit/${os_name}/stable"
       }
 
       # Get source
       if ($deb_version == '822') {
+        # Render the selected repository and signing key in deb822 format.
         $source  = "Types: deb\\nURIs: ${url}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key}\\n"
       } else {
+        # Render the selected repository and signing key in one-line APT format.
         $source = "deb [signed-by=${key}] ${url} ${os_name} main\\n"
       }
     } else {
       # Set url
       if ($nightly) {
+        # Select the nightly package channel.
         $url = 'https://packages5.openitcockpit.io/openitcockpit-agent/deb/nightly'
       } else {
+        # Select the stable package channel.
         $url = 'https://packages5.openitcockpit.io/openitcockpit-agent/deb/stable'
       }
 
       # Get source
       if ($deb_version == '822') {
+        # Render the selected repository and signing key in deb822 format.
         $source  = "Types: deb\\nURIs: ${url}\\nSuites: deb\\nComponents: main\\nSigned-By:${key}\\n"
       } else {
+        # Render the selected repository and signing key in one-line APT format.
         $source = "deb [signed-by=${key}] ${url} deb main\\n"
       }
     }
 
     # Get license
     if ($license == undef) {
+      # Use the community repository license when none is supplied.
       $license_correct = 'e5aef99e-817b-0ff5-3f0e-140c1f342792' #Community
     } else {
+      # Keep the caller's repository license selection.
       $license_correct = $license
     }
 

@@ -18,6 +18,9 @@ class letsencrypt (
   Optional[String] $mail_to    = undef,
   Integer          $nice_level = 8,
 ) {
+  # Share monitoring availability between service notifications and the certificate contact.
+  $monitoring_enable = defined(Class['basic_settings::monitoring'])
+
   # Install certbot
   package { 'certbot':
     ensure          => installed,
@@ -34,11 +37,13 @@ class letsencrypt (
     }
 
     # Get unit
-    if (defined(Class['basic_settings::monitoring'])) {
+    if ($monitoring_enable) {
+      # Route unit failures through the configured monitoring notification service.
       $unit = {
         'OnFailure' => 'notify-failed@%i.service',
       }
     } else {
+      # Leave unit failure hooks empty when monitoring is unavailable.
       $unit = {}
     }
 
@@ -56,12 +61,16 @@ class letsencrypt (
 
   # Try to get mail adres
   if ($mail_to == undef) {
-    if (defined(Class['basic_settings::monitoring'])) {
+    # Use the monitoring contact when available, otherwise keep the local root contact.
+    if ($monitoring_enable) {
+      # Reuse the central monitoring contact for certificate notifications.
       $mail_to_correct = $basic_settings::monitoring::mail_to
     } else {
+      # Send certificate notifications to root when no monitoring contact is available.
       $mail_to_correct = 'root'
     }
   } else {
+    # Use the caller's certificate notification address.
     $mail_to_correct = $mail_to
   }
 
@@ -73,6 +82,7 @@ class letsencrypt (
     }
     $max_log_backups = 0
   } else {
+    # Retain Certbot's own backup limit when logrotate does not manage its logs.
     $max_log_backups = 30
   }
 

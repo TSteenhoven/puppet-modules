@@ -100,28 +100,36 @@ class openitcockpit::agent (
 
   # Check if we have systemd
   if ($monitoring_enable) {
+    # Inherit the monitoring backend selected by the central monitoring class.
     $monitoring_package = $basic_settings::monitoring::package
   } else {
+    # Disable monitoring registration when the central monitoring class is unavailable.
     $monitoring_package = 'none'
   }
 
   # Check if we have sensorstats
   if ($sensorstats_enable == undef) {
+    # Default hardware sensor collection to physical hosts.
     if ($facts['is_virtual']) {
+      # Skip physical sensor collection by default inside a virtual machine.
       $sensorstats_correct = false
     } else {
+      # Enable physical sensor collection by default on a physical host.
       $sensorstats_correct = true
     }
   } else {
+    # Preserve the caller's explicit sensor-collection setting.
     $sensorstats_correct = $sensorstats_enable
   }
 
   # Get push state
   if ($push_enable and $push_url != undef and $push_apikey != undef) {
+    # Enable push delivery using the complete supplied endpoint and authentication settings.
     $push_correct = true
     $push_url_correct = $push_url
     $push_apikey_correct = $push_apikey
   } else {
+    # Disable push delivery and omit its connection settings when prerequisites are missing.
     $push_correct = false
     $push_url_correct = ''
     $push_apikey_correct = ''
@@ -156,6 +164,7 @@ class openitcockpit::agent (
 
     # Check if monitoring package is not configured
     if ($monitoring_package == 'none') {
+      # Stop automatic agent startup through systemd when monitoring is disabled.
       if ($systemd_enable) {
         # Disable service
         service { 'monitoring_service':
@@ -186,10 +195,12 @@ class openitcockpit::agent (
 
         # Get unit
         if ($monitoring_enable) {
+          # Route unit failures through the configured monitoring notification service.
           $unit = {
             'OnFailure' => 'notify-failed@%i.service',
           }
         } else {
+          # Leave unit failure hooks empty when monitoring is unavailable.
           $unit = {}
         }
 

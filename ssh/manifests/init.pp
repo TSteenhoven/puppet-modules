@@ -86,20 +86,26 @@ class ssh (
 
   # Check if different list is given for alternative port
   if ($port_alternative_allow_users != undef) {
+    # Format the alternate listener's explicit user allowlist for sshd.
     $port_alternative_allow_users_str = join($port_alternative_allow_users, ' ')
   } else {
+    # Reuse the primary user allowlist for the alternate SSH listener.
     $port_alternative_allow_users_str = $allow_users_str
   }
 
   # Get list of users to check
   if ($check_users != undef) {
+    # Validate the explicitly selected SSH user list.
     $check_users_complete = $check_users
   } elsif ($port_alternative_allow_users != undef) {
+    # Validate users from both primary and alternate SSH allowlists.
     $check_users_complete = flatten($allow_users, $port_alternative_allow_users)
   } else {
+    # Validate the primary SSH allowlist when no alternate list is supplied.
     $check_users_complete = $allow_users
   }
   $check_users_str = join($check_users_complete, ',')
+
   # User filters are inserted into a shell assignment and must remain literal data.
   $check_users_str_shell = stdlib::shell_escape($check_users_str)
 
@@ -112,18 +118,22 @@ class ssh (
         # Get OS name
         case $facts['os']['release']['major'] {
           '23.04', '24.04': {
+            # Use socket activation for the selected Ubuntu release paths.
             $systemd_socket = true
           }
           default: {
+            # Use service-based SSH startup on the remaining distribution paths.
             $systemd_socket = false
           }
         }
       }
       default: {
+        # Use service-based SSH startup on the remaining distribution paths.
         $systemd_socket = false
       }
     }
   } else {
+    # Use service-based SSH startup when systemd is unavailable.
     $systemd_socket = false
   }
 
@@ -132,13 +142,16 @@ class ssh (
     # Get IP versions
     case $basic_settings::kernel::ip_version {
       '4': {
+        # Keep the socket's default address binding on an IPv4-only host.
         $ip_version = 'default'
       }
       default: {
+        # Allow both IP families on the managed SSH socket.
         $ip_version = 'both'
       }
     }
   } else {
+    # Leave address binding at its default without a managed kernel socket policy.
     $ip_version = 'default'
   }
 
@@ -184,11 +197,13 @@ class ssh (
 
     # Socket settings
     if ($port_alternative) {
+      # Bind both requested SSH ports with the selected IPv6 socket policy.
       $systemd_socket_settings = {
         'ListenStream' => ['', $port, $port_alternative],
         'BindIPv6Only' => $ip_version,
       }
     } else {
+      # Bind the primary SSH port with the selected IPv6 socket policy.
       $systemd_socket_settings = {
         'ListenStream' => ['', $port],
         'BindIPv6Only' => $ip_version,

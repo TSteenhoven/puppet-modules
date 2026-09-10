@@ -183,6 +183,7 @@ class basic_settings::io (
     require => Package['kmod'],
   }
 
+  # Register the unit reload only when the systemd package dependency exists.
   if (defined(Package['systemd'])) {
     # Reload systemd deamon
     exec { 'io_systemd_daemon_reload':
@@ -217,6 +218,8 @@ class basic_settings::io (
     basic_settings::security_audit { 'io':
       rule_suspicious_packages => $suspicious_filter,
     }
+
+    # Audit privileged I/O tools only when an originating login identity is available.
     basic_settings::security_audit { 'io-root':
       rule_suspicious_packages => $suspicious_packages_root,
       rule_options             => ['-F auid!=unset'],

@@ -48,36 +48,46 @@ define netplanio::ethernet (
   Boolean                   $optional    = false,
   Optional[Hash]            $routes      = undef,
 ) {
+  # Require the Netplan parent before contributing ethernet configuration.
   if (defined(Class['netplanio'])) {
+    # Resolve the interface settings before rendering this ethernet entry.
     if ($ensure) {
       # Get interface
       if ($interface == undef) {
+        # Use the resource title as the default interface name.
         $interface_correct = $name
       } else {
+        # Preserve the caller's explicit interface name.
         $interface_correct = $interface
       }
 
       # Try to get dhcp value
       if ($dhcp_enable == undef) {
+        # Inherit the default DHCP setting from the Netplan class.
         $dhcpc_correct = $netplanio::dhcp_enable
       } else {
+        # Preserve the caller's DHCP setting for this interface.
         $dhcpc_correct = $dhcp_enable
       }
 
       # Get IP versions
       if ($ip_version == undef) {
+        # Inherit the default IP-family selection from the Netplan class.
         $ip_version_correct = $netplanio::ip_version
       } else {
+        # Preserve the caller's IP-family selection for this interface.
         $ip_version_correct = $ip_version
       }
 
       # Set IP values
       case $ip_version_correct {
         '4': {
+          # Limit generated network settings to IPv4.
           $ip_version_v4 = true
           $ip_version_v6 = false
         }
         default: {
+          # Generate settings for both IPv4 and IPv6.
           $ip_version_v4 = true
           $ip_version_v6 = true
         }
@@ -85,8 +95,10 @@ define netplanio::ethernet (
 
       # Try to get IP RA value
       if ($dhcpc_correct and $ip_version_v6) {
+        # Apply the shared router-advertisement policy when DHCP and IPv6 are enabled.
         $ip_ra_enable = $netplanio::ip_ra_enable
       } else {
+        # Disable router advertisements when DHCP or IPv6 is unavailable.
         $ip_ra_enable = false
       }
 

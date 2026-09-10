@@ -33,8 +33,10 @@ class basic_settings::package_docker (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/docker.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/docker.list'
   }
 
@@ -45,14 +47,17 @@ class basic_settings::package_docker (
   $file_shell = stdlib::shell_escape($file)
   $key_shell = stdlib::shell_escape($key)
 
+  # Install the Docker repository when enabled and remove its managed source otherwise.
   if ($enable) {
     # Set url
     $url = "https://download.docker.com/linux/${os_parent}"
 
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source  = "Types: deb\\nURIs: ${url}\\nSuites: ${os_name}\\nComponents: stable\\nSigned-By:${key}\\n"
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source = "deb [signed-by=${key}] ${url} ${os_name} stable\\n"
     }
 

@@ -25,6 +25,7 @@ define rabbitmq::management_user (
   Optional[String]          $password = undef,
   Array                     $tags     = ['monitoring'],
 ) {
+  # Require the management interface before managing its broker accounts.
   if (defined(Class['rabbitmq::management'])) {
     # Escape the RabbitMQ username before building user commands and guards.
     $name_shell = stdlib::shell_escape($name)
@@ -34,9 +35,10 @@ define rabbitmq::management_user (
 
     case $ensure {
       'present': {
-        # When password is not given; Create random passowrd
-        if ($password == undef) {
-          if (defined(Resource['basic_settings::login_user', $name])) {
+        # Require a local account only when its home must store a generated broker password.
+        if ($password != undef or defined(Resource['basic_settings::login_user', $name])) {
+          # Generate a password for a managed local account when none was supplied.
+          if ($password == undef) {
             # Set defualt values
             $user_home = getparam(Resource['basic_settings::login_user', $name], 'home')
             $user_require = [Package['pwgen'], Rabbitmq::Plugin['rabbitmq_management']]
@@ -52,33 +54,35 @@ define rabbitmq::management_user (
             $user_add_script_shell = stdlib::shell_escape($user_add_script)
             $user_addd = "/usr/bin/bash -c ${user_add_script_shell}"
           } else {
-            fail("User ${name} not present")
+            # Escape the supplied password before passing it to rabbitmqctl.
+            $password_shell = stdlib::shell_escape($password)
+            $user_addd = Sensitive.new("/usr/sbin/rabbitmqctl add_user ${name_shell} ${password_shell}") # Important, don't use --quiet here
+
+            # Wait for the management plugin before creating the broker user.
+            $user_require = Rabbitmq::Plugin['rabbitmq_management']
+          }
+
+          # Create user
+          exec { "rabbitmq_management_user_${name}":
+            command => $user_addd,
+            unless  => $find,
+            require => $user_require,
+          }
+
+          # Set tags
+          if ($tags != undef) {
+            # Escape tag names before building the tag command and grep chain.
+            $user_tags_shell = $tags.map |$tag| { stdlib::shell_escape($tag) }
+            $user_tags_join = join($user_tags_shell, ' ')
+            $user_tags_search = join($user_tags_shell, ' | /usr/bin/grep ')
+            exec { "rabbitmq_management_user_${name}_tags":
+              command => "/usr/sbin/rabbitmqctl --quiet set_user_tags ${name_shell} ${user_tags_join}",
+              unless  => "/usr/sbin/rabbitmqctl --quiet list_users --no-table-headers | /usr/bin/grep ${name_shell} | /usr/bin/cut -f2 | /usr/bin/grep ${user_tags_search}", # lint:ignore:140chars
+              require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${name}"]],
+            }
           }
         } else {
-          # Escape the supplied password before passing it to rabbitmqctl.
-          $password_shell = stdlib::shell_escape($password)
-          $user_addd = Sensitive.new("/usr/sbin/rabbitmqctl add_user ${name_shell} ${password_shell}") # Important, don't use --quiet here
-          $user_require = Rabbitmq::Plugin['rabbitmq_management']
-        }
-
-        # Create user
-        exec { "rabbitmq_management_user_${name}":
-          command => $user_addd,
-          unless  => $find,
-          require => $user_require,
-        }
-
-        # Set tags
-        if ($tags != undef) {
-          # Escape tag names before building the tag command and grep chain.
-          $user_tags_shell = $tags.map |$tag| { stdlib::shell_escape($tag) }
-          $user_tags_join = join($user_tags_shell, ' ')
-          $user_tags_search = join($user_tags_shell, ' | /usr/bin/grep ')
-          exec { "rabbitmq_management_user_${name}_tags":
-            command => "/usr/sbin/rabbitmqctl --quiet set_user_tags ${name_shell} ${user_tags_join}",
-            unless  => "/usr/sbin/rabbitmqctl --quiet list_users --no-table-headers | /usr/bin/grep ${name_shell} | /usr/bin/cut -f2 | /usr/bin/grep ${user_tags_search}", # lint:ignore:140chars
-            require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_user_${name}"]],
-          }
+          fail("User ${name} not present")
         }
       }
       'absent': {

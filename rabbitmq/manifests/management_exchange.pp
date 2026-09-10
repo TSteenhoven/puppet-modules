@@ -22,6 +22,7 @@ define rabbitmq::management_exchange (
   String                    $type   = 'direct',
   String                    $vhost  = '/',
 ) {
+  # Require the management interface before using rabbitmqadmin to manage exchanges.
   if (defined(Class['rabbitmq::management'])) {
     # Escape rabbitmqadmin arguments before building exchange commands and guards.
     $admin_config_path_shell = stdlib::shell_escape($rabbitmq::management::admin_config_path)
@@ -36,8 +37,10 @@ define rabbitmq::management_exchange (
       'present': {
         # Get vhost name
         if ($vhost == '/') {
+          # Give the root virtual host a readable name in management resource identifiers.
           $vhost_name = 'default'
         } else {
+          # Keep the non-root virtual host name in management resource identifiers.
           $vhost_name = $vhost
         }
 

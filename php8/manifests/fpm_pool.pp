@@ -65,17 +65,21 @@ define php8::fpm_pool (
   String           $pm_procidle_timeout  = '10s',
   Integer          $pm_start_servers     = 2,
 ) {
+  # Require the FPM parent before using its version and service settings for this pool.
   if (defined(Class['php8::fpm'])) {
-    # Set variables from parent
+    # Use the parent PHP version for pool paths and service notifications.
     $minor_version = $php8::minor_version
-    $skip_default_files = $php8::skip_default_files
 
-    # Set listen path
+    # Select an explicit listen address or the default socket for the parent's file-management mode.
+    $skip_default_files = $php8::skip_default_files
     if ($listen != undef) {
+      # Use the explicit pool listen endpoint.
       $listen_path = $listen
     } elsif ($skip_default_files) {
+      # Use a versioned pool socket when the distribution's default files are skipped.
       $listen_path = "/run/php/php8.${minor_version}-fpm.sock"
     } else {
+      # Use the shared pool socket expected by the default file layout.
       $listen_path = '/run/php/php-fpm.sock'
     }
 

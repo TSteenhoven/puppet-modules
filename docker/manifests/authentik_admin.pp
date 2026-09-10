@@ -62,18 +62,23 @@ define docker::authentik_admin (
   $compose_proxy_defined = defined(Docker::Compose_proxy[$compose_name])
   $authentik_defined = defined(Docker::Authentik[$compose_name])
   if ($compose_defined) {
+    # Order administration commands after the existing Compose stack.
     $compose_require = Docker::Compose[$compose_name]
     $compose_contract_fail_text = undef
   } elsif ($compose_proxy_defined) {
+    # Order administration commands after the existing Compose proxy wrapper.
     $compose_require = Docker::Compose_proxy[$compose_name]
     $compose_contract_fail_text = undef
   } elsif ($authentik_defined) {
+    # Order administration commands after the existing Authentik wrapper.
     $compose_require = Docker::Authentik[$compose_name]
     $compose_contract_fail_text = undef
   } else {
+    # Report the missing stack owner before declaring administration resources.
     $compose_contract_fail_text = "docker::authentik_admin requires Docker::Compose[${compose_name}], Docker::Compose_proxy[${compose_name}], or Docker::Authentik[${compose_name}] in the catalog." # lint:ignore:140chars
   }
 
+  # Manage the administrator only after a Compose owner has been resolved.
   if ($compose_contract_fail_text == undef) {
     # Resolve the running container from Docker labels at execution time instead of duplicating Compose-owned paths here.
     $service = 'server'
@@ -114,9 +119,14 @@ define docker::authentik_admin (
         ], ' ')
         $container_required_command = 'test -n "$container_id" || exit 1'
 
-        if ($ensure == present) {
-          $password_unwrapped = $password.unwrap
-          if ($password_unwrapped =~ /\A[^\r\n]+\z/) {
+        # Unwrap credentials only for account creation; removal does not consume a password.
+        $password_unwrapped = $ensure ? {
+          present => $password.unwrap,
+          default => undef,
+        }
+        if ($ensure == absent or $password_unwrapped =~ /\A[^\r\n]+\z/) {
+          # Build creation or removal commands only after validating the consumed credentials.
+          if ($ensure == present) {
             # Pass managed Authentik values as environment variables to keep the Python block static.
             $email_shell = stdlib::shell_escape($email)
             $group_name_shell = stdlib::shell_escape($group_name)
@@ -193,68 +203,68 @@ define docker::authentik_admin (
                 'print("authentik admin user %s is active and has superuser access through %s" % (username, group.name))',
             ], "\n")
           } else {
-            fail('docker::authentik_admin password must not be empty or contain newlines.')
+            # For absent users, only the username is needed and email or password input is intentionally ignored.
+            $authentik_env_args = "-e AK_ADMIN_USERNAME=${username_shell}"
+
+            # The absent guard succeeds when the requested Authentik user no longer exists.
+            $check_python = join([
+                'import os',
+                'from authentik.core.models import User',
+                '',
+                'username = os.environ["AK_ADMIN_USERNAME"]',
+                '',
+                'if User.objects.filter(username=username).exists():',
+                '    raise SystemExit(1)',
+            ], "\n")
+
+            # The absent update path deletes the requested user and leaves the run idempotent when already absent.
+            $update_python = join([
+                'import os',
+                'from authentik.core.models import User',
+                '',
+                'username = os.environ["AK_ADMIN_USERNAME"]',
+                '',
+                'deleted, _ = User.objects.filter(username=username).delete()',
+                'if deleted:',
+                '    print("authentik user %s removed" % username)',
+                'else:',
+                '    print("authentik user %s already absent" % username)',
+            ], "\n")
+          }
+
+          # Build the Docker exec command and heredocs for Puppet's shell provider so Python code is sent through stdin.
+          $docker_exec_command = join([
+              '/usr/bin/docker exec -i',
+              $authentik_env_args,
+              '"$container_id"',
+              'ak shell',
+          ], ' ')
+          $check_command = join([
+              $container_lookup_command,
+              $container_required_command,
+              "${docker_exec_command} <<'PY'",
+              $check_python,
+              'PY',
+          ], "\n")
+          $update_command = join([
+              $container_lookup_command,
+              $container_required_command,
+              "${docker_exec_command} <<'PY'",
+              $update_python,
+              'PY',
+          ], "\n")
+
+          # Run the Authentik mutation only when the guard detects drift.
+          exec { "docker_authentik_admin_${ensure}_${compose_name}_${username_correct}":
+            command   => Sensitive.new($update_command),
+            logoutput => false,
+            provider  => shell,
+            require   => $compose_require,
+            timeout   => $timeout,
+            unless    => Sensitive.new($check_command),
           }
         } else {
-          # For absent users, only the username is needed and email or password input is intentionally ignored.
-          $authentik_env_args = "-e AK_ADMIN_USERNAME=${username_shell}"
-
-          # The absent guard succeeds when the requested Authentik user no longer exists.
-          $check_python = join([
-              'import os',
-              'from authentik.core.models import User',
-              '',
-              'username = os.environ["AK_ADMIN_USERNAME"]',
-              '',
-              'if User.objects.filter(username=username).exists():',
-              '    raise SystemExit(1)',
-          ], "\n")
-
-          # The absent update path deletes the requested user and leaves the run idempotent when already absent.
-          $update_python = join([
-              'import os',
-              'from authentik.core.models import User',
-              '',
-              'username = os.environ["AK_ADMIN_USERNAME"]',
-              '',
-              'deleted, _ = User.objects.filter(username=username).delete()',
-              'if deleted:',
-              '    print("authentik user %s removed" % username)',
-              'else:',
-              '    print("authentik user %s already absent" % username)',
-          ], "\n")
-        }
-
-        # Build the Docker exec command and heredocs for Puppet's shell provider so Python code is sent through stdin.
-        $docker_exec_command = join([
-            '/usr/bin/docker exec -i',
-            $authentik_env_args,
-            '"$container_id"',
-            'ak shell',
-        ], ' ')
-        $check_command = join([
-            $container_lookup_command,
-            $container_required_command,
-            "${docker_exec_command} <<'PY'",
-            $check_python,
-            'PY',
-        ], "\n")
-        $update_command = join([
-            $container_lookup_command,
-            $container_required_command,
-            "${docker_exec_command} <<'PY'",
-            $update_python,
-            'PY',
-        ], "\n")
-
-        # Run the Authentik mutation only when the guard detects drift.
-        exec { "docker_authentik_admin_${ensure}_${compose_name}_${username_correct}":
-          command   => Sensitive.new($update_command),
-          logoutput => false,
-          provider  => shell,
-          require   => $compose_require,
-          timeout   => $timeout,
-          unless    => Sensitive.new($check_command),
+          fail('docker::authentik_admin password must not be empty or contain newlines.')
         }
       } else {
         fail('docker::authentik_admin usernames may only contain letters, numbers, at signs, dots, underscores, plus signs, and hyphens.')

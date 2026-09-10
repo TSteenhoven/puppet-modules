@@ -84,7 +84,10 @@ define basic_settings::systemd_timer (
 
     # Check if we need to monitoring this timer
     if ($monitoring_enable != undef and $monitoring_package != 'none') {
+      # Translate the explicit monitoring toggle into check presence or removal.
       $monitoring_ensure = $monitoring_enable ? { true => 'present', default => absent }
+
+      # Register or retire the timer check using the caller's monitoring choice.
       basic_settings::monitoring_timer { $title:
         ensure  => $monitoring_ensure,
         package => $monitoring_package,

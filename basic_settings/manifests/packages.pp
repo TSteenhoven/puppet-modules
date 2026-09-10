@@ -80,26 +80,33 @@ class basic_settings::packages (
   # Get IP versions
   case $ip_version {
     '4': {
+      # Force APT downloads over IPv4 on an IPv4-only host.
       $ip_force = '4'
     }
     default: {
+      # Leave APT's IP-family selection unrestricted.
       $ip_force = undef
     }
   }
 
   # Try to get systemd default target
   if (defined(Class['basic_settings::systemd'])) {
+    # Inherit the shared systemd target unless the caller supplied an explicit target.
     if ($systemd_default_target == undef) {
+      # Place package maintenance under the central cluster target by default.
       $systemd_default_target_correct = "${basic_settings::systemd::cluster_id}-${basic_settings::systemd::default_target}"
     } else {
+      # Preserve the explicitly supplied package-maintenance target.
       $systemd_default_target_correct = $systemd_default_target
     }
   } else {
+    # Preserve the explicitly supplied package-maintenance target.
     $systemd_default_target_correct = $systemd_default_target
   }
 
   # Get correct list
   if ($unattended_upgrades_block_packages == undef) {
+    # Exclude database servers and application runtimes from unattended upgrades by default.
     $unattended_upgrades_block_packages_correct = [
       'libmysql*',
       'mysql*',
@@ -110,6 +117,7 @@ class basic_settings::packages (
       'rabbitmq-server',
     ]
   } else {
+    # Use the caller's unattended-upgrade exclusion list.
     $unattended_upgrades_block_packages_correct = $unattended_upgrades_block_packages
   }
 
@@ -187,7 +195,19 @@ class basic_settings::packages (
   ]
 
   # Check if we need snap
-  if (!$snap_enable) {
+  if ($snap_enable) {
+    # Audit user execution of the Snap package-management commands.
+    $snap_rules = [
+      '-a always,exit -F arch=b32 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
+      '-a always,exit -F arch=b64 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
+      '-a always,exit -F arch=b32 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
+      '-a always,exit -F arch=b64 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
+    ]
+    package { 'snapd':
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+  } else {
     # Remove snap
     $snap_rules = []
     package { 'snapd':
@@ -198,17 +218,6 @@ class basic_settings::packages (
     file { ['/etc/apt/apt.conf.d/20snapd.conf', '/etc/xdg/autostart/snap-userd-autostart.desktop']:
       ensure  => absent,
       require => Package['snapd'],
-    }
-  } else {
-    $snap_rules = [
-      '-a always,exit -F arch=b32 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
-      '-a always,exit -F arch=b64 -F path=/usr/bin/snap -F perm=x -F auid!=unset -F key=software_mgmt',
-      '-a always,exit -F arch=b32 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
-      '-a always,exit -F arch=b64 -F path=/usr/bin/snapctl -F perm=x -F auid!=unset -F key=software_mgmt',
-    ]
-    package { 'snapd':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
 
@@ -399,6 +408,7 @@ class basic_settings::packages (
       daemon_reload => 'packages_systemd_daemon_reload',
     }
 
+    # Attach APT failure notifications only when monitoring integration is available.
     if ($monitoring_enable) {
       # Create drop in for APT service
       basic_settings::systemd_drop_in { 'apt_daily_notify_failed':
@@ -427,15 +437,21 @@ class basic_settings::packages (
       frequency      => 'monthly',
       compress_delay => true,
     }
+
+    # Rotate APT transaction and terminal history together.
     basic_settings::io_logrotate { 'apt':
       path      => "/var/log/apt/term.log\n/var/log/apt/history.log",
       frequency => 'monthly',
     }
+
+    # Delay dpkg log compression so recent package diagnostics remain directly readable.
     basic_settings::io_logrotate { 'dpkg':
       path           => '/var/log/dpkg.log',
       frequency      => 'monthly',
       compress_delay => true,
     }
+
+    # Keep automatic upgrade, dpkg and shutdown logs on the same monthly rotation.
     basic_settings::io_logrotate { 'unattended-upgrades':
       path      => "/var/log/unattended-upgrades/unattended-upgrades.log\n/var/log/unattended-upgrades/unattended-upgrades-dpkg.log\n/var/log/unattended-upgrades/unattended-upgrades-shutdown.log", # lint:ignore:140chars
       frequency => 'monthly',

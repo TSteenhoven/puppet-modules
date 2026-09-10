@@ -8,11 +8,13 @@ node 'container-basic.example.org' {
     monitoring_package_install => true,
   }
 
+  # Install the container runtime after preparing the host package sources.
   class { 'docker':
     edition => 'ce',
     require => Class['basic_settings'],
   }
 
+  # Deploy the stack with health requirements for long-running services and an expected migration exit.
   docker::compose { 'example':
     compose_checksum           => '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     compose_source             => 'https://downloads.example.org/example/docker-compose.yml',
@@ -33,6 +35,7 @@ node 'container-basic.example.org' {
 node 'container-cleanup.example.org' {
   class { 'docker': }
 
+  # Retire the old stack through its lifecycle resource.
   docker::compose { 'old-example':
     ensure  => absent,
     require => Class['docker'],
@@ -47,15 +50,18 @@ node 'container-proxy.example.org' {
     nginx_enable               => true,
   }
 
+  # Prepare the runtime before creating proxied application stacks.
   class { 'docker':
     require => Class['basic_settings'],
   }
 
+  # Provide the webserver that terminates TLS for container applications.
   class { 'nginx':
     securitytxt_contacts => ['mailto:security@example.org'],
     require              => Class['basic_settings'],
   }
 
+  # Expose the stack through Nginx with verified upstream TLS and WebSocket support.
   docker::compose_proxy { 'custom':
     client_max_body_size          => '100m',
     compose_checksum              => '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -93,7 +99,7 @@ node 'container-proxy.example.org' {
     target                        => 'services',
     x_content_type_options        => 'nosniff',
     x_frame_options               => 'DENY',
-    require                       => [Class['docker'], Class['nginx']],
+    require                       => [Class['docker'], Package['nginx']],
   }
 }
 
@@ -103,15 +109,18 @@ node 'authentik.example.org' {
     nginx_enable  => true,
   }
 
+  # Prepare the container runtime used by the identity service.
   class { 'docker':
     require => Class['basic_settings'],
   }
 
+  # Provide TLS termination and security contact information for the identity service.
   class { 'nginx':
     securitytxt_contacts => ['mailto:security@example.org'],
     require              => Class['basic_settings'],
   }
 
+  # Deploy the identity service with its database, mail and public TLS settings.
   docker::authentik { 'authentik':
     akadmin_remove             => true,
     database_password          => Sensitive('replace-with-postgresql-password'),
@@ -137,9 +146,10 @@ node 'authentik.example.org' {
     ssl_certificate_trusted    => '/etc/letsencrypt/live/auth.example.org/chain.pem',
     ssl_verify                 => false,
     target                     => 'services',
-    require                    => [Class['docker'], Class['nginx']],
+    require                    => [Class['docker'], Package['nginx']],
   }
 
+  # Create the named administrator after deploying the identity service.
   docker::authentik_admin { 'platform.admin':
     compose_name => 'authentik',
     email        => 'info@example.org',
@@ -147,6 +157,7 @@ node 'authentik.example.org' {
     require      => Docker::Authentik['authentik'],
   }
 
+  # Remove the retired administrator from the same identity service.
   docker::authentik_admin { 'old.admin':
     ensure       => absent,
     compose_name => 'authentik',
@@ -160,15 +171,18 @@ node 'twenty.example.org' {
     nginx_enable  => true,
   }
 
+  # Prepare the container runtime used by the CRM application.
   class { 'docker':
     require => Class['basic_settings'],
   }
 
+  # Provide TLS termination and security contact information for the CRM application.
   class { 'nginx':
     securitytxt_contacts => ['mailto:security@example.org'],
     require              => Class['basic_settings'],
   }
 
+  # Deploy the CRM stack with external object storage and explicit health requirements.
   docker::twenty { 'twenty':
     database_password            => Sensitive('replace-with-postgresql-password'),
     secret_key                   => Sensitive('replace-with-secret-key'),
@@ -186,7 +200,6 @@ node 'twenty.example.org' {
     monitoring_timeout           => 90,
     port                         => 3000,
     redis_url                    => 'redis://redis:6379',
-    scheme                       => 'https',
     secret_key_fallback          => Sensitive('replace-with-old-secret-key'),
     server_name                  => 'twenty.example.org',
     ssl_certificate              => '/etc/letsencrypt/live/twenty.example.org/fullchain.pem',
@@ -200,6 +213,6 @@ node 'twenty.example.org' {
     storage_type                 => 's3',
     image_tag                    => 'latest',
     target                       => 'services',
-    require                      => [Class['docker'], Class['nginx']],
+    require                      => [Class['docker'], Package['nginx']],
   }
 }

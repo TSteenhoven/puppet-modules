@@ -41,17 +41,8 @@ class basic_settings::development (
   # Set default rules
   $default_rules = ['/usr/bin/gcc', '/usr/bin/git', '/usr/bin/gmake', '/usr/bin/make']
 
-  # Check if no gcc version is given
-  if ($gcc_version == undef) {
-    # Install gcc packages
-    package { 'gcc':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-
-    # Create list of packages that is suspicious
-    $suspicious_packages = $default_rules
-  } else {
+  # Install a selected GCC version and retire known alternatives, or use the distribution default.
+  if ($gcc_version != undef) {
     # Install gcc packages
     package { ['gcc', "gcc-${gcc_version}"]:
       ensure          => installed,
@@ -82,6 +73,15 @@ class basic_settings::development (
 
     # Create list of packages that is suspicious
     $suspicious_packages = flatten($default_rules, ["/usr/bin/gcc-${gcc_version}"])
+  } else {
+    # Install gcc packages
+    package { 'gcc':
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+
+    # Create list of packages that is suspicious
+    $suspicious_packages = $default_rules
   }
 
   # Install packages

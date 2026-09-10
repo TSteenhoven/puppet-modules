@@ -48,8 +48,11 @@ class mysql (
 ) {
   # Use systemd settings
   $basic_settings_enable = defined(Class['basic_settings'])
+
+  # Resolve backup contact details and backend selection from available monitoring settings.
   $monitoring_enable = defined(Class['basic_settings::monitoring']);
   if ($monitoring_enable) {
+    # Reuse the monitoring identity, contact, and backend for database-backup reporting.
     $automysqlbackup_host_friendly = $basic_settings::monitoring::server_fdqn
     $automysqlbackup_mail_address = $basic_settings::monitoring::mail_to
     $monitoring_package = $basic_settings::monitoring::package
@@ -101,8 +104,10 @@ class mysql (
 
   # Get version
   if (defined(Class['basic_settings::package_mysql'])) {
+    # Use the MySQL version selected by the managed repository.
     $version = $basic_settings::package_mysql::version
   } else {
+    # Fall back to the caller's package version without a managed MySQL repository.
     $version = $package_version
   }
 
@@ -137,6 +142,7 @@ class mysql (
       }
     }
 
+    # Disable automatic MySQL startup only when systemd owns service ordering.
     if (defined(Package['systemd'])) {
       # Disable MySQL server service
       service { 'mysql':
@@ -177,10 +183,12 @@ class mysql (
 
       # Get unit
       if ($monitoring_enable) {
+        # Route unit failures through the configured monitoring notification service.
         $unit = {
           'OnFailure' => 'notify-failed@%i.service',
         }
       } else {
+        # Leave unit failure hooks empty when monitoring is unavailable.
         $unit = {}
       }
 
@@ -310,6 +318,7 @@ class mysql (
     mode   => '0700', # Only root
   }
 
+  # Schedule database backups through systemd only when its package is managed.
   if (defined(Package['systemd'])) {
     # Create systemd service
     basic_settings::systemd_service { 'automysqlbackup':
@@ -346,6 +355,8 @@ class mysql (
 
     # Create systemd timer
     $timer_state = $basic_settings_enable ? { true => undef, default => 'running' }
+
+    # Schedule the daily backup with the startup state selected for the host's service management.
     basic_settings::systemd_timer { 'automysqlbackup':
       description        => 'Automysqlbackup timer',
       monitoring_enable  => $monitoring_enable,
@@ -361,6 +372,7 @@ class mysql (
       daemon_reload      => 'mysql_systemd_daemon_reload',
     }
 
+    # Bind the backup timer to the shared services target when that target is available.
     if ($basic_settings_enable) {
       # Create drop in for services target
       basic_settings::systemd_drop_in { 'automysqlbackup_dependency':

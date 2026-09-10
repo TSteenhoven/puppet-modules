@@ -38,8 +38,10 @@ class basic_settings::package_mysql (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $source_file = '/etc/apt/sources.list.d/mysql.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $source_file = '/etc/apt/sources.list.d/mysql.list'
   }
   $file_preference = '/etc/apt/preferences.d/90-mysql'
@@ -53,18 +55,22 @@ class basic_settings::package_mysql (
   $key_file_shell = stdlib::shell_escape($key_file)
   $key_rebuild = "cat /usr/share/keyrings/mysql.key | gpg --dearmor | tee ${key_file_shell} >/dev/null; chmod 644 ${key_file_shell}; /usr/bin/apt-get update" # lint:ignore:140chars
 
+  # Install the MySQL repository when enabled and remove its managed source otherwise.
   if ($enable) {
     # Get source name
     case $version {
       8.0: {
+        # Pair the MySQL 8 signing key with the 8.0 repository component.
         $key_filename = 'mysql-8.key'
         $version_correct = $version
       }
       8.4: {
+        # Pair the MySQL 8 signing key with the LTS repository component.
         $key_filename = 'mysql-8.key'
         $version_correct = "${version}-lts"
       }
       default: {
+        # Use the older signing-key mapping for the remaining MySQL versions.
         $key_filename = 'mysql-7.key'
         $version_correct = $version
       }
@@ -72,8 +78,10 @@ class basic_settings::package_mysql (
 
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source_content  = "Types: deb\\nURIs: https://repo.mysql.com/apt/${os_parent}\\nSuites: ${os_name}\\nComponents: mysql-${version_correct}\\nSigned-By:${key_file}\\n" # lint:ignore:140chars
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source_content = "deb [signed-by=${key_file}] https://repo.mysql.com/apt/${os_parent} ${os_name} mysql-${version_correct}\\n"
     }
 
@@ -133,6 +141,8 @@ class basic_settings::package_mysql (
       ensure => absent,
       path   => '/usr/share/keyrings/mysql.key',
     }
+
+    # Remove the active repository key as well as the obsolete key filename.
     file { 'package_mysql_key':
       ensure => absent,
       path   => $key_file,

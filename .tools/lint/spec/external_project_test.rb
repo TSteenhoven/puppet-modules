@@ -38,6 +38,8 @@ class ExternalProjectTest < Minitest::Test
       class { 'profile':
         value => 'synthetic',
       }
+
+      # Exercise the interface supplied by the shared module path as well.
       class { 'shared':
         value => 'synthetic',
       }

@@ -10,17 +10,21 @@
 # @api public
 class naemon () {
   # Set some values
-  $monitoring_enable = defined(Class['basic_settings::monitoring'])
   $openitcockpit_server_enable = defined(Class['openitcockpit::server'])
 
   # Service composition consumes the package name and configuration paths prepared by this dependency.
   if (defined(Package['openitcockpit'])) {
+    # Use the Naemon package and service account provided by OpenITCockpit.
     $package = 'openitcockpit-naemon'
     $webserver_uid = 'nagios'
+
+    # Inherit the managed OpenITCOCKPIT paths and group when its server class is available.
     if ($openitcockpit_server_enable) {
+      # Reuse the managed OpenITCockpit configuration directory and webserver group.
       $config_dir = "${openitcockpit::server::install_dir_correct}/etc/nagios/nagios.cfg.d"
       $webserver_gid = $openitcockpit::server::webserver_gid
     } else {
+      # Use the standard OpenITCockpit paths and group without its server class.
       $config_dir = '/opt/openitc/etc/nagios/nagios.cfg.d'
       $webserver_gid = 'www-data'
     }
@@ -75,11 +79,13 @@ class naemon () {
       }
 
       # Get unit
-      if ($monitoring_enable) {
+      if (defined(Class['basic_settings::monitoring'])) {
+        # Route unit failures through the configured monitoring notification service.
         $unit = {
           'OnFailure' => 'notify-failed@%i.service',
         }
       } else {
+        # Leave unit failure hooks empty when monitoring is unavailable.
         $unit = {}
       }
 

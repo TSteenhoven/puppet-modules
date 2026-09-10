@@ -20,6 +20,7 @@ class php8::cli (
   Boolean $composer_enable = true,
   Hash    $ini_settings    = {},
 ) {
+  # Require the PHP parent before selecting the CLI version and rendering INI settings.
   if (defined(Class['php8'])) {
     # Merge given init settings with default settings
     $correct_ini_settings = stdlib::merge({
@@ -47,6 +48,7 @@ class php8::cli (
         mode    => '0644' # Import, otherwise non-root users will not be able to use PHP
       }
 
+      # Update the default PHP executable only when default-file management is enabled.
       if (!$php8::skip_default_files) {
         # Escape the PHP binary path before passing it to update-alternatives.
         $php_cli_bin_shell = stdlib::shell_escape("/usr/bin/php8.${minor_version}")
@@ -71,6 +73,7 @@ class php8::cli (
         }
       }
     } else {
+      # List reserved INI keys in the validation error before rejecting the configuration.
       $reserved_ini_settings_text = join($reserved_ini_settings, ', ')
       fail("php8::cli ini_settings must not include module-managed PHP INI settings: ${reserved_ini_settings_text}.")
     }

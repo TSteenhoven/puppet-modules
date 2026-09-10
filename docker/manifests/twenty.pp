@@ -11,22 +11,26 @@
 # @example Deploy Twenty with generated `.env` content
 #   class { 'docker': }
 #
+#   # Deploy the CRM application with its generated environment settings.
 #   docker::twenty { 'twenty':
-#     database_password    => Sensitive('replace-with-secret'),
-#     host                 => 'twenty.example.org',
-#     secret_key           => Sensitive('replace-with-secret'),
+#     database_password => Sensitive('replace-with-secret'),
+#     host              => 'twenty.example.org',
+#     secret_key        => Sensitive('replace-with-secret'),
 #   }
 #
 # @example Deploy Twenty behind Nginx
 #   class { 'docker': }
+#
+#   # Provide the webserver used by the public CRM endpoint.
 #   class { 'nginx': }
 #
+#   # Expose the CRM application through the prepared runtime and webserver.
 #   docker::twenty { 'twenty':
-#     database_password    => Sensitive('replace-with-secret'),
-#     secret_key           => Sensitive('replace-with-secret'),
-#     server_name          => 'twenty.example.org',
-#     ssl_certificate      => '/etc/letsencrypt/live/twenty.example.org/fullchain.pem',
-#     ssl_certificate_key  => '/etc/letsencrypt/live/twenty.example.org/privkey.pem',
+#     database_password   => Sensitive('replace-with-secret'),
+#     secret_key          => Sensitive('replace-with-secret'),
+#     server_name         => 'twenty.example.org',
+#     ssl_certificate     => '/etc/letsencrypt/live/twenty.example.org/fullchain.pem',
+#     ssl_certificate_key => '/etc/letsencrypt/live/twenty.example.org/privkey.pem',
 #   }
 #
 # @param database_password
@@ -155,78 +159,84 @@ define docker::twenty (
   Enum['local', 's3']                   $storage_type                 = 'local',
   String                                $target                       = 'services',
 ) {
-  # Validate required parent classes before delegating to the shared Compose wrappers.
-  $docker_defined = defined(Class['docker'])
-  $nginx_defined = defined(Class['nginx'])
-
+  # Treat an empty public name as a request for a stack without an Nginx vhost.
   if ($server_name == undef or ($server_name != undef and $server_name == '')) {
+    # Omit a proxy server name when no non-empty name is supplied.
     $server_name_correct = undef
   } else {
+    # Preserve the caller's proxy server name.
     $server_name_correct = $server_name
   }
 
-  if ($docker_defined and ($server_name_correct == undef or $nginx_defined)) {
-    # Build Twenty's public URL from the first public vhost name when available, otherwise from the direct host fallback.
-    if ($server_name_correct != undef) {
-      # Determine the scheme based on the presence of TLS certificate and key.
-      if ($ssl_certificate != undef and $ssl_certificate_key != undef) {
-        $scheme = 'https'
+  # Require Docker and any requested Nginx integration before creating the Twenty stack.
+  if (defined(Class['docker'])) {
+    # Require Nginx when this stack creates a public vhost.
+    if ($server_name_correct == undef or defined(Class['nginx'])) {
+      # Build Twenty's public URL from the first public vhost name when available, otherwise from the direct host fallback.
+      if ($server_name_correct != undef) {
+        # Determine the scheme based on the presence of TLS certificate and key.
+        if ($ssl_certificate != undef and $ssl_certificate_key != undef) {
+          # Generate HTTPS frontend URLs when a complete certificate pair is supplied.
+          $scheme = 'https'
+        } else {
+          # Generate HTTP frontend URLs without a complete certificate pair.
+          $scheme = 'http'
+        }
+
+        $server_url_host = split($server_name_correct, ' ')[0]
+        $server_url_correct = "${scheme}://${server_url_host}"
       } else {
-        $scheme = 'http'
+        # Use the direct HTTP host URL when no proxy server name is configured.
+        $server_url_correct = "http://${host}"
       }
 
-      $server_url_host = split($server_name_correct, ' ')[0]
-      $server_url_correct = "${scheme}://${server_url_host}"
+      # Generate .env content for the Compose stack based on the provided parameters.
+      $env_content = Sensitive.new(template('docker/twenty.env'))
+
+      # Use the proxy wrapper only when a public Nginx vhost is requested.
+      if ($server_name_correct != undef) {
+        docker::compose_proxy { $name:
+          ensure                     => $ensure,
+          env_content                => $env_content,
+          compose_source             => 'puppet:///modules/docker/twenty.yaml',
+          monitoring_detail_limit    => $monitoring_detail_limit,
+          monitoring_expected_exited => $monitoring_expected_exited,
+          monitoring_health_required => $monitoring_health_required,
+          monitoring_interval        => $monitoring_interval,
+          monitoring_orphan_critical => $monitoring_orphan_critical,
+          monitoring_profiles        => $monitoring_profiles,
+          monitoring_starting_grace  => $monitoring_starting_grace,
+          monitoring_timeout         => $monitoring_timeout,
+          proxy_host                 => $host,
+          proxy_port                 => $port,
+          proxy_scheme               => 'http', # lint:ignore:140chars The proxy scheme is always `http` because the Compose stack listens on HTTP, even when the public URL is HTTPS.
+          server_name                => $server_name_correct,
+          ssl_certificate            => $ssl_certificate,
+          ssl_certificate_key        => $ssl_certificate_key,
+          ssl_certificate_trusted    => $ssl_certificate_trusted,
+          target                     => $target,
+          require                    => Class['docker'],
+        }
+      } else {
+        docker::compose { $name:
+          ensure                     => $ensure,
+          compose_source             => 'puppet:///modules/docker/twenty.yaml',
+          env_content                => $env_content,
+          monitoring_detail_limit    => $monitoring_detail_limit,
+          monitoring_expected_exited => $monitoring_expected_exited,
+          monitoring_health_required => $monitoring_health_required,
+          monitoring_interval        => $monitoring_interval,
+          monitoring_orphan_critical => $monitoring_orphan_critical,
+          monitoring_profiles        => $monitoring_profiles,
+          monitoring_starting_grace  => $monitoring_starting_grace,
+          monitoring_timeout         => $monitoring_timeout,
+          target                     => $target,
+          require                    => Class['docker'],
+        }
+      }
     } else {
-      $server_url_correct = "http://${host}"
+      fail('docker::twenty requires the nginx class before it can create a reverse proxy vhost.')
     }
-
-    # Generate .env content for the Compose stack based on the provided parameters.
-    $env_content = Sensitive.new(template('docker/twenty.env'))
-
-    # Use the proxy wrapper only when a public Nginx vhost is requested.
-    if ($server_name_correct != undef) {
-      docker::compose_proxy { $name:
-        ensure                     => $ensure,
-        env_content                => $env_content,
-        compose_source             => 'puppet:///modules/docker/twenty.yaml',
-        monitoring_detail_limit    => $monitoring_detail_limit,
-        monitoring_expected_exited => $monitoring_expected_exited,
-        monitoring_health_required => $monitoring_health_required,
-        monitoring_interval        => $monitoring_interval,
-        monitoring_orphan_critical => $monitoring_orphan_critical,
-        monitoring_profiles        => $monitoring_profiles,
-        monitoring_starting_grace  => $monitoring_starting_grace,
-        monitoring_timeout         => $monitoring_timeout,
-        proxy_host                 => $host,
-        proxy_port                 => $port,
-        proxy_scheme               => 'http', # lint:ignore:140chars The proxy scheme is always `http` because the Compose stack listens on HTTP, even when the public URL is HTTPS.
-        server_name                => $server_name_correct,
-        ssl_certificate            => $ssl_certificate,
-        ssl_certificate_key        => $ssl_certificate_key,
-        ssl_certificate_trusted    => $ssl_certificate_trusted,
-        target                     => $target,
-        require                    => Class['docker'],
-      }
-    } else {
-      docker::compose { $name:
-        ensure                     => $ensure,
-        compose_source             => 'puppet:///modules/docker/twenty.yaml',
-        env_content                => $env_content,
-        monitoring_detail_limit    => $monitoring_detail_limit,
-        monitoring_expected_exited => $monitoring_expected_exited,
-        monitoring_health_required => $monitoring_health_required,
-        monitoring_interval        => $monitoring_interval,
-        monitoring_orphan_critical => $monitoring_orphan_critical,
-        monitoring_profiles        => $monitoring_profiles,
-        monitoring_starting_grace  => $monitoring_starting_grace,
-        monitoring_timeout         => $monitoring_timeout,
-        target                     => $target,
-        require                    => Class['docker'],
-      }
-    }
-  } elsif ($docker_defined) {
-    fail('docker::twenty requires the nginx class before it can create a reverse proxy vhost.')
   } else {
     fail('docker::twenty requires the docker class before it can create the Compose stack.')
   }

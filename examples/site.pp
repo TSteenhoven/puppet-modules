@@ -10,11 +10,13 @@ node 'web01.example.org' {
     systemd_ntp_extra_pools    => ['ntp.example.org'],
   }
 
+  # Prepare the webserver and its security contact information.
   class { 'nginx':
     securitytxt_contacts => ['mailto:security@example.org'],
     require              => Class['basic_settings'],
   }
 
+  # Install the PHP extensions required by the web application.
   class { 'php8':
     curl          => true,
     mbstring      => true,
@@ -23,6 +25,7 @@ node 'web01.example.org' {
     minor_version => 2,
   }
 
+  # Run the application through PHP-FPM with a bounded memory limit.
   class { 'php8::fpm':
     ini_settings => {
       'memory_limit' => '256M',
@@ -30,6 +33,7 @@ node 'web01.example.org' {
     require      => Class['php8'],
   }
 
+  # Serve the application over HTTPS using its deployed certificate.
   nginx::server { 'app.example.org':
     docroot             => '/var/www/app.example.org',
     https_enable        => true,
@@ -37,15 +41,17 @@ node 'web01.example.org' {
     server_name         => 'app.example.org',
     ssl_certificate     => '/etc/letsencrypt/live/app.example.org/fullchain.pem',
     ssl_certificate_key => '/etc/letsencrypt/live/app.example.org/privkey.pem',
-    require             => Class['nginx', 'php8::fpm'],
+    require             => [Package['nginx'], Class['php8::fpm']],
   }
 
+  # Restrict SSH access to administration and deployment accounts using keys.
   class { 'ssh':
     allow_users                   => ['admin', 'deploy'],
     password_authentication_users => [],
     permit_root_login             => false,
   }
 
+  # Create the administrator account with credentials supplied by the profile.
   basic_settings::login_user { 'admin':
     gid             => 1001,
     home            => '/home/admin',
@@ -63,10 +69,12 @@ node 'container01.example.org' {
     monitoring_package_install => true,
   }
 
+  # Install the runtime used by the application stack.
   class { 'docker':
     require => Class['basic_settings'],
   }
 
+  # Deploy the stack and require healthy web and database services.
   docker::compose { 'example':
     compose_source             => 'puppet:///modules/profile/example/docker-compose.yml',
     env_content                => Sensitive("COMPOSE_PROJECT_NAME=example\n"),
@@ -80,17 +88,20 @@ node 'database01.example.org' {
     mysql_enable => true,
   }
 
+  # Configure database administration and backup credentials after preparing packages.
   class { 'mysql':
     automysqlbackup_password => Sensitive('replace-with-backup-password'),
     root_password            => lookup('mysql::root_password'),
     require                  => Class['basic_settings'],
   }
 
+  # Create the schema before granting application access.
   mysql::database { 'app':
     ensure  => present,
     require => Class['mysql'],
   }
 
+  # Provision the application identity from protected Hiera data.
   mysql::user { 'app':
     ensure   => present,
     password => lookup('mysql::app_password'),
@@ -98,6 +109,7 @@ node 'database01.example.org' {
     require  => Class['mysql'],
   }
 
+  # Grant access only after the application schema and identity exist.
   mysql::grant { 'app':
     ensure   => present,
     database => 'app',
@@ -125,12 +137,14 @@ node 'gitlab.example.org' {
     gitlab_enable => true,
   }
 
+  # Install GitLab with the protected administrator password and explicit public hostname.
   class { 'gitlab':
     root_password => lookup('gitlab::root_password'),
     server_fdqn   => 'gitlab.example.org',
     require       => Class['basic_settings'],
   }
 
+  # Enable HTTPS in the installed GitLab configuration.
   class { 'gitlab::config':
     https   => true,
     require => Class['gitlab'],

@@ -30,28 +30,36 @@ define basic_settings::monitoring_npm_audit (
 ) {
   # Get friendly name
   if ($friendly == undef) {
+    # Derive a readable monitoring label from the resource title.
     $friendly_correct = capitalize($name)
   } else {
+    # Use the caller's monitoring label.
     $friendly_correct = $friendly
   }
 
   # Try to get package
   if (defined(Class['basic_settings::monitoring'])) {
+    # Inherit the central monitoring backend unless this registration selects one.
     if ($package == undef) {
+      # Inherit the monitoring backend selected by the central monitoring class.
       $package_correct = $basic_settings::monitoring::package
     } else {
+      # Use the explicitly selected monitoring backend.
       $package_correct = $package
     }
     $sudoers_dir_enable = $basic_settings::monitoring::sudoers_dir_enable
   } else {
+    # Disable backend registration and sudoers integration without monitoring configuration.
     $package_correct = 'none'
     $sudoers_dir_enable = false
   }
 
   # Get sudoers prefix
   if ($sudoers_dir_enable) {
+    # Use unprefixed fragments in the managed sudoers directory.
     $sudoers_prefix = ''
   } else {
+    # Use the fallback sudoers prefix when no managed sudoers directory is available.
     $sudoers_prefix = 'z'
   }
 
@@ -67,10 +75,12 @@ define basic_settings::monitoring_npm_audit (
   $file_ensure = $ensure ? { 'present' => 'file', default => $ensure }
   case $package_correct {
     'openitcockpit': {
-      # Set some values
+      # Resolve the registration name and check whether the shared executable is already managed.
       $script_name = "check_${name}_npm_audit"
       $script_path = '/etc/openitcockpit-agent/plugins/check_npm_audit'
       $script_exists = defined(File[$script_path])
+
+      # Keep the monitoring executable outside the control of unprivileged users.
       $uid = 'root'
       $gid = 'root'
 
@@ -84,6 +94,7 @@ define basic_settings::monitoring_npm_audit (
       }
     }
     default: {
+      # Leave executable and ownership settings unset for an unsupported monitoring backend.
       $script_path = undef
       $script_exists = true
       $uid = undef
@@ -104,6 +115,7 @@ define basic_settings::monitoring_npm_audit (
 
     # Create sudo
     if ($uid != 'root') {
+      # Normalize the resource title into a valid sudo command-alias identifier.
       $sudo_cmnd = regsubst("monitoring_npm_audit_${name}", '[^A-Za-z0-9]', '_', 'G').upcase
       file { "/etc/sudoers.d/${sudoers_prefix}25-monitoring_npm_audit_${name}":
         ensure  => $file_ensure,

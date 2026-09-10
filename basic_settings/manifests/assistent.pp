@@ -39,6 +39,7 @@ class basic_settings::assistent (
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
+  # Manage the audio stack separately from the desktop assistant packages.
   if ($audio_enable) {
     # Install audio packages
     package {['pipewire-pulse', 'wireplumber']:
@@ -54,8 +55,10 @@ class basic_settings::assistent (
 
   # Get keyboard state
   if ($keyboard_enable == undef) {
+    # Enable local keyboard support by default on physical hosts.
     $keyboard_enable_correct = !$facts['is_virtual']
   } else {
+    # Honor the explicit keyboard setting, including on virtual hosts.
     $keyboard_enable_correct = $keyboard_enable
   }
 

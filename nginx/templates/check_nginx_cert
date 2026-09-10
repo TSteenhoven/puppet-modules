@@ -1,0 +1,612 @@
+#!/bin/sh
+# Managed by puppet
+# Local configuration and file validation, never a probe of a live TLS connection.
+# Requires Nginx >= 1.9.2, OpenSSL >= 1.1.1, POSIX awk/dash and GNU coreutils (date, stat, timeout).
+# Puppet templates the main configuration path once. Each registration passes its target and settings as CLI arguments.
+# Usage: check_nginx_cert -n "app.example.org alias.example.org" -f /etc/nginx/conf.d/app.conf -w 30 -c 14 -t 30 -l 6000
+# --worker is a private supervisor protocol; the ordinary CLI has no additional configuration-file or environment overrides.
+# Exit codes: 0 healthy, 1 usable but nearing expiry, 2 proven target defect or critical lifetime, 3 incomplete or unsupported assessment.
+
+# Early failures contain fixed text only and still leave operator guidance visible.
+die() {
+    printf 'Nginx TLS check cannot run: %s | validity_remaining=Us\n\nInterpretation:\nRestore the required tooling or check settings; no live certificate was tested.\n' "$1"
+    exit 3
+}
+
+# Binary checks precede settings and execution; external error streams stay in the private workspace.
+AWK=$(command -v awk 2>/dev/null) || die 'awk not available'
+CAT=$(command -v cat 2>/dev/null) || die 'cat not available'
+CMP=$(command -v cmp 2>/dev/null) || die 'cmp not available'
+DATE=$(command -v date 2>/dev/null) || die 'date not available'
+GREP=$(command -v grep 2>/dev/null) || die 'grep not available'
+MKTEMP=$(command -v mktemp 2>/dev/null) || die 'mktemp not available'
+NGINX=$(command -v nginx 2>/dev/null) || die 'nginx not available'
+OPENSSL=$(command -v openssl 2>/dev/null) || die 'openssl not available'
+RM=$(command -v rm 2>/dev/null) || die 'rm not available'
+STAT=$(command -v stat 2>/dev/null) || die 'stat not available'
+TIMEOUT=$(command -v timeout 2>/dev/null) || die 'timeout not available'
+
+# A fixed clock and locale make certificate dates and exact threshold comparisons reproducible.
+# validity_remaining is the minimum remaining lifetime of all certificates in stable assessed pairs, or U if none were assessed.
+# Ranges alert strictly below the day thresholds; zero remaining seconds is expired, and CRITICAL outranks UNKNOWN then WARNING.
+LC_ALL=C
+TZ=UTC
+export LC_ALL TZ
+umask 077
+NGINX_CONFIG=<%= @nginx_config_shell %>
+CONFIG_FILE=''
+SERVER_NAME=''
+DETAIL_LIMIT=''
+AGENT_TIMEOUT=''
+VALIDITY_CRITICAL=''
+VALIDITY_WARNING=''
+SYSTEM_TRUST=/etc/ssl/certs/ca-certificates.crt
+STATE=0
+SUMMARY='local certificates are valid and match their names and keys'
+DETAILS=''
+MINIMUM=U
+INCOMPLETE=0
+PAIR_ACTIVE=0
+TAB=$(printf '\t')
+
+# Only the private worker protocol precedes getopts; all check settings use the same CLI on both processes.
+WORKER=0
+if [ "${1:-}" = --worker ] && [ "$#" -ge 2 ] && [ -d "$2" ]; then
+    WORKER=1
+    WORK=$2
+    shift 2
+fi
+OPTERR=0
+while getopts 'n:f:l:t:c:w:h' opt; do
+    case "$opt" in
+        n) SERVER_NAME=$OPTARG ;;
+        f) CONFIG_FILE=$OPTARG ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        t) AGENT_TIMEOUT=$OPTARG ;;
+        c) VALIDITY_CRITICAL=$OPTARG ;;
+        w) VALIDITY_WARNING=$OPTARG ;;
+        *) die 'usage: check_nginx_cert -n names -f vhost_file -w warning_days -c critical_days -t timeout -l detail_limit' ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ "$#" -eq 0 ] || die 'unexpected positional arguments'
+case "$CONFIG_FILE" in /*) ;; *) die 'an absolute vhost configuration file is required' ;; esac
+
+# Sanitize only dynamic output at its boundary, before Nagios sees pipes or line breaks.
+text_value() {
+    printf '%s\n' "$1" | $AWK '{ gsub(/[|]/, "/"); gsub(/[[:cntrl:]]/, " "); printf "%s%s", (NR > 1 ? " " : ""), $0 }'
+}
+
+# Explicit severity order: a proven target defect outranks incomplete work.
+finding() {
+    case "$1:$STATE" in
+        2:0|2:1|2:3|3:0|3:1|1:0) STATE=$1; SUMMARY=$2 ;;
+    esac
+    [ "$1" != 3 ] || INCOMPLETE=1
+    DETAILS=$(printf '%s\n%s' "$DETAILS" "$(text_value "$2")")
+}
+
+# One diagnostic character budget leaves Interpretation visible even with many pairs and aliases.
+emit() {
+    TARGET_LABEL=$SERVER_NAME
+    [ -n "$TARGET_LABEL" ] || TARGET_LABEL="configuration $CONFIG_FILE"
+    HEAD="Nginx TLS $(text_value "$TARGET_LABEL"): $(text_value "$SUMMARY")"
+    [ "$INCOMPLETE" -eq 0 ] || HEAD="$HEAD; some checks could not be completed"
+    # Summary and details share one budget; machine perfdata and the fixed truncation notice are separate output metadata.
+    printf '%s\n%s\n' "$HEAD" "$DETAILS" | $AWK -v limit="$DETAIL_LIMIT" \
+        -v perfdata="validity_remaining=${MINIMUM}s;${WARN_SECONDS}:;${CRIT_SECONDS}:" '
+        NR == 1 {
+            print substr($0, 1, limit) " | " perfdata
+            used = length($0) + 1
+            if (used > limit) truncated = 1
+            next
+        }
+        NF {
+            remaining = limit - used
+            if (remaining <= 0) { truncated = 1; next }
+            if (length($0) + 1 > remaining) {
+                print substr($0, 1, remaining); used = limit; truncated = 1
+            } else { print; used += length($0) + 1 }
+        }
+        END { if (truncated) print "Diagnostic output truncated; inspect the local configuration and certificate files." }
+    '
+    printf '\nInterpretation:\nThis checks the current local files, not the certificate served by running workers.\n'
+    [ "$INCOMPLETE" -eq 0 ] || printf 'Some required checks were not completed; this is a partial assessment.\n'
+    printf 'Repair the reported files or trust configuration and run this check again; manage renewal and Nginx reload separately.\n'
+    [ -z "${WORK:-}" ] || printf '%s\n' "$STATE" > "$WORK/status"
+}
+
+# A timeout during one pair discards that unfinished snapshot, retaining only previously established findings.
+interrupted() {
+    if [ "$PAIR_ACTIVE" -eq 1 ]; then
+        STATE=$SAVED_STATE; SUMMARY=$SAVED_SUMMARY; DETAILS=$SAVED_DETAILS; MINIMUM=$SAVED_MINIMUM; INCOMPLETE=$SAVED_INCOMPLETE
+    fi
+    finding 3 'execution deadline exceeded; assessment is incomplete'
+    emit
+    exit "$STATE"
+}
+
+# Metadata follows renewal symlinks and includes nanosecond mtime/ctime and inode identity; no key data is copied.
+signature() {
+    if [ -e "$1" ]; then
+        $STAT -L -c '%d:%i:%s:%y:%z' -- "$1" 2>/dev/null
+    elif accessible_parent "$1"; then
+        printf 'missing\n'
+    else
+        printf 'inaccessible\n'
+    fi
+}
+
+# Find the nearest existing parent so a missing directory is not mistaken for denied traversal.
+accessible_parent() {
+    PARENT_DIR=${1%/*}
+    [ -n "$PARENT_DIR" ] || PARENT_DIR=/
+    while [ ! -d "$PARENT_DIR" ] && [ "$PARENT_DIR" != / ]; do
+        PARENT_DIR=${PARENT_DIR%/*}
+        [ -n "$PARENT_DIR" ] || PARENT_DIR=/
+    done
+    [ -x "$PARENT_DIR" ]
+}
+
+# Reject unassessable access separately from an absent or empty target file.
+readable_file() {
+    if ! accessible_parent "$1"; then
+        finding 3 "$1: directory cannot be traversed; check the agent identity and sandbox"
+    elif [ ! -e "$1" ]; then
+        finding 2 "$1: file is missing; restore the certificate deployment"
+    elif [ ! -r "$1" ]; then
+        finding 3 "$1: file is unreadable; check the agent identity and sandbox"
+    elif [ ! -f "$1" ]; then
+        finding 3 "$1: expected a regular file or a symlink to one"
+    elif [ ! -s "$1" ]; then
+        finding 2 "$1: file is empty; restore the certificate deployment"
+    else
+        return 0
+    fi
+    return 1
+}
+
+# Strictly split every certificate; ignored text cannot conceal a damaged second PEM block.
+# A key embedded in a combined PEM is skipped without copying it; only the configured key path is validated by pkey.
+split_bundle() {
+    $AWK -v destination="$2" '
+        { sub(/\r$/, "") }
+        /^-----BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY-----$/ {
+            if (inside || key_end != "") { invalid = 1; exit 1 }
+            key_end = $0; sub(/BEGIN/, "END", key_end); next
+        }
+        key_end != "" { if ($0 == key_end) key_end = ""; next }
+        /^-----BEGIN CERTIFICATE-----$/ {
+            if (inside) exit 1
+            inside = 1; count++; file = destination "." count; print > file; next
+        }
+        /^-----END CERTIFICATE-----$/ {
+            if (!inside) exit 1
+            print > file; close(file); inside = 0; next
+        }
+        inside {
+            if ($0 !~ /^[A-Za-z0-9+\/=]+$/) exit 1
+            print > file; next
+        }
+        /^[[:space:]]*$/ { next }
+        { invalid = 1; exit 1 }
+        END { if (inside || key_end != "" || invalid || !count) exit 1; print count }
+    ' "$1" > "$2.count"
+}
+
+# Each adjacent issuer is used only to prove order/signature; the final trust decision uses system roots alone.
+verify_pair() {
+    CERT=$1
+    KEY=$2
+    readable_file "$CERT" || return
+    readable_file "$KEY" || return
+    if ! split_bundle "$CERT" "$WORK/cert"; then
+        finding 2 "$CERT: malformed PEM bundle; deploy a complete valid certificate chain"
+        return
+    fi
+    COUNT=$($CAT "$WORK/cert.count") || { finding 3 'cannot read the parsed certificate count'; return; }
+    if ! $OPENSSL x509 -in "$WORK/cert.1" -noout -ext basicConstraints > "$WORK/constraints" 2> "$WORK/openssl-error"; then
+        finding 2 "$CERT: first certificate cannot be parsed; replace the damaged bundle"
+        return
+    elif $GREP -q 'CA:TRUE' "$WORK/constraints"; then
+        finding 2 "$CERT: bundle starts with a CA certificate; place the TLS server certificate first"
+    fi
+    : > "$WORK/intermediates"
+    INDEX=1
+    while [ "$INDEX" -le "$COUNT" ]; do
+        PEM="$WORK/cert.$INDEX"
+        if ! $OPENSSL x509 -in "$PEM" -noout -dates > "$WORK/dates" 2> "$WORK/openssl-error"; then
+            finding 2 "$CERT: certificate $INDEX cannot be parsed; replace the damaged bundle"
+            return
+        fi
+        BEFORE=''
+        AFTER=''
+        while IFS='=' read -r FIELD VALUE; do
+            case "$FIELD" in notBefore) BEFORE=$VALUE ;; notAfter) AFTER=$VALUE ;; esac
+        done < "$WORK/dates"
+        if ! START=$($DATE -d "$BEFORE" +%s 2>/dev/null) || ! END=$($DATE -d "$AFTER" +%s 2>/dev/null); then
+            finding 3 "$CERT: certificate $INDEX dates cannot be interpreted by GNU date"
+            return
+        fi
+        REMAINING=$((END - NOW))
+        if [ "$MINIMUM" = U ] || [ "$REMAINING" -lt "$MINIMUM" ]; then MINIMUM=$REMAINING; fi
+        finding 0 "$CERT: certificate $INDEX valid from $BEFORE until $AFTER"
+        if [ "$START" -gt "$NOW" ]; then
+            finding 2 "$CERT: certificate $INDEX is not yet valid; check the clock and certificate issuance"
+        elif [ "$END" -le "$NOW" ]; then
+            finding 2 "$CERT: certificate $INDEX has expired; renewal required"
+        elif [ "$REMAINING" -lt "$CRIT_SECONDS" ]; then
+            finding 2 "$CERT: certificate $INDEX expires in $((REMAINING / 86400)) days; renewal required"
+        elif [ "$REMAINING" -lt "$WARN_SECONDS" ]; then
+            finding 1 "$CERT: certificate $INDEX expires in $((REMAINING / 86400)) days; schedule renewal"
+        fi
+        if [ "$INDEX" -gt 1 ]; then
+            PREVIOUS=$((INDEX - 1))
+            if ! $OPENSSL verify -no-CAfile -no-CApath -trusted "$PEM" -partial_chain -purpose any -attime "$NOW" \
+                "$WORK/cert.$PREVIOUS" > "$WORK/verify" 2>&1; then
+                finding 2 "$CERT: certificate $INDEX does not correctly issue the preceding certificate; repair the offered chain order and validity"
+            fi
+            $CAT "$PEM" >> "$WORK/intermediates" || { finding 3 'cannot assemble intermediate certificates'; return; }
+        fi
+        INDEX=$((INDEX + 1))
+    done
+
+    # pkey supports RSA and EC. An empty passphrase prevents prompts; encrypted PEMs are explicit UNKNOWN.
+    if $GREP -Eq '^(-----BEGIN ENCRYPTED PRIVATE KEY-----|Proc-Type: 4,ENCRYPTED)' "$KEY"; then
+        finding 3 "$KEY: encrypted private keys are unsupported; use the existing secure certificate deployment workflow"
+    elif ! $OPENSSL pkey -in "$KEY" -passin pass: -check -noout > "$WORK/key-check" 2>&1; then
+        finding 2 "$KEY: private key is invalid or unsupported by OpenSSL; inspect the key locally"
+    elif ! $OPENSSL pkey -in "$KEY" -passin pass: -pubout -outform DER -out "$WORK/key-public" 2> "$WORK/openssl-error"; then
+        finding 3 "$KEY: OpenSSL could not extract the public key"
+    elif ! $OPENSSL x509 -in "$WORK/cert.1" -pubkey -noout > "$WORK/cert-public.pem" 2> "$WORK/openssl-error"; then
+        finding 3 "$CERT: OpenSSL could not extract the certificate public key"
+    elif ! $OPENSSL pkey -pubin -in "$WORK/cert-public.pem" -outform DER -out "$WORK/cert-public" 2> "$WORK/openssl-error"; then
+        finding 3 "$CERT: OpenSSL could not encode the certificate public key"
+    elif ! $CMP -s "$WORK/key-public" "$WORK/cert-public"; then
+        finding 2 "$CERT and $KEY: private key does not match the first certificate; restore the matching pair"
+    fi
+
+    # Name checks are independent from chain verification so missing trust does not conceal a hostname defect.
+    while IFS= read -r DNS; do
+        if ! $OPENSSL x509 -in "$WORK/cert.1" -noout -checkhost "$DNS" > "$WORK/hostname" 2>&1; then
+            finding 2 "$CERT: certificate does not cover $DNS; issue a certificate containing this DNS name"
+        fi
+    done < "$WORK/names"
+    if [ "$TRUST_READY" -eq 1 ]; then
+        set -- -no-CAfile -no-CApath -trusted "$WORK/roots" -purpose sslserver -attime "$NOW"
+        [ "$COUNT" -le 1 ] || set -- "$@" -untrusted "$WORK/intermediates"
+        if ! $OPENSSL verify "$@" "$WORK/cert.1" > "$WORK/verify" 2>&1; then
+            finding 2 "$CERT: offered chain is not valid for TLS server use against the system roots; repair intermediates or install the intended root CA"
+        fi
+    fi
+}
+
+# Parse the dump as separate files, then expand includes into their original block context.
+# No config text is executed. Includes support ordinary *, ? globs; bracket globs and control characters fail closed.
+# Relative includes and TLS paths resolve against the main configuration directory, as ngx_conf_full_name(..., 1) does.
+parse_config() {
+    TARGET_FILE="$CONFIG_FILE" TARGET_NAMES="$SERVER_NAME" MAIN_CONFIG="$NGINX_CONFIG" PARSE_MODE="$1" \
+    $AWK '
+        function fail(message) { print "error\t" message; bad = 1; exit 1 }
+        function cleanpath(path,    n, i, depth, part, result) {
+            if (substr(path, 1, 1) != "/") path = confdir "/" path
+            n = split(path, part, "/"); depth = 0
+            for (i = 1; i <= n; i++) {
+                if (part[i] == "" || part[i] == ".") continue
+                if (part[i] == "..") { if (depth) depth--; continue }
+                parts[++depth] = part[i]
+            }
+            result = ""; for (i = 1; i <= depth; i++) result = result "/" parts[i]
+            return result
+        }
+        function token(file, value, syntax,    position) {
+            if (value ~ /[[:cntrl:]]/) fail("control characters in configuration tokens are unsupported")
+            position = ++nt[file]; tok[file, position] = value; punctuation[file, position] = syntax
+        }
+        function lex(file, data,    i, c, nextc, value, quote, escaped, started, variable) {
+            for (i = 1; i <= length(data); i++) {
+                c = substr(data, i, 1)
+                if (escaped) {
+                    if (c == "n" || c == "r" || c == "t" || c == "\n") fail("escaped control characters are unsupported")
+                    if (c != "\\" && c != "\042" && c != "\047") value = value "\\"
+                    value = value c; escaped = 0; continue
+                }
+                if (c == "\\") { escaped = 1; started = 1; continue }
+                if (quote != "") {
+                    if (c == quote) quote = ""
+                    else value = value c
+                    continue
+                }
+                if (c == "\042" || c == "\047") { quote = c; started = 1; continue }
+                if (c == "#") { while (i <= length(data) && substr(data, i, 1) != "\n") i++; c = "\n" }
+                if (c ~ /[[:space:]]/ || c == ";" || (c == "{" && substr(value, length(value), 1) != "$") || (c == "}" && !variable)) {
+                    if (started) { token(file, value, 0); value = ""; started = 0 }
+                    if (c == ";" || c == "{" || c == "}") token(file, c, 1)
+                } else {
+                    if (c == "{" && substr(value, length(value), 1) == "$") variable = 1
+                    if (c == "}") variable = 0
+                    value = value c; started = 1
+                }
+            }
+            if (quote != "" || escaped || started) fail("incomplete directive or quoted token in configuration")
+        }
+        function glob(pattern,    result, i, c) {
+            result = "^"
+            for (i = 1; i <= length(pattern); i++) {
+                c = substr(pattern, i, 1)
+                if (c == "[" || c == "]" || c == "\\" || c == "$") fail("unsupported include pattern")
+                if (c == "*") result = result "[^/]*"
+                else if (c == "?") result = result "[^/]"
+                else { if (c ~ /[.()+^{}|]/) result = result "\\"; result = result c }
+            }
+            return result "$"
+        }
+        function include_file(pattern, ctx,    expression, i, count, sorted, j, value) {
+            pattern = cleanpath(pattern); expression = glob(pattern)
+            for (i in files) if (i ~ expression) sorted[++count] = i
+            for (i = 2; i <= count; i++) {
+                value = sorted[i]; j = i - 1
+                while (j > 0 && sorted[j] > value) { sorted[j + 1] = sorted[j]; j-- }
+                sorted[j + 1] = value
+            }
+            if (!count && pattern !~ /[*?]/) fail("included configuration is missing from the dump")
+            if (mode == "target") fail("nginx -T failed and the target requires includes; full assessment is unavailable")
+            for (i = 1; i <= count; i++) parse(sorted[i], ctx)
+        }
+        function directive(file, ctx, first, last,    key, i, val) {
+            key = tok[file, first]
+            if (key == "include") {
+                if (last != first + 1) fail("invalid include directive")
+                include_file(tok[file, last], ctx); return
+            }
+            if (kind[ctx] != "http" && kind[ctx] != "server") return
+            if (key == "server_name" || key == "listen" || key == "ssl_certificate" || key == "ssl_certificate_key" || key == "ssl_trusted_certificate" || key == "ssl") {
+                for (i = first + 1; i <= last; i++) {
+                    val = tok[file, i]; values[ctx, key, ++size[ctx, key]] = val
+                }
+                if (key ~ /^ssl_.*certificate/ && last != first + 1) fail("invalid TLS path directive")
+            }
+        }
+        function parse(file, context,    i, first, ctx, stack, depth, child, current) {
+            if (busy[file]) fail("recursive include cannot be assessed")
+            if (++calls > 4096) fail("configuration expansion exceeds the collection limit")
+            busy[file] = 1; ctx = context; first = 1
+            for (i = 1; i <= nt[file]; i++) {
+                current = tok[file, i]
+                if (punctuation[file, i] && current == ";") { directive(file, ctx, first, i - 1); first = i + 1 }
+                else if (punctuation[file, i] && current == "{") {
+                    child = ++contexts; parent[child] = ctx; kind[child] = tok[file, first]; origin[child] = file
+                    stack[++depth] = ctx; ctx = child; first = i + 1
+                } else if (punctuation[file, i] && current == "}") {
+                    if (!depth || first != i) fail("unbalanced configuration blocks")
+                    ctx = stack[depth--]; first = i + 1
+                }
+            }
+            if (depth || first != nt[file] + 1) fail("incomplete configuration block")
+            busy[file] = 0
+        }
+        function owner(ctx, key) { return size[ctx, key] ? ctx : parent[ctx] }
+        function path_value(value) {
+            if (value == "" || value ~ /[$\n\r\t]/ || value ~ /^(data|engine|store):/) fail("dynamic or non-file TLS paths are unsupported")
+            return cleanpath(value)
+        }
+        BEGIN {
+            mode = ENVIRON["PARSE_MODE"]; main = ENVIRON["MAIN_CONFIG"]
+            confdir = main; sub(/\/[^\/]*$/, "", confdir)
+            target = cleanpath(ENVIRON["TARGET_FILE"])
+            names = ENVIRON["TARGET_NAMES"]
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", names)
+            if (names == "") fail("no explicit server_name was configured; the resource title is not a DNS identity")
+            required = split(names, wanted, /[[:space:]]+/)
+            for (i = 1; i <= required; i++) {
+                gsub(/^[\042\047]|[\042\047]$/, "", wanted[i])
+                wanted[i] = tolower(wanted[i])
+                if (wanted[i] !~ /^[a-z0-9][a-z0-9.-]*[a-z0-9.]$/ || wanted[i] ~ /\.\./) fail("server_name requires concrete DNS tokens; wildcard, regex and variable names are unsupported")
+            }
+        }
+        /^# configuration file .*:$/ {
+            file = $0; sub(/^# configuration file /, "", file); sub(/:$/, "", file)
+            file = cleanpath(file)
+            if (file in files) fail("duplicate configuration dump section")
+            files[file] = 1; next
+        }
+        { if (file != "") contents[file] = contents[file] $0 "\n" }
+        END {
+            if (bad) exit 1
+            for (file in files) {
+                lex(file, contents[file])
+                # The dump appends a newline; trailing whitespace-only lines do not affect Nginx semantics.
+                actual = ""; while ((result = (getline line < file)) > 0) actual = actual line "\n"
+                close(file)
+                dumped = contents[file]; sub(/[\n]+$/, "", dumped); sub(/[\n]+$/, "", actual)
+                if (result < 0 || actual != dumped) fail("configuration changed or became unreadable after nginx -T; retry the check")
+            }
+            if (mode == "target") {
+                contexts = 1; kind[1] = "http"; parse(target, 1)
+            } else {
+                if (!(main in files)) fail("main configuration is missing from nginx -T")
+                parse(main, 0)
+            }
+            for (ctx = 1; ctx <= contexts; ctx++) {
+                if (kind[ctx] != "server" || kind[parent[ctx]] != "http" || origin[ctx] != target) continue
+                tls = 0
+                for (i = 1; i <= size[ctx, "listen"]; i++) if (values[ctx, "listen", i] == "ssl" || values[ctx, "listen", i] == "quic") tls = 1
+                sslctx = owner(ctx, "ssl")
+                if (values[sslctx, "ssl", 1] == "on") tls = 1
+                if (!tls) continue
+                matches = 0
+                for (i = 1; i <= required; i++) {
+                    found = 0
+                    for (j = 1; j <= size[ctx, "server_name"]; j++) if (tolower(values[ctx, "server_name", j]) == wanted[i]) found = 1
+                    matches += found
+                }
+                if (matches == required) { selected = ctx; selections++ }
+            }
+            if (selections != 1) fail("HTTPS server selection is missing or ambiguous in the target configuration")
+            for (i = 1; i <= size[selected, "server_name"]; i++) {
+                value = tolower(values[selected, "server_name", i])
+                if (value !~ /^[a-z0-9][a-z0-9.-]*[a-z0-9.]$/ || value ~ /\.\./) print "unknown\tselected server has a wildcard, regex, variable or non-DNS alias"
+                else print "name\t" value
+            }
+            certctx = owner(selected, "ssl_certificate"); keyctx = owner(selected, "ssl_certificate_key")
+            count = size[certctx, "ssl_certificate"]
+            if (!count || count != size[keyctx, "ssl_certificate_key"]) {
+                print "unknown\tcertificate and key directive counts are missing or unequal"; exit
+            }
+            for (i = 1; i <= count; i++) print "pair\t" path_value(values[certctx, "ssl_certificate", i]) "\t" path_value(values[keyctx, "ssl_certificate_key", i])
+            trustctx = owner(selected, "ssl_trusted_certificate")
+            if (size[trustctx, "ssl_trusted_certificate"]) print "trusted\t" path_value(values[trustctx, "ssl_trusted_certificate", 1])
+        }
+    ' "$WORK/dump" > "$WORK/selection"
+}
+
+# Validate scalar settings before arithmetic, even if a generated script was accidentally edited.
+for VALUE in "$DETAIL_LIMIT" "$AGENT_TIMEOUT" "$VALIDITY_CRITICAL" "$VALIDITY_WARNING"; do
+    case "$VALUE" in ''|*[!0-9]*|0*|?????????*) die 'invalid numeric check settings' ;; esac
+done
+[ "$VALIDITY_CRITICAL" -lt "$VALIDITY_WARNING" ] && [ "$VALIDITY_WARNING" -le 36501 ] || die 'invalid validity threshold order or size'
+[ "$AGENT_TIMEOUT" -ge 5 ] && [ "$AGENT_TIMEOUT" -le 300 ] || die 'invalid agent timeout'
+[ "$DETAIL_LIMIT" -le 100000 ] || die 'invalid diagnostic character limit'
+WARN_SECONDS=$((VALIDITY_WARNING * 86400))
+CRIT_SECONDS=$((VALIDITY_CRITICAL * 86400))
+
+# GNU timeout owns a process group and bounds Nginx/OpenSSL/awk together, including blocked children.
+# The private workspace holds a potentially sensitive nginx dump and public certificates, never private-key copies.
+if [ "$WORKER" -eq 0 ]; then
+    WORK=$($MKTEMP -d /tmp/check-nginx-cert.XXXXXXXXXX) || die 'cannot create a private workspace'
+    trap '$RM -rf -- "$WORK"' 0
+    trap 'exit 3' HUP INT TERM
+    $TIMEOUT -k 1 "$((AGENT_TIMEOUT - 3))" /bin/sh "$0" --worker "$WORK" \
+        -n "$SERVER_NAME" -f "$CONFIG_FILE" -l "$DETAIL_LIMIT" -t "$AGENT_TIMEOUT" \
+        -c "$VALIDITY_CRITICAL" -w "$VALIDITY_WARNING" > "$WORK/result" 2> "$WORK/worker-error"
+    RESULT=$?
+    case "$RESULT" in
+        0|1|2|3) $CAT "$WORK/result"; exit "$RESULT" ;;
+        *)
+            if [ -s "$WORK/status" ] && [ -s "$WORK/result" ]; then
+                RESULT=$($CAT "$WORK/status")
+                case "$RESULT" in 2|3) $CAT "$WORK/result"; exit "$RESULT" ;; esac
+            fi
+            finding 3 'execution deadline exceeded or a subprocess failed; inspect the local configuration and retry'; emit; exit "$STATE"
+            ;;
+    esac
+fi
+trap interrupted TERM
+
+NOW=$($DATE +%s) || die 'cannot read the current time'
+$DATE -d '@0' +%s >/dev/null 2>&1 || die 'GNU date is required'
+$STAT -L -c '%i' -- / >/dev/null 2>&1 || die 'GNU stat is required'
+OPENSSL_VERSION=$($OPENSSL version 2>/dev/null) || die 'cannot determine OpenSSL capabilities'
+case "$OPENSSL_VERSION" in
+    'OpenSSL 1.1.1'*|'OpenSSL '[3-9].*) ;;
+    *) die 'OpenSSL 1.1.1 or newer is required' ;;
+esac
+
+# A failed preflight can be caused by another vhost. Never approve a target from an incomplete dump.
+# Inspect only explicit paths in the current target file to prove local defects in that case; includes/inheritance remain UNKNOWN.
+PREFLIGHT=1
+if ! $NGINX -T -c "$NGINX_CONFIG" < /dev/null > "$WORK/dump" 2> "$WORK/nginx-error"; then
+    PREFLIGHT=0
+    if $GREP -qi 'permission denied' "$WORK/nginx-error"; then
+        finding 3 'nginx -T was denied access; check the agent identity and systemd sandbox'
+    elif $GREP -qi 'cannot load certificate\|key values mismatch\|PEM_read_bio' "$WORK/nginx-error"; then
+        finding 3 'nginx -T rejected a certificate or key; inspect local Nginx diagnostics to identify the affected vhost'
+    else
+        finding 3 'nginx -T failed; inspect local Nginx diagnostics for a configuration, file or module error'
+    fi
+    readable_file "$CONFIG_FILE" || { emit; exit "$STATE"; }
+    printf '# configuration file %s:\n' "$CONFIG_FILE" > "$WORK/dump"
+    $CAT "$CONFIG_FILE" >> "$WORK/dump" || { finding 3 'cannot read the current target configuration'; emit; exit "$STATE"; }
+    printf '\n' >> "$WORK/dump"
+fi
+
+# Capture metadata before the parser compares the dump against each actual file, then check it again before emission.
+$AWK '/^# configuration file .*:$/ { sub(/^# configuration file /, ""); sub(/:$/, ""); print }' "$WORK/dump" > "$WORK/config-paths" || die 'cannot enumerate configuration files'
+: > "$WORK/config-signatures"
+while IFS= read -r PATH_VALUE; do
+    SIGNATURE=$(signature "$PATH_VALUE") || { finding 3 'cannot snapshot configuration metadata'; emit; exit "$STATE"; }
+    printf '%s\t%s\n' "$SIGNATURE" "$PATH_VALUE" >> "$WORK/config-signatures"
+done < "$WORK/config-paths"
+MODE=dump
+[ "$PREFLIGHT" -eq 1 ] || MODE=target
+if ! parse_config "$MODE"; then
+    PARSER_REPORTED=0
+    while IFS="$TAB" read -r TYPE VALUE; do
+        if [ "$TYPE" = error ]; then
+            finding 3 "$CONFIG_FILE: $VALUE"
+            PARSER_REPORTED=1
+        fi
+    done < "$WORK/selection"
+    [ "$PARSER_REPORTED" -eq 1 ] || finding 3 'configuration parser could not establish the target; inspect supported configuration constructs'
+    emit; exit "$STATE"
+fi
+: > "$WORK/names"
+while IFS="$TAB" read -r TYPE VALUE EXTRA; do
+    [ "$TYPE" != name ] || printf '%s\n' "$VALUE" >> "$WORK/names"
+    [ "$TYPE" != unknown ] || finding 3 "$VALUE"
+done < "$WORK/selection"
+finding 0 "Selected HTTPS configuration: $CONFIG_FILE; DNS names: $SERVER_NAME"
+
+# Only consciously installed self-issued system roots are anchors. Local intermediates cannot fill an omitted offered chain.
+# pkcs7 prints public subjects/issuers in one pass, avoiding one OpenSSL process per system CA per vhost.
+TRUST_READY=0
+if [ -r "$SYSTEM_TRUST" ] && [ -s "$SYSTEM_TRUST" ] \
+    && $OPENSSL crl2pkcs7 -nocrl -certfile "$SYSTEM_TRUST" -out "$WORK/system.p7" 2> "$WORK/openssl-error" \
+    && $OPENSSL pkcs7 -in "$WORK/system.p7" -print_certs -out "$WORK/system.pem" 2> "$WORK/openssl-error"; then
+    if $AWK '
+        /^subject=/ { subject = substr($0, 9) }
+        /^issuer=/ { issuer = substr($0, 8) }
+        /^-----BEGIN CERTIFICATE-----$/ { keep = (subject == issuer); if (keep) count++ }
+        /^-----BEGIN CERTIFICATE-----$/,/^-----END CERTIFICATE-----$/ { if (keep) print }
+        END { if (!count) exit 1 }
+    ' "$WORK/system.pem" > "$WORK/roots"; then
+        TRUST_READY=1
+    fi
+fi
+[ "$TRUST_READY" -eq 1 ] || finding 3 'system root certificates are unavailable; restore the system CA bundle'
+
+while IFS="$TAB" read -r TYPE CERT_PATH KEY_PATH; do
+    case "$TYPE" in
+        pair)
+            SAVED_STATE=$STATE; SAVED_SUMMARY=$SUMMARY; SAVED_DETAILS=$DETAILS; SAVED_MINIMUM=$MINIMUM; SAVED_INCOMPLETE=$INCOMPLETE
+            CERT_BEFORE=$(signature "$CERT_PATH") && KEY_BEFORE=$(signature "$KEY_PATH") || {
+                finding 3 'cannot snapshot certificate/key metadata'; continue
+            }
+            PAIR_ACTIVE=1
+            verify_pair "$CERT_PATH" "$KEY_PATH"
+            CERT_AFTER=$(signature "$CERT_PATH") && KEY_AFTER=$(signature "$KEY_PATH") || CERT_AFTER=unavailable
+            if [ "$CERT_BEFORE" != "$CERT_AFTER" ] || [ "$KEY_BEFORE" != "$KEY_AFTER" ]; then
+                STATE=$SAVED_STATE; SUMMARY=$SAVED_SUMMARY; DETAILS=$SAVED_DETAILS; MINIMUM=$SAVED_MINIMUM; INCOMPLETE=$SAVED_INCOMPLETE
+                finding 3 "$CERT_PATH and $KEY_PATH changed during validation; retry after certificate deployment finishes"
+            fi
+            PAIR_ACTIVE=0
+            ;;
+        trusted)
+            if readable_file "$CERT_PATH"; then
+                if ! split_bundle "$CERT_PATH" "$WORK/trusted"; then
+                    finding 2 "$CERT_PATH: ssl_trusted_certificate contains a malformed PEM bundle"
+                else
+                    TRUST_COUNT=$($CAT "$WORK/trusted.count") || { finding 3 'cannot read trusted certificate count'; continue; }
+                    INDEX=1
+                    while [ "$INDEX" -le "$TRUST_COUNT" ]; do
+                        $OPENSSL x509 -in "$WORK/trusted.$INDEX" -noout > /dev/null 2> "$WORK/openssl-error" || finding 2 "$CERT_PATH: ssl_trusted_certificate contains an invalid certificate"
+                        INDEX=$((INDEX + 1))
+                    done
+                    finding 0 "$CERT_PATH: ssl_trusted_certificate is separate from the offered chain and system trust"
+                fi
+            fi
+            ;;
+    esac
+done < "$WORK/selection"
+
+# Configuration changes invalidate every finding derived from the selection, including apparent key mismatches.
+while IFS="$TAB" read -r BEFORE PATH_VALUE; do
+    AFTER=$(signature "$PATH_VALUE") || AFTER=unavailable
+    if [ "$BEFORE" != "$AFTER" ]; then
+        STATE=0; DETAILS=''; MINIMUM=U; INCOMPLETE=0
+        finding 3 'Nginx configuration changed during validation; retry after deployment finishes'
+        break
+    fi
+done < "$WORK/config-signatures"
+emit
+exit "$STATE"

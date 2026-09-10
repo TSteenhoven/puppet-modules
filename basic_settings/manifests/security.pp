@@ -179,7 +179,8 @@ class basic_settings::security (
     }
 
     # Create unit
-    if (defined(Class['basic_settings::monitoring'])) {
+    if ($monitoring_enable) {
+      # Route unit failures through the configured monitoring notification service.
       $unit = {
         'OnFailure' => 'notify-failed@%i.service',
       }
@@ -192,6 +193,7 @@ class basic_settings::security (
         require       => Package['apparmor'],
       }
     } else {
+      # Leave unit failure hooks empty when monitoring is unavailable.
       $unit = {}
     }
 

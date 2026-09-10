@@ -32,8 +32,10 @@ class basic_settings::package_sury (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/sury_php.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/sury_php.list'
   }
 
@@ -49,17 +51,21 @@ class basic_settings::package_sury (
     # Get variables
     case $os_parent {
       'ubuntu': {
+        # Use the PHP Ubuntu PPA for this distribution path.
         $url = 'https://ppa.launchpadcontent.net/ondrej/php/ubuntu'
       }
       default: {
+        # Use the Sury PHP repository for this distribution path.
         $url = 'https://packages.sury.org/php'
       }
     }
 
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source  = "Types: deb\\nURIs: ${url}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key}\\n"
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source = "deb [signed-by=${key}] ${url} ${os_name} main\\n"
     }
 

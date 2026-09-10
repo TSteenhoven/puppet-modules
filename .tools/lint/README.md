@@ -461,15 +461,21 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_parameter_order` | Verplichte parameters eerst, optionele daarna, alfabetisch binnen elke groep. Een echte afhankelijkheid van een eerdere default mag de volgorde bepalen en moet worden toegelicht. |
 | `project_parameter_alignment` | Typen, namen, `=`-tekens en defaults staan over het volledige parameterblok uitgelijnd, ook bij geneste typen en waarden over meerdere regels. |
 | `project_documentation` | Classes en defined types hebben een samenvatting, voorbeeld, API-markering en parameterdocumentatie in dezelfde volgorde. Willekeurig afgebroken documentatiezinnen worden gemeld. |
-| `project_layout` | Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
+| `project_layout` | Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
+| `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
+| `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
+| `project_if_sections` | Iedere `if` of `unless` krijgt een toelichting boven de voorbereidende variabelen, of boven de voorwaarde als die voorbereiding ontbreekt. Een `elsif` hoort bij dezelfde keten; geneste voorwaarden krijgen hun eigen toelichting. |
+| `project_variable_sections` | Variabelen direct na een openende `{` krijgen binnen het blok een toelichting. Na een groep met onderlinge afhankelijkheden begint een losstaande toekenning een nieuwe toegelichte groep. Waar mogelijk noemt de melding een bestaande groep om samenvoegen te beoordelen. |
+| `project_class_check_reuse` | Herhaalde `defined(Class['...'])`-controles binnen een class of defined type delen één variabele. Bij één gebruik staat de controle rechtstreeks in de expressie. Aantoonbaar gebruik vanuit andere classes of ERB telt mee. |
 | `project_packages` | APT-installaties gebruiken de afgesproken opties, rekening houdend met verwijderresources, providers en lokale defaults. Bij samengestelde opties moeten de voorgeschreven opties achteraan blijven staan. |
 | `project_files` | Eigenaars en modi zijn expliciet, recursieve modi maken bestanden niet onnodig uitvoerbaar en `source` en `content` sluiten elkaar aantoonbaar uit. Overgeërfde of onopgeloste waarden kunnen extra cataloguscontrole vragen. |
 | `project_puppet_urls` | Puppet-URL's beginnen met een toegestane mount volgens de afspraken voor [bestandsbronnen](#templates-en-bestandsbronnen), ook wanneer de standaardcheck lokaal wordt genegeerd. Deze aanvullende check herschrijft bronnen niet automatisch. |
 | `project_arrays` | Arrays worden niet met `+` samengevoegd. Optelling van getallen en hashes blijft toegestaan. |
 | `project_templates` | Templates gebruiken ERB. EPP-aanroepen worden gemeld; tekst en commentaar mogen EPP wel noemen. |
-| `project_positive_flow` | Een guard begint niet met een fouttak wanneer de andere tak het eigenlijke werk bevat. De check beoordeelt niet iedere validatie- of normalisatietak. |
+| `project_positive_flow` | Grotere codetakken staan vóór kortere afhandeling in `else`. Binnen classes en defined types staan `warning()` en `fail()` in een afsluitende fouttak; na hun validatie of een omvattend blok volgt geen implementatiecode meer. De check gebruikt de Puppet-structuur, inclusief geneste voorwaarden. |
 | `project_shell` | Dynamische exec-commando's en guards gebruiken waarden die via `stdlib::shell_escape` zijn voorbereid. Alleen een naam met `_shell` is geen bewijs van veilige escaping. |
 | `project_interface_calls` | Aanroepen passen bij de declaratie in dezelfde bron of het eigen autoloadpad. Verplichte `Optional[...]`-argumenten blijven verplicht. Splat, defaults en containment vragen daarnaast catalogustests. |
+| `project_monitoring_backend` | Aanroepers van `monitoring_custom` laten de backendkeuze aan dat type over. De check volgt voorwaarden, tussenvariabelen en vindbare wrappers; alleen onderscheid tussen `none` en actieve monitoring is toegestaan. |
 | `project_suppressions` | Alleen gerichte uitzonderingen voor `140chars` en `puppet_url_without_modules` zijn toegestaan, eventueel samen. Andere lintfouten moeten worden hersteld. |
 
 Gebruik twee spaties voor inspringing, uitgelijnde pijlen en enkele aanhalingstekens voor letterlijke strings. Dubbele aanhalingstekens zijn nodig voor interpolatie of escapes. Houd de volgorde van resources en gegenereerde configuratie bewust en controleerbaar. Bereken selectors vóór de resourcedeclaratie.
@@ -500,9 +506,27 @@ Gebruik voor een beveiligingsinstelling met een veilige default, uitschakelmogel
 
 #### Voorwaarden en validatie
 
-Zet het eigenlijke werk in de positieve tak: resources maken, een aanwezige waarde verwerken of invoer normaliseren. Zet fouten, waarschuwingen en eenvoudige terugvalwaarden in de laatste `else`.
+Zet het grotere codeblok in de eerste tak en houd de kortere afhandeling in de laatste `else`. Zo staan bijvoorbeeld het opbouwen van resources en het verwerken van invoer vóór een korte foutmelding, waarschuwing of terugvalwaarde. De omvang van de code bepaalt de volgorde; de voorwaarde mag daarvoor een ontkenning bevatten.
 
-Een defined type dat een parentclass nodig heeft controleert `defined(Class['...'])`. Houd alle afhankelijke code binnen die geldige tak en faal duidelijk als de class ontbreekt. Gebruik een benoemd `defined(...)`-resultaat opnieuw wanneer je het vaker nodig hebt.
+`project_positive_flow` meldt een `if`-tak die minder codestructuur bevat dan de bijbehorende `else`. Een opdracht telt als één onderdeel; geneste blokken, resource-instanties, attributen en elementen in arrays, hashes en selectors tellen mee. Commentaar, witruimte, de lengte van strings en gewone functieargumenten tellen niet als extra opdrachten. Naast deze algemene vergelijking controleert dezelfde check de afsluitende structuur van validaties met `fail(...)` en `warning(...)`.
+
+Voor gewone implementatiecode zijn gelijke takken en een `if` zonder vervolgtak toegestaan. Bij `elsif` vergelijkt de check iedere tak met de grootste afzonderlijke vervolgtak, zodat een reeks kleine alternatieven niet door optelling als één groot blok wordt behandeld. Een expliciet geneste `if` telt wel als geneste code; voor `unless` geldt dezelfde volgorde. Keer bij het omwisselen van takken de voorwaarde correct om en behoud de prioriteit van overlappende `elsif`-voorwaarden.
+
+Laat validatievoorwaarden binnen een class of defined type zoveel mogelijk de volledige implementatie omsluiten. Bereken daarvoor benodigde waarden vooraf, plaats de reguliere code in de geldige `if`-tak en zet de bijbehorende `warning()` of `fail()` in de afsluitende `else`. Nest meerdere controles als dezelfde implementatie aan meerdere voorwaarden moet voldoen. Een bestaande `case` mag zijn foutafhandeling in de laatste `default`-tak houden.
+
+Na deze validatiestructuur mag binnen dezelfde class of hetzelfde defined type geen implementatiecode meer volgen. `project_positive_flow` volgt daarvoor ook de bovenliggende blokken: code na een buitenste `if`, `case` of lambda-aanroep wordt eveneens gemeld. Een volgende afsluitende `else` of alternatieve `case`-tak is een ander uitvoerpad en geldt dus niet als code ná de validatie. De check beoordeelt de structuur van opdrachten, niet hun fysieke regelvolgorde.
+
+De fouttak mag meerdere meldingen bevatten en lokale variabelen voorbereiden die aantoonbaar voor die meldingen worden gebruikt. Andere opdrachten horen in de geldige tak. Een fouttak blijft achteraan staan wanneer de meldingen en hun voorbereiding samen groter zijn dan de geldige tak; de algemene omvangscontrole geeft daarvoor geen tegenstrijdige melding. De check herkent rechtstreekse Puppet-aanroepen van `warning()` en `fail()`, inclusief namen met een voorloop-`::`. Strings, commentaar, parameterdefaults, afzonderlijke functiedefinities en functies zoals `example::warning()` vallen buiten deze aanvullende controle.
+
+De linter herschrijft deze besturingslogica niet met `--fix`. Controleer bij het verplaatsen van code de evaluatievolgorde en optionele instellingen. Bij `warning()` bepaalt de plaatsing bovendien of de reguliere code bij ongeldige invoer nog wordt uitgevoerd; test daarom zowel het geldige als het ongeldige pad.
+
+Een defined type dat een parentclass nodig heeft controleert `defined(Class['...'])`. Houd alle afhankelijke code binnen die geldige tak en faal duidelijk als de class ontbreekt.
+
+Gebruik binnen een class of defined type één gedeelde variabele wanneer dezelfde `defined(Class['...'])`-controle vaker nodig is, ook bij gebruik in verschillende geneste blokken. Wordt het resultaat maar één keer gebruikt, zet de controle dan rechtstreeks in de expressie en laat de tussenvariabele weg. Een samengestelde voorwaarde zoals `$active = $ensure == present and defined(Class['basic_settings::monitoring'])` mag wel een eigen naam krijgen: die variabele beschrijft wanneer iets actief is.
+
+`project_class_check_reuse` controleert letterlijke classnamen in de body van iedere class en ieder defined type afzonderlijk. De check telt echte variabelereferenties, inclusief interpolatie en gekwalificeerde verwijzingen vanuit vindbare manifests in het modulepad. Rechtstreeks gebruik via `@variabele` in statisch benoemde ERB-templates en `inline_template` telt ook mee. Commentaar, gewone stringtekst en gelijknamige lokale lambdavariabelen tellen niet als hergebruik. Dynamische classnamen, parameterdefaults, andere resourcetypen en indirecte template- of functielookups vallen buiten deze analyse; beoordeel die bij de review.
+
+De check verplaatst of vervangt geen code met `--fix`. Controleer bij samenvoegen en inlinen de [evaluatievolgorde van `defined(...)`](#resources-en-afhankelijkheden), vooral wanneer tussendoor een class wordt gedeclareerd. Behoud ook gebruik vanuit andere modules of templates dat de statische analyse niet kan vinden.
 
 Valideer een optionele instelling alleen wanneer deze wordt uitgevoerd of in gegenereerde configuratie wordt overgenomen. Een niet-ingestelde optionele waarde is geen fout. Laat de validatie één korte benoemde foutmelding of `undef` opleveren, maak resources in de geldige tak en faal in de laatste `else`. Plaats geen losse `fail(...)` halverwege de opbouw van waarden of resources.
 
@@ -530,9 +554,62 @@ Houd monitoring en audit bij de bijbehorende resource. Monitoringspecifieke conf
 
 Codecommentaar helpt de lezer begrijpen waarom de code nodig is, welke beperkingen gelden en welke gevolgen de code heeft. Een herhaling van wat de volgende regel doet is daarvoor niet voldoende. Schrijf dit commentaar in het Engels, met iedere zin op één fysieke regel. Echte lijsten, voorbeelden en syntaxis krijgen aparte regels. Verwijder bij een wijziging ook willekeurige regelafbrekingen in het nabije commentaar dat je raakt.
 
+Zet een lege regel tussen code en een volgend zelfstandig commentaarblok, bijvoorbeeld na een variabeletoekenning. Direct na een openende `{`, `[` of `(` is die scheiding niet nodig. Aaneengesloten commentaarregels blijven bij elkaar; commentaar achter code en lintmarkeringen vormen zelf geen nieuw toelichtingsblok. `project_comment_spacing` controleert deze scheiding.
+
+Zet geen lege regel tussen een openende `{` en de eerste toelichting of code van het blok. Staat de accolade aan het einde van de regel, eventueel gevolgd door commentaar zoals `# lint:ignore:140chars`, dan begint de inhoud direct op de volgende regel. `project_layout` meldt de eerste lege regel, ook als die alleen spaties of tabs bevat. De controle geldt voor codeblokken en verzamelingen met accolades; tekst binnen strings, reguliere expressies, heredocs en commentaar blijft buiten deze controle. Lege regels tussen onderdelen verderop in het blok blijven toegestaan. Bij `[` en `(` mag de eerstvolgende regel wel leeg zijn.
+
+Begint na een afgesloten `}` een resourcedeclaratie, plaats dan een lege regel en direct boven de declaratie een toelichting op die resource. Dit geldt ook voor defined types, resourcedefaults en overrides. Een met `->` of `~>` verbonden resourceketen blijft één geheel. `project_resource_sections` controleert de aanwezigheid van de toelichting; beoordeel zelf of die uitlegt waarom de resource daar nodig is.
+
+Geef iedere `if` en `unless` een eigen toelichting. Staan er direct ervoor variabelen die de voorwaarde voorbereiden, zet het commentaar dan boven de eerste van die toekenningen. De variabelen en de voorwaarde vormen samen één toegelicht blok; commentaar dat alleen boven de `if` staat vervangt de uitleg boven die voorbereiding niet. Zonder voorbereidende variabelen staat de toelichting boven de `if` zelf. Er mag een lege regel tussen de toelichting en het blok staan; de bestaande commentaarcheck bewaakt de scheiding met voorafgaande code.
+
+`project_if_sections` volgt opeenvolgende toekenningen terug vanaf de variabelen in de voorwaarde, ook als een afhankelijkheid via een andere variabele loopt. De voorwaarden van aansluitende `elsif`-takken tellen mee bij dezelfde voorbereiding. Een losstaande toekenning of andere opdracht onderbreekt die reeks. Commentaar bij een eerder blok of een bovenliggende voorwaarde geldt niet voor een geneste `if`. Bij een toekenning zoals `$result = if ...` staat de toelichting boven de toekenning en eventuele voorbereiding. De check deelt de analyse van variabeleafhankelijkheden met `project_variable_sections`; de betekenis van de toelichting blijft onderdeel van de inhoudelijke review.
+
+Hier staat de uitleg boven de variabele die bepaalt of de registratie actief is:
+
+```puppet
+# Register this target only when monitoring is enabled.
+$active = $ensure == present and defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none'
+if ($active) {
+  notice('Register the active monitoring target')
+}
+```
+
+De linter verplaatst of schrijft dit commentaar niet met `--fix`: beoordeel bij het oplossen van een melding of de toelichting zowel de voorbereiding als de voorwaarde uitlegt.
+
 Geef bij niet-vanzelfsprekende resourcegroepen, execs, afgeleide waarden, voorwaardelijke directives, gedelegeerde resources en opruimroutes een korte toelichting. Doe hetzelfde bij helpers en templatelogica. Benoem waar nodig de invoer, uitvoer of gevolgen voor exitcodes. Dat is vooral nuttig bij escaping, parsing, classificatie, samenvoegen van resultaten, terugvalgedrag en uitvoeropbouw.
 
 Verdeel lange reeksen defaults, drempels, statuswaarden, tellers, paden, rechten, commando's en relaties in herkenbare groepen. Vergelijk geraakt commentaar met goed gedocumenteerde bestaande code en verwijder verouderde, dubbele of overbodige uitleg. Kopieer geen projectbeleid naar implementatiecommentaar.
+
+Begint een codeblok na `{` met een variabeletoekenning, zet dan binnen dat blok direct boven de variabelen een toelichting. Dit geldt ook voor één toekenning, korte `else`- en `elsif`-takken, `case`-takken, classes, defined types en lambdablokken. Het commentaar boven de voorwaarde vervangt deze toelichting binnen het blok niet. `project_variable_sections` controleert de aanwezigheid ervan; een leeg commentaar of alleen een lintmarkering is onvoldoende.
+
+Daarnaast controleert `project_variable_sections` opeenvolgende variabeletoekenningen binnen hetzelfde codeblok, vanaf een toelichting direct boven een toekenning. Zodra een waarde een eerder toegekende variabele uit die groep gebruikt, vormen ze een aantoonbare afhankelijkheid. De eerste volgende toekenning die geen eerdere variabele uit die groep gebruikt, moet een eigen toelichting krijgen. Alleen een lege regel is onvoldoende; de bestaande `project_comment_spacing`-check controleert de lege regel vóór het nieuwe commentaar. Een later samengesteld commando heft zo'n eerdere scheiding niet op.
+
+In dit voorbeeld begint het actieve blok met de toelichting op de servernaam. De genormaliseerde naam, de shellwaarde en het label horen bij elkaar. Het configuratiepad en de numerieke instellingen staan samen in de volgende groep:
+
+```puppet
+# Prepare arguments only for an active certificate check.
+if $active {
+  # Normalize the name for the command and its label.
+  $server_name_correct = regsubst($server_name ? { undef => '', default => $server_name }, '\s+', ' ', 'G')
+  $server_name_shell = stdlib::shell_escape($server_name_correct)
+  $check_friendly = "Nginx TLS ${server_name_correct}"
+
+  # Escape the configuration path and numeric settings before passing them to the check.
+  $config_file_shell = stdlib::shell_escape($config_file)
+  $detail_limit_shell = stdlib::shell_escape(String($detail_limit))
+  $timeout_shell = stdlib::shell_escape(String($timeout))
+  $validity_critical_shell = stdlib::shell_escape(String($validity_critical))
+  $validity_warning_shell = stdlib::shell_escape(String($validity_warning))
+}
+```
+
+De check vereist geen apart commentaar voor iedere losse instelling. Hij leidt samenhang af uit echte variabelereferenties, ook in interpolatie; overeenkomstige namen, dezelfde functie of hetzelfde externe invoerveld zijn daarvoor geen bewijs. Lokale variabelen en parameters van een lambda worden van buitenliggende variabelen onderscheiden.
+
+Een andere opdracht, zoals een resource of `if`, beëindigt de onderzochte reeks. Buiten het begin van een blok onderzoekt de check alleen reeksen met een voorafgaande toelichting.
+
+Ontbreekt de toelichting bij de eerste variabele na `{`, dan kan de melding ook naar een latere groep in hetzelfde blok verwijzen. Daarvoor moeten de eerste toekenningen dezelfde buitenste functie aanroepen, bijvoorbeeld `stdlib::shell_escape(...)`. De check kijkt alleen voorbij andere toekenningen en stopt zodra de oorspronkelijke variabele wordt gebruikt. Functieaanroepen met een eigen lambdablok vormen zelf geen kandidaat. De melding noemt de regel van het bestaande commentaar, zodat je kunt beoordelen of samenvoegen de code duidelijker maakt. De hint is geen bewijs van inhoudelijke samenhang: controleer ook of de volgorde van uitvoeren mag veranderen.
+
+Beoordeel zelf of het commentaar en de gekozen groepen inhoudelijk kloppen. De linter bedenkt geen commentaar en verplaatst geen code met `--fix`.
 
 #### Puppet Strings
 
@@ -631,6 +708,24 @@ Behoud de targetladder `${cluster_id}-system`, `${cluster_id}-storage`, `${clust
 Controleer bij een wijziging zowel gegenereerde units als lokale wrappers, vendor-drop-ins, directe Service-resources, templates en statische units. Rapporteer de uiteindelijke beoordeelde unitnamen alfabetisch.
 
 Monitoring gebruikt het centrale OpenITCOCKPIT-agentmodel. Plugins staan onder `/etc/openitcockpit-agent/plugins`. Bouw `customchecks.ini` met `concat` en `concat::fragment` en laat de gedeelde monitoringtypes services, timers en eigen checks registreren. Dupliceer die registratie niet in featuremodules.
+
+Laat de keuze en inrichting van de backend over aan `basic_settings::monitoring_custom`. Een aanroeper mag controleren of monitoring beschikbaar en ingeschakeld is, bijvoorbeeld met `$basic_settings::monitoring::package != 'none'`. Vergelijk daar niet met een concrete backendnaam zoals `'openitcockpit'`. Dit geldt voor iedere voorwaarde die een aanroep omvat, ongeacht hoe diep die aanroep staat. Ook een tussenvariabele zoals `$active`, een `case` of selector, en waarden die bijvoorbeeld `ensure` bepalen, mogen die backendselectie niet overnemen. Vergelijken met `none` blijft toegestaan voor het inschakelen én opruimen van registraties.
+
+`project_monitoring_backend` volgt de centrale packagewaarde door toekenningen en voorwaarden. Parameters die aantoonbaar als `package` worden doorgegeven aan een monitoringaanroep tellen ook mee. De check herkent lokale wrappers en statisch benoemde wrappers in het ingestelde modulepad, inclusief classes via `include`, `contain` en `require`. Hij meldt de oorspronkelijke backendselectie één keer, ook als meerdere aanroepen ervan afhangen. Gewone pakketkeuzes zonder die relatie vallen buiten de check; `monitoring_custom` zelf blijft verantwoordelijk voor de concrete backendimplementatie.
+
+Gebruik bijvoorbeeld deze opbouw:
+
+```puppet
+# Register this application's check when monitoring is enabled.
+$active = $ensure == present and defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none'
+if $active {
+  basic_settings::monitoring_custom { 'application':
+    source => 'puppet:///modules/profile/check_application',
+  }
+}
+```
+
+De analyse voert geen Puppet-functies uit en kan dynamisch berekende wrappernamen of verborgen logica in externe functies niet volledig volgen. Beoordeel die routes bij de review. De check herschrijft voorwaarden niet met `--fix`, omdat verbreden van een backendvoorwaarde het gedrag kan veranderen. Controleer bij een wijziging ook actieve monitoring, `package => 'none'` en het verwijderen van een registratie.
 
 #### Servicebeveiliging
 

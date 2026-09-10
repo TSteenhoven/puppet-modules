@@ -26,9 +26,6 @@ class basic_settings::timezone (
   Array  $install_options = [],
   Array  $ntp_extra_pools = [],
 ) {
-  # Get some values
-  $monitoring_enable = defined(Class['basic_settings::monitoring']);
-
   # Check if systemd is installed
   if (defined(Package['systemd'])) {
     # Reload systemd deamon
@@ -48,6 +45,7 @@ class basic_settings::timezone (
     # Get OS name
     case $facts['os']['name'] {
       'Ubuntu': {
+        # Combine extra NTP pools with the Ubuntu defaults.
         $ntp_all_pools = flatten($ntp_extra_pools, [
             '0.ubuntu.pool.ntp.org',
             '1.ubuntu.pool.ntp.org',
@@ -56,6 +54,7 @@ class basic_settings::timezone (
         ])
       }
       'Debian': {
+        # Combine extra NTP pools with the Debian defaults.
         $ntp_all_pools = flatten($ntp_extra_pools, [
             '0.debian.pool.ntp.org',
             '1.debian.pool.ntp.org',
@@ -64,6 +63,7 @@ class basic_settings::timezone (
         ])
       }
       default: {
+        # Leave the pool list empty when no distribution default is defined.
         $ntp_all_pools = []
       }
     }
@@ -91,7 +91,7 @@ class basic_settings::timezone (
     }
 
     # Create service check
-    if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    if (defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none') {
       basic_settings::monitoring_custom { 'systemd_timesyncd':
         source => 'puppet:///modules/basic_settings/monitoring/check_systemd_timesyncd',
       }

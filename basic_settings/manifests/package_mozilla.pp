@@ -33,8 +33,10 @@ class basic_settings::package_mozilla (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/mozilla.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/mozilla.list'
   }
 
@@ -50,17 +52,21 @@ class basic_settings::package_mozilla (
     # Get variables
     case $os_parent {
       'ubuntu': {
+        # Use the Mozilla team's Ubuntu PPA for this distribution path.
         $url = 'https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu'
       }
       default: {
+        # Use Mozilla's own APT repository for this distribution path.
         $url = 'https://packages.mozilla.org/apt'
       }
     }
 
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source  = "Types: deb\\nURIs: ${url}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key}\\n"
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source = "deb [signed-by=${key}] ${url} ${os_name} main\\n"
     }
 

@@ -45,128 +45,138 @@ class vnstat (
   Optional[Integer[1]]        $p95_warning   = undef,
   String                      $target        = 'services',
 ) {
-  # Install vnstat
-  package { 'vnstat':
-    ensure          => installed,
-    install_options => ['--no-install-recommends', '--no-install-suggests'],
-  }
-
   # Keep generated monitoring configuration valid before the check consumes it.
   if ($p95_warning != undef and $p95_critical != undef and $p95_critical < $p95_warning) {
+    # Reject thresholds that would report critical before warning.
     $fail_text = 'vnstat p95_critical must be greater than or equal to p95_warning.'
   } else {
+    # Allow bandwidth monitoring when the supplied thresholds are ordered correctly.
     $fail_text = undef
   }
 
-  # Check if we have systemd
-  if (defined(Package['systemd'])) {
-    # Disable service
-    service { 'vnstat':
-      ensure  => undef,
-      enable  => false,
-      require => Package['vnstat'],
+  # Build the complete configuration only after validating the supplied settings.
+  if ($fail_text == undef) {
+    # Share monitoring availability between service notifications and check registration.
+    $monitoring_enable = defined(Class['basic_settings::monitoring'])
+
+    # Install vnstat
+    package { 'vnstat':
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
-    # Reload systemd daemon
-    exec { 'vnstat_systemd_daemon_reload':
-      command     => '/usr/bin/systemctl daemon-reload',
-      refreshonly => true,
-      require     => Package['systemd'],
-    }
-
-    # Get unit
-    if (defined(Class['basic_settings::monitoring'])) {
-      $unit = {
-        'OnFailure' => 'notify-failed@%i.service',
+    # Check if we have systemd
+    if (defined(Package['systemd'])) {
+      # Disable service
+      service { 'vnstat':
+        ensure  => undef,
+        enable  => false,
+        require => Package['vnstat'],
       }
-    } else {
-      $unit = {}
-    }
 
-    # Create drop in for vnstat service
-    basic_settings::systemd_drop_in { 'vnstat_settings':
-      target_unit   => 'vnstat.service',
-      unit          => $unit,
-      service       => {
-        'Nice'         => "-${nice_level}",
-      },
-      daemon_reload => 'vnstat_systemd_daemon_reload',
-      require       => Package['vnstat'],
-    }
+      # Reload systemd daemon
+      exec { 'vnstat_systemd_daemon_reload':
+        command     => '/usr/bin/systemctl daemon-reload',
+        refreshonly => true,
+        require     => Package['systemd'],
+      }
 
-    # Create drop in for x target
-    if (defined(Class['basic_settings::systemd'])) {
-      basic_settings::systemd_drop_in { 'vnstat_dependency':
-        target_unit   => "${basic_settings::systemd::cluster_id}-${target}.target",
-        unit          => {
-          'BindsTo'   => 'vnstat.service',
+      # Get unit
+      if ($monitoring_enable) {
+        # Route unit failures through the configured monitoring notification service.
+        $unit = {
+          'OnFailure' => 'notify-failed@%i.service',
+        }
+      } else {
+        # Leave unit failure hooks empty when monitoring is unavailable.
+        $unit = {}
+      }
+
+      # Create drop in for vnstat service
+      basic_settings::systemd_drop_in { 'vnstat_settings':
+        target_unit   => 'vnstat.service',
+        unit          => $unit,
+        service       => {
+          'Nice'         => "-${nice_level}",
         },
         daemon_reload => 'vnstat_systemd_daemon_reload',
-        require       => Basic_settings::Systemd_target["${basic_settings::systemd::cluster_id}-${target}"],
+        require       => Package['vnstat'],
+      }
+
+      # Create drop in for x target
+      if (defined(Class['basic_settings::systemd'])) {
+        basic_settings::systemd_drop_in { 'vnstat_dependency':
+          target_unit   => "${basic_settings::systemd::cluster_id}-${target}.target",
+          unit          => {
+            'BindsTo'   => 'vnstat.service',
+          },
+          daemon_reload => 'vnstat_systemd_daemon_reload',
+          require       => Basic_settings::Systemd_target["${basic_settings::systemd::cluster_id}-${target}"],
+        }
+      }
+    } else {
+      # Enable service
+      service { 'vnstat':
+        ensure  => true,
+        enable  => true,
+        require => Package['vnstat'],
       }
     }
-  } else {
-    # Enable service
-    service { 'vnstat':
-      ensure  => true,
-      enable  => true,
+
+    # Build vnStat configuration from the default template and optional fragments.
+    concat { '/etc/vnstat.conf':
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600', # Only root
+      notify  => Service['vnstat'],
       require => Package['vnstat'],
     }
-  }
 
-  # Build vnStat configuration from the default template and optional fragments.
-  concat { '/etc/vnstat.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0600', # Only root
-    notify  => Service['vnstat'],
-    require => Package['vnstat'],
-  }
-  concat::fragment { 'vnstat_config_default':
-    target  => '/etc/vnstat.conf',
-    content => template('vnstat/vnstat.conf'),
-    order   => '10',
-  }
-
-  # Check if logrotate package exists
-  if (defined(Package['logrotate'])) {
-    basic_settings::io_logrotate { 'vnstat':
-      path           => '/var/log/vnstat/vnstat.log',
-      frequency      => 'weekly',
-      compress_delay => true,
-      create_group   => 'vnstat',
-      create_user    => 'vnstat',
-      rotate_copy    => true,
+    # Place the base daemon settings before optional interface configuration fragments.
+    concat::fragment { 'vnstat_config_default':
+      target  => '/etc/vnstat.conf',
+      content => template('vnstat/vnstat.conf'),
+      order   => '10',
     }
-  }
 
-  # Create monitoring configuration from the default template and optional fragments.
-  concat { '/etc/vnstat-monitoring.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0600',
-    require => Package['vnstat'],
-  }
+    # Check if logrotate package exists
+    if (defined(Package['logrotate'])) {
+      basic_settings::io_logrotate { 'vnstat':
+        path           => '/var/log/vnstat/vnstat.log',
+        frequency      => 'weekly',
+        compress_delay => true,
+        create_group   => 'vnstat',
+        create_user    => 'vnstat',
+        rotate_copy    => true,
+      }
+    }
 
-  # Store monitoring-only defaults separately so vnStat receives only native directives.
-  if ($fail_text == undef) {
+    # Create monitoring configuration from the default template and optional fragments.
+    concat { '/etc/vnstat-monitoring.conf':
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
+      require => Package['vnstat'],
+    }
+
+    # Store monitoring-only defaults separately so vnStat receives only native directives.
     concat::fragment { 'vnstat_monitoring_config_default':
       target  => '/etc/vnstat-monitoring.conf',
       content => template('vnstat/monitoring.conf'),
       order   => '10',
     }
+
+    # Create service check
+    if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      basic_settings::monitoring_custom { 'vnstat_interfaces':
+        ensure   => present,
+        source   => 'puppet:///modules/vnstat/check_vnstat_interfaces',
+        friendly => 'vnStat interfaces',
+        timeout  => 60,
+        require  => Concat['/etc/vnstat-monitoring.conf'],
+      }
+    }
   } else {
     fail($fail_text)
-  }
-
-  # Create service check
-  if (defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none') {
-    basic_settings::monitoring_custom { 'vnstat_interfaces':
-      ensure   => present,
-      source   => 'puppet:///modules/vnstat/check_vnstat_interfaces',
-      friendly => 'vnStat interfaces',
-      timeout  => 60,
-      require  => Concat['/etc/vnstat-monitoring.conf'],
-    }
   }
 }

@@ -21,15 +21,21 @@ class netplanio (
 
   # Check if we have network class
   if (!defined(Class['basic_settings::network'])) {
+    # Default standalone Netplan configuration to DHCP.
     $dhcp_enable = true
+
+    # Inherit IP policy from the kernel class when no central network class owns it.
     if (defined(Class['basic_settings::kernel'])) {
+      # Inherit IP-family and router-advertisement policy from the kernel class.
       $ip_version = $basic_settings::kernel::ip_version
       $ip_ra_enable = ($basic_settings::kernel::ip_version_v6 and $basic_settings::kernel::ip_ra_enable)
     } else {
+      # Default to both IP families without accepting router advertisements when no kernel policy exists.
       $ip_version = 'all'
       $ip_ra_enable = false
     }
   } else {
+    # Reuse the network class's DHCP, router-advertisement, and IP-family policy.
     $dhcp_enable = $basic_settings::network::dhcp_enable
     $ip_ra_enable = $basic_settings::network::ip_ra_enable
     $ip_version = $basic_settings::network::ip_version
@@ -37,8 +43,10 @@ class netplanio (
 
   # Check if we have systemd
   if (defined(Package['systemd'])) {
+    # Select networkd when systemd is managed on the host.
     $renderer = 'networkd'
   } else {
+    # Leave renderer selection to Netplan when systemd is unavailable.
     $renderer = undef
   }
 

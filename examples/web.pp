@@ -10,6 +10,14 @@ node 'web-example.example.org' {
     sury_enable                => true,
   }
 
+  # Prepare Certbot before Nginx discovers and installs its certificate plugin.
+  class { 'letsencrypt':
+    mail_to    => 'security@example.org',
+    nice_level => 8,
+    require    => Class['basic_settings'],
+  }
+
+  # Configure shared TLS, worker limits and security contact defaults for the webserver.
   class { 'nginx':
     events_directives               => ['worker_connections 4096;'],
     global_directives               => ['worker_rlimit_nofile 20000;'],
@@ -36,18 +44,14 @@ node 'web-example.example.org' {
     require                         => Class['basic_settings'],
   }
 
-  class { 'letsencrypt':
-    mail_to    => 'security@example.org',
-    nice_level => 8,
-    require    => Class['nginx'],
-  }
-
+  # Request one certificate covering both public application names.
   letsencrypt::certificate { 'app.example.org':
     domains => ['app.example.org', 'www.app.example.org'],
     plugin  => 'nginx',
     require => Class['letsencrypt'],
   }
 
+  # Install the PHP runtime and extensions required by this web application.
   class { 'php8':
     apcu               => true,
     bcmath             => true,
@@ -80,6 +84,7 @@ node 'web-example.example.org' {
     require            => Class['basic_settings'],
   }
 
+  # Give command-line tasks Composer support and their own PHP memory limit.
   class { 'php8::cli':
     composer_enable => true,
     ini_settings    => {
@@ -88,6 +93,7 @@ node 'web-example.example.org' {
     require         => Class['php8'],
   }
 
+  # Configure PHP-FPM logging, upload limits and opcode caching for web requests.
   class { 'php8::fpm':
     errorlog     => '/var/log/php8.3-fpm.log',
     ini_settings => {
@@ -98,9 +104,10 @@ node 'web-example.example.org' {
       'upload_max_filesize'        => '32M',
     },
     pidfile      => '/run/php/php8.3-fpm.pid',
-    require      => [Class['nginx'], Class['php8']],
+    require      => [Package['nginx'], Class['php8']],
   }
 
+  # Create the application pool and socket used by its Nginx vhost.
   php8::fpm_pool { 'app':
     group                => 'www-data',
     listen               => '/run/php/php-fpm-app.sock',
@@ -114,9 +121,11 @@ node 'web-example.example.org' {
     pm_min_spare_servers => 2,
     pm_start_servers     => 4,
     user                 => 'www-data',
-    require              => Class['php8::fpm'],
+    require              => Package['php8.3-fpm'],
   }
 
+  # Main and redirect TLS registrations share check_nginx_cert; certificate paths are read from Nginx at runtime.
+  # The monitoring helper warns below 30 days and reports critical below 14 days.
   nginx::server { 'app.example.org':
     client_max_body_size      => '32m',
     content_security_policy   => "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'",
@@ -140,7 +149,7 @@ node 'web-example.example.org' {
     try_files                 => '$uri $uri/ /index.php?$query_string',
     x_content_type_options    => 'nosniff',
     x_frame_options           => 'SAMEORIGIN',
-    require                   => [Class['nginx'], Class['php8::fpm']],
+    require                   => [Package['nginx'], Class['php8::fpm']],
   }
 }
 
@@ -149,6 +158,7 @@ node 'proxy-example.example.org' {
     securitytxt_contacts => ['mailto:security@example.org'],
   }
 
+  # Proxy HTTPS and WebSocket traffic to the local application backend.
   nginx::server { 'app-proxy.example.org':
     access_log          => '/var/log/nginx/app_proxy_access.log combined buffer=32k flush=1m',
     docroot             => undef,
@@ -181,6 +191,5 @@ node 'proxy-example.example.org' {
     ssl_certificate     => '/etc/letsencrypt/live/app-proxy.example.org/fullchain.pem',
     ssl_certificate_key => '/etc/letsencrypt/live/app-proxy.example.org/privkey.pem',
     try_files           => false,
-    require             => Class['nginx'],
   }
 }

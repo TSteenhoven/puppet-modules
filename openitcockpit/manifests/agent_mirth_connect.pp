@@ -19,7 +19,9 @@ class openitcockpit::agent_mirth_connect (
   Enum['present', 'absent'] $ensure  = present,
   Optional[String]          $package = undef,
 ) {
+  # Require the agent parent before registering the Mirth Connect check.
   if (defined(Class['openitcockpit::agent'])) {
+    # Detect systemd before registering the Mirth Connect agent integration.
     $systemd_enable = defined(Package['systemd'])
     basic_settings::monitoring_custom { 'mirth_connect':
       ensure   => $ensure,

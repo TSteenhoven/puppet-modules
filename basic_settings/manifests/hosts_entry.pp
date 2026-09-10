@@ -34,21 +34,28 @@ define basic_settings::hosts_entry (
   Enum['present', 'absent'] $ensure   = present,
   String[1]                 $order    = '50',
 ) {
+  # Require the hosts-file owner before adding a fragment to its configuration.
   if (defined(Class['basic_settings::hosts'])) {
+    # Order the entry after its owning hosts class and allow resource creation.
     $hosts_require = Class['basic_settings::hosts']
     $hosts_fail_text = undef
   } else {
+    # Report the missing hosts owner before declaring dependent resources.
     $hosts_fail_text = 'The basic_settings::hosts class must be included directly, or through basic_settings::network with hosts_enable => true, before using the basic_settings::hosts_entry defined type.' # lint:ignore:140chars
   }
 
+  # Manage this entry only after resolving the shared hosts-file dependency.
   if ($hosts_fail_text == undef) {
+    # Validate new entries while allowing removal without usable address data.
     if ($ensure == present) {
       # Validate the String inputs at the output boundary so empty values cannot create malformed hosts entries.
       if ($ip != '' and $ip !~ /\s/ and $hostname != '' and $hostname !~ /\s/) {
         # Use the resource title as the operator-facing comment unless a clearer label is provided.
         if ($comment == undef) {
+          # Use the resource title to identify the hosts entry in its comment.
           $comment_correct = $name
         } else {
+          # Preserve the caller's description of this hosts entry.
           $comment_correct = $comment
         }
 

@@ -20,6 +20,7 @@ define naemon::hostgroup (
   Optional[String]          $description = undef,
   Enum['present', 'absent'] $ensure      = present,
 ) {
+  # Require the Naemon parent before writing a hostgroup into its configuration tree.
   if (defined(Class['naemon'])) {
     # Create host file
     file { "${naemon::config_dir}/10-hostgroup-${name}.cfg":

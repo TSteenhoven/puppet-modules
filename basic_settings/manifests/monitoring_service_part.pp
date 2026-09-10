@@ -51,24 +51,30 @@ define basic_settings::monitoring_service_part (
       if ($ensure == present) {
         # Build some values
         if ($parent_name == $name or $parent_force) {
+          # Keep the parent check's label and executable identity.
           $friendly_correct = $friendly
           $script_name = "check_${parent_name}"
         } else {
+          # Distinguish each child service in its label and executable identity.
           $friendly_correct = "${friendly} ${name}"
           $script_name = "check_${parent_name}_${name}"
         }
 
         # Build active window parameter
         if ($active_windows != undef) {
+          # Restrict the check to the supplied active time window.
           $script_active_window = "-W ${active_windows} "
         } else {
+          # Omit a time-window restriction when none is supplied.
           $script_active_window = ''
         }
 
         # Build active days parameter
         if ($active_days != undef) {
+          # Restrict the check to the supplied active days.
           $script_active_days = "-D ${active_days} "
         } else {
+          # Omit a day restriction when none is supplied.
           $script_active_days = ''
         }
 

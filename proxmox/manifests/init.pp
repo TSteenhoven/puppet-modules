@@ -15,13 +15,16 @@ class proxmox () {
   if (defined(Class['basic_settings'])) {
     case $basic_settings::os_name {
       'bookworm': {
+        # Select the mapped Proxmox kernel for the Bookworm installation path.
         $kernel = '6.2'
       }
       default:  {
+        # Leave the kernel selection unset when no platform mapping is available.
         $kernel = undef
       }
     }
 
+    # Install the selected Proxmox kernel before scheduling the staged reboot.
     if ($kernel) {
       # The selected kernel provides the package anchor for the staged reboot.
       package { "pve-kernel-${kernel}":

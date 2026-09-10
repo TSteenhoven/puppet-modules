@@ -6,12 +6,15 @@
 #
 # @example Proxy a Compose stack over local HTTPS without validating the upstream certificate
 #   class { 'docker': }
+#
+#   # Provide the webserver that terminates public TLS connections.
 #   class { 'nginx': }
 #
+#   # Connect the Compose application to its public Nginx endpoint.
 #   docker::compose_proxy { 'example':
-#     compose_source   => 'puppet:///modules/profile/example/docker-compose.yml',
-#     proxy_port       => 9443,
-#     server_name      => 'example.org',
+#     compose_source => 'puppet:///modules/profile/example/docker-compose.yml',
+#     proxy_port     => 9443,
+#     server_name    => 'example.org',
 #   }
 #
 # @param compose_source
@@ -201,10 +204,12 @@ define docker::compose_proxy (
 
     # Determine the correct proxy_ssl_trusted_certificate directive based on the presence of the parameter and the upstream scheme.
     if ($proxy_scheme == 'https' and $proxy_ssl_trusted_certificate != undef) {
+      # Pass the supplied trust store to Nginx for HTTPS upstream verification.
       $proxy_ssl_trusted_directives = [
         "proxy_ssl_trusted_certificate ${proxy_ssl_trusted_certificate};",
       ]
     } else {
+      # Omit upstream trust-store directives when no HTTPS trust store is selected.
       $proxy_ssl_trusted_directives = []
     }
 
@@ -233,6 +238,8 @@ define docker::compose_proxy (
     $location_directives_ssl = concat($location_directives_base, $proxy_ssl_verify_directives, $proxy_ssl_trusted_directives)
     $location_directives_websocket = concat($location_directives_ssl, $proxy_websocket_directives)
     $location_directives = concat($location_directives_websocket, $proxy_extra_directives)
+
+    # Keep access and error diagnostics in separate logs for this proxy.
     $proxy_access_log = "/var/log/nginx/docker_compose_${name}_access.log combined buffer=32k flush=1m"
     $proxy_error_log = "/var/log/nginx/docker_compose_${name}_error.log"
 
@@ -256,6 +263,7 @@ define docker::compose_proxy (
       require                    => Class['docker'],
     }
 
+    # Create the public proxy for deployed stacks and retire its vhost when the stack is absent.
     if ($ensure == present) {
       # Create nginx server for the proxy
       nginx::server { "docker_compose_${name}":

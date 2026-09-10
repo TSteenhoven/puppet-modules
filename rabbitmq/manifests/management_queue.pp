@@ -32,6 +32,7 @@ define rabbitmq::management_queue (
   Optional[String]          $type      = undef,
   String                    $vhost     = '/',
 ) {
+  # Require the management interface before using rabbitmqadmin to manage queues.
   if (defined(Class['rabbitmq::management'])) {
     # Escape rabbitmqadmin arguments before building queue commands and guards.
     $admin_config_path_shell = stdlib::shell_escape($rabbitmq::management::admin_config_path)
@@ -46,17 +47,21 @@ define rabbitmq::management_queue (
       'present': {
         # Get durable value
         if ($durable) {
+          # Represent durable queues in the formats expected by creation and comparison commands.
           $durable_value = 'true'
           $durable_ucfirstvalue = 'True'
         } else {
+          # Represent transient queues in the formats expected by creation and comparison commands.
           $durable_value = 'false'
           $durable_ucfirstvalue = 'False'
         }
 
         # Get vhost name
         if ($vhost == '/') {
+          # Give the root virtual host a readable name in management resource identifiers.
           $vhost_name = 'default'
         } else {
+          # Keep the non-root virtual host name in management resource identifiers.
           $vhost_name = $vhost
         }
 
@@ -69,12 +74,18 @@ define rabbitmq::management_queue (
         $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare queue ${name_arg_shell} ${durable_arg_shell}" # lint:ignore:140chars
 
         # Set type
-        if ($type == undef) {
-          $arguments_correct = $arguments
-        } elsif ($arguments == undef) {
-          $arguments_correct = { 'x-queue-type' => $type }
+        if ($type != undef) {
+          # Use the requested queue type alone or merge it with caller-supplied arguments.
+          if ($arguments == undef) {
+            # Include the selected queue type when no other arguments are supplied.
+            $arguments_correct = { 'x-queue-type' => $type }
+          } else {
+            # Combine the selected queue type with the caller's queue arguments.
+            $arguments_correct = stdlib::merge({ 'x-queue-type' => $type }, $arguments)
+          }
         } else {
-          $arguments_correct = stdlib::merge({ 'x-queue-type' => $type }, $arguments)
+          # Keep the caller's queue arguments when no queue type is selected.
+          $arguments_correct = $arguments
         }
 
         # Check if arguments is not given
@@ -92,6 +103,7 @@ define rabbitmq::management_queue (
           $arguments_arg_shell = stdlib::shell_escape("arguments=${arguments_json}")
           $create_correct = "${create} ${arguments_arg_shell}"
         } else {
+          # Compare against empty queue arguments without extending the supplied creation command.
           $arguments_json = '{}'
           $create_correct = $create
         }

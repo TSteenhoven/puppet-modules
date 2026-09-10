@@ -86,19 +86,25 @@ define basic_settings::io_logrotate (
 
   # Get rotate
   if ($rotate == undef) {
+    # Inherit central retention when available, otherwise use the standalone default.
     if (defined(Class['basic_settings::io'])) {
+      # Inherit the central log-retention count.
       $rotate_correct = $basic_settings::io::log_rotate
     } else {
+      # Keep twelve rotations when no central retention policy is available.
       $rotate_correct = 12
     }
   } else {
+    # Preserve the caller's log-retention count.
     $rotate_correct = $rotate
   }
 
   # Enable sharedscripts whenever a postrotate hook runs with a create user.
   if ($create_user != undef and $path =~ '.*') {
+    # Run rotation scripts once for the complete log group.
     $shared_scripts = true
   } else {
+    # Keep rotation scripts scoped to individual logs.
     $shared_scripts = false
   }
 

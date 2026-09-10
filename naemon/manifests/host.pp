@@ -31,6 +31,7 @@ define naemon::host (
   Enum['present', 'absent'] $ensure   = present,
   Optional[String]          $friendly = undef,
 ) {
+  # Require the Naemon parent before writing a host definition into its configuration tree.
   if (defined(Class['naemon'])) {
     # Create host file
     file { "${naemon::config_dir}/20-host-${name}.cfg":

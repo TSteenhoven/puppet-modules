@@ -30,18 +30,8 @@ class basic_settings::locale (
   Boolean $docs_enable = false,
   Boolean $enable      = false,
 ) {
-  # Check if packages are needed
-  if ($enable) {
-    package { ['dictionaries-common', 'locales', "w${dictionary}"]:
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-
-    # Remove default locale file
-    file { '/etc/default/locale':
-      ensure => absent,
-    }
-  } else {
+  # Keep the minimal locale unless full locale support is requested.
+  if (!$enable) {
     # Remove packages
     package { ['dictionaries-common', 'locales', 'wamerican', 'wbritish']:
       ensure => purged,
@@ -54,6 +44,16 @@ class basic_settings::locale (
       group   => 'root',
       mode    => '0644',
       content => "LANG=C.UTF-8\n",
+    }
+  } else {
+    package { ['dictionaries-common', 'locales', "w${dictionary}"]:
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+
+    # Remove default locale file
+    file { '/etc/default/locale':
+      ensure => absent,
     }
   }
 

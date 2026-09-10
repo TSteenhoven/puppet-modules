@@ -18,11 +18,14 @@ define rabbitmq::management_vhost (
   Enum['present', 'absent'] $ensure = present,
   String                    $type   = 'classic',
 ) {
+  # Require the management interface before using rabbitmqadmin to manage virtual hosts.
   if (defined(Class['rabbitmq::management'])) {
     # Get exec name
     if ($name == '/') {
+      # Give the root virtual host a readable exec resource identifier.
       $exec_name = 'default'
     } else {
+      # Keep the non-root virtual host name in exec resource identifiers.
       $exec_name = $name
     }
 

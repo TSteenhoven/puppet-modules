@@ -68,47 +68,62 @@ class gitlab::config (
   Optional[String]     $ssl_certificate          = undef,
   Optional[String]     $ssl_certificate_key      = undef,
 ) {
+  # Require the GitLab parent before reading installation settings and rendering configuration.
   if (defined(Class['gitlab'])) {
     # Set variables
     $server_fdqn = $gitlab::server_fdqn_correct
 
     # Get logrotate rotate
     if ($logrotate_rotate == undef) {
+      # Inherit central log retention when available, otherwise use the standalone default.
       if (defined(Class['basic_settings::io'])) {
+        # Inherit the central log-retention count.
         $logrotate_rotate_correct = $basic_settings::io::log_rotate
       } else {
+        # Keep twelve rotations when no central retention policy is available.
         $logrotate_rotate_correct = 12
       }
     } else {
+      # Preserve the caller's log-retention count.
       $logrotate_rotate_correct = $logrotate_rotate
     }
 
     # Try to get smtp server
     if ($smtp_server == undef) {
+      # Use the central SMTP relay when available, otherwise use the local relay.
       if (defined(Class['basic_settings'])) {
+        # Inherit the central SMTP relay.
         $smtp_server_correct = $basic_settings::smtp_server
       } else {
+        # Fall back to the local SMTP relay without central settings.
         $smtp_server_correct = '127.0.0.1'
       }
     } else {
+      # Use the explicitly supplied SMTP relay.
       $smtp_server_correct = $smtp_server
     }
 
     # Try to get smtp server
     if ($ssh_host == undef) {
+      # Advertise the main server FQDN as the default SSH endpoint.
       $ssh_host_correct = $server_fdqn
     } else {
+      # Advertise the caller's explicit SSH endpoint.
       $ssh_host_correct = $ssh_host
     }
 
     # Check if letsencrypt need to be enabled
     if ($https) {
+      # Enable automatic certificate management only when HTTPS has no supplied certificate pair.
       if ($ssl_certificate == undef and $ssl_certificate_key == undef) {
+        # Let GitLab obtain a certificate when HTTPS has no supplied certificate pair.
         $letsencrypt = true
       } else {
+        # Leave certificate issuance disabled when a certificate is already supplied.
         $letsencrypt = false
       }
     } else {
+      # Leave certificate issuance disabled for an HTTP-only frontend.
       $letsencrypt = false
     }
 

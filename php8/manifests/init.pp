@@ -78,156 +78,207 @@ class php8 (
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
+  # Provide the optional APCu user-data cache for PHP applications.
   if ($apcu) {
     package { "php8.${minor_version}-apcu":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional arbitrary-precision arithmetic through BCMath.
   if ($bcmath) {
     package { "php8.${minor_version}-bcmath":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional bzip2 support for PHP compression workloads.
   if ($bz2) {
     package { "php8.${minor_version}-bz2":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional cURL support for outbound application requests.
   if ($curl) {
     package { "php8.${minor_version}-curl":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional GD image processing support.
   if ($gd) {
     package { "php8.${minor_version}-gd":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional Gearman integration for background job clients and workers.
   if ($gearman) {
     package { "php8.${minor_version}-gearman":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional GNU MP arithmetic support.
   if ($gmp) {
     package { "php8.${minor_version}-gmp":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional ImageMagick integration for image processing.
   if ($imagick) {
     package { "php8.${minor_version}-imagick":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional IMAP mailbox access for PHP applications.
   if ($imap) {
     package { "php8.${minor_version}-imap":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional internationalization support through ICU.
   if ($intl) {
     package { "php8.${minor_version}-intl":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional LDAP directory access for PHP applications.
   if ($ldap) {
     package { "php8.${minor_version}-ldap":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional multibyte string processing support.
   if ($mbstring) {
     package { "php8.${minor_version}-mbstring":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide the requested mcrypt extension for applications that depend on it.
   if ($mcrypt) {
     package { "php8.${minor_version}-mcrypt":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional MessagePack serialization support.
   if ($msgpack) {
     package { "php8.${minor_version}-msgpack":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional MySQL database drivers for PHP applications.
   if ($mysql) {
     package { "php8.${minor_version}-mysql":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional readline support for interactive PHP sessions.
   if ($readline) {
     package { "php8.${minor_version}-readline":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional Redis client support for PHP applications.
   if ($redis) {
     package { "php8.${minor_version}-redis":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional RRD database integration for PHP applications.
   if ($rrd) {
     package { "php8.${minor_version}-rrd":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional SOAP client and server support.
   if ($soap) {
     package { "php8.${minor_version}-soap":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional SQLite database drivers for PHP applications.
   if ($sqlite3) {
     package { "php8.${minor_version}-sqlite3":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide the requested Sybase database driver support.
   if ($sybase) {
     package { "php8.${minor_version}-sybase":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional upload progress reporting for PHP applications.
   if ($uploadprogress) {
     package { "php8.${minor_version}-uploadprogress":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide the requested Xdebug extension for application diagnostics.
   if ($xdebug) {
     package { "php8.${minor_version}-xdebug":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional XML processing extensions for PHP applications.
   if ($xml) {
     package { "php8.${minor_version}-xml":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide the requested XML-RPC extension for applications that depend on it.
   if ($xmlrpc) {
     package { "php8.${minor_version}-xmlrpc":
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   }
+
+  # Provide optional ZIP archive support for PHP applications.
   if ($zip) {
     package { "php8.${minor_version}-zip":
       ensure          => installed,

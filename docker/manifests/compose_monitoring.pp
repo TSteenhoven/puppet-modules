@@ -69,6 +69,7 @@ define docker::compose_monitoring (
   Integer                                  $starting_grace    = 300,
   Integer                                  $timeout           = 60,
 ) {
+  # Validate the stack identifier before constructing monitoring arguments and resource names.
   if ($name =~ /\A[a-zA-Z0-9_.-]+\z/) {
     # Set command arguments for the stack-specific service check.
     $project_name_arg = $project_name ? {

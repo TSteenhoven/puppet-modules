@@ -13,20 +13,18 @@
 class docker (
   Enum['ce'] $edition = 'ce',
 ) {
-  # Determine the correct package name based on the edition
-  case $edition {
-    'ce': {
-      $package_name = 'docker-ce'
-    }
-    default: {
-      fail("Unsupported docker edition: ${edition}")
-    }
-  }
+  # Install the package only for the supported Docker edition.
+  if ($edition == 'ce') {
+    # Resolve the Docker CE package name for the shared package resource.
+    $package_name = 'docker-ce'
 
-  # Install docker
-  package { 'docker':
-    ensure          => installed,
-    name            => $package_name,
-    install_options => ['--no-install-recommends', '--no-install-suggests'],
+    # Install Docker from the separately managed repository.
+    package { 'docker':
+      ensure          => installed,
+      name            => $package_name,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+  } else {
+    fail("Unsupported docker edition: ${edition}")
   }
 }

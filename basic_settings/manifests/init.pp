@@ -357,10 +357,12 @@ class basic_settings (
   # Get puppet prefix
   case $puppetserver_source {
     'perforce': {
+      # Use the Puppet package family and its server package name.
       $puppetserver_prefix = 'puppet'
       $puppetserver_master = 'puppet-master'
     }
     'openvox': {
+      # Use the OpenVox package family and its server package name.
       $puppetserver_prefix = 'openvox-'
       $puppetserver_master = 'openvox-server'
     }
@@ -375,16 +377,21 @@ class basic_settings (
       # Set some variables
       $os_parent = 'ubuntu'
       $os_repo = 'main universe restricted'
+
+      # Select the Ubuntu archive that publishes packages for this architecture.
       if ($facts['os']['architecture'] == 'amd64') {
+        # Use the main Ubuntu mirrors for amd64 packages.
         $os_url = 'http://archive.ubuntu.com/ubuntu/'
         $os_url_security = 'http://security.ubuntu.com/ubuntu'
       } else {
+        # Use the Ubuntu ports mirrors for other architectures.
         $os_url = 'http://ports.ubuntu.com/ubuntu-ports/'
         $os_url_security = 'http://ports.ubuntu.com/ubuntu-ports/'
       }
 
       # Do thing based on version
       if ($facts['os']['release']['major'] == '26.04') { # LTS
+        # Select the repository formats and package capabilities for Ubuntu 26.04.
         $backports_allow = false
         $deb_version = '822'
         $docker_allow = true
@@ -392,10 +399,14 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Restrict these third-party database repositories to their supported architecture.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL and RabbitMQ repository paths selected for amd64.
           $mysql_allow = true
           $rabbitmq_allow = true
         } else {
+          # Disable the MySQL and RabbitMQ repository paths on other architectures.
           $mysql_allow = false
           $rabbitmq_allow = false
         }
@@ -412,6 +423,7 @@ class basic_settings (
         $sury_allow = true
         $voxpupuli_allow = true
       } elsif ($facts['os']['release']['major'] == '24.04') { # LTS
+        # Select the repository formats and package capabilities for Ubuntu 24.04.
         $backports_allow = false
         $deb_version = '822'
         $docker_allow = true
@@ -419,10 +431,14 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Restrict these third-party database repositories to their supported architecture.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL and RabbitMQ repository paths selected for amd64.
           $mysql_allow = true
           $rabbitmq_allow = true
         } else {
+          # Disable the MySQL and RabbitMQ repository paths on other architectures.
           $mysql_allow = false
           $rabbitmq_allow = false
         }
@@ -439,6 +455,7 @@ class basic_settings (
         $sury_allow = true
         $voxpupuli_allow = true
       } elsif ($facts['os']['release']['major'] == '23.04') { # Stable
+        # Select the repository formats and package capabilities for Ubuntu 23.04.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = true
@@ -446,10 +463,14 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Limit MySQL to amd64 while retaining RabbitMQ availability on the other architecture path.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL and RabbitMQ repository paths selected for amd64.
           $mysql_allow = true
           $rabbitmq_allow = true
         } else {
+          # Keep RabbitMQ available while disabling the MySQL repository on other architectures.
           $mysql_allow = false
           $rabbitmq_allow = true
         }
@@ -466,6 +487,7 @@ class basic_settings (
         $sury_allow = false
         $voxpupuli_allow = true
       } elsif ($facts['os']['release']['major'] == '22.04') { # LTS
+        # Select the repository formats and package capabilities for Ubuntu 22.04.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = true
@@ -473,10 +495,14 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Restrict these third-party database repositories to their supported architecture.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL and RabbitMQ repository paths selected for amd64.
           $mysql_allow = true
           $rabbitmq_allow = true
         } else {
+          # Disable the MySQL and RabbitMQ repository paths on other architectures.
           $mysql_allow = false
           $rabbitmq_allow = false
         }
@@ -493,6 +519,7 @@ class basic_settings (
         $sury_allow = true
         $voxpupuli_allow = true
       } else {
+        # Disable optional repositories and integrations when no platform mapping is available.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = false
@@ -525,6 +552,7 @@ class basic_settings (
 
       # Do thing based on version
       if ($facts['os']['release']['major'] == '13') {
+        # Select the repository formats and package capabilities for Debian 13.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = true
@@ -532,9 +560,13 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Enable the upstream MySQL repository only for amd64.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL repository path selected for amd64.
           $mysql_allow = true
         } else {
+          # Disable the MySQL repository path on other architectures.
           $mysql_allow = false
         }
         $nginx_allow = true
@@ -551,6 +583,7 @@ class basic_settings (
         $sury_allow = true
         $voxpupuli_allow = true
       } elsif ($facts['os']['release']['major'] == '12') {
+        # Select the repository formats and package capabilities for Debian 12.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = true
@@ -558,9 +591,13 @@ class basic_settings (
         $gitlab_allow = true
         $mongodb_allow = true
         $mozilla_allow = true
+
+        # Enable the upstream MySQL repository only for amd64.
         if ($facts['os']['architecture'] == 'amd64') {
+          # Enable the MySQL repository path selected for amd64.
           $mysql_allow = true
         } else {
+          # Disable the MySQL repository path on other architectures.
           $mysql_allow = false
         }
         $nginx_allow = true
@@ -577,6 +614,7 @@ class basic_settings (
         $sury_allow = true
         $voxpupuli_allow = true
       } else {
+        # Disable optional repositories and integrations when no platform mapping is available.
         $backports_allow = false
         $deb_version = 'list'
         $docker_allow = false
@@ -601,6 +639,7 @@ class basic_settings (
       }
     }
     default: {
+      # Disable optional repositories and integrations when no platform mapping is available.
       $backports_allow = false
       $deb_version = 'list'
       $docker_allow = false
@@ -626,15 +665,19 @@ class basic_settings (
 
   # Get ramdisk package
   if ($kernel_ram_disk_package == undef) {
+    # Use the platform's default initramfs implementation.
     $kernel_ram_disk_package_correct = $ram_disk_package
   } else {
+    # Preserve the requested initramfs implementation.
     $kernel_ram_disk_package_correct = $kernel_ram_disk_package
   }
 
   # Get snap state
   if ($pro_enable and !$snap_enable) {
+    # Keep Snap available for the enabled Ubuntu Pro integration.
     $snap_correct = true
   } else {
+    # Honor the caller's Snap setting when Pro does not require it.
     $snap_correct = $snap_enable
   }
 
@@ -642,22 +685,27 @@ class basic_settings (
   if ($ip_dhcp_enable and $ip_ra_enable) {
     case $ip_version {
       '4': {
+        # Disable IPv6 router advertisements on an IPv4-only host.
         $ip_ra_enable_correct = false
       }
       default: {
+        # Preserve the requested router-advertisement setting when IPv6 is available.
         $ip_ra_enable_correct = $ip_ra_enable
       }
     }
   } else {
+    # Disable router advertisements when DHCP or router-advertisement handling is turned off.
     $ip_ra_enable_correct = false
   }
 
   # Get audio state
   case $gui_mode {
     'kiosk': {
+      # Enable audio support for the selected kiosk configuration.
       $audio_enable = true
     }
     default: {
+      # Leave audio support disabled outside the kiosk configuration.
       $audio_enable = false
     }
   }
@@ -680,8 +728,50 @@ class basic_settings (
     refreshonly => true,
   }
 
-  # Check if we need newer format for APT
-  if ($deb_version == '822') {
+  # Use the source-list format selected for this platform.
+  if ($deb_version != '822') {
+    # Check if we need backports
+    $backports_file = "/etc/apt/sources.list.d/${os_name}-backports.list"
+
+    # Escape the backports path before using it in exec commands and guards.
+    $backports_file_shell = stdlib::shell_escape($backports_file)
+
+    # Manage the backports source according to both the request and platform availability.
+    if ($backports and $backports_allow) {
+      # Prepare the backports package options and repository content together.
+      $backports_install_options = ['-t', "${os_name}-backports"]
+
+      # Escape generated backports source content before the shell writes it.
+      $backports_source_shell = stdlib::shell_escape("deb ${os_url} ${os_name}-backports ${os_repo}\n")
+      exec { 'basic_settings_source_backports':
+        command => "/usr/bin/printf %s ${backports_source_shell} > ${backports_file_shell}",
+        unless  => "/usr/bin/test -e ${backports_file_shell}",
+        notify  => Exec['basic_settings_source_reload'],
+        require => [Package['apt'], Package['coreutils']],
+      }
+    } else {
+      # Use normal package selection when backports are not enabled.
+      $backports_install_options = []
+      exec { 'basic_settings_source_backports':
+        command => "/usr/bin/rm ${backports_file_shell}",
+        onlyif  => "/usr/bin/test -e ${backports_file_shell}",
+        notify  => Exec['basic_settings_source_reload'],
+        require => [Package['apt'], Package['coreutils']],
+      }
+    }
+
+    # Based on OS parent use correct source list
+    file { 'basic_settings_source':
+      ensure  => file,
+      path    => '/etc/apt/sources.list',
+      mode    => '0600',
+      owner   => 'root',
+      group   => 'root',
+      content => template("basic_settings/source/${os_parent}.list"),
+      notify  => Exec['basic_settings_source_reload'],
+      require => Exec['basic_settings_source_backports'],
+    }
+  } else {
     # Based on OS parent use correct source list
     file { '/etc/apt/sources.list':
       ensure  => file,
@@ -707,47 +797,11 @@ class basic_settings (
 
     # Check if we need backports
     if ($backports and $backports_allow) {
+      # Select packages from the distribution's backports suite.
       $backports_install_options = ['-t', "${os_name}-backports"]
     } else {
+      # Use normal package selection when backports are not enabled.
       $backports_install_options = []
-    }
-  } else {
-    # Check if we need backports
-    $backports_file = "/etc/apt/sources.list.d/${os_name}-backports.list"
-
-    # Escape the backports path before using it in exec commands and guards.
-    $backports_file_shell = stdlib::shell_escape($backports_file)
-    if ($backports and $backports_allow) {
-      $backports_install_options = ['-t', "${os_name}-backports"]
-
-      # Escape generated backports source content before the shell writes it.
-      $backports_source_shell = stdlib::shell_escape("deb ${os_url} ${os_name}-backports ${os_repo}\n")
-      exec { 'basic_settings_source_backports':
-        command => "/usr/bin/printf %s ${backports_source_shell} > ${backports_file_shell}",
-        unless  => "/usr/bin/test -e ${backports_file_shell}",
-        notify  => Exec['basic_settings_source_reload'],
-        require => [Package['apt'], Package['coreutils']],
-      }
-    } else {
-      $backports_install_options = []
-      exec { 'basic_settings_source_backports':
-        command => "/usr/bin/rm ${backports_file_shell}",
-        onlyif  => "/usr/bin/test -e ${backports_file_shell}",
-        notify  => Exec['basic_settings_source_reload'],
-        require => [Package['apt'], Package['coreutils']],
-      }
-    }
-
-    # Based on OS parent use correct source list
-    file { 'basic_settings_source':
-      ensure  => file,
-      path    => '/etc/apt/sources.list',
-      mode    => '0600',
-      owner   => 'root',
-      group   => 'root',
-      content => template("basic_settings/source/${os_parent}.list"),
-      notify  => Exec['basic_settings_source_reload'],
-      require => Exec['basic_settings_source_backports'],
     }
   }
 
@@ -785,6 +839,7 @@ class basic_settings (
     }
     $monitoring_requirements = Class['basic_settings::systemd', 'basic_settings::package_openitcockpit']
   } else {
+    # Retain systemd ordering without requiring an OpenITCockpit repository.
     $monitoring_requirements = Class['basic_settings::systemd']
   }
 
@@ -1114,38 +1169,21 @@ class basic_settings (
 
   # Try to get puppet repo
   if ($puppet_repo == undef) {
+    # Select the remote OpenVox repository only when it is enabled and supported.
     if ($voxpupuli_enable and $voxpupuli_allow) {
+      # Select the enabled external OpenVox repository.
       $puppet_repo_correct = 'remote'
     } else {
+      # Fall back to packages provided by the distribution.
       $puppet_repo_correct = 'distro'
     }
   } else {
+    # Fall back to packages provided by the distribution.
     $puppet_repo_correct = 'distro'
   }
 
-  # Check if variable openjdk is true; if true, install new package
-  if (($puppetserver_enable and $puppetserver_jdk) or ($openjdk_enable and $openjdk_allow)) {
-    # Get package name
-    if ($puppetserver_enable or $openjdk_version == 'default') {
-      $openjdk_package = 'default-jdk'
-    } else {
-      $openjdk_package = "openjdk-${openjdk_version}-jdk"
-    }
-
-    # Install openjdk package
-    package { 'openjdk':
-      ensure          => installed,
-      name            => $openjdk_package,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-
-    # Install java extensions
-    package { ['adwaita-icon-theme', 'ca-certificates-java', 'dconf-service']:
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-      require         => Package['openjdk'],
-    }
-  } else {
+  # Remove Java when no enabled feature needs it, retaining GUI dependencies according to the selected mode.
+  if (!(($puppetserver_enable and $puppetserver_jdk) or ($openjdk_enable and $openjdk_allow))) {
     # Remove openjdk package
     package { 'openjdk':
       ensure => purged,
@@ -1155,19 +1193,23 @@ class basic_settings (
     # Setup GUI mode
     case $gui_mode {
       'kiosk': {
+        # Enable the icon theme and configuration service needed by the kiosk desktop.
         $adwaita_icon_theme_enable = true
         $dconf_service_enable = true
       }
       'adwaita-icon': {
+        # Keep the icon theme without enabling the desktop configuration service.
         $adwaita_icon_theme_enable = true
         $dconf_service_enable = false
       }
       default: {
+        # Omit desktop dependencies when no selected component needs them.
         $adwaita_icon_theme_enable = false
         $dconf_service_enable = false
       }
     }
 
+    # Retain icon themes required by the selected GUI mode when Java is removed.
     if ($adwaita_icon_theme_enable) {
       # Install adwaita icon package
       package { 'adwaita-icon-theme':
@@ -1183,6 +1225,7 @@ class basic_settings (
       }
     }
 
+    # Retain dconf only when the selected GUI mode still needs it.
     if ($dconf_service_enable) {
       # Install dconf service package
       package { 'dconf-service':
@@ -1202,6 +1245,29 @@ class basic_settings (
     package { ['ca-certificates-java']:
       ensure  => purged,
       require => Package['openjdk'],
+    }
+  } else {
+    # Get package name
+    if ($puppetserver_enable or $openjdk_version == 'default') {
+      # Let the distribution choose its default JDK package.
+      $openjdk_package = 'default-jdk'
+    } else {
+      # Select the explicitly requested JDK version.
+      $openjdk_package = "openjdk-${openjdk_version}-jdk"
+    }
+
+    # Install openjdk package
+    package { 'openjdk':
+      ensure          => installed,
+      name            => $openjdk_package,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+    }
+
+    # Install java extensions
+    package { ['adwaita-icon-theme', 'ca-certificates-java', 'dconf-service']:
+      ensure          => installed,
+      install_options => ['--no-install-recommends', '--no-install-suggests'],
+      require         => Package['openjdk'],
     }
   }
 

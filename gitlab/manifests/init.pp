@@ -36,33 +36,44 @@ class gitlab (
   # Set some values
   $suspicious_packages = ['/usr/bin/gitlab-ctl']
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
+  $basic_settings_enable = defined(Class['basic_settings'])
 
   # Try to get server fdqn
   if ($server_fdqn == undef) {
-    if (defined(Class['basic_settings'])) {
+    # Use the central server FQDN when available, otherwise use the networking fact.
+    if ($basic_settings_enable) {
+      # Inherit the public server name from the central settings.
       $server_fdqn_correct = $basic_settings::server_fdqn
     } else {
+      # Fall back to the host's reported FQDN without central settings.
       $server_fdqn_correct = $facts['networking']['fqdn']
     }
   } else {
+    # Preserve the caller's public server name.
     $server_fdqn_correct = $server_fdqn
   }
 
   # Try to get root email
   if ($root_email == undef) {
+    # Use the monitoring contact for the initial administrator when monitoring is configured.
     if ($monitoring_enable) {
+      # Reuse the monitoring notification address for the initial administrator contact.
       $root_email_found = $basic_settings::monitoring::mail_to
     } else {
+      # Use root as the default administrator contact before adding the server domain.
       $root_email_found = 'root'
     }
   } else {
+    # Preserve the caller's administrator contact.
     $root_email_found = $root_email
   }
 
   # Set email
   if ($root_email_found == 'root') {
+    # Qualify the default root address with the selected server FQDN.
     $root_email_correct = "root@${server_fdqn_correct}"
   } else {
+    # Keep an explicitly selected administrator address unchanged.
     $root_email_correct = $root_email_found
   }
 
@@ -123,6 +134,7 @@ class gitlab (
     require => Exec['gitlab_install'],
   }
 
+  # Register the GitLab unit reload only when the systemd package dependency exists.
   if (defined(Package['systemd'])) {
     # Reload systemd deamon
     exec { 'gitlab_systemd_daemon_reload':
@@ -132,7 +144,7 @@ class gitlab (
     }
 
     # Check if basic settings is defined
-    if (defined(Class['basic_settings'])) {
+    if ($basic_settings_enable) {
       # Disable Gitlab service
       service { 'gitlab-runsvdir':
         ensure  => undef,
@@ -153,10 +165,12 @@ class gitlab (
 
     # Get unit
     if ($monitoring_enable) {
+      # Route unit failures through the configured monitoring notification service.
       $unit = {
         'OnFailure' => 'notify-failed@%i.service',
       }
     } else {
+      # Leave unit failure hooks empty when monitoring is unavailable.
       $unit = {}
     }
 
@@ -189,21 +203,27 @@ class gitlab (
         # GitLab's bundled Prometheus periodically probes TSDB metadata; interrupted reads in that data directory are expected.
         '-a never,exit -F arch=b32 -S open,openat,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', # lint:ignore:140chars
         '-a never,exit -F arch=b64 -S openat,openat2,open_by_handle_at -F dir=/var/opt/gitlab/prometheus/data -F exe=/usr/local/lib/gitlab/embedded/bin/prometheus -F gid=gitlab-prometheus -F success=0', # lint:ignore:140chars
+
         # User-systemd setup for the GitLab account creates runtime markers, transient xattrs, and mount probes.
         '-a never,exit -F arch=b32 -S mknodat,mount,umount2,chmod,fchmod,fchmodat,chown,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', # lint:ignore:140chars
         '-a never,exit -F arch=b64 -S mknodat,mount,umount2,fchmod,fchmodat,fchown,fchownat,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F exe=/usr/lib/systemd/systemd -F auid=git -F uid=git -F gid=git', # lint:ignore:140chars
+
         # GitLab SSH sessions call systemctl for user-manager state checks; systemd-owned configuration writes remain audited.
         '-a never,exit -F arch=b32 -F exe=/usr/bin/systemctl -F auid=git',
         '-a never,exit -F arch=b64 -F exe=/usr/bin/systemctl -F auid=git',
+
         # PAM and update-motd run a root-owned command chain inside Git SSH sessions; auditd cannot scope this to the shared account's argv.
         '-a never,exit -F arch=b32 -S execve -F auid=git -F uid=root -F euid=root -F gid=root',
         '-a never,exit -F arch=b64 -S execve -F auid=git -F uid=root -F euid=root -F gid=root',
+
         # Prometheus reads kernel time-discipline state for its own metrics, which otherwise trips the baseline time-change audit rule.
         '-a never,exit -F arch=b32 -S adjtimex -F gid=gitlab-prometheus',
         '-a never,exit -F arch=b64 -S adjtimex -F gid=gitlab-prometheus',
+
         # GitLab's bundled Ruby adjusts GitLab-managed runtime files during daemon housekeeping before any login audit session exists.
         '-a never,exit -F arch=b32 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F auid=unset',
         '-a never,exit -F arch=b64 -S chmod -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F auid=unset',
+
         # GitLab's bundled Ruby opens repository data as the git group; keep this scoped to that executable and group.
         '-a never,exit -F arch=b32 -S open,openat,open_by_handle_at -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F gid=git',
         '-a never,exit -F arch=b64 -S openat,openat2,open_by_handle_at -F exe=/usr/local/lib/gitlab/embedded/bin/ruby -F gid=git',
@@ -211,6 +231,8 @@ class gitlab (
       order   => 2,
       require => Exec['gitlab_install'],
     }
+
+    # Keep suspicious package execution audited alongside the scoped runtime exclusions.
     basic_settings::security_audit { 'gitlab_packages':
       rule_suspicious_packages => $suspicious_packages,
       require                  => Exec['gitlab_install'],

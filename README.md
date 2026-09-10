@@ -108,6 +108,10 @@ De checks volgen het Nagios-pluginmodel en kunnen daardoor ook vanuit Naemon, Na
 
 Met `basic_settings::monitoring_custom` kun je een eigen script in de OpenITCOCKPIT-pluginmap plaatsen en registreren. De defined types `monitoring_service`, `monitoring_timer` en `monitoring_npm_audit` zijn bedoeld voor veelvoorkomende systemd- en npm-controles. De checks zelf staan onder `files/` en `templates/`; zie ook [Beschikbare checks](#beschikbare-checks) en [`examples/monitoring.pp`](examples/monitoring.pp).
 
+Nginx-vhosts met HTTPS en ingevulde certificaat- en sleutelpaden krijgen automatisch een lokale certificaatcontrole. Alle registraties gebruiken één gedeeld script; certificaatpaden worden tijdens de controle uit de Nginx-configuratie gelezen. Met `monitoring_cert => false` verwijder je de registratie voor een vhost.
+
+Laat bij het uitschakelen van de hele monitoring `basic_settings::monitoring` aanwezig met `package => 'none'`: Puppet leegt dan zijn bestaande checkregistratie en herstart een actieve systemd-agent om de oude checks uit het geheugen te verwijderen. Andere pluginbestanden blijven staan.
+
 De OpenITCOCKPIT-agent bindt standaard op `127.0.0.1`, publiceert de Prometheus-exporter standaard niet en verifieert in push-mode standaard het servercertificaat. Publiceer de agent of exporter alleen bewust en regel daarbij firewalling en TLS.
 
 ## Installatie
@@ -168,6 +172,7 @@ node 'server01.example.org' {
     server_fdqn                => 'server01.example.org',
   }
 
+  # Restrict administrative SSH access after preparing the host baseline.
   class { 'ssh':
     allow_users       => ['admin'],
     permit_root_login => false,
@@ -254,10 +259,12 @@ class { 'basic_settings':
   docker_enable => true,
 }
 
+# Install the runtime after preparing the Docker package source.
 class { 'docker':
   require => Class['basic_settings'],
 }
 
+# Deploy the application with its managed Compose definition and environment.
 docker::compose { 'example':
   compose_source => 'puppet:///modules/profile/example/docker-compose.yml',
   env_content    => Sensitive("COMPOSE_PROJECT_NAME=example\nAPP_SECRET=replace-with-secret\n"),
@@ -292,12 +299,14 @@ class { 'basic_settings':
   gitlab_enable => true,
 }
 
+# Install GitLab with the administrator password supplied through Hiera.
 class { 'gitlab':
   root_password => lookup('gitlab::root_password'),
   server_fdqn   => 'gitlab.example.org',
   require       => Class['basic_settings'],
 }
 
+# Enable HTTPS for the installed GitLab service.
 class { 'gitlab::config':
   https   => true,
   require => Class['gitlab'],
@@ -331,11 +340,13 @@ class { 'letsencrypt':
   mail_to => 'security@example.org',
 }
 
+# Provide the webserver used by the certificate validation plugin.
 class { 'nginx':
   securitytxt_contacts => ['mailto:security@example.org'],
   require              => Class['letsencrypt'],
 }
 
+# Request a certificate covering both public application names.
 letsencrypt::certificate { 'app.example.org':
   domains => ['app.example.org', 'www.app.example.org'],
   plugin  => 'nginx',
@@ -372,12 +383,14 @@ class { 'basic_settings':
   mysql_version => 8.0,
 }
 
+# Configure database administration and backup credentials after preparing packages.
 class { 'mysql':
   automysqlbackup_password => Sensitive('replace-with-backup-password'),
   root_password            => lookup('mysql::root_password'),
   require                  => Class['basic_settings'],
 }
 
+# Create the application schema after the database service is available.
 mysql::database { 'app':
   ensure  => present,
   require => Class['mysql'],
@@ -466,10 +479,17 @@ Een gecombineerde netwerkinrichting past in het basisprofiel van [`examples/site
 - Beheert security headers en de gegevens in `security.txt`.
 - Werkt samen met Certbot, PHP-FPM, monitoring, auditd, logrotate en de gedeelde systemd-targets.
 - Controleert configuratie vóór een service-reload.
+- Controleert bij actieve OpenITCOCKPIT-monitoring lokale TLS-ketens, DNS-namen, sleutels en geldigheid met één gedeeld script.
 
 #### Belangrijke aandachtspunten
 
+Declareer `nginx` vóór de vhosts. `nginx::server` regelt de afhankelijkheden van het pakket en de configuratiemap zelf. Voeg bij een vhost of een wrapper die Nginx-configuratie wijzigt geen `require => Class['nginx']` toe: dat zou de service vóór het configuratiebestand plaatsen, terwijl een wijziging aan dat bestand juist de service moet kunnen verversen. Gebruik voor aanvullende afhankelijkheden de betreffende pakket- of bestandsresource.
+
 De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten. Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
+
+Geef voor TLS-monitoring expliciete DNS-namen op in `server_name` en beheer interne root-CA's via de systeemtrust. De resourcetitel geldt niet als vervanging voor `server_name`. De check controleert alle concrete aliases en geeft een TLS-redirectvhost een eigen registratie. Nginx-wildcardnamen, regexnamen, dynamische certificaatpaden en versleutelde sleutels kunnen niet volledig worden beoordeeld. Houd privésleutels afgeschermd: de check gebruikt de bestaande rootidentiteit van de agent en verruimt geen bestandsrechten.
+
+De controle leest de actuele configuratie en bestanden; zij bewijst niet welk certificaat draaiende Nginx-workers aanbieden en vernieuwt of herlaadt niets. Een configuratiefout in een andere vhost kan de beoordeling blokkeren. Test de check onder de echte agent en diens systemd-beperkingen voordat je de meldingen in gebruik neemt. Gebruik bij het verwijderen van een vhost eerst `ensure => absent` om ook de configuratie en de registraties op te ruimen.
 
 #### Basisvoorbeeld
 
@@ -478,15 +498,15 @@ class { 'nginx':
   securitytxt_contacts => ['mailto:security@example.org'],
 }
 
+# Serve the static application with an explicit document root and server name.
 nginx::server { 'app.example.org':
   docroot        => '/var/www/app.example.org',
   php_fpm_enable => false,
   server_name    => 'app.example.org',
-  require        => Class['nginx'],
 }
 ```
 
-TLS-, PHP-FPM-, security-header- en reverse-proxyvarianten staan in [`examples/web.pp`](examples/web.pp).
+TLS-, PHP-FPM-, monitoring-, security-header- en reverse-proxyvarianten staan in [`examples/web.pp`](examples/web.pp). De Puppet Strings bij [`nginx::server`](nginx/manifests/server.pp) en [`nginx::monitoring_cert`](nginx/manifests/monitoring_cert.pp) beschrijven de instellingen, drempels en beperkingen.
 
 ### `openitcockpit`
 
@@ -552,6 +572,7 @@ class { 'basic_settings':
   sury_enable => true,
 }
 
+# Install the PHP runtime and application extensions from the prepared source.
 class { 'php8':
   curl          => true,
   mbstring      => true,
@@ -559,6 +580,7 @@ class { 'php8':
   require       => Class['basic_settings'],
 }
 
+# Enable PHP-FPM after its runtime is available.
 class { 'php8::fpm':
   require => Class['php8'],
 }
@@ -623,10 +645,12 @@ class { 'basic_settings':
   rabbitmq_enable => true,
 }
 
+# Install the broker after preparing the RabbitMQ package source.
 class { 'rabbitmq':
   require => Class['basic_settings'],
 }
 
+# Require TLS for client connections and disable the plain TCP listener.
 class { 'rabbitmq::tcp':
   ssl_ca_certificate  => '/etc/rabbitmq/ssl/ca.pem',
   ssl_certificate     => '/etc/rabbitmq/ssl/cert.pem',
@@ -696,6 +720,7 @@ class { 'vnstat':
   p95_warning   => 700,
 }
 
+# Monitor the selected network interface using the shared traffic settings.
 vnstat::ethernet { 'wan':
   interface => 'ens192',
   require   => Class['vnstat'],
@@ -717,6 +742,7 @@ De checks worden automatisch door relevante modules geregistreerd wanneer OpenIT
 - [`check_mirth_connect`](openitcockpit/templates/agent/check_mirth_connect)
 - [`check_mysql`](mysql/templates/check_mysql)
 - [`check_network`](basic_settings/templates/monitoring/check_network)
+- [`check_nginx_cert`](nginx/templates/check_nginx_cert)
 - [`check_nftables`](basic_settings/templates/monitoring/check_nftables)
 - [`check_npm_audit`](basic_settings/files/monitoring/check_npm_audit)
 - [`check_puppet_agent`](basic_settings/templates/monitoring/puppet/check_agent)

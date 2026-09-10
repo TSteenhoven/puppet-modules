@@ -35,6 +35,7 @@ node 'monitored-host.example.org' {
     require                   => Class['basic_settings'],
   }
 
+  # Register the application health check after the agent is configured.
   basic_settings::monitoring_custom { 'application_health':
     ensure        => present,
     cmd           => '--url https://127.0.0.1/health',
@@ -46,6 +47,7 @@ node 'monitored-host.example.org' {
     require       => Class['openitcockpit::agent'],
   }
 
+  # Add Mirth Connect monitoring to the same agent.
   class { 'openitcockpit::agent_mirth_connect':
     ensure  => present,
     require => Class['openitcockpit::agent'],
@@ -58,6 +60,7 @@ node 'pull-agent.example.org' {
     monitoring_package_install => true,
   }
 
+  # Expose the pull agent and exporter deliberately; protect access with host firewall policy.
   class { 'openitcockpit::agent':
     bind_address              => '0.0.0.0',
     prometheus_enable         => true,
@@ -76,19 +79,22 @@ node 'monitoring.example.org' {
     sury_enable          => true,
   }
 
+  # Provide the webserver used by the monitoring interface.
   class { 'nginx':
     securitytxt_contacts => ['mailto:security@example.org'],
     require              => Class['basic_settings'],
   }
 
+  # Install the PHP runtime needed by the monitoring web application.
   class { 'php8':
     curl          => true,
     minor_version => 3,
     require       => Class['basic_settings'],
   }
 
+  # Connect PHP-FPM to the prepared webserver and PHP runtime.
   class { 'php8::fpm':
-    require => [Class['nginx'], Class['php8']],
+    require => [Package['nginx'], Class['php8']],
   }
 
   include openitcockpit
@@ -96,16 +102,17 @@ node 'monitoring.example.org' {
   class { 'openitcockpit::server':
     grafana_password => Sensitive('replace-with-grafana-admin-password'),
     server_fdqn      => 'monitoring.example.org',
-    require          => [Class['basic_settings'], Class['nginx'], Class['php8::fpm']],
+    require          => [Class['basic_settings'], Package['nginx', 'php8.3-fpm']],
   }
 
+  # Add the monitoring engine after the server components are available.
   class { 'naemon':
     require => Class['openitcockpit::server'],
   }
 
+  # Register a monitored host with an explicit address and readable name.
   naemon::host { 'web01':
     address  => '192.0.2.10',
     friendly => 'Webserver 01',
-    require  => Class['naemon'],
   }
 }

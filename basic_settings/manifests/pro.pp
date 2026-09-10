@@ -41,8 +41,10 @@ class basic_settings::pro (
 
       # Check snap state
       if (defined(Class['basic_settings::monitoring'])) {
+        # Reuse the package class's Snap setting for the Pro monitoring integration.
         $snap_enable = $basic_settings::packages::snap_enable
       } else {
+        # Omit Snap integration from the standalone Pro path.
         $snap_enable = false
       }
 
@@ -60,6 +62,7 @@ class basic_settings::pro (
         }
       }
 
+      # Install Ubuntu Pro client tools only for enabled integration with Snap support.
       if ($enable and $snap_enable) {
         # Install advantage tools
         package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:

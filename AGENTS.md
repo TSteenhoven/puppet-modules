@@ -27,6 +27,13 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Keep changes within first-party code and repository-owned documentation or tooling unless the task explicitly requires a vendored dependency change.
 - Never use vendored submodules as project style examples.
 
+### Shared Check Executables
+
+- When adding or changing monitoring checks, deploy one shared executable per check implementation on each managed host. Reuse it for every target registration; never generate executable copies or wrappers merely to embed different target values.
+- Pass target identity and settings that differ between registrations as runtime arguments or through an existing configuration interface. Limit executable templating to values shared by all registrations on the host.
+- Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
+- Validate with at least two targets that registrations invoke the same executable with their own settings and that retiring one target preserves the shared executable and other registrations.
+
 ## Working With The Existing Codebase
 
 ### Preparation

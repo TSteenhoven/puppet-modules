@@ -61,12 +61,15 @@ class rabbitmq::tcp (
   Boolean          $tcp_enable          = false,
   Integer          $tcp_port            = 5672,
 ) {
+  # Require the RabbitMQ parent before configuring AMQP listeners and TLS.
   if (defined(Class['rabbitmq'])) {
     # Check if all cert variables are given
     if ($ssl_ca_certificate != undef and $ssl_certificate != undef and $ssl_certificate_key != undef) {
+      # Enable TLS and honor the TCP toggle when a complete certificate set is supplied.
       $tls_allow = true
       $tcp_enable_correct = $tcp_enable
     } else {
+      # Keep plaintext TCP available when no complete TLS certificate set is supplied.
       $tls_allow = false
       $tcp_enable_correct = true
     }

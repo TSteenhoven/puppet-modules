@@ -24,13 +24,16 @@ class php8::fpm (
   Hash             $ini_settings = {},
   Optional[String] $pidfile      = undef,
 ) {
+  # Require the PHP parent before configuring its FPM service.
   if (defined(Class['php8'])) {
     # Merge given init settings with default settings
     if (defined(Class['basic_settings::timezone'])) {
+      # Use the central timezone as a PHP default while retaining explicit INI overrides.
       $correct_ini_settings = stdlib::merge({
           'date.timezone' => $basic_settings::timezone::timezone,
       }, $ini_settings)
     } else {
+      # Keep the supplied INI settings without adding a central timezone default.
       $correct_ini_settings = $ini_settings
     }
 
@@ -43,15 +46,19 @@ class php8::fpm (
 
       # Get correct pid file
       if ($pidfile == undef) {
+        # Keep the FPM PID file distinct for the selected PHP minor version.
         $correct_pidfile = "/run/php/php8.${minor_version}-fpm.pid"
       } else {
+        # Preserve the caller's FPM PID-file path.
         $correct_pidfile = $pidfile
       }
 
       # Get correct error file
       if ($errorlog == undef) {
+        # Keep the FPM error log distinct for the selected PHP minor version.
         $correct_errorlog = "/var/log/php8.${minor_version}-fpm.log"
       } else {
+        # Preserve the caller's FPM error-log path.
         $correct_errorlog = $errorlog
       }
 
@@ -110,7 +117,7 @@ class php8::fpm (
             'BindsTo' => "php8.${minor_version}-fpm.service",
           },
           daemon_reload => "php8_${minor_version}_systemd_daemon_reload",
-          require       => Class['nginx'],
+          require       => Package['nginx'],
         }
 
         # Set service
@@ -118,14 +125,18 @@ class php8::fpm (
             'Nice' => "-${nginx::nice_level}",
         }, $default_service)
       } else {
+        # Use the default FPM service settings without an Nginx service dependency.
         $service = $default_service
       }
 
       # Create service check
       if (defined(Class['basic_settings::monitoring'])) {
+        # Route unit failures through the configured monitoring notification service.
         $unit = {
           'OnFailure' => 'notify-failed@%i.service',
         }
+
+        # Register the FPM service check only with an active monitoring backend.
         if ($basic_settings::monitoring::package != 'none') {
           basic_settings::monitoring_service { 'php8':
             friendly => 'PHP8',
@@ -133,6 +144,7 @@ class php8::fpm (
           }
         }
       } else {
+        # Leave unit failure hooks empty when monitoring is unavailable.
         $unit = {}
       }
 
@@ -186,6 +198,7 @@ class php8::fpm (
         }
       }
     } else {
+      # List reserved INI keys in the validation error before rejecting the configuration.
       $reserved_ini_settings_text = join($reserved_ini_settings, ', ')
       fail("php8::fpm ini_settings must not include module-managed PHP INI settings: ${reserved_ini_settings_text}.")
     }

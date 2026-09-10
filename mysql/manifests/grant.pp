@@ -44,6 +44,7 @@ define mysql::grant (
   Array                     $privileges   = ['ALL PRIVILEGES'],
   String                    $table        = '*',
 ) {
+  # Require the MySQL parent before managing grants through its service and helper.
   if (defined(Class['mysql'])) {
     # Set requirements
     Exec {
@@ -64,9 +65,12 @@ define mysql::grant (
 
     # Change SQL queries based on version
     if (versioncmp(String($mysql::version), '8.0') >= 0 and $priv_str == 'ALL PRIVILEGES') {
+      # Expand ALL PRIVILEGES only for the global MySQL 8 grant comparison.
       if ($database != '*') {
+        # Compare database-scoped privileges using the requested privilege string.
         $check_all_priv = $priv_str
       } else {
+        # Expand global ALL PRIVILEGES to the MySQL 8 privilege list for comparison.
         $check_all_priv = 'ALTER, ALTER ROUTINE, CREATE, CREATE ROLE, CREATE ROUTINE, CREATE TABLESPACE, CREATE TEMPORARY TABLES, CREATE USER, CREATE VIEW, DELETE, DROP, DROP ROLE, EVENT, EXECUTE, FILE, INDEX, INSERT, LOCK TABLES, PROCESS, REFERENCES, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE, SELECT, SHOW DATABASES, SHOW VIEW, SHUTDOWN, SUPER, TRIGGER, UPDATE' # lint:ignore:140chars
       }
 

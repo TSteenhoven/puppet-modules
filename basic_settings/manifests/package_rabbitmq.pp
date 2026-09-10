@@ -33,9 +33,11 @@ class basic_settings::package_rabbitmq (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use separate deb822 source files for Erlang and RabbitMQ.
     $file_erlang = '/etc/apt/sources.list.d/rabbitmq-erlang.sources'
     $file_server = '/etc/apt/sources.list.d/rabbitmq-server.sources'
   } else {
+    # Use separate one-line APT source files for Erlang and RabbitMQ.
     $file_erlang = '/etc/apt/sources.list.d/rabbitmq-erlang.list'
     $file_server = '/etc/apt/sources.list.d/rabbitmq-server.list'
   }
@@ -50,12 +52,15 @@ class basic_settings::package_rabbitmq (
   $key_erlang_shell = stdlib::shell_escape($key_erlang)
   $key_server_shell = stdlib::shell_escape($key_server)
 
+  # Install the RabbitMQ and Erlang repositories or remove their managed sources when disabled.
   if ($enable) {
     # Get source
     if ($deb_version == '822') {
+      # Render the Erlang and RabbitMQ repositories with their signing keys in deb822 format.
       $source_erlang  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-erlang/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_erlang}\\n" # lint:ignore:140chars
       $source_server  = "Types: deb\\nURIs: https://deb1.rabbitmq.com/rabbitmq-server/${os_parent}/${os_name}\\nSuites: ${os_name}\\nComponents: main\\nSigned-By:${key_server}\\n" # lint:ignore:140chars
     } else {
+      # Render the Erlang and RabbitMQ repositories with their signing keys in one-line APT format.
       $source_erlang = "deb [signed-by=${key_erlang}] https://deb1.rabbitmq.com/rabbitmq-erlang/${os_parent}/${os_name} ${os_name} main\\n"
       $source_server = "deb [signed-by=${key_server}] https://deb1.rabbitmq.com/rabbitmq-server/${os_parent}/${os_name} ${os_name} main\\n"
     }
@@ -96,6 +101,8 @@ class basic_settings::package_rabbitmq (
       ensure => absent,
       path   => $key_erlang,
     }
+
+    # Remove the RabbitMQ server key independently of the Erlang repository key.
     file { 'package_proxmox_key_server':
       ensure => absent,
       path   => $key_server,

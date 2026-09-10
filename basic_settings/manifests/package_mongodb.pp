@@ -38,8 +38,10 @@ class basic_settings::package_mongodb (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/mongodb.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/mongodb.list'
   }
 
@@ -50,11 +52,14 @@ class basic_settings::package_mongodb (
   $file_shell = stdlib::shell_escape($file)
   $key_shell = stdlib::shell_escape($key)
 
+  # Install the MongoDB repository when enabled and remove its managed source otherwise.
   if ($enable) {
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source  = "Types: deb\\nURIs: https://repo.mongodb.org/apt/${os_parent}\\nSuites: ${os_name}/mongodb-org/${version}\\nComponents: main\\nSigned-By:${key}\\n" # lint:ignore:140chars
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source = "deb [signed-by=${key}] https://repo.mongodb.org/apt/${os_parent} ${os_name}/mongodb-org/${version} main\\n"
     }
 

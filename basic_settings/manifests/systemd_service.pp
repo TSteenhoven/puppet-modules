@@ -96,11 +96,14 @@ define basic_settings::systemd_service (
 
     # Check if we need to monitoring this service
     if ($monitoring_enable != undef and $monitoring_package != 'none') {
+      # Translate the explicit monitoring toggle into check presence or removal.
       $monitoring_ensure = $monitoring_enable ? { true => 'present', default => absent }
     } else {
+      # Remove the service check when monitoring is not selected for this backend.
       $monitoring_ensure = absent
     }
   } elsif ($monitoring_package != 'none') {
+    # Remove the service check when monitoring is not selected for this backend.
     $monitoring_ensure = absent
   }
 
@@ -114,6 +117,7 @@ define basic_settings::systemd_service (
 
   # Check if service is using node executable in ExecStart
   if ('ExecStart' in $service and $service['ExecStart'] =~ String and $service['ExecStart'] =~ /^(?:node|\.{1,2}\/node|\/(?:[^\/\s]+\/)+node)\s+/) { # lint:ignore:140chars
+    # Require a working directory before registering the Node.js dependency audit.
     if ('WorkingDirectory' in $service and $service['WorkingDirectory'] =~ String) {
       basic_settings::monitoring_npm_audit { $name:
         ensure  => $monitoring_ensure,

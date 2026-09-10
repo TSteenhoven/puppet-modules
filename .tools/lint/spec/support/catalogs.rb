@@ -41,5 +41,20 @@ module ProjectLint
         'edges' => catalog.fetch('edges').sort_by { |edge| [edge['source'], edge['target']] },
       }
     end
+
+    # Expand containment and autorequires without applying resources. Explicit Linux providers prevent the
+    # developer's macOS defaults from rejecting Debian/Ubuntu attributes during graph construction.
+    # A search path in this graph-only copy lets legacy unqualified exec guards be represented too;
+    # this checks ordering, not command-provider correctness or command execution.
+    def self.relationship_graph(catalog)
+      providers = { 'Package' => 'apt', 'Service' => 'systemd', 'User' => 'useradd', 'Group' => 'groupadd' }
+      resources = catalog.fetch('resources').map do |resource|
+        parameters = resource.fetch('parameters', {}).dup
+        parameters['provider'] ||= providers[resource['type']] if providers.key?(resource['type'])
+        parameters['path'] ||= ['/usr/bin', '/bin', '/usr/sbin', '/sbin'] if resource['type'] == 'Exec'
+        resource.merge('parameters' => parameters)
+      end
+      Puppet::Resource::Catalog.from_data_hash(catalog.merge('resources' => resources)).to_ral.relationship_graph
+    end
   end
 end

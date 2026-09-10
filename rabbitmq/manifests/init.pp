@@ -75,10 +75,12 @@ class rabbitmq (
 
     # Get unit
     if ($monitoring_enable) {
+      # Route unit failures through the configured monitoring notification service.
       $unit = {
         'OnFailure' => 'notify-failed@%i.service',
       }
     } else {
+      # Leave unit failure hooks empty when monitoring is unavailable.
       $unit = {}
     }
 

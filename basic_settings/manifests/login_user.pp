@@ -104,13 +104,16 @@ define basic_settings::login_user (
 ) {
   # Keep valid source input on the main path; invalid schemes are exceptional.
   if ($home_source == undef or $home_source =~ /(?i:\A(?:puppet:\/\/\/|file:\/\/\/|https:\/\/))/) {
+    # Reject unsupported private-key sources before managing account files.
     if ($private_key == undef or $private_key =~ /(?i:\A(?:puppet:\/\/\/|file:\/\/\/|https:\/\/))/) {
       # Set variables
       if (defined(Class['basic_settings::login'])) {
+        # Inherit the environment, hostname, and terminal-message policy from the login class.
         $environment = $basic_settings::login::environment
         $hostname = $basic_settings::login::hostname
         $mesg_disable = $basic_settings::login::mesg_disable
       } else {
+        # Use standalone login defaults and the host's reported short name.
         $environment = 'production'
         $hostname = $facts['networking']['hostname']
         $mesg_disable = true
@@ -118,13 +121,19 @@ define basic_settings::login_user (
 
       # Set authorized keys state
       if ($authorized_keys != undef) {
+        # Keep the explicitly supplied authorized-key collection under resource-level management.
         $authorized_keys_purge = false
+
+        # Distinguish an explicitly empty key list from a supplied set of login keys.
         if (empty($authorized_keys)) {
+          # Mark an explicitly empty collection as having no login keys.
           $authorized_keys_empty = true
         } else {
+          # Record that the supplied collection contains login keys.
           $authorized_keys_empty = false
         }
       } else {
+        # Purge unmanaged keys when no authorized-key collection is supplied.
         $authorized_keys_purge = true
         $authorized_keys_empty = true
       }
@@ -134,18 +143,25 @@ define basic_settings::login_user (
 
       # Get password max age
       if ($authorized_keys_empty) {
+        # Use a default password age only when the caller has not chosen one.
         if ($password_max_age == undef) {
+          # Avoid password expiry for a locked account; otherwise apply the default maximum age.
           if ($password_unwrapped == '!!') {
+            # Avoid password-expiry handling for a locked password.
             $password_max_age_correct = -1
           } else {
+            # Default password-based logins to an annual password change.
             $password_max_age_correct = 365
           }
         } else {
+          # Preserve the caller's password-expiry interval.
           $password_max_age_correct = $password_max_age
         }
       } elsif ($password_max_age == undef) {
+        # Leave password expiry disabled for the default key-based login path.
         $password_max_age_correct = -1
       } else {
+        # Preserve the caller's password-expiry interval.
         $password_max_age_correct = $password_max_age
       }
 
@@ -172,12 +188,14 @@ define basic_settings::login_user (
         purge_ssh_keys     => $authorized_keys_purge,
       }
 
+      # Create the group before its user and reverse that order for account removal.
       if ($ensure == present) {
         Group[$name] -> User[$name]
       } else {
         User[$name] -> Group[$name]
       }
 
+      # Manage home-directory content only when home management is requested.
       if ($home_enable) {
         # Preserve home directories during account removal while removing managed SSH and profile files.
         $home_directory_ensure = $ensure ? {
@@ -254,11 +272,16 @@ define basic_settings::login_user (
 
         # Create profile file
         if ($bash_profile != undef) {
+          # Choose the managed login profile or use the supplied profile content.
           if ($bash_profile == 'default') {
+            # Render the shared login profile when no custom profile is supplied.
             $bash_profile_correct = template('basic_settings/login/bash/profile')
           } else {
+            # Keep the caller's custom login profile.
             $bash_profile_correct = $bash_profile
           }
+
+          # Write the selected login profile with permissions restricted to its account.
           file { "${home}/.profile":
             ensure  => $home_file_ensure,
             content => $bash_profile_correct,
@@ -271,15 +294,22 @@ define basic_settings::login_user (
 
         # Create bashrc file
         if ($bashrc != undef) {
+          # Choose the managed Bash configuration or use the supplied content.
           if ($bashrc == 'default') {
+            # Use the root-specific shell defaults for the root account.
             if ($name == 'root') {
+              # Use the root-specific interactive shell defaults.
               $bash_rc_correct = template('basic_settings/login/bash/rc-root')
             } else {
+              # Use the regular-user interactive shell defaults.
               $bash_rc_correct = template('basic_settings/login/bash/rc')
             }
           } else {
+            # Keep the caller's custom interactive shell configuration.
             $bash_rc_correct = $bashrc
           }
+
+          # Apply the selected interactive shell setup after resolving account-specific defaults.
           file { "${home}/.bashrc":
             ensure  => $home_file_ensure,
             content => $bash_rc_correct,
@@ -292,11 +322,16 @@ define basic_settings::login_user (
 
         # Create bash aliases file
         if ($bash_aliases != undef) {
+          # Choose the managed alias set or use the supplied alias content.
           if ($bash_aliases == 'default') {
+            # Render the shared shell aliases when no custom aliases are supplied.
             $bash_aliases_correct = template('basic_settings/login/bash/aliases')
           } else {
+            # Keep the caller's custom shell aliases.
             $bash_aliases_correct = $bash_aliases
           }
+
+          # Keep the selected aliases private to this account.
           file { "${home}/.bash_aliases":
             ensure  => $home_file_ensure,
             content => $bash_aliases_correct,

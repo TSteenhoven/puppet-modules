@@ -28,8 +28,10 @@ class basic_settings::package_node (
 ) {
   # Check if we need newer format for APT
   if ($deb_version == '822') {
+    # Use the .sources filename for a deb822 repository definition.
     $file = '/etc/apt/sources.list.d/nodesource.sources'
   } else {
+    # Use the .list filename for a one-line APT repository definition.
     $file = '/etc/apt/sources.list.d/nodesource.list'
   }
 
@@ -48,6 +50,7 @@ class basic_settings::package_node (
     require     => Package['apt'],
   }
 
+  # Provision Node.js access and its repository only when this package source is enabled.
   if ($enable) {
     # The nodejs group is the local authorization boundary for running npm and npx without giving package-management rights.
     group { 'nodejs':
@@ -57,8 +60,10 @@ class basic_settings::package_node (
 
     # Get source
     if ($deb_version == '822') {
+      # Render the selected repository and signing key in deb822 format.
       $source = "Types: deb\nURIs: https://deb.nodesource.com/node_${version}.x\nSuites: nodistro\nComponents: main\nSigned-By:${key}\n"
     } else {
+      # Render the selected repository and signing key in one-line APT format.
       $source = "deb [signed-by=${key}] https://deb.nodesource.com/node_${version}.x nodistro main\n"
     }
 

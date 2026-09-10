@@ -14,6 +14,7 @@
 define rabbitmq::plugin (
   Optional[Type] $notify_target = undef,
 ) {
+  # Require the RabbitMQ parent before enabling broker plugins.
   if (defined(Class['rabbitmq'])) {
     # Escape the plugin name before building the enable command and guard.
     $name_shell = stdlib::shell_escape($name)

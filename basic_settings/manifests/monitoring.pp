@@ -17,7 +17,7 @@
 #
 # @param package
 # lint:ignore:140chars
-#   Monitoring integration to configure. `none` disables generated monitoring checks; `openitcockpit` writes OpenITCOCKPIT custom-check configuration.
+#   Monitoring integration to configure. `none` retires active Puppet-owned custom checks without deleting plugins; `openitcockpit` writes their configuration. Keep this class declared during retirement; an active systemd agent is restarted to discard cached checks.
 # lint:endignore
 #
 # @param package_install
@@ -101,6 +101,7 @@ class basic_settings::monitoring (
     require => Package[$mail_package],
   }
 
+  # Register the monitoring unit reload only when systemd is managed.
   if ($systemd_enable) {
     # Reload systemd deamon
     exec { 'monitoring_systemd_daemon_reload':
@@ -232,9 +233,11 @@ class basic_settings::monitoring (
         owner   => 'root',
         group   => 'root',
         mode    => '0600',
-        notify  => Service['monitoring_service'],
         require => File['monitoring_location'],
       }
+
+      # An externally installed agent need not have a Service resource until its owning class is evaluated.
+      Concat['/etc/openitcockpit-agent/customchecks.ini'] ~> Service <| title == 'monitoring_service' |>
 
       # Create fragment 
       concat::fragment { 'monitoring_customchecks_default':
@@ -244,7 +247,23 @@ class basic_settings::monitoring (
       }
     }
     default: {
-      # Other selections do not register an OpenITCOCKPIT backend.
+      # Retire only this repository-owned registry, without creating directories or purging other plugins.
+      # An independently declared agent may subsequently rebuild an empty registry through concat.
+      exec { 'monitoring_retire_customchecks':
+        command  => '/usr/bin/printf "# Managed by puppet\n[default]\n" > /etc/openitcockpit-agent/customchecks.ini',
+        onlyif   => '/usr/bin/grep -qx "# Managed by puppet" /etc/openitcockpit-agent/customchecks.ini && /usr/bin/grep -qx "enabled = true" /etc/openitcockpit-agent/customchecks.ini', # lint:ignore:140chars
+        provider => shell,
+      }
+      Exec['monitoring_retire_customchecks'] -> Concat <| title == '/etc/openitcockpit-agent/customchecks.ini' |>
+
+      # Retirement may follow removal of the agent Service resource, so refresh only an already running systemd backend.
+      exec { 'monitoring_retire_customchecks_reload':
+        command     => '/usr/bin/systemctl try-restart openitcockpit-agent.service',
+        onlyif      => '/usr/bin/test -x /usr/bin/systemctl && /usr/bin/systemctl is-active --quiet openitcockpit-agent.service',
+        provider    => shell,
+        refreshonly => true,
+        subscribe   => Exec['monitoring_retire_customchecks'],
+      }
     }
   }
 

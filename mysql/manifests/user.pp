@@ -38,6 +38,7 @@ define mysql::user (
   String                    $hostname         = 'localhost',
   String                    $password_latency = 'password',
 ) {
+  # Require the MySQL parent before managing database accounts through its service.
   if (defined(Class['mysql'])) {
     # Set requirements
     Exec {
@@ -54,6 +55,7 @@ define mysql::user (
     # Check if mysql version is 5.7, 8.0, 8.4
     case $mysql::version {
       5.7: {
+        # Use the MySQL 5.7 authentication column and update syntax.
         $password_field = 'authentication_string'
         $password_command = "UPDATE mysql.user SET plugin='mysql_native_password', authentication_string = PASSWORD('${password}'), password_expired = 'N' WHERE User = '${username}' AND Host = '${hostname}';" # lint:ignore:140chars
 
@@ -63,6 +65,7 @@ define mysql::user (
         $unless_field = "/usr/bin/bash -c ${password_check_script_shell}"
       }
       8.0, 8.4: {
+        # Select the requested authentication compatibility mode for MySQL 8 accounts.
         if ($password_latency == 'authentication_string') {
           # Use mysql_native_password instead off caching_sha2_password due to old packages non supported
           $password_field = 'authentication_string'
@@ -72,6 +75,7 @@ define mysql::user (
           $password_field = 'password'
           $password_command = "ALTER USER '${username}'@'${hostname}' IDENTIFIED BY '${password}';"
         }
+
         # Verify credentials through a root-only temp dir so the password check leaves no shared /tmp files behind.
         # Escape credential-check values before building the root-only temp config script.
         $password_config_shell = stdlib::shell_escape("[client]\npassword=${password}")
@@ -84,6 +88,7 @@ define mysql::user (
         $unless_field = "/usr/bin/bash -c ${password_check_script_shell}"
       }
       default: {
+        # Use the legacy password column and SET PASSWORD syntax on the remaining version path.
         $password_field = 'password'
         $password_command = "SET PASSWORD FOR '${username}'@'${hostname}' = PASSWORD('${password}');"
 

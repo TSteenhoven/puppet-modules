@@ -98,24 +98,38 @@ class basic_settings::network (
 
   # Get IP data
   if ($kernel_enable) {
+    # Inherit the IP-family selection from the kernel configuration.
     $ip_version = $basic_settings::kernel::ip_version
+
+    # Enable DHCPv6 only when both IPv6 and DHCP are allowed.
     if ($basic_settings::kernel::ip_version_v6 and $dhcp_enable) {
+      # Allow DHCPv6 for automatic address configuration with IPv6 available.
       $ip_dhcp_v6 = true
+
+      # Carry the kernel's router-advertisement policy into network configuration.
       if ($basic_settings::kernel::ip_ra_enable) {
+        # Enable router advertisements according to the kernel's IPv6 policy.
         $ip_ra_enable = true
       } else {
+        # Keep router advertisements disabled according to the kernel's IPv6 policy.
         $ip_ra_enable = false
       }
     } else {
+      # Disable IPv6 autoconfiguration when either IPv6 or DHCP is unavailable.
       $ip_dhcp_v6 = false
       $ip_ra_enable = false
     }
   } else {
+    # Allow both IP families when no kernel configuration selects one.
     $ip_version = 'all'
+
+    # Use DHCP to choose standalone IPv6 autoconfiguration defaults.
     if ($dhcp_enable) {
+      # Enable DHCPv6 and router advertisements for standalone automatic configuration.
       $ip_dhcp_v6 = true
       $ip_ra_enable = true
     } else {
+      # Disable DHCPv6 and router advertisements without automatic address configuration.
       $ip_dhcp_v6 = false
       $ip_ra_enable = false
     }
@@ -125,14 +139,18 @@ class basic_settings::network (
   $lldp_capabilities = join($capabilities, ' ')
   $lldp_platform = $facts['os']['name']
   $lldp_description = "${lldp_platform} ${environment} server"
+
+  # Derive the advertised hostname unless a communication name was supplied.
   if ($communication_name == undef) {
+    # Identify the advertised host by platform and environment.
     $communication_hostname = "${lldp_platform.downcase()}-${environment}"
   } else {
+    # Normalize the supplied discovery name into a lowercase token without whitespace.
     $communication_hostname = regsubst($communication_name.downcase, '\s+', '-', 'G')
   }
 
+  # Delegate hosts-file ownership to the dedicated hosts class while preserving the configured FQDN.
   if ($hosts_enable) {
-    # Delegate hosts-file ownership to the dedicated hosts class while preserving the configured FQDN.
     class { 'basic_settings::hosts':
       localhost_aliases => $hosts_localhost_aliases,
       server_fdqn       => $server_fdqn,
@@ -165,7 +183,10 @@ class basic_settings::network (
   # Based on firewall package do special commands
   case $firewall_package {
     'nftables': {
+      # Leave legacy firewall restore commands empty for this firewall backend.
       $firewall_command = ''
+
+      # Remove competing firewall implementations only when migration cleanup is requested.
       if ($firewall_remove) {
         package { ['iptables', 'firewalld']:
           ensure => purged,
@@ -185,7 +206,10 @@ class basic_settings::network (
       $suspicious_packages_root = flatten($default_packages_root, ['/usr/sbin/nft'])
     }
     'iptables': {
+      # Restore the configured rules through the selected iptables backend.
       $firewall_command = "iptables-restore < ${firewall_path}"
+
+      # Remove competing firewall implementations only when migration cleanup is requested.
       if ($firewall_remove) {
         package { ['nftables', 'firewalld']:
           ensure => purged,
@@ -197,14 +221,18 @@ class basic_settings::network (
       $suspicious_packages_root = $default_packages_root
     }
     'firewalld': {
+      # Leave legacy firewall restore commands empty for this firewall backend.
       $firewall_command = ''
       case $antivirus_package {
         'eset': {
+          # Remove the old iptables package only when firewall cleanup is requested.
           if ($firewall_remove) {
             package { 'iptables':
               ensure => purged,
             }
           }
+
+          # Keep nftables available for the ESET firewall even when the previous firewall package is removed.
           package { 'nftables':
             ensure          => installed,
             install_options => ['--no-install-recommends', '--no-install-suggests'],
@@ -215,6 +243,7 @@ class basic_settings::network (
           $suspicious_packages_root = $default_packages_root
         }
         default:  {
+          # Remove competing firewall implementations only when migration cleanup is requested.
           if ($firewall_remove) {
             package { ['nftables', 'iptables']:
               ensure => purged,
@@ -364,20 +393,23 @@ class basic_settings::network (
       require => Package[$firewall_package],
     }
 
+    # Add firewall checks and failure notifications only with monitoring integration.
     if ($monitoring_enable) {
       # Create service check
       if ($basic_settings::monitoring::package != 'none') {
-        if ($firewall_package == 'nftables') {
-          basic_settings::monitoring_custom { 'firewall':
-            content => template("basic_settings/monitoring/check_${firewall_package}"),
-          }
-        } else {
+        # Use a service check for firewalld and the configuration-aware check for nftables.
+        if ($firewall_package != 'nftables') {
           basic_settings::monitoring_service { 'firewall':
             services => [$firewall_package],
+          }
+        } else {
+          basic_settings::monitoring_custom { 'firewall':
+            content => template("basic_settings/monitoring/check_${firewall_package}"),
           }
         }
       }
 
+      # Attach firewall failure notifications only when systemd integration is available.
       if ($systemd_enable) {
         # Create drop in for firewall service
         basic_settings::systemd_drop_in { "${firewall_package}_notify_failed":
@@ -401,6 +433,7 @@ class basic_settings::network (
     mode   => '0755', # High important
   }
 
+  # Apply DHCP and router-advertisement policy through managed systemd network files.
   if ($systemd_enable) {
     # If DHCP is disabled, force system not to use DHCP
     if ($interfaces_str != '' and !$dhcp_enable) {
@@ -420,7 +453,9 @@ class basic_settings::network (
 
     # Setup default router advertisement settings
     if ($interfaces_str != '') {
+      # Configure learned IPv6 prefixes when router advertisements are allowed.
       if ($ip_ra_enable) {
+        # Translate the kernel's prefix-learning policy into a networkd boolean.
         $ip_learn_prefix = bool2str($basic_settings::kernel::ip_ra_learn_prefix, 'yes', 'no')
         basic_settings::systemd_network { '90-router-advertisement':
           interface      => $interfaces_str,
@@ -504,14 +539,18 @@ class basic_settings::network (
     # Check if systemd resolved package exists
     case $facts['os']['name'] {
       'Ubuntu': {
+        # Select the separate systemd-resolved package for Ubuntu 24.04.
         $os_version = $facts['os']['release']['major']
         if ($os_version == '24.04') {
+          # Manage the separate resolver package on Ubuntu 24.04.
           $systemd_resolved_package = true
         } else {
+          # Omit the separate resolver package on the other Ubuntu release paths.
           $systemd_resolved_package = false
         }
       }
       default: {
+        # Manage the separate resolver package on the default distribution path.
         $systemd_resolved_package = true
       }
     }
@@ -569,8 +608,10 @@ class basic_settings::network (
 
     # Get service list
     if ($dhcp_state) {
+      # Include the DHCP client in the services required for automatic network configuration.
       $services = ['dhcpcd', 'lldpd', 'systemd-networkd', 'systemd-resolved', 'networkd-dispatcher']
     } else {
+      # Monitor network services without a DHCP client for static configuration.
       $services = ['lldpd', 'systemd-networkd', 'systemd-resolved', 'networkd-dispatcher']
     }
 
@@ -586,6 +627,7 @@ class basic_settings::network (
       }
     }
   } else {
+    # Keep legacy network services without networkd audit rules when systemd is unavailable.
     $networkd_rules = []
     $services = ['dhcpcd', 'lldpd']
   }
@@ -610,7 +652,9 @@ class basic_settings::network (
 
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Escape the selected service list as one argument for the network check.
     $service_str = join($services, ' ')
+
     # The monitoring template inserts these lists as shell words without evaluating their contents.
     $service_str_shell = stdlib::shell_escape($service_str)
     $interfaces_str_shell = stdlib::shell_escape($interfaces_str)
@@ -622,12 +666,15 @@ class basic_settings::network (
 
   # Setup audit rules
   if (defined(Package['auditd'])) {
+    # Exclude executables already covered by the root audit rules.
     $suspicious_filter = $suspicious_packages - $suspicious_packages_root
     basic_settings::security_audit { 'network':
       rules                    => $networkd_rules,
       rule_suspicious_packages => $suspicious_filter,
       order                    => 20,
     }
+
+    # Retain login attribution when auditing privileged network tools.
     basic_settings::security_audit { 'network-root':
       rule_suspicious_packages => $suspicious_packages_root,
       rule_options             => ['-F auid!=unset'],

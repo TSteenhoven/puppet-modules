@@ -35,44 +35,58 @@ class basic_settings::hosts (
   }
 
   if (empty($localhost_aliases_invalid)) {
+    # Allow host resources to proceed when all aliases are valid tokens.
     $localhost_aliases_fail_text = undef
   } else {
+    # Record the invalid-alias error before declaring host resources.
     $localhost_aliases_fail_text = 'basic_settings::hosts localhost_aliases entries must be non-empty single tokens.'
   }
 
   # Normalize the short hostname and fall back to the first FQDN label when the fact is unavailable.
   if ($hostname != undef and $hostname != '' and $hostname !~ /\s/) {
+    # Use the supplied short hostname when it is a valid host token.
     $hostname_correct = $hostname
   } elsif ($server_fdqn != '' and $server_fdqn !~ /\s/) {
+    # Derive the short hostname from the FQDN when no valid short name is available.
     $hostname_correct = split($server_fdqn, '[.]')[0]
   } else {
+    # Omit the hostname alias when neither source provides a valid name.
     $hostname_correct = undef
   }
 
   # Keep the FQDN alias only when it adds a distinct, non-empty host token.
   if ($server_fdqn != '' and $server_fdqn !~ /\s/ and $server_fdqn != $hostname_correct) {
+    # Keep the distinct FQDN as an additional hostname alias.
     $server_fdqn_correct = $server_fdqn
   } else {
+    # Omit an empty, invalid, or duplicate FQDN alias.
     $server_fdqn_correct = undef
   }
 
   # Build the optional 127.0.1.1 line without duplicate or empty host names.
   if ($hostname_correct != undef) {
+    # Include the configured FQDN as an alias when it is available.
     if ($server_fdqn_correct != undef) {
+      # Keep both hostname forms on the same hosts entry.
       $hostname_aliases = "${hostname_correct} ${server_fdqn_correct}"
     } else {
+      # Use only the short hostname when no distinct FQDN remains.
       $hostname_aliases = $hostname_correct
     }
     $localhost_content = "127.0.1.1 ${hostname_aliases}\n"
   } else {
+    # Omit the optional hostname entry when no valid name is available.
     $localhost_content = undef
   }
 
+  # Write loopback entries only after all requested aliases have passed validation.
   if ($localhost_aliases_fail_text == undef) {
     # Build the IPv4 loopback record with any explicitly configured aliases.
     if (!empty($localhost_aliases)) {
+      # Append the requested aliases to the IPv4 localhost entry.
       $ipv4_loopback_content = "# Managed by puppet\n127.0.0.1 localhost ${join($localhost_aliases, ' ')}\n"
     } else {
+      # Keep the standard IPv4 localhost entry when no extra aliases are requested.
       $ipv4_loopback_content = "# Managed by puppet\n127.0.0.1 localhost\n"
     }
 
@@ -90,8 +104,8 @@ class basic_settings::hosts (
       order   => '01',
     }
 
+    # Emit the Debian-style local host alias only when a usable hostname exists.
     if ($localhost_content != undef) {
-      # Emit the Debian-style local host alias only when a usable hostname exists.
       concat::fragment { 'hosts_ipv4_hostname':
         target  => '/etc/hosts',
         content => $localhost_content,

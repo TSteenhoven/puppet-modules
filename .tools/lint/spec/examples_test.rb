@@ -13,9 +13,9 @@ class ExamplesTest < Minitest::Test
         if token.value.match?(/^\s*@example\b/)
           result << block if block
           block = { path: path, line: token.line, code: String.new }
-        elsif block && token.value.start_with?('   ')
+        elsif block && (token.value.start_with?('   ') || token.value.strip.empty?)
           block[:code] << "\n" while block[:line] + block[:code].lines.length < token.line - 1
-          block[:code] << token.value.delete_prefix('   ') + "\n"
+          block[:code] << (token.value.strip.empty? ? '' : token.value.delete_prefix('   ')) + "\n"
         elsif block
           result << block
           block = nil
@@ -73,6 +73,21 @@ class ExamplesTest < Minitest::Test
       snippet = examples.find { |example| File.expand_path(example[:path]) == path }
       refute_nil snippet, 'Puppet examples in .tools must remain part of documentation validation'
       assert_equal code, snippet.fetch(:code)
+    end
+  end
+
+  def test_blank_strings_comments_preserve_the_rest_of_an_example
+    Dir.mktmpdir('example_sections_', ProjectLint::ROOT) do |directory|
+      path = File.join(directory, 'example.pp')
+      File.write(path, "# @example Keep both resources in the same example\n#   notify { 'first': }\n#\n#   notify { 'second': }\n#\n# @api public\n")
+      snippet = examples.find { |example| File.expand_path(example[:path]) == path }
+      refute_nil snippet
+      assert_equal "notify { 'first': }\n\nnotify { 'second': }\n\n", snippet.fetch(:code)
+      lint = PuppetLint.new
+      lint.path = path
+      lint.code = snippet.fetch(:code)
+      lint.run
+      assert_equal [3], lint.problems.select { |finding| finding[:check] == :project_resource_sections }.map { |finding| finding[:line] }
     end
   end
 end

@@ -102,6 +102,9 @@ class nginx (
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
   $config = '/etc/nginx/conf.d'
 
+  # Monitoring shares the service configuration path and uses Nginx binary defaults for the package prefix.
+  $config_file = '/etc/nginx/nginx.conf'
+
   # Remove unnecessary package
   package { 'apache2':
     ensure => purged,
@@ -144,15 +147,20 @@ class nginx (
   # Set PID file
   $pid = '/run/nginx.pid'
 
-  # Disable service
-  if (defined(Package['systemd'])) {
-    # Disable service
-    service { 'nginx':
-      ensure  => undef,
-      enable  => false,
-      require => Package['nginx'],
-    }
+  # Shared targets control startup under systemd; otherwise Puppet enables and starts Nginx directly.
+  $systemd_enable = defined(Package['systemd'])
+  $service_ensure = $systemd_enable ? { true => undef, default => true }
+  $service_enable = $systemd_enable ? { true => false, default => true }
 
+  # Manage the Nginx service after its package is installed.
+  service { 'nginx':
+    ensure  => $service_ensure,
+    enable  => $service_enable,
+    require => Package['nginx'],
+  }
+
+  # Disable service
+  if ($systemd_enable) {
     # Reload systemd deamon
     exec { 'nginx_systemd_daemon_reload':
       command     => '/usr/bin/systemctl daemon-reload',
@@ -174,10 +182,12 @@ class nginx (
 
     # Get unit
     if ($monitoring_enable) {
+      # Route unit failures through the configured monitoring notification service.
       $unit = {
         'OnFailure' => 'notify-failed@%i.service',
       }
     } else {
+      # Leave unit failure hooks empty when monitoring is unavailable.
       $unit = {}
     }
 
@@ -205,18 +215,42 @@ class nginx (
       daemon_reload => 'nginx_systemd_daemon_reload',
       require       => Package['nginx'],
     }
-  } else {
-    # Enable service
-    service { 'nginx':
-      ensure  => true,
-      enable  => true,
-      require => Package['nginx'],
-    }
   }
 
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     basic_settings::monitoring_service { 'nginx': }
+
+    # One executable serves all vhost registrations; only the main daemon configuration is templated.
+    ['openssl', 'ca-certificates', 'coreutils'].each |$dependency| {
+      # Declare each shared certificate-check dependency only when it is not already managed.
+      if (!defined(Package[$dependency])) {
+        package { $dependency:
+          ensure          => installed,
+          install_options => ['--no-install-recommends', '--no-install-suggests'],
+        }
+      }
+    }
+    $nginx_config_shell = stdlib::shell_escape($config_file)
+    $monitoring_cert_content = template('nginx/check_nginx_cert')
+    $monitoring_cert_ensure = present
+    $monitoring_cert_require = [
+      File[$config_file], File['monitoring_location_plugins'],
+      Package['nginx'], Package['openssl'], Package['ca-certificates'], Package['coreutils'],
+    ]
+  } else {
+    # Remove the shared certificate check when no supported monitoring backend is active.
+    $monitoring_cert_content = undef
+    $monitoring_cert_ensure = absent
+    $monitoring_cert_require = undef
+  }
+
+  # Own one executable for all certificate registrations and remove it when monitoring is disabled.
+  basic_settings::monitoring_custom { 'nginx_cert':
+    ensure   => $monitoring_cert_ensure,
+    content  => $monitoring_cert_content,
+    register => false,
+    require  => $monitoring_cert_require,
   }
 
   # Workers own the logs, and the local logrotate wrapper recreates them for this same runtime user.
@@ -238,7 +272,7 @@ class nginx (
   }
 
   # The privileged Nginx master loads configuration that may contain private upstream settings.
-  file { '/etc/nginx/nginx.conf':
+  file { $config_file:
     ensure  => file,
     owner   => 'root',
     group   => 'root',

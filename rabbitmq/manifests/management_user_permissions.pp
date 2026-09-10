@@ -33,11 +33,14 @@ define rabbitmq::management_user_permissions (
   String $vhost     = '/',
   String $write     = '.*',
 ) {
+  # Require the management interface before assigning virtual-host permissions.
   if (defined(Class['rabbitmq::management'])) {
     # Get vhost name
     if ($vhost == '/') {
+      # Give the root virtual host a readable name in management resource identifiers.
       $vhost_name = 'default'
     } else {
+      # Keep the non-root virtual host name in management resource identifiers.
       $vhost_name = $vhost
     }
 

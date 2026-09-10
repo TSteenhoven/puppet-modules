@@ -20,6 +20,7 @@ define basic_settings::login_cron (
   String $user,
   String $order = '10',
 ) {
+  # Create the shared cron allow-list once before adding account fragments.
   if (!defined(Concat['/etc/cron.allow'])) {
     concat { '/etc/cron.allow':
       owner => 'root',

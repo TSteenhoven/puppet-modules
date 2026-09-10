@@ -129,6 +129,7 @@ class basic_settings::kernel (
     default     => 'other',
   }
   $systemd_enable = defined(Package['systemd'])
+
   # Serialize configured USB filters as literal shell words before rendering the monitoring assignments.
   $usb_whitelist_shell = stdlib::shell_escape(join($usb_whitelist, ' '))
   $usb_expected_shell = stdlib::shell_escape(join($usb_expected, ' '))
@@ -149,6 +150,7 @@ class basic_settings::kernel (
 
   # Serialize profile hashes into a compact shell list; the monitoring check validates sizes and ordering at runtime.
   $memory_available_profile_specs = $memory_available_profiles_correct.map |$profile| {
+    # Represent omitted memory-profile limits as empty fields for the check configuration.
     $memory_profile_max = $profile['max_ram'] ? {
       undef   => '',
       default => $profile['max_ram'],
@@ -180,6 +182,7 @@ class basic_settings::kernel (
 
   # Serialize swap profile hashes into a compact shell list; the monitoring check validates sizes and ordering at runtime.
   $swap_free_profile_specs = $swap_free_profiles_correct.map |$profile| {
+    # Represent omitted swap-profile limits as empty fields for the check configuration.
     $swap_profile_max = $profile['max_swap'] ? {
       undef   => '',
       default => $profile['max_swap'],
@@ -220,10 +223,12 @@ class basic_settings::kernel (
   # Set monitoring variables
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
   if ($monitoring_enable) {
+    # Route unit failures through the configured monitoring notification service.
     $unit_failure = {
       'OnFailure' => 'notify-failed@%i.service',
     }
   } else {
+    # Leave unit failure hooks empty when monitoring is unavailable.
     $unit_failure = {}
   }
 
@@ -231,20 +236,25 @@ class basic_settings::kernel (
   if ($facts['is_virtual']) {
     case $facts['virtual'] {
       'vmware': {
+        # Select the guest integration package for VMware.
         $guest_agent_package = 'open-vm-tools'
       }
       default: {
+        # Select the guest integration package for QEMU-compatible virtualization.
         $guest_agent_package = 'qemu-guest-agent'
       }
     }
 
     # Check if we need extra tools for hardware passthrough
     if ($hardware_passthrough == undef) {
+      # Keep hardware passthrough disabled by default in a virtual machine.
       $hardware_passthrough_correct = false
     } else {
+      # Preserve the explicit hardware-passthrough setting for this guest.
       $hardware_passthrough_correct = $hardware_passthrough
     }
   } else {
+    # Allow direct hardware access on physical hosts without a guest-agent package.
     $hardware_passthrough_correct = true
     $guest_agent_package = undef
   }
@@ -254,29 +264,37 @@ class basic_settings::kernel (
     # Override some settings when we have antivirus or we are virtual machine
     case $antivirus_package {
       'eset': {
+        # Relax kernel lockdown for the selected ESET integration.
         $security_lockdown_correct = 'none'
       }
       default: {
+        # Relax lockdown for an enabled guest agent that needs the selected platform integration.
         if ($guest_agent_enable and $guest_agent_package != undef) {
+          # Relax kernel lockdown for the enabled guest-agent integration.
           $security_lockdown_correct = 'none'
         } else {
+          # Retain the requested lockdown mode when no compatibility override is needed.
           $security_lockdown_correct = $security_lockdown_requested
         }
       }
     }
   } elsif ($security_lockdown_requested != 'none') {
+    # Retain the requested lockdown mode when no compatibility override is needed.
     $security_lockdown_correct = $security_lockdown_requested
   } else {
+    # Keep integrity lockdown when Secure Boot prevents disabling it.
     $security_lockdown_correct = 'integrity'
   }
 
   # Get IP versions
   case $ip_version {
     '4': {
+      # Limit generated network settings to IPv4.
       $ip_version_v4 = true
       $ip_version_v6 = false
     }
     default: {
+      # Generate settings for both IPv4 and IPv6.
       $ip_version_v4 = true
       $ip_version_v6 = true
     }
@@ -562,24 +580,31 @@ class basic_settings::kernel (
 
   # Set apparmor state
   if (defined(Package['apparmor'])) {
+    # Enable AppArmor in the kernel command line when its package is declared.
     $apparmor_enable = true
   } else {
+    # Disable AppArmor in the kernel command line when its package is not declared.
     $apparmor_enable = false
   }
 
   # Get CPU processor
   if (empty($facts['processors']['models'])) {
+    # Use an empty CPU description when the model fact is unavailable.
     $cpu_processor = ''
   } else {
+    # Use the first processor model to identify the CPU family.
     $cpu_processor = $facts['processors']['models'][0]
   }
 
   # Set CPU manufacturer
   if ($cpu_processor =~ 'AMD') {
+    # Select AMD-specific CPU tuning.
     $cpu_manufacturer = 'amd'
   } elsif ($cpu_processor =~ 'Intel') {
+    # Select Intel-specific CPU tuning.
     $cpu_manufacturer = 'intel'
   } else {
+    # Leave the CPU family unset when no known vendor matches.
     $cpu_manufacturer = undef
   }
 
@@ -591,11 +616,13 @@ class basic_settings::kernel (
       'performance': {
         case $cpu_manufacturer {
           'amd', 'intel': {
+            # Apply the physical-host performance profile for supported AMD and Intel CPUs.
             $cpu_boost = 1
             $cpu_idle_max_cstate = 1
             $cpu_pstate = 'passive'
           }
           default: {
+            # Leave performance overrides unset for an unrecognized CPU family.
             $cpu_boost = undef
             $cpu_idle_max_cstate = undef
             $cpu_pstate = undef
@@ -603,6 +630,7 @@ class basic_settings::kernel (
         }
       }
       default: {
+        # Leave performance-specific overrides unset for the other CPU governors.
         $cpu_boost = undef
         $cpu_idle_max_cstate = undef
         $cpu_pstate = undef
@@ -677,13 +705,16 @@ class basic_settings::kernel (
     'initramfs': {
       # Install packages 
       if ($os_name == 'Ubuntu') {
+        # Use the Ubuntu 24.04 initramfs dependency set for that release.
         if ($os_version == '24.04') {
+          # Include the split initramfs binary package in Ubuntu 24.04 rebuild ordering.
           $ram_disk_require = ['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-bin', 'initramfs-tools-core']
           package { $ram_disk_require:
             ensure          => installed,
             install_options => ['--no-install-recommends', '--no-install-suggests'],
           }
         } else {
+          # Order initramfs rebuilds after the DHCP helper and core initramfs packages.
           $ram_disk_require = ['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-core']
           package { $ram_disk_require:
             ensure          => installed,
@@ -691,6 +722,7 @@ class basic_settings::kernel (
           }
         }
       } else {
+        # Order initramfs rebuilds after the DHCP helper and core initramfs packages.
         $ram_disk_require = ['dhcpcd-base', 'initramfs-tools', 'initramfs-tools-core']
         package { $ram_disk_require:
           ensure          => installed,
@@ -777,6 +809,7 @@ class basic_settings::kernel (
           }
         }
         default: {
+          # Avoid bootloader package dependencies when no supported bootloader is selected.
           $bootloader_packages = []
         }
       }
@@ -886,6 +919,7 @@ class basic_settings::kernel (
 
   # Guest agent
   if ($guest_agent_package != undef) {
+    # Install or remove the available guest agent according to the requested state.
     if ($guest_agent_enable) {
       # Keep policy flags last even when caller options contain duplicate or conflicting flags.
       package { $guest_agent_package:
@@ -916,6 +950,7 @@ class basic_settings::kernel (
 
   # Create kernel rules
   if (defined(Package['auditd'])) {
+    # Exclude executables already covered by the root audit rules.
     $suspicious_filter = $suspicious_packages - $suspicious_packages_root
     basic_settings::security_audit { 'kernel':
       rules                    => [
@@ -949,6 +984,8 @@ class basic_settings::kernel (
       rule_suspicious_packages => $suspicious_filter,
       order                    => 15,
     }
+
+    # Retain login attribution when auditing privileged kernel tools.
     basic_settings::security_audit { 'kernel-root':
       rule_suspicious_packages => $suspicious_packages_root,
       rule_options             => ['-F auid!=unset'],

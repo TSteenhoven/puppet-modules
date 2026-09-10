@@ -31,6 +31,7 @@ define basic_settings::login_sudo (
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
+    # Use the fallback sudoers prefix when no managed sudoers directory is available.
     $prefix = 'z'
   }
 

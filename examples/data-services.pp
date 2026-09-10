@@ -9,6 +9,7 @@ node 'database.example.org' {
     mysql_version              => 8.0,
   }
 
+  # Configure the database service and encrypted backups after preparing its package source.
   class { 'mysql':
     automysqlbackup_backupdir => '/var/lib/automysqlbackup',
     automysqlbackup_password  => Sensitive('replace-with-backup-password'),
@@ -28,6 +29,7 @@ node 'database.example.org' {
     require                   => Class['basic_settings'],
   }
 
+  # Initialize the application schema from an existing SQL import.
   mysql::database { 'app':
     ensure  => present,
     charset => 'utf8mb4',
@@ -36,6 +38,7 @@ node 'database.example.org' {
     require => Class['mysql'],
   }
 
+  # Keep the application account local to this database host.
   mysql::user { 'app':
     ensure           => present,
     hostname         => 'localhost',
@@ -45,6 +48,7 @@ node 'database.example.org' {
     require          => Class['mysql'],
   }
 
+  # Grant data access without allowing the application to delegate permissions.
   mysql::grant { 'app_rw':
     ensure       => present,
     database     => 'app',
@@ -64,6 +68,7 @@ node 'rabbitmq.example.org' {
     rabbitmq_enable            => true,
   }
 
+  # Place RabbitMQ in the shared services target after preparing its packages.
   class { 'rabbitmq':
     deprecated_features => ['transient_nonexcl_queues'],
     limit_file          => 20000,
@@ -72,6 +77,7 @@ node 'rabbitmq.example.org' {
     require             => Class['basic_settings'],
   }
 
+  # Require TLS for client connections and disable the plain TCP listener.
   class { 'rabbitmq::tcp':
     ssl_ca_certificate  => '/etc/letsencrypt/live/rabbitmq.example.org/ca_cert.pem',
     ssl_certificate     => '/etc/letsencrypt/live/rabbitmq.example.org/cert.pem',
@@ -83,6 +89,7 @@ node 'rabbitmq.example.org' {
     require             => Class['rabbitmq'],
   }
 
+  # Prepare the management API and CLI used by the application resources below.
   class { 'rabbitmq::management':
     admin_config_path  => '/etc/rabbitmq/rabbitmqadmin.conf',
     admin_enable       => true,
@@ -93,12 +100,14 @@ node 'rabbitmq.example.org' {
     require            => Class['rabbitmq::tcp'],
   }
 
+  # Keep application messaging resources in a dedicated vhost.
   rabbitmq::management_vhost { 'app':
     ensure  => present,
     type    => 'quorum',
     require => Class['rabbitmq::management'],
   }
 
+  # Route failed messages through a dedicated direct exchange.
   rabbitmq::management_exchange { 'failure_exchange':
     ensure  => present,
     type    => 'direct',
@@ -106,6 +115,7 @@ node 'rabbitmq.example.org' {
     require => Rabbitmq::Management_vhost['app'],
   }
 
+  # Preserve failed messages in a durable quorum queue.
   rabbitmq::management_queue { 'failure_messages':
     ensure  => present,
     durable => true,
@@ -114,6 +124,7 @@ node 'rabbitmq.example.org' {
     require => Rabbitmq::Management_exchange['failure_exchange'],
   }
 
+  # Send rejected result messages to the failure exchange and routing key.
   rabbitmq::management_queue { 'result_messages':
     ensure    => present,
     arguments => {
@@ -126,6 +137,7 @@ node 'rabbitmq.example.org' {
     require   => Rabbitmq::Management_exchange['failure_exchange'],
   }
 
+  # Connect the failure routing key to the queue that retains failed messages.
   rabbitmq::management_binding { 'failure_binding':
     ensure      => present,
     destination => 'failure_messages',
@@ -138,6 +150,7 @@ node 'rabbitmq.example.org' {
     ],
   }
 
+  # Create an application account without management roles.
   rabbitmq::management_user { 'app':
     ensure   => present,
     password => lookup('rabbitmq::app_password'),
@@ -145,6 +158,7 @@ node 'rabbitmq.example.org' {
     require  => Class['rabbitmq::management'],
   }
 
+  # Allow message access while keeping topology changes outside the application account.
   rabbitmq::management_user_permissions { 'app_permissions':
     configure => '',
     read      => '.*',
@@ -167,6 +181,7 @@ node 'network-usage.example.org' {
     target        => 'services',
   }
 
+  # Monitor the LAN interface against its own link capacity.
   vnstat::ethernet { 'lan':
     ensure        => present,
     bandwidth_max => 1000,
@@ -175,6 +190,7 @@ node 'network-usage.example.org' {
     require       => Class['vnstat'],
   }
 
+  # Give the faster WAN interface independent capacity and traffic thresholds.
   vnstat::ethernet { 'wan':
     ensure        => present,
     bandwidth_max => 10000,

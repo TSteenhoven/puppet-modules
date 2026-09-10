@@ -32,6 +32,7 @@ define mysql::database (
   Boolean                   $destroy = false,
   Optional[String]          $import  = undef,
 ) {
+  # Require the MySQL parent before managing databases through its service and helper.
   if (defined(Class['mysql'])) {
     # Set requirements
     Exec {
@@ -58,6 +59,7 @@ define mysql::database (
           }
           $notify = Exec["mysql_database_import_${title}"]
         } else {
+          # Avoid an import notification when no database import is configured.
           $notify = undef
         }
 
@@ -73,6 +75,7 @@ define mysql::database (
         }
       }
       'absent': {
+        # Drop the database only when destructive removal is explicitly enabled.
         if ($destroy) {
           # Escape the DROP DATABASE query before passing it to mysql -e.
           $drop_database_query_shell = stdlib::shell_escape("DROP DATABASE `${title}`;")

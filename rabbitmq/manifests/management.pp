@@ -57,6 +57,7 @@ class rabbitmq::management (
   Integer          $ssl_port            = 15671,
   Optional[String] $ssl_protocols       = undef,
 ) {
+  # Require the RabbitMQ parent before configuring its management interface.
   if (defined(Class['rabbitmq'])) {
     # Delete guest user
     exec { 'rabbitmq_management_plugin_guest':
@@ -74,6 +75,7 @@ class rabbitmq::management (
 
     # Check if all cert variables are given
     if ($ssl_ca_certificate != undef and $ssl_certificate != undef and $ssl_certificate_key != undef) {
+      # Enable management HTTPS with the complete explicitly supplied certificate set.
       $https_allow = true
       $ssl_ca_certificate_correct = $ssl_ca_certificate
       $ssl_certificate_correct = $ssl_certificate
@@ -82,11 +84,13 @@ class rabbitmq::management (
       and $rabbitmq::tcp::ssl_ca_certificate != undef
       and $rabbitmq::tcp::ssl_certificate != undef
     and $rabbitmq::tcp::ssl_certificate_key != undef) {
+      # Enable management HTTPS using the complete certificate set from the TCP listener.
       $https_allow = true
       $ssl_ca_certificate_correct = $rabbitmq::tcp::ssl_ca_certificate
       $ssl_certificate_correct = $rabbitmq::tcp::ssl_certificate
       $ssl_certificate_key_correct = $rabbitmq::tcp::ssl_certificate_key
     } else {
+      # Disable management HTTPS when neither source supplies a complete certificate set.
       $https_allow = false
       $ssl_ca_certificate_correct = undef
       $ssl_certificate_correct = undef
@@ -97,23 +101,31 @@ class rabbitmq::management (
     if ($https_allow) {
       # Set SSL protocols
       if ($ssl_protocols == undef) {
+        # Inherit AMQP TLS protocols when configured, otherwise retain an empty override.
         if ($rabbitmq::tcp::ssl_protocols == undef) {
+          # Leave the inherited TLS protocol list empty when the TCP listener has no override.
           $ssl_protocols_correct = []
         } else {
+          # Reuse the TCP listener's TLS protocol list for management HTTPS.
           $ssl_protocols_correct = $rabbitmq::tcp::ssl_protocols
         }
       } else {
+        # Use the explicit management HTTPS protocol list.
         $ssl_protocols_correct = $ssl_protocols
       }
 
       # Set SSL ciphers
       if ($ssl_ciphers == undef) {
+        # Inherit AMQP TLS ciphers when configured, otherwise retain an empty override.
         if ($rabbitmq::tcp::ssl_ciphers == undef) {
+          # Leave the inherited TLS cipher list empty when the TCP listener has no override.
           $ssl_ciphers_correct = []
         } else {
+          # Reuse the TCP listener's TLS cipher list for management HTTPS.
           $ssl_ciphers_correct = $rabbitmq::tcp::ssl_ciphers
         }
       } else {
+        # Use the explicit management HTTPS cipher list.
         $ssl_ciphers_correct = $ssl_ciphers
       }
     } else {
@@ -145,6 +157,8 @@ class rabbitmq::management (
         tags     => ['administrator'],
         require  => Rabbitmq::Plugin['rabbitmq_management'],
       }
+
+      # Grant the management account access to the default vhost after creating the account.
       rabbitmq::management_user_permissions { 'guest_default':
         user => 'guest',
       }

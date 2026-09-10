@@ -52,10 +52,14 @@ define vnstat::ethernet (
   Optional[Integer[1]]        $p95_critical  = undef,
   Optional[Integer[1]]        $p95_warning   = undef,
 ) {
+  # Require the vnStat parent before contributing interface and monitoring configuration.
   if (defined(Class['vnstat'])) {
+    # Use the resource title as the interface name unless an explicit device was supplied.
     if ($interface == undef) {
+      # Use the resource title as the default interface name.
       $interface_correct = $name
     } else {
+      # Preserve the caller's explicit interface name.
       $interface_correct = $interface
     }
 
@@ -63,19 +67,25 @@ define vnstat::ethernet (
     if ($interface_correct !~ /\s/) {
       # Check if warning threshold is undefined
       if ($p95_warning == undef) {
+        # Inherit the default bandwidth warning threshold from the vnStat class.
         $p95_warning_correct = $vnstat::p95_warning
       } else {
+        # Use the interface's explicit bandwidth warning threshold.
         $p95_warning_correct = $p95_warning
       }
 
       # Check if critical threshold is undefined
       if ($p95_critical == undef) {
+        # Inherit the default bandwidth critical threshold from the vnStat class.
         $p95_critical_correct = $vnstat::p95_critical
       } else {
+        # Use the interface's explicit bandwidth critical threshold.
         $p95_critical_correct = $p95_critical
       }
 
+      # Write interface settings only for present entries.
       if ($ensure == present) {
+        # Override the interface bandwidth only when a limit was supplied.
         if ($bandwidth_max != undef) {
           concat::fragment { "vnstat_ethernet_${name}":
             target  => '/etc/vnstat.conf',
@@ -85,11 +95,14 @@ define vnstat::ethernet (
           }
         }
 
+        # Validate and register percentile monitoring only when at least one threshold is configured.
         if ($p95_warning_correct != undef or $p95_critical_correct != undef) {
           # Keep generated monitoring configuration valid before the check consumes it.
           if ($p95_warning_correct != undef and $p95_critical_correct != undef and $p95_critical_correct < $p95_warning_correct) {
+            # Reject thresholds that would report critical before warning.
             $fail_text = 'vnstat p95_critical must be greater than or equal to p95_warning.'
           } else {
+            # Allow bandwidth monitoring when the supplied thresholds are ordered correctly.
             $fail_text = undef
           }
 

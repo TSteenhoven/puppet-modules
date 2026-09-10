@@ -48,11 +48,13 @@ class basic_settings::puppet (
   # Set monitoring variables
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
   if ($monitoring_enable) {
+    # Inherit the monitoring backend and attach its unit-failure notification hook.
     $monitoring_package = $basic_settings::monitoring::package
     $unit_failure = {
       'OnFailure' => 'notify-failed@%i.service',
     }
   } else {
+    # Disable monitoring registration and failure hooks without a monitoring class.
     $monitoring_package = 'none'
     $unit_failure = {}
   }
@@ -60,9 +62,11 @@ class basic_settings::puppet (
   # Get puppet service name
   case $server_package {
     'openvox-server': {
+      # Map the OpenVox server package to its puppetserver service name.
       $server_service = 'puppetserver'
     }
     default: {
+      # Use the server package name as the service name for the remaining package paths.
       $server_service = $server_package
     }
   }
@@ -70,15 +74,19 @@ class basic_settings::puppet (
   # Do some things based on server repo
   case $repo {
     'remote': {
-      # Set some values
+      # Resolve the packaged agent's executable and configuration directories.
       $package_etc_dir = '/etc/puppetlabs'
       $agent_bin_dir = '/opt/puppetlabs/bin'
       $agent_etc_dir = "${package_etc_dir}/puppet"
+
+      # Resolve bundled Ruby and the server's configuration, log and runtime directories.
       $ruby_bin = '/opt/puppetlabs/puppet/bin/ruby'
       $server_dir = '/opt/puppetlabs/server'
       $server_etc_dir = "${package_etc_dir}/${server_dirname}"
       $server_report_dir = "/var/log/puppetlabs/${server_dirname}/reports"
       $server_var_dir = "${server_dir}/data/${server_dirname}"
+
+      # Set auxiliary server data and agent cache paths.
       $server_var_extra = "/var/lib/puppetlabs/${server_dirname}"
       $cache_dir = '/opt/puppetlabs/puppet/cache'
 
@@ -96,10 +104,12 @@ class basic_settings::puppet (
       }
     }
     default: {
-      # Set some values
+      # Resolve the distribution agent's executable and configuration directories.
       $package_etc_dir = '/etc'
       $agent_bin_dir = '/usr/bin'
       $agent_etc_dir = "${package_etc_dir}/puppet"
+
+      # Resolve system Ruby and the distribution server directories.
       $ruby_bin = '/usr/bin/ruby'
       $server_dir = "/var/lib/${server_dirname}"
       $server_etc_dir = "${package_etc_dir}/${server_dirname}"
@@ -109,8 +119,10 @@ class basic_settings::puppet (
 
       # Get clean filebucket dir
       if ($server_enable) {
+        # Keep server caches under the selected server implementation's directory.
         $cache_dir = "/var/cache/${server_dirname}"
       } else {
+        # Use the agent cache directory when no server is enabled.
         $cache_dir = '/var/cache/puppet'
       }
 
@@ -174,9 +186,11 @@ class basic_settings::puppet (
       }
     }
   } else {
+    # Leave unit failure hooks empty when monitoring is unavailable.
     $unit = {}
   }
 
+  # Apply Puppet service settings only when systemd is managed.
   if ($systemd_enable) {
     # Create drop in for puppet service
     basic_settings::systemd_drop_in { 'puppet_settings':
@@ -216,6 +230,7 @@ class basic_settings::puppet (
       unit        => $unit,
     }
 
+    # Schedule filebucket cleanup through the shared timer infrastructure when available.
     if ($basic_settings_enable) {
       # Create systemd puppet server clean reports timer
       basic_settings::systemd_timer { 'puppet-clean-filebucket':
@@ -249,6 +264,7 @@ class basic_settings::puppet (
     }
   }
 
+  # Exclude Puppet's own SSL-directory writes only when auditd is managed.
   if (defined(Package['auditd'])) {
     basic_settings::security_audit { 'puppet_exclude':
       rules => [
@@ -300,7 +316,7 @@ class basic_settings::puppet (
     }
 
     # Create drop in for services target
-    if (defined(Class['basic_settings'])) {
+    if ($basic_settings_enable) {
       basic_settings::systemd_drop_in { "${server_service}_dependency":
         target_unit => "${basic_settings::cluster_id}-system.target",
         unit        => {
@@ -389,6 +405,7 @@ class basic_settings::puppet (
         unit        => $unit,
       }
 
+      # Schedule server report cleanup through the shared timer infrastructure when available.
       if ($basic_settings_enable) {
         # Create systemd puppet x clean reports timer
         basic_settings::systemd_timer { "${server_service}-clean-reports":

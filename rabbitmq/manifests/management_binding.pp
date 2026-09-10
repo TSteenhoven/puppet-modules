@@ -34,6 +34,7 @@ define rabbitmq::management_binding (
   Optional[String]          $routing_key = undef,
   String                    $vhost       = '/',
 ) {
+  # Require the management interface before using rabbitmqadmin to manage bindings.
   if (defined(Class['rabbitmq::management'])) {
     # Escape rabbitmqadmin arguments before building binding commands and guards.
     $admin_config_path_shell = stdlib::shell_escape($rabbitmq::management::admin_config_path)
@@ -50,19 +51,24 @@ define rabbitmq::management_binding (
       'present': {
         # Get vhost name
         if ($vhost == '/') {
+          # Give the root virtual host a readable name in management resource identifiers.
           $vhost_name = 'default'
         } else {
+          # Keep the non-root virtual host name in management resource identifiers.
           $vhost_name = $vhost
         }
 
         # Set create command
         $create = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} declare binding ${source_arg_shell} ${destination_arg_shell}" # lint:ignore:140chars
-        if ($routing_key == undef) {
-          $create_correct = $create
-        } else {
+
+        # Add a routing-key argument only when the caller supplied one.
+        if ($routing_key != undef) {
           # Escape the optional routing key argument before appending it to rabbitmqadmin.
           $routing_key_arg_shell = stdlib::shell_escape("routing_key=${routing_key}")
           $create_correct = "${create} ${routing_key_arg_shell}"
+        } else {
+          # Keep the supplied binding command when no routing key needs to be appended.
+          $create_correct = $create
         }
 
         # Create binding

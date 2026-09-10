@@ -89,6 +89,7 @@ class basic_settings::login (
       $require = Package['wtmpdb', 'libpam-wtmpdb']
     }
     default: {
+      # Retain mesg n in login profiles on the legacy path without wtmpdb dependencies.
       $mesg_disable = false
       $require = undef
     }
@@ -110,17 +111,20 @@ class basic_settings::login (
   # Setup GUI mode
   case $gui_mode {
     'kiosk': {
+      # Enable console and session services required by the graphical login path.
       $getty_correct = true
       $polkitd_enable = true
       $session_migration_enable = true
     }
     default: {
+      # Honor console login settings without enabling graphical session integration.
       $getty_correct = $getty_enable
       $polkitd_enable = false
       $session_migration_enable = false
     }
   }
 
+  # Keep polkit installed only when local authorization services are requested.
   if ($polkitd_enable) {
     # Install polkitd package
     package { 'polkitd':
@@ -134,6 +138,7 @@ class basic_settings::login (
     }
   }
 
+  # Keep session migration tools only when the selected login environment needs them.
   if ($session_migration_enable) {
     # Install session-migration package
     package { 'session-migration':
@@ -236,6 +241,7 @@ class basic_settings::login (
     }
     $sudoers_prefix = ''
   } else {
+    # Use the fallback sudoers prefix when no managed sudoers directory is available.
     $sudoers_prefix = 'z'
   }
 

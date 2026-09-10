@@ -1,6 +1,8 @@
 --load=.tools/lint/lib/puppet-lint/plugins/documentation.rb
 --load=.tools/lint/lib/puppet-lint/plugins/interfaces.rb
 --load=.tools/lint/lib/puppet-lint/plugins/layout.rb
+--load=.tools/lint/lib/puppet-lint/plugins/class_checks.rb
+--load=.tools/lint/lib/puppet-lint/plugins/monitoring.rb
 --load=.tools/lint/lib/puppet-lint/plugins/parameters.rb
 --load=.tools/lint/lib/puppet-lint/plugins/resources.rb
 --load=.tools/lint/lib/puppet-lint/plugins/shell.rb
