@@ -1,7 +1,7 @@
 # @summary Deploys and monitors one Docker Compose project as a systemd service.
 #
 # lint:ignore:140chars
-# This defined type creates a root-only project directory under `/opt/docker`, manages optional `.env` content and project-local directories, syncs and validates a Compose file from an HTTPS, local file, or Puppet file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
+# This defined type creates a root-only project directory under `/opt/docker`, manages optional `.env` content and project-local directories, validates rendered Compose content or a file from an HTTPS, local file, or Puppet file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
 # lint:endignore
 # It also registers a stack-level monitoring check so container health can be evaluated separately from the orchestration unit.
 # Declare `docker` before deploying a present stack; removal of a project directory does not require that class.
@@ -19,11 +19,14 @@
 #
 # @param compose_checksum
 # lint:ignore:140chars
-#   Optional SHA256 checksum for the Compose file. This is most useful for HTTPS sources where unexpected upstream changes should fail the Puppet run.
+#   Optional SHA256 checksum for compose_source, unavailable with compose_content. This is most useful for HTTPS sources where unexpected upstream changes should fail the Puppet run.
 # lint:endignore
 #
+# @param compose_content
+#   Optional rendered Compose content, default undef. Supply exactly one of compose_content and compose_source for a present stack.
+#
 # @param compose_source
-#   Compose file source. Must start with `https://`, `file:///`, or `puppet:///` when `ensure` is `present`.
+#   Optional Compose file source, default undef. Must start with `https://`, `file:///`, or `puppet:///`; excludes compose_content.
 #
 # @param ensure
 #   Controls whether the Compose project directory and service are present or absent.
@@ -71,6 +74,7 @@
 # @api public
 define docker::compose (
   Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum           = undef,
+  Optional[String]                             $compose_content            = undef,
   Optional[String]                             $compose_source             = undef,
   Enum['present', 'absent']                    $ensure                     = present,
   Optional[Variant[String, Sensitive[String]]] $env_content                = undef,
@@ -107,9 +111,10 @@ define docker::compose (
     # Check if ensure is present to determine if the compose stack should be deployed or removed.
     if ($ensure == present) {
       # Deployment consumes Docker's package resources; cleanup below can run without the parent class.
-      if ($compose_source != undef and defined(Class['docker'])) {
-        # Only support https, local file, and Puppet file-server sources so Compose content is not fetched over plain HTTP.
-        if ($compose_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/) {
+      if (($compose_source != undef or $compose_content != undef) and defined(Class['docker'])) {
+        # Accept either rendered content or a trusted source; downloaded checksums apply only to sources.
+        if (($compose_source == undef and $compose_content != undef and $compose_checksum == undef)
+          or ($compose_content == undef and $compose_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/)) {
           # Validate an optional environment source before creating any part of the Compose project.
           if ($env_source == undef or $env_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/) {
             # Determine the content of the environment file based on the provided parameters.
@@ -222,11 +227,12 @@ define docker::compose (
             $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans" # lint:ignore:140chars
             $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
 
-            # Sync and validate the compose file before it is promoted into the project directory.
+            # Validate sourced or rendered Compose content before it is promoted into the project directory.
             file { $compose_file:
               ensure         => file,
               path           => $compose_file,
               alias          => $compose_file_alias,
+              content        => $compose_content,
               source         => $compose_source,
               checksum       => 'sha256',
               checksum_value => $compose_checksum_value,
@@ -340,10 +346,10 @@ define docker::compose (
             fail('docker::compose env_source must start with https://, file:///, or puppet:///')
           }
         } else {
-          fail('docker::compose compose_source must start with https://, file:///, or puppet:///')
+          fail('docker::compose requires either compose_content without a checksum, or compose_source starting with https://, file:///, or puppet:///') # lint:ignore:140chars
         }
       } else {
-        fail('docker::compose requires the docker class and compose_source when ensure is present.')
+        fail('docker::compose requires the docker class and compose_source or compose_content when ensure is present.')
       }
     } else {
       # Remove the directory for docker-compose

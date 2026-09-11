@@ -311,7 +311,7 @@ class CliTest < Minitest::Test
     output, _, status = cli('--no-config', '--no-nonexistent-check', '.')
     refute status.success?
     assert_includes output, 'invalid option'
-    _, _, status = cli('--no-config', '--load=.tools/test/lint/missing-plugin.rb', '.')
+    _, _, status = cli('--no-config', '--load=.tools/tests/lint/missing-plugin.rb', '.')
     refute status.success?
   end
 

@@ -1,6 +1,6 @@
 # Puppet-lint
 
-Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De [tooltests](../test/README.md) controleren het gedrag van de linter.
+Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De [tooltests](../tests/README.md) controleren het gedrag van de linter.
 
 Deze handleiding helpt je de controles te installeren, uit te voeren en meldingen op te lossen. De [naslag](#naslag) beschrijft hoe de controles werken en welke codeafspraken en reviewcriteria gelden. Gebruik je de moduleverzameling in een ander Puppet-project, volg dan [de stappen voor dat project](#de-linter-gebruiken-in-een-ander-puppet-project).
 
@@ -38,7 +38,7 @@ Je hebt Git, de nieuwste stabiele Ruby en de nieuwste stabiele Bundler nodig. We
 
 Voer de commando's voor deze repository uit vanuit de hoofdmap. Het ontwikkelgereedschap staat onder `.tools`, apart van de Puppet-modules. De ontwikkelomgeving bepaalt niet welke Puppet- of OpenVox-versies op beheerde servers worden ondersteund; daarvoor gelden de modulemetadata en de [project-README](../../README.md#ondersteuning-en-compatibiliteit).
 
-De controles passen geen catalogi toe en hebben geen productiegeheimen of verbindingen met beheerde servers nodig. De [testhandleiding](../test/README.md) beschrijft welke controles bij de tooltests horen en hoe je synthetische testinvoer gebruikt.
+De controles passen geen catalogi toe en hebben geen productiegeheimen of verbindingen met beheerde servers nodig. De [testhandleiding](../tests/README.md) beschrijft welke controles bij de tooltests horen en hoe je synthetische testinvoer gebruikt.
 
 ## Installatie
 
@@ -93,7 +93,7 @@ bundle exec rake test
 git diff --check
 ```
 
-De lintscan zoekt afwijkingen van de automatische codechecks in de projectcode. `rake test` controleert uitsluitend de tools zelf; de [testhandleiding](../test/README.md) legt uit hoe je deze tests uitvoert en uitbreidt. Met `git diff --check` controleer je de wijzigingen op whitespacefouten. De afsluitende `.` bij Puppet-lint geeft aan dat de hele repository moet worden gescand; laat die ook staan wanneer je extra CLI-opties meegeeft.
+De lintscan zoekt afwijkingen van de automatische codechecks in de projectcode. `rake test` controleert uitsluitend de tools zelf; de [testhandleiding](../tests/README.md) legt uit hoe je deze tests uitvoert en uitbreidt. Met `git diff --check` controleer je de wijzigingen op whitespacefouten. De afsluitende `.` bij Puppet-lint geeft aan dat de hele repository moet worden gescand; laat die ook staan wanneer je extra CLI-opties meegeeft.
 
 Gebruik tijdens het ontwikkelen `bundle exec rake test:lint` om alleen de lintertests uit te voeren. Op dit moment leveren `test` en `test:lint` dezelfde testselectie op, omdat er alleen voor de linter tooltests zijn. Zodra er tests voor andere tools bijkomen, neemt `test` die automatisch mee.
 
@@ -175,7 +175,7 @@ Gebruik een volledige checkout van deze repository. Daarin moeten `.puppet-lint.
 
 Haal de submodules `concat`, `debconf`, `reboot`, `stdlib` en `timezone` op. Dit zijn Puppet-modules die nodig kunnen zijn om aanroepen en catalogi te controleren.
 
-Wil je ook de tooltests uitvoeren, behoud dan de volledige checkout, inclusief `.tools/test/`, `Rakefile` en de Git-index. De tests gebruiken de index om te controleren welke modulemappen de lintscan uitsluit.
+Wil je ook de tooltests uitvoeren, behoud dan de volledige checkout, inclusief `.tools/tests/`, `Rakefile` en de Git-index. De tests gebruiken de index om te controleren welke modulemappen de lintscan uitsluit.
 
 ### Installatie in je project
 
@@ -335,7 +335,7 @@ Voer naast de lintscan ook de syntax- en gedragstests van je eigen project uit. 
 | --- | --- |
 | `ruby .tools/lint.rb` vanuit je eigen project | De gekozen eigen manifests, met de gedeelde lintregels en de modulepaden uit het script. |
 | `bundle exec puppet-lint .` vanuit de gedeelde checkout, met de bijbehorende gems | De projectcode van de moduleverzameling volgens de gedeelde lintregels. |
-| `bundle exec rake test` vanuit de gedeelde checkout | Het gedrag van de tools zelf, waaronder het gebruik van de linter vanuit een synthetisch extern project. Zie de [tooltesthandleiding](../test/README.md). |
+| `bundle exec rake test` vanuit de gedeelde checkout | Het gedrag van de tools zelf, waaronder het gebruik van de linter vanuit een synthetisch extern project. Zie de [tooltesthandleiding](../tests/README.md). |
 | De eigen parser-, metadata-, template-, catalogus- en gedragstests | Je eigen project, met de Puppet- of OpenVox-versie, facts, Hiera en modulepaden die je daarvoor wilt gebruiken. |
 
 Controleer gewijzigde manifests ook rechtstreeks met de Puppet-parser. Voer dit voorbeeld uit vanuit de hoofdmap van je eigen project. Het gebruikt de eerder geïnstalleerde gems van de moduleverzameling. Vervang `global-modules` en het manifestpad waar nodig.

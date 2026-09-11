@@ -294,6 +294,10 @@ docker::gitlab_runner { 'gitlab-runner':
 
 Na het starten van de Compose-container voert Puppet de registratie uit via `docker exec` met `register --non-interactive`. Zodra `config.toml` bestaat, wordt registratie overgeslagen. Dat voorkomt normale herregistratie, maar controleert niet of bestaande configuratie volledig of geldig is. Controleer de runner daarom na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien.
 
+Met `runner_url` kies je de HTTPS-URL van de GitLab-server. Geef alleen `runner_ip` op als de hostnaam via normale DNS niet naar het juiste interne adres verwijst. Bijvoorbeeld: `runner_url => 'https://gitlab.example.org/'` met `runner_ip => '192.0.2.50'` levert binnen de runnercontainer de hostmapping `192.0.2.50 gitlab.example.org` op; de runner blijft verbinden met `https://gitlab.example.org/`. Registratie in dezelfde container gebruikt deze mapping ook.
+
+Zonder `runner_ip`, of met een lege string, blijft normale DNS-resolutie gelden en ontbreekt `extra_hosts`. De mapping geldt alleen voor de runnercontainer; jobcontainers moeten GitLab zelf kunnen bereiken. Zie het [voorbeeld met een vast intern adres](examples/gitlab_runner.md#internal-gitlab-address) voor IPv4, IPv6 en de Compose-vereiste.
+
 Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. Puppet verwijdert alleen de bootstrapkopie en behoudt de actieve token en systeemidentiteit. Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. De [handleiding bij het voorbeeld](examples/gitlab_runner.md) beschrijft registratie, herstel en onderhoud. Zie ook [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp) en de [Puppet Strings](docker/manifests/gitlab_runner.pp).
 
 ### `gitlab`
@@ -793,6 +797,6 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 Pull requests en meldingen zijn welkom. De [lintconfiguratie, plugins en reviewcriteria](.tools/lint/README.md#naslag) bepalen de codestandaard voor alle eigen modules en uitvoerbare voorbeelden. Je kunt [dezelfde linter ook in je eigen Puppet-project gebruiken](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project).
 
-Richt eerst de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Met `bundle exec puppet-lint .` controleer je de projectcode; met `bundle exec rake test` test je het ontwikkelgereedschap. De lint-README legt uit [hoe je de controles uitvoert en meldingen oplost](.tools/lint/README.md#code-controleren). Voor het uitbreiden van tooltests gebruik je [de testhandleiding](.tools/test/README.md).
+Richt eerst de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Met `bundle exec puppet-lint .` controleer je de projectcode; met `bundle exec rake test` test je het ontwikkelgereedschap. De lint-README legt uit [hoe je de controles uitvoert en meldingen oplost](.tools/lint/README.md#code-controleren). Voor het uitbreiden van tooltests gebruik je [de testhandleiding](.tools/tests/README.md).
 
 Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. Valideer gewijzigd gedrag en documentatievoorbeelden afzonderlijk; de tooltests controleren het ontwikkelgereedschap. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces, de inhoudelijke review en de algemene beveiligingsverantwoordelijkheden.

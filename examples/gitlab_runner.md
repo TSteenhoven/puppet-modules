@@ -14,6 +14,24 @@ The legacy `--registration-token` command uses a different GitLab workflow. With
 
 Puppet starts the Compose service after preparing its files and loading its systemd unit and target binding. Registration uses [`docker::compose_exec`](../docker/manifests/compose_exec.pp) to wait for these resources, select the container and pass arguments and stdin. Keep one Puppet agent responsible for this project and avoid concurrent manual registration. See GitLab's [non-interactive registration](https://docs.gitlab.com/runner/commands/#non-interactive-registration) and Docker's [`exec` options](https://docs.docker.com/reference/cli/docker/container/exec/).
 
+## Internal GitLab address
+
+If ordinary DNS does not resolve your GitLab hostname to the required internal address, set `runner_ip` alongside `runner_url`. Use Docker Compose 2.24.1 or later for the `HOST:IP` form of [`extra_hosts`](https://docs.docker.com/reference/compose-file/services/#extra_hosts). Replace the documentation address below with your internal IPv4 or IPv6 address, without a subnet prefix or IPv6 brackets.
+
+```puppet
+docker::gitlab_runner { 'gitlab-runner':
+  auto_register => true,
+  runner_ip     => '192.0.2.50',
+  runner_token  => lookup('profile::gitlab_runner::runner_token', Sensitive[String]),
+  runner_url    => 'https://gitlab.example.org:8443/',
+  require       => Class['docker'],
+}
+```
+
+Puppet parses the URL and writes `RUNNER_URL=https://gitlab.example.org:8443/`, `RUNNER_HOST=gitlab.example.org` and `RUNNER_IP=192.0.2.50` to the existing private `.env`. The Compose service `runner` receives `extra_hosts: ["${RUNNER_HOST}:${RUNNER_IP}"]`, which also covers registration executed inside that container. Protocol, port and path are never included in the host mapping. The runner keeps the original URL and TLS verification. The existing URL policy requires HTTPS and rejects credentials, query strings and fragments.
+
+Omitting `runner_ip`, setting it to `undef`, or using an empty string omits both mapping variables and the complete `extra_hosts` section. Removing a previously configured address restores ordinary DNS through the existing Compose service refresh. Address changes recreate the manager; pause the runner and drain jobs first as described below. Existing `config.toml` and the registration identity are preserved, so changing `runner_url` does not rewrite an existing registration: it must still match that registration's GitLab URL. Docker executor and job-container settings are unaffected; ensure jobs have their own working route and name resolution to GitLab.
+
 ## Subsequent runs and failures
 
 Puppet's `creates` guard skips registration whenever `config/config.toml` exists. The guard only checks local file existence and has no registration side effects during `--noop`. Image changes, token rotation and container recreation do not register again while that file remains. Puppet does not manage the contents of `config.toml` or `.runner_system_id`.
@@ -34,6 +52,12 @@ Pause the runner in GitLab and drain active jobs before maintenance or removal. 
 
 ## Validation before use
 
-The automated tests compile synthetic catalogs, check dependency order and execute the rendered command against local Docker and Runner substitutes. They cover argument escaping, protected token delivery, the local file guard and command failures. They do not apply a host catalog or connect to GitLab.
+Run the module regression tests from the repository root after the [documented bundle setup](../.tools/lint/README.md#installatie):
+
+```sh
+bundle exec ruby -Itests/docker -e 'Dir["tests/docker/*_test.rb"].sort.each { |file| require_relative file }'
+```
+
+These tests compile synthetic catalogs and check URL/address validation, rendered mapping variants, registration arguments, dependency order, private files and preservation of the other Compose callers. They do not apply a host catalog or connect to GitLab. When `docker compose` is available, they also validate and interpolate rendered files with `config`; set `DOCKER_COMPOSE` to a standalone Compose executable if needed. Without Compose, those checks are explicitly skipped. The central `bundle exec rake test` command remains limited to tool tests.
 
 On an isolated Linux host, validate the Compose file with `docker compose config --quiet`, register a disposable test runner and execute a job that checks out a repository and uploads an artifact. Repeat Puppet and `--noop`, remove the bootstrap token, recreate the manager and reboot. Verify job containers have no host-socket or Runner-config mounts and are not privileged. Test two stacks and manually retire one while the other continues running. Record unavailable checks separately; a successful local command is not proof that CI jobs work.

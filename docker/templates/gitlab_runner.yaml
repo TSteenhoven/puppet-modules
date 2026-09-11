@@ -5,6 +5,10 @@ services:
     privileged: false
     stop_signal: SIGQUIT
     stop_grace_period: 240s
+<% if @runner_ip_correct -%>
+    extra_hosts:
+      - "${RUNNER_HOST}:${RUNNER_IP}"
+<% end -%>
     volumes:
       - type: bind
         source: ./config

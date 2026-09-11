@@ -55,6 +55,11 @@
 # @param runner_description
 #   Local runner name used at registration and by validation, default docker-runner; no control characters.
 #
+# @param runner_ip
+#   Optional IPv4 or IPv6 address without a subnet, default undef. Undef or an empty string retains normal DNS resolution.
+#   Compose maps the hostname parsed from runner_url with Puppet's native URI type, including registration inside the manager.
+#   Does not change the URL, TLS verification or Docker executor job containers.
+#
 # @param runner_token
 #   Optional Sensitive runner authentication token, default undef; only required on the host for a new automatic registration.
 #   Undef removes the bootstrap file without changing the runtime token; remove the profile's mandatory lookup too.
@@ -79,6 +84,7 @@ define docker::gitlab_runner (
   Integer                               $monitoring_starting_grace  = 300,
   Integer                               $monitoring_timeout         = 60,
   String                                $runner_description         = 'docker-runner',
+  Optional[String]                      $runner_ip                  = undef,
   Optional[Sensitive[String]]           $runner_token               = undef,
   String                                $runner_url                 = 'https://gitlab.com/',
   String                                $target                     = 'services',
@@ -89,10 +95,36 @@ define docker::gitlab_runner (
     if ($ensure == present) {
       # Registration runs inside the container started by the existing Docker/systemd integration.
       if (defined(Class['docker']) and defined(Class['basic_settings::systemd'])) {
-        # Accept a credential-free HTTPS instance, printable runner name and single-line environment value.
-        if ($runner_url =~ /\Ahttps:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?(?:\/[A-Za-z0-9._~\/-]*)?\z/
+        # Restrict input before native parsing so URI errors cannot disclose credentials or accept unsafe .env content.
+        $runner_uri = if ($runner_url =~ /\A(?i:https):\/\/[A-Za-z0-9.-]+(?::[0-9]*)?(?:\/[A-Za-z0-9._~\/-]*)?\z/) {
+          URI($runner_url)
+        } else {
+          undef
+        }
+        $runner_url_error = if ($runner_uri != undef
+          and $runner_uri.host =~ /\A(?i:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?)\z/
+          and $runner_uri.port =~ Integer[1, 65535]) {
+          undef
+        } else {
+          'docker::gitlab_runner runner_url must be a credential-free HTTPS URL with a hostname and valid port, without query strings or fragments.' # lint:ignore:140chars
+        }
+
+        # Reject invalid addresses before creating the stack, while accepting an omitted or empty override.
+        $runner_ip_correct = $runner_ip ? {
+          ''      => undef,
+          default => $runner_ip,
+        }
+        $runner_ip_error = $runner_ip_correct ? {
+          undef                       => undef,
+          Stdlib::IP::Address::Nosubnet => undef,
+          default                     => 'docker::gitlab_runner runner_ip must be a valid IPv4 or IPv6 address without a subnet.',
+        }
+        if ($runner_url_error == undef and $runner_ip_error == undef
           and $runner_description =~ /\A[^[:cntrl:]]+\z/ and $runner_description !~ /\A\s|\s\z/
           and $image_tag !~ /[\r\n]/) {
+          # Extract only the parsed host for Compose; registration keeps the original URL, including its port and path.
+          $runner_host = $runner_uri.host
+
           # Keep bootstrap material outside the config directory mounted by the manager.
           $project_directory = "/opt/docker/${name}"
           $token_file = "${project_directory}/runner-token"
@@ -100,7 +132,7 @@ define docker::gitlab_runner (
           # Delegate files, lifecycle, targets and monitoring to the existing Compose implementation.
           docker::compose { $name:
             ensure                     => $ensure,
-            compose_source             => 'puppet:///modules/docker/gitlab_runner.yaml',
+            compose_content            => template('docker/gitlab_runner.yaml'),
             env_content                => template('docker/gitlab_runner.env'),
             monitoring_detail_limit    => $monitoring_detail_limit,
             monitoring_expected_exited => $monitoring_expected_exited,
@@ -163,7 +195,7 @@ define docker::gitlab_runner (
             }
           }
         } else {
-          fail('docker::gitlab_runner requires a credential-free HTTPS runner_url, a printable runner_description and an image_tag without line breaks.') # lint:ignore:140chars
+          fail(pick($runner_url_error, $runner_ip_error, 'docker::gitlab_runner requires a printable runner_description and an image_tag without line breaks.')) # lint:ignore:140chars
         }
       } else {
         fail('docker::gitlab_runner requires the docker and basic_settings::systemd classes before deploying a runner.')
