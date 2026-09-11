@@ -1,9 +1,10 @@
 require_relative 'test_helper'
-require 'fileutils'
 
 class CliTest < Minitest::Test
-  def cli(*arguments)
-    Open3.capture3(Gem.bin_path('puppet-lint', 'puppet-lint'), *arguments)
+  include LintTestSupport
+
+  def cli(*arguments, directory: LintTestSupport::ROOT)
+    Open3.capture3(Gem.bin_path('puppet-lint', 'puppet-lint'), *arguments, chdir: directory)
   end
 
   def test_default_and_project_checks_are_present_and_enabled
@@ -292,13 +293,14 @@ class CliTest < Minitest::Test
   end
 
   def test_cli_discovers_new_first_party_files_and_fails_on_a_project_check
-    Dir.mktmpdir('lint_cli_', ProjectLint::ROOT) do |directory|
+    Dir.mktmpdir('lint_cli_') do |directory|
+      copy_linter(directory)
       file = File.join(directory, 'new.pp')
       File.write(file, "$values = concat([1], [2])\n")
-      output, _, status = cli('.')
+      output, _, status = cli('.', directory: directory)
       assert status.success?, output
       File.write(file, "$values = [1] + [2]\n")
-      output, _, status = cli('.')
+      output, _, status = cli('.', directory: directory)
       refute status.success?
       assert_includes output, 'new.pp:1:'
       assert_includes output, 'project_arrays'
@@ -309,7 +311,7 @@ class CliTest < Minitest::Test
     output, _, status = cli('--no-config', '--no-nonexistent-check', '.')
     refute status.success?
     assert_includes output, 'invalid option'
-    _, _, status = cli('--no-config', '--load=.tools/lint/spec/missing-plugin.rb', '.')
+    _, _, status = cli('--no-config', '--load=.tools/test/lint/missing-plugin.rb', '.')
     refute status.success?
   end
 
@@ -317,15 +319,14 @@ class CliTest < Minitest::Test
     entries, status = Open3.capture2('git', 'ls-files', '--stage', '-z')
     assert status.success?
     gitlinks = entries.split("\0").select { |entry| entry.start_with?('160000 ') }.map { |entry| entry.split("\t", 2).last }.sort
-    declared, status = Open3.capture2('git', 'config', '--file', '.gitmodules', '--get-regexp', '^submodule\..*\.path$')
-    assert status.success?
-    assert_equal gitlinks, declared.lines.map { |line| line.split(' ', 2).last.strip }.sort
     ignored = PuppetLint.configuration.ignore_paths
-    expected = (gitlinks + %w[vendor/bundle .tools/lint/spec/fixtures]).flat_map { |path| ["./#{path}/*", "#{path}/*"] }
+    expected = (gitlinks + %w[vendor/bundle]).flat_map { |path| ["./#{path}/*", "#{path}/*"] }
     expected.concat(%w[./*/templates/*.yaml */templates/*.yaml ./*/templates/*.yml */templates/*.yml])
     assert_equal expected.sort, ignored.sort
     gitlinks.each { |path| assert ignored.any? { |pattern| File.fnmatch(pattern, "./#{path}/manifests/init.pp") } }
-    refute_empty project_files('./**/*.pp')
+    %w[./example/manifests/init.pp ./examples/example.pp].each do |path|
+      refute ignored.any? { |pattern| File.fnmatch(pattern, path) }
+    end
   end
 
   def test_invalid_puppet_is_an_error_without_a_custom_execution_layer

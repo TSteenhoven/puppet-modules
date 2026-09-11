@@ -1,6 +1,6 @@
 # Puppet-lint
 
-Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De bijbehorende tests controleren ook voorbeelden, catalogi, templates en monitoringgedrag.
+Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. De [tooltests](../test/README.md) controleren het gedrag van de linter.
 
 Deze handleiding helpt je de controles te installeren, uit te voeren en meldingen op te lossen. De [naslag](#naslag) beschrijft hoe de controles werken en welke codeafspraken en reviewcriteria gelden. Gebruik je de moduleverzameling in een ander Puppet-project, volg dan [de stappen voor dat project](#de-linter-gebruiken-in-een-ander-puppet-project).
 
@@ -38,7 +38,7 @@ Je hebt Git, de nieuwste stabiele Ruby en de nieuwste stabiele Bundler nodig. We
 
 Voer de commando's voor deze repository uit vanuit de hoofdmap. Het ontwikkelgereedschap staat onder `.tools`, apart van de Puppet-modules. De ontwikkelomgeving bepaalt niet welke Puppet- of OpenVox-versies op beheerde servers worden ondersteund; daarvoor gelden de modulemetadata en de [project-README](../../README.md#ondersteuning-en-compatibiliteit).
 
-De controles passen geen catalogi toe en hebben geen productiegeheimen of verbindingen met beheerde servers nodig. Catalogustests gebruiken nagebootste facts; monitoringtests gebruiken vervangers voor servicecommando's.
+De controles passen geen catalogi toe en hebben geen productiegeheimen of verbindingen met beheerde servers nodig. De [testhandleiding](../test/README.md) beschrijft welke controles bij de tooltests horen en hoe je synthetische testinvoer gebruikt.
 
 ## Installatie
 
@@ -66,7 +66,7 @@ Voor nieuwe zsh-terminals zet je dezelfde twee `export PATH=...`-regels, in deze
 
 ### Gems installeren
 
-Voer dit uit vanuit de repositoryroot met de juiste Ruby actief. Haal ook de Git-submodules op; de catalogustests hebben die nodig.
+Voer dit uit vanuit de repositoryroot met de juiste Ruby actief. Haal ook de Git-submodules op, zodat de moduleverzameling compleet is.
 
 ```sh
 git submodule update --init --recursive
@@ -81,7 +81,7 @@ De [Gemfile](../../Gemfile) bevat geen vaste gemversies. [`Gemfile.lock`](../../
 
 Krijg je een Bundler-fout met `/System/Library/Frameworks/Ruby.framework` of `/usr/bin/bundle` in de melding, dan gebruikt je terminal nog de macOS-installatie. Controleer eerst `ruby --version`, `command -v ruby` en `command -v bundle` en herstel de PATH-instelling hierboven. Bundler installeren met de oude systeem-Ruby of `sudo gem install` lost die versieverschillen niet op.
 
-Naast Puppet-lint worden twee bestaande lintplugins, OpenVox, `metadata-json-lint`, Minitest en Rake geïnstalleerd. OpenVox levert de Puppet-parser voor structurele checks en catalogustests. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
+Naast Puppet-lint worden twee bestaande lintplugins, OpenVox, `metadata-json-lint`, Minitest en Rake geïnstalleerd. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
 
 ## Code controleren
 
@@ -89,11 +89,13 @@ Voer na de installatie de volgende controles uit vanuit de hoofdmap van deze rep
 
 ```sh
 bundle exec puppet-lint .
-bundle exec rake spec
+bundle exec rake test
 git diff --check
 ```
 
-De lintscan zoekt afwijkingen van de automatische codechecks. De tests controleren daarnaast onder meer voorbeelden, catalogi, templates en monitoringgedrag. Met `git diff --check` controleer je de wijzigingen op whitespacefouten. De afsluitende `.` bij Puppet-lint geeft aan dat de hele repository moet worden gescand; laat die ook staan wanneer je extra CLI-opties meegeeft.
+De lintscan zoekt afwijkingen van de automatische codechecks in de projectcode. `rake test` controleert uitsluitend de tools zelf; de [testhandleiding](../test/README.md) legt uit hoe je deze tests uitvoert en uitbreidt. Met `git diff --check` controleer je de wijzigingen op whitespacefouten. De afsluitende `.` bij Puppet-lint geeft aan dat de hele repository moet worden gescand; laat die ook staan wanneer je extra CLI-opties meegeeft.
+
+Gebruik tijdens het ontwikkelen `bundle exec rake test:lint` om alleen de lintertests uit te voeren. Op dit moment leveren `test` en `test:lint` dezelfde testselectie op, omdat er alleen voor de linter tooltests zijn. Zodra er tests voor andere tools bijkomen, neemt `test` die automatisch mee.
 
 Controleer ieder gewijzigd Puppet-manifest ook rechtstreeks met de parser:
 
@@ -129,7 +131,7 @@ Bij de eerste installatie gebruikt Bundler de versies uit de lockfile. Wil je di
 gem install bundler
 BUNDLE_VERSION=system bundle update --all
 bundle exec puppet-lint .
-bundle exec rake spec
+bundle exec rake test
 git diff -- Gemfile.lock
 ```
 
@@ -171,7 +173,9 @@ project/
 
 Gebruik een volledige checkout van deze repository. Daarin moeten `.puppet-lint.rc`, `Gemfile`, `Gemfile.lock` en de hele map `.tools/lint/` aanwezig zijn. Die laatste map bevat de configuratieloader `lib/config.rb`, de plugins en de Ruby-bestanden die ze nodig hebben, waaronder `lib/model.rb` en `lib/nullability.rb`. Een pakket met alleen Puppet-modules is dus niet voldoende. Controleer ook of verborgen bestanden worden meegeleverd.
 
-Haal de submodules `concat`, `debconf`, `reboot`, `stdlib` en `timezone` op. Dit zijn Puppet-modules die nodig kunnen zijn om aanroepen en catalogi te controleren. De tests van de moduleverzameling gebruiken daarnaast de overige repositorybestanden, `Rakefile`, `.gitmodules` en de Git-index, waarin Git de opgenomen bestanden en submodules bijhoudt.
+Haal de submodules `concat`, `debconf`, `reboot`, `stdlib` en `timezone` op. Dit zijn Puppet-modules die nodig kunnen zijn om aanroepen en catalogi te controleren.
+
+Wil je ook de tooltests uitvoeren, behoud dan de volledige checkout, inclusief `.tools/test/`, `Rakefile` en de Git-index. De tests gebruiken de index om te controleren welke modulemappen de lintscan uitsluit.
 
 ### Installatie in je project
 
@@ -330,7 +334,8 @@ Voer naast de lintscan ook de syntax- en gedragstests van je eigen project uit. 
 | Controle | Wat wordt gecontroleerd? |
 | --- | --- |
 | `ruby .tools/lint.rb` vanuit je eigen project | De gekozen eigen manifests, met de gedeelde lintregels en de modulepaden uit het script. |
-| `bundle exec puppet-lint .` en `bundle exec rake spec` vanuit de gedeelde checkout, met de bijbehorende gems | De modules en linter van die repository, inclusief voorbeelden, syntaxis en gedrag. Deze tests controleren niet automatisch je eigen projectcode. |
+| `bundle exec puppet-lint .` vanuit de gedeelde checkout, met de bijbehorende gems | De projectcode van de moduleverzameling volgens de gedeelde lintregels. |
+| `bundle exec rake test` vanuit de gedeelde checkout | Het gedrag van de tools zelf, waaronder het gebruik van de linter vanuit een synthetisch extern project. Zie de [tooltesthandleiding](../test/README.md). |
 | De eigen parser-, metadata-, template-, catalogus- en gedragstests | Je eigen project, met de Puppet- of OpenVox-versie, facts, Hiera en modulepaden die je daarvoor wilt gebruiken. |
 
 Controleer gewijzigde manifests ook rechtstreeks met de Puppet-parser. Voer dit voorbeeld uit vanuit de hoofdmap van je eigen project. Het gebruikt de eerder geïnstalleerde gems van de moduleverzameling. Vervang `global-modules` en het manifestpad waar nodig.
@@ -442,13 +447,11 @@ De [CLI](https://puppetlabs.github.io/puppet-lint/) leest eerst de systeemconfig
 bundle exec puppet-lint --no-config --config .puppet-lint.rc .
 ```
 
-De volledige scan vindt nieuwe manifests en bestanden in `examples/` automatisch. De vijf meegeleverde Git-submodules worden niet op onze stijl gecontroleerd. De tests vergelijken hun paden uit `.gitmodules` met de Git-index en de lintuitsluitingen. Geïnstalleerde gems en bewust ongeldige testfixtures blijven eveneens buiten de gewone scan.
+De volledige scan vindt nieuwe manifests en bestanden in `examples/` automatisch. De vijf meegeleverde Git-submodules worden niet op onze stijl gecontroleerd. De tooltests vergelijken de lintuitsluitingen met de Git-index. Geïnstalleerde gems blijven eveneens buiten de gewone scan. De lintertests maken hun ongeldige invoer tijdelijk buiten de repository aan.
 
-ERB-templates met een YAML-extensie worden niet als ruwe YAML gecontroleerd: ze worden pas geldige YAML na het renderen. De tests controleren hun templatesyntaxis wel. Puppet-voorbeelden in Strings en Markdown, inclusief deze verborgen `.tools`-map, worden met dezelfde lintchecks en Puppet-parser gecontroleerd.
+ERB-templates met een YAML-extensie worden niet als ruwe YAML gecontroleerd: ze worden pas geldige YAML na het renderen. Controleer gewijzigde templates daarom afzonderlijk. Valideer ook Puppet-voorbeelden in Strings en Markdown met de lintregels en de Puppet-parser; de lintscan leest deze voorbeelden niet uit de documentatie.
 
-De tests roepen bestaande validators rechtstreeks aan: `puppet parser validate`, `metadata-json-lint`, Ruby met `-c` en de gebruikte shell met `-n`. Voor catalogustests worden Debian- en Ubuntu-facts nagebootst. De isolatie van catalogus- en monitoringtests is beschreven onder [Benodigde omgeving](#benodigde-omgeving).
-
-[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, lintscan en tests uit. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren.
+[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, lintscan en tooltests uit. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren.
 
 CI heeft alleen leesrechten, bewaart geen checkoutcredentials en maakt geen wijzigingen of commits.
 

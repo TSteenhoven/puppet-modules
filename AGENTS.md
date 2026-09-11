@@ -156,10 +156,33 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Never pin Ruby or Bundler versions in setup commands or runtime configuration.
 - Use the root Gemfile, lockfile, standard CLI, and regression tests through the [documented bundle setup](.tools/lint/README.md#installatie).
 
+### Tool Test Scope And Structure
+
+- Keep tests of repository tools under `.tools/test/<tool-name>/`, separate from each tool's implementation directory; use `.tools/test/lint/` for the linter.
+- Place tests for each new tool in its own subdirectory under `.tools/test/`.
+- Classify tests by the behavior their assertions verify, not by filenames, input formats, or implementation technologies.
+- Keep general module, catalog, repository syntax, template, script, and monitoring behavior tests outside `.tools/`.
+- Use fixtures and supporting functionality in tool tests only when they help verify a tool contract.
+- Keep tool-specific helpers and fixtures with that tool's tests.
+- Introduce shared test helpers only when multiple tools actually need them.
+- Never execute unrelated module or repository tests indirectly through tool tests, helpers, hooks, or task dependencies.
+
+### Tool Test Tasks
+
+- Keep `test` and the default Rake task responsible for recursive discovery across all tool test subdirectories.
+- Keep `test:lint` limited to the linter tests under `.tools/test/lint/`.
+
+### Test Structure Maintenance
+
+- Update test discovery, path resolution, task definitions, CI, and affected documentation together when changing the test structure.
+- Remove superseded test directories, duplicate files, unused support data, obsolete tasks, and stale references after migration.
+- Preserve relevant regression coverage and explicitly report any intentionally removed tests.
+- Verify that the expected tests are discovered and executed; a successful command with no applicable tests is not sufficient validation.
+
 ### Required Checks
 
 - Run the full lint scan with `bundle exec puppet-lint .` for every completed change.
-- Run the lint-solution tests with `bundle exec rake spec` for every completed change.
+- Run all tool tests with `bundle exec rake test` for every completed change.
 - Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path.
 - Perform the additional validation relevant to the change, as documented in the [validation guide](.tools/lint/README.md#code-controleren).
 - Inspect the final change scope with `git diff --name-only`.
@@ -180,7 +203,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Language And Authority
 
 - Write technical documentation in English, including changelog entries and this file, except for the READMEs specified below.
-- Keep the root README and `.tools/lint/README.md` in Dutch unless the user explicitly requests another language.
+- Keep the root README, `.tools/lint/README.md`, and `.tools/test/README.md` in Dutch unless the user explicitly requests another language.
 - Keep one authoritative location for each technical fact.
 - Use concise summaries with pointers when a fact must appear in more than one layer.
 - Place information according to the responsibilities below.
@@ -190,6 +213,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 | `AGENTS.md` | Durable project-wide workflow, general review policy, and engineering responsibilities. |
 | Root `README.md` | Central user guide for module use and operational decisions. |
 | `.tools/lint/README.md` | Validation tooling guide and separate authoritative reference for code conventions and Puppet review criteria. |
+| `.tools/test/README.md` | Running and extending the central tool tests. |
 | Puppet Strings | Concrete public interfaces, complete parameter descriptions, defaults, and fallback chains. |
 | Scripts and templates | Local, non-obvious technical reasons and constraints, internal behavior, and per-check output contracts. |
 | `examples/` | Expanded configuration scenarios. |
@@ -203,6 +227,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Add detail to the root README only when users need it before use, it changes a security or compatibility decision, or the basic example requires it.
 - Never turn the root README into an exhaustive parameter or implementation reference.
 - Keep the lint README focused on using validation tooling, with a clearly separated reference for the conventions and review criteria it owns.
+- Use the lint README as the style and organization reference for `.tools/test/README.md`: explain purpose and prerequisites before commands, then cover troubleshooting and adding tests. Adapt sections to tool testing and link to the lint guide for installation and lint rules.
 - Keep developer-only implementation detail out of the root user guide.
 - Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
 
@@ -265,7 +290,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.
 - Check that commands, paths, options, and references match the accompanying examples and current implementation.
 - Review explanatory passages as continuous prose, aloud if useful, to correct awkward phrasing and unexplained topic changes without changing technical meaning.
-- Compare changed lint-README prose with representative root README passages against the [README style guidance](#readme-style).
+- Compare changed prose in `.tools/lint/README.md` and `.tools/test/README.md` with representative root README passages against the [README style guidance](#readme-style).
 - Include a short representative passage in the review for owner feedback.
 - Use an owner-accepted passage as a concrete style reference.
 

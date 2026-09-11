@@ -1,19 +1,16 @@
 require_relative 'test_helper'
 require 'bundler'
-require 'fileutils'
 
 class ExternalProjectTest < Minitest::Test
+  include LintTestSupport
+
   def setup
     @project = Dir.mktmpdir('external-lint-')
     @tooling = File.join(@project, 'dependencies/shared modules/puppet-modules')
-    FileUtils.mkdir_p(File.join(@tooling, '.tools/lint'))
-    FileUtils.cp_r(File.join(ProjectLint::ROOT, '.tools/lint/lib'), File.join(@tooling, '.tools/lint'))
-    %w[.puppet-lint.rc Gemfile Gemfile.lock].each do |name|
-      FileUtils.cp(File.join(ProjectLint::ROOT, name), @tooling)
-    end
+    copy_linter(@tooling)
 
     # Run the actual README entry point, changing only the documented dependency location.
-    readme = File.read(File.join(ProjectLint::ROOT, '.tools/lint/README.md'))
+    readme = File.read(File.join(LintTestSupport::ROOT, '.tools/lint/README.md'))
     script = readme[/^```ruby\n(.*?)^```/m, 1]
     refute_nil script
     write('.tools/lint.rb', script.sub("'global-modules'", "'dependencies/shared modules/puppet-modules'"))

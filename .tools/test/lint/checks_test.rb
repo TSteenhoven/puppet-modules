@@ -446,6 +446,11 @@ class ChecksTest < Minitest::Test
     assert_empty findings(closed.sub("# lint:endignore\n", "# lint:endignore\n\n"), 'project_comment_spacing')
   end
 
+  def test_resource_sections_keep_line_numbers_after_blank_lines
+    code = "notify { 'first': }\n\nnotify { 'second': }\n\n"
+    assert_equal [3], findings(code, 'project_resource_sections').map { |finding| finding[:line] }
+  end
+
   def test_resource_sections_after_conditions_need_their_own_explanation
     code = <<~'PUPPET'
       if $active {
