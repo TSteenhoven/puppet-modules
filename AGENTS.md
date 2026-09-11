@@ -76,6 +76,13 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Preserve literal whitespace in heredocs and multiline quoted data when reindenting code.
 - Review shell indentation in the source and rendered template output; Puppet-lint does not validate shell formatting.
 
+### Managed File Identification
+
+- Include a `Managed by puppet` header in every file whose contents Puppet manages, whether supplied through inline content, templates, static sources, or concatenated fragments.
+- Use the exact line `# Managed by puppet` when the format supports hash comments. Place it at the start of the file, immediately after any required shebang or format header; use the format's native comment syntax when hash comments are invalid.
+- Omit the header only when it would invalidate the file, such as binary content, formats without comments, or cryptographic material. Document the format constraint beside the resource or content source.
+- Verify the header in the resulting file content when adding or changing a managed file. A comment in the Puppet manifest alone does not satisfy this requirement.
+
 ### Git Commits
 
 - AI agents must never create, amend, or rewrite Git commits through Git commands, APIs, or other tools.

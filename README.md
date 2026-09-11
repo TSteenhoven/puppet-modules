@@ -703,7 +703,9 @@ Vhosts, exchanges, queues, bindings en gebruikers staan in [`examples/data-servi
 
 #### Belangrijke aandachtspunten
 
-De module purgeert onbekende bestanden in `/etc/ssh/sshd_config.d`. Verplaats of vertaal bestaande drop-ins voordat je haar activeert. Houd een tweede root- of consoleverbinding open en controleer sleutels, `allow_users`, firewall en eventuele socket activation vóór de eerste reload.
+De module overschrijft `/etc/ssh/sshd_config` met `# Managed by puppet` en de regel `Include /etc/ssh/sshd_config.d/*.conf`, zodat de beheerde `99-custom.conf` wordt ingelezen. Bestaande instellingen in het hoofdbestand verdwijnen. Neem instellingen die je wilt behouden vooraf over in de door Puppet beheerde configuratie.
+
+De module purgeert onbekende bestanden in `/etc/ssh/sshd_config.d`. Verplaats of vertaal bestaande drop-ins voordat je haar activeert. Houd een tweede root- of consoleverbinding open en controleer sleutels, `allow_users`, firewall en eventuele socket activation vóór de eerste herstart.
 
 #### Basisvoorbeeld
 
@@ -715,7 +717,7 @@ class { 'ssh':
 }
 ```
 
-SSH in een gecombineerd webhostprofiel staat in [`examples/site.pp`](examples/site.pp).
+SSH in een gecombineerd webhostprofiel staat in [`examples/site.pp`](examples/site.pp). De [Puppet Strings bij `ssh`](ssh/manifests/init.pp) beschrijven de beschikbare instellingen.
 
 ### `vnstat`
 

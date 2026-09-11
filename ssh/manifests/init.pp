@@ -1,7 +1,7 @@
 # @summary Manages hardened OpenSSH server configuration and monitoring.
 #
 # lint:ignore:140chars
-# This class installs OpenSSH packages, owns `/etc/ssh/sshd_config.d`, writes a login banner and custom sshd configuration, supports socket-activated SSH on Ubuntu releases that use `ssh.socket`, optionally configures an alternative port, registers a monitoring check, and adds audit coverage for SSH configuration changes and SSH client execution.
+# This class installs OpenSSH packages, replaces `/etc/ssh/sshd_config` with an Include for the module-owned `/etc/ssh/sshd_config.d/*.conf`, writes a login banner and custom sshd configuration, supports socket-activated SSH on Ubuntu releases that use `ssh.socket`, optionally configures an alternative port, registers a monitoring check, and adds audit coverage for SSH configuration changes and SSH client execution.
 # lint:endignore
 #
 # @example Manage SSH for key-only users
@@ -20,7 +20,7 @@
 #   Users allowed by the generated sshd configuration. An empty list leaves the template without an explicit AllowUsers list.
 #
 # @param banner_text
-#   Text written to `/etc/issue.net` and referenced by sshd.
+#   Text written to `/etc/issue.net`, `/etc/motd` and referenced by sshd.
 #
 # @param check_users
 #   Optional explicit user list passed to the SSH monitoring check. `undef` derives the list from the primary and alternative allowed users.
@@ -168,7 +168,7 @@ class ssh (
   }
 
   # Banner
-  file { '/etc/issue.net':
+  file { ['/etc/issue.net', '/etc/motd']:
     ensure  => file,
     owner   => 'root',
     group   => 'root',
@@ -184,6 +184,17 @@ class ssh (
     group   => 'root',
     content => template('ssh/custom.conf'),
     require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  # Replace distribution or local settings only after the managed drop-in is available.
+  file { '/etc/ssh/sshd_config':
+    ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    content => "# Managed by puppet\nInclude /etc/ssh/sshd_config.d/*.conf\n",
+    replace => true,
+    require => File['/etc/ssh/sshd_config.d/99-custom.conf'],
   }
 
   # Check if we have systemd socket
@@ -223,14 +234,18 @@ class ssh (
       ensure    => undef,
       enable    => false,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => [File['/etc/ssh/sshd_config.d'], File['/etc/ssh/sshd_config.d/99-custom.conf']],
+      subscribe => [
+        File['/etc/ssh/sshd_config'],
+        File['/etc/ssh/sshd_config.d'],
+        File['/etc/ssh/sshd_config.d/99-custom.conf'],
+      ],
     }
 
     # Ensure that ssh is always running
     service { 'ssh.socket':
       ensure  => running,
       enable  => true,
-      require => Package['openssh-server'],
+      require => [Package['openssh-server'], File['/etc/ssh/sshd_config']],
     }
 
     # Set service name
@@ -241,7 +256,11 @@ class ssh (
       ensure    => running,
       enable    => true,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => [File['/etc/ssh/sshd_config.d'], File['/etc/ssh/sshd_config.d/99-custom.conf']],
+      subscribe => [
+        File['/etc/ssh/sshd_config'],
+        File['/etc/ssh/sshd_config.d'],
+        File['/etc/ssh/sshd_config.d/99-custom.conf'],
+      ],
     }
 
     # Set service name
