@@ -85,6 +85,31 @@ class CliTest < Minitest::Test
     end
   end
 
+  def test_array_indentation_fails_with_and_without_fix_and_accepts_the_corrected_layout
+    Dir.mktmpdir('lint_array_indentation_') do |directory|
+      file = File.join(directory, 'arrays.pp')
+      code = <<~'PUPPET'
+        $command = join([
+              'printf "%s"',
+              'synthetic',
+            ], ' ')
+      PUPPET
+      [[], ['--fix']].each do |options|
+        File.write(file, code)
+        output, errors, status = cli(*options, file)
+        refute status.success?, output + errors
+        assert_equal 3, output.lines.count { |line| line.include?('project_layout') }, output
+        assert_includes output, ':2:7: project_layout: warning: Use 2 leading spaces for the array element'
+        assert_includes output, ':4:5: project_layout: warning: Use 0 leading spaces for the closing array bracket'
+        assert_equal code, File.read(file)
+      end
+
+      File.write(file, code.gsub(/^      /, '  ').sub('    ]', ']'))
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+    end
+  end
+
   def test_variable_sections_fail_without_inventing_an_explanation_with_fix
     Dir.mktmpdir('lint_variables_') do |directory|
       file = File.join(directory, 'variables.pp')

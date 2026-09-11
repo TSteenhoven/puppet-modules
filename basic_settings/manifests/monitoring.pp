@@ -50,9 +50,9 @@ class basic_settings::monitoring (
 
   # Pass the systemd instance as $0 so bash can quote it without systemd parsing shell escape sequences.
   $notify_failed_script = join([
-      'LC_CTYPE=C systemctl status --full "$0" |',
-      "${monitoring_notify_path_shell} -t ${mail_to_shell}",
-      "-r ${systemd_mail_from_shell} \"Service \$0 failed on ${server_fdqn}\"",
+    'LC_CTYPE=C systemctl status --full "$0" |',
+    "${monitoring_notify_path_shell} -t ${mail_to_shell}",
+    "-r ${systemd_mail_from_shell} \"Service \$0 failed on ${server_fdqn}\"",
   ], ' ')
 
   # Install package

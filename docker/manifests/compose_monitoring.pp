@@ -103,15 +103,15 @@ define docker::compose_monitoring (
 
     # Join the command arguments together.
     $cmd = join([
-        "-d ${project_directory}",
-        $project_name_arg,
-        $compose_files_arg,
-        $env_file_arg,
-        " -n ${name} -g ${starting_grace} -l ${detail_limit}",
-        $expected_exited_arg,
-        $health_required_arg,
-        $profiles_arg,
-        $orphan_critical_arg,
+      "-d ${project_directory}",
+      $project_name_arg,
+      $compose_files_arg,
+      $env_file_arg,
+      " -n ${name} -g ${starting_grace} -l ${detail_limit}",
+      $expected_exited_arg,
+      $health_required_arg,
+      $profiles_arg,
+      $orphan_critical_arg,
     ], '')
 
     # The stack check parses Docker's JSON output with jq.

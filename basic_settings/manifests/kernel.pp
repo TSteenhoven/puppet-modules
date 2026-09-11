@@ -818,19 +818,19 @@ class basic_settings::kernel (
 
   # Create list of packages that is suspicious
   $suspicious_packages = flatten($bootloader_packages, [
-      '/bin/su',
-      '/usr/bin/depmod',
-      '/usr/bin/kmod',
-      '/usr/bin/lsmod',
-      '/usr/bin/lsusb',
-      '/usr/bin/usb-devices',
-      '/usr/bin/usbhid-dump',
-      '/usr/bin/usbreset',
-      '/usr/sbin/insmod',
-      '/usr/sbin/lsmod',
-      '/usr/sbin/modinfo',
-      '/usr/sbin/modprobe',
-      '/usr/sbin/rmmod',
+    '/bin/su',
+    '/usr/bin/depmod',
+    '/usr/bin/kmod',
+    '/usr/bin/lsmod',
+    '/usr/bin/lsusb',
+    '/usr/bin/usb-devices',
+    '/usr/bin/usbhid-dump',
+    '/usr/bin/usbreset',
+    '/usr/sbin/insmod',
+    '/usr/sbin/lsmod',
+    '/usr/sbin/modinfo',
+    '/usr/sbin/modprobe',
+    '/usr/sbin/rmmod',
   ])
   $suspicious_packages_root = [
     '/usr/bin/kmod',

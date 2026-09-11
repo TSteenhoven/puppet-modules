@@ -303,6 +303,129 @@ class ChecksTest < Minitest::Test
     refute_empty findings("class example (\n  Enum['a','b'] $label = 'comma,inside'\n) {}", 'project_layout')
   end
 
+  def test_layout_requires_two_extra_spaces_for_array_elements_in_function_calls
+    valid = <<~'PUPPET'
+      $token_reader = join([
+        'set -eu; umask 077; exec >/dev/null 2>&1;',
+        'CI_SERVER_TOKEN=$(cat); export CI_SERVER_TOKEN;',
+        'exec gitlab-runner register "$@"',
+      ], ' ')
+    PUPPET
+    [0, 2, 8, 12].each do |indent|
+      code = valid.lines.map { |line| (' ' * indent) + line }.join
+      assert_empty findings(code, 'project_layout')
+      [0, 1, 4, 6].each do |extra|
+        incorrect = code.gsub(/^ {#{indent + 2}}(?=')/, ' ' * (indent + extra))
+        problems = findings(incorrect, 'project_layout')
+        assert_equal [[2, indent + extra + 1], [3, indent + extra + 1], [4, indent + extra + 1]],
+                     problems.map { |problem| problem.values_at(:line, :column) }
+        assert problems.all? { |problem| problem[:kind] == :warning && problem[:message].include?('array element') }
+      end
+    end
+  end
+
+  def test_layout_aligns_the_closing_array_bracket_with_the_opening_line
+    code = "$values = join([\n  'first',\n    ], ' ')\n"
+    problems = findings(code, 'project_layout')
+    assert_equal [[3, 5]], problems.map { |problem| problem.values_at(:line, :column) }
+    assert_includes problems.first.fetch(:message), 'closing array bracket'
+    assert_empty findings(code.sub('    ]', ']'), 'project_layout')
+    assert_equal [2], findings("$values = [\n  ]\n", 'project_layout').map { |problem| problem[:line] }
+  end
+
+  def test_layout_checks_arrays_in_defaults_resources_hashes_and_nested_calls
+    code = <<~'PUPPET'
+      class example (
+        Array[String] $defaults = [
+          'default',
+        ],
+      ) {
+        $nested = wrap(join([
+          [
+            'nested',
+          ],
+          { 'key' => [
+            'value',
+          ] },
+        ], ' '))
+        notify { 'example':
+          message => join(
+            [
+              'message',
+            ],
+            ' ',
+          ),
+        }
+      }
+    PUPPET
+    assert_empty findings(code, 'project_layout')
+    %w[default nested value message].each do |value|
+      incorrect = code.sub(/^( +)(?='#{value}',)/, '\1  ')
+      assert_equal 1, findings(incorrect, 'project_layout').length, value
+    end
+  end
+
+  def test_layout_preserves_the_resource_title_level_for_arrays
+    ["file { [\n", "file {\n  [\n"].each do |opening|
+      code = opening + "    '/synthetic/first',\n    '/synthetic/second',\n  ]:\n    ensure => absent,\n}\n"
+      assert_empty findings(code, 'project_layout')
+      assert_equal 2, findings(code.gsub("    '/", "      '/"), 'project_layout').length
+      assert_equal 1, findings(code.sub('  ]:', ']:'), 'project_layout').length
+    end
+  end
+
+  def test_layout_checks_array_element_starts_without_reindenting_their_contents
+    code = <<~'PUPPET'
+      $values = [
+        'first', 'second', # Several values may share a line.
+        -1,
+        (2 + 3),
+        {
+          'key' => 'value',
+        },
+        call(
+          'argument',
+        ),
+        'literal [
+              string content
+      ]',
+        "${name} [
+            interpolated string content
+      ]",
+        /[
+              pattern content
+      ]/,
+        @(TEXT),
+              heredoc content [
+      ]
+      TEXT
+        # Keep this comment with the last element.
+        'last',
+      ]
+    PUPPET
+    assert_empty findings(code, 'project_layout')
+    ["  -1,", '  (2 + 3),', '  {', '  call(', '  @(TEXT),', "  'last',"].each do |start|
+      assert_equal 1, findings(code.sub(start, "  #{start}"), 'project_layout').length, start
+    end
+  end
+
+  def test_layout_preserves_inline_arrays_types_accesses_and_brackets_in_text
+    codes = [
+      "$values = ['first', 'second']\n",
+      "$values = ['first',\n  'second']\n",
+      "$values = [\n  'first', 'second']\n",
+      "$values = [\n\n  'first',\n\n]\n",
+      "$values = [ # Explain this list.\r\n  'first',\r\n]\r\n",
+      "$values = [\n  'één',\n  'twee',\n]\n",
+      "$values = []\n# [\n        # ]\n",
+      "$text = '[\n        literal text\n    ]'\n",
+      "$type = Array[\n        String,\n    ]\n",
+      "$value = $lookup[\n        'key',\n    ]\n",
+      "File[\n        '/synthetic',\n    ] { mode => '0600' }\n",
+    ]
+    codes.each { |code| assert_empty findings(code, 'project_layout'), code }
+  end
+
   def test_layout_rejects_blank_lines_after_opening_braces_in_nested_blocks
     code = <<~'PUPPET'
       # Check whether this service runs a Node.js application.

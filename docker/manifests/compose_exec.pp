@@ -56,17 +56,17 @@ define docker::compose_exec (
     $compose_name_shell = stdlib::shell_escape($compose_name)
     $service_shell = stdlib::shell_escape($service)
     $container_lookup_command = join([
-        'container_id=$(/usr/bin/docker ps',
-        "--filter label=com.docker.compose.project=${compose_name_shell}",
-        "--filter label=com.docker.compose.service=${service_shell}",
-        "--format '{{.ID}}') || exit 1",
+      'container_id=$(/usr/bin/docker ps',
+      "--filter label=com.docker.compose.project=${compose_name_shell}",
+      "--filter label=com.docker.compose.service=${service_shell}",
+      "--format '{{.ID}}') || exit 1",
     ], ' ')
 
     # Refuse ambiguous or missing discovery results before invoking Docker exec.
     $container_check_command = join([
-        'case "$container_id" in',
-        '  ""|*[!a-fA-F0-9]*) echo "Expected exactly one running Compose service container" >&2; exit 1 ;;',
-        'esac',
+      'case "$container_id" in',
+      '  ""|*[!a-fA-F0-9]*) echo "Expected exactly one running Compose service container" >&2; exit 1 ;;',
+      'esac',
     ], "\n")
 
     # Preserve argument boundaries, including quotes, whitespace and shell metacharacters.
@@ -99,9 +99,9 @@ define docker::compose_exec (
       # Shell escaping is identical for the guard and the mutation.
       $unless_args_shell = $unless.map |$argument| { stdlib::shell_escape($argument) }
       $unless_command = Sensitive.new(join([
-            $container_lookup_command,
-            $container_check_command,
-            join(concat([$docker_exec_command, '"$container_id"'], $unless_args_shell, ['< /dev/null']), ' '),
+        $container_lookup_command,
+        $container_check_command,
+        join(concat([$docker_exec_command, '"$container_id"'], $unless_args_shell, ['< /dev/null']), ' '),
       ], "\n"))
     } else {
       # An omitted guard performs no Docker calls during noop; creates stays a local Puppet check.
@@ -111,9 +111,9 @@ define docker::compose_exec (
     # Keep the resource title stable for callers and inherit their require/notify relationships through containment.
     exec { $name:
       command   => Sensitive.new(join([
-            $container_lookup_command,
-            $container_check_command,
-            join(concat([$docker_exec_command, $interactive_arg, '"$container_id"'], $command_args_shell, [$stdin_redirect]), ' '),
+        $container_lookup_command,
+        $container_check_command,
+        join(concat([$docker_exec_command, $interactive_arg, '"$container_id"'], $command_args_shell, [$stdin_redirect]), ' '),
       ], "\n")),
       creates   => $creates,
       logoutput => false,

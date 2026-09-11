@@ -25,6 +25,7 @@ Deze handleiding helpt je de controles te installeren, uit te voeren en meldinge
 - [Naslag](#naslag)
   - [Werking van de controles](#werking-van-de-controles)
   - [Beschikbare projectchecks](#beschikbare-projectchecks)
+  - [Inspringing](#inspringing)
   - [Lange regels](#lange-regels)
   - [Parameters en resources](#parameters-en-resources)
   - [Commentaar en documentatie](#commentaar-en-documentatie)
@@ -464,7 +465,7 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_parameter_order` | Verplichte parameters eerst, optionele daarna, alfabetisch binnen elke groep. Een echte afhankelijkheid van een eerdere default mag de volgorde bepalen en moet worden toegelicht. |
 | `project_parameter_alignment` | Typen, namen, `=`-tekens en defaults staan over het volledige parameterblok uitgelijnd, ook bij geneste typen en waarden over meerdere regels. |
 | `project_documentation` | Classes en defined types hebben een samenvatting, voorbeeld, API-markering en parameterdocumentatie in dezelfde volgorde. Willekeurig afgebroken documentatiezinnen worden gemeld. |
-| `project_layout` | Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
+| `project_layout` | Arrays over meerdere regels gebruiken de [afgesproken inspringing](#inspringing). Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
 | `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
 | `project_if_sections` | Iedere `if` of `unless` krijgt een toelichting boven de voorbereidende variabelen, of boven de voorwaarde als die voorbereiding ontbreekt. Een `elsif` hoort bij dezelfde keten; geneste voorwaarden krijgen hun eigen toelichting. |
@@ -484,6 +485,14 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 Gebruik twee spaties voor inspringing, uitgelijnde pijlen en enkele aanhalingstekens voor letterlijke strings. Dubbele aanhalingstekens zijn nodig voor interpolatie of escapes. Houd de volgorde van resources en gegenereerde configuratie bewust en controleerbaar. Bereken selectors vóór de resourcedeclaratie.
 
 De projectchecks voor documentatie en parametervolgorde vullen de standaardchecks aan. Puppet-lint laat de optionele checks voor 80 tekens, booleans tussen aanhalingstekens en code op hoofdniveau standaard uitgeschakeld. Dat past bij onze 140-tekengrens, daemonstrings zoals `'true'` en uitvoerbare profielen. Schakel geen correcte check uit om bestaande code niet te hoeven herstellen en maak geen uitzonderingslijst voor oude modules of stijlachterstand.
+
+### Inspringing
+
+Staat een array over meerdere regels, laat de elementen dan twee spaties verder inspringen dan de regel waarop `[` staat. Dit geldt ook binnen functieaanroepen zoals `join([` en `Sensitive.new(join([`: extra haakjes op die regel voegen geen inspringing toe. Een afsluitende `]` aan het begin van een regel krijgt dezelfde inspringing als de regel met de bijbehorende `[`. Behoud daarbij de inspringing van het omliggende codeblok.
+
+Bij een resourcetitel die direct achter de openende accolade begint, zoals `file { [`, komt daar één niveau bij: de elementen staan vier spaties verder dan `file` en de afsluitende `]` twee spaties.
+
+`project_layout` controleert het begin van elementen die op een nieuwe regel staan en de afsluitende `]`. Meerdere elementen op dezelfde regel blijven toegestaan. De check laat de inhoud van strings, heredocs en commentaar ongemoeid en behandelt typeparameters en indexeringen niet als arrays. De check past de inspringing niet automatisch aan met `--fix`.
 
 ### Lange regels
 

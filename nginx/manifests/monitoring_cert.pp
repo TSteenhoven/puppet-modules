@@ -79,9 +79,9 @@ define nginx::monitoring_cert (
 
         # Combine the target and limits into this registration's arguments.
         $check_cmd = join([
-            "-n ${server_name_shell} -f ${config_file_shell}",
-            "-l ${detail_limit_shell} -t ${timeout_shell}",
-            "-c ${validity_critical_shell} -w ${validity_warning_shell}",
+          "-n ${server_name_shell} -f ${config_file_shell}",
+          "-l ${detail_limit_shell} -t ${timeout_shell}",
+          "-c ${validity_critical_shell} -w ${validity_warning_shell}",
         ], ' ')
 
         # A File is the normal contract; standalone callers can order their owner wrapper before this helper.

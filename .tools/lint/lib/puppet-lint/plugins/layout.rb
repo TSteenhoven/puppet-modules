@@ -243,6 +243,46 @@ end
 PuppetLint.new_check(:project_layout) do
   include ProjectLint::ModelCheck
 
+  def check_array_line_indentation(line, column, expected, part)
+    prefix = PuppetLint::Data.manifest_lines[line - 1][0, column - 1]
+    return unless prefix.match?(/\A[ \t]*\z/)
+    return if prefix == ' ' * expected
+
+    notify(:warning, message: "Use #{expected} leading spaces for #{part}", line: line, column: column)
+  end
+
+  def check_array_indentation
+    openings = []
+    closings = {}
+    tokens.each do |token|
+      if token.type == :LBRACK
+        openings << token
+      elsif token.type == :RBRACK && openings.any?
+        opening = openings.pop
+        closings[[opening.line, opening.column]] = token
+      end
+    end
+
+    # Use the AST to distinguish literal arrays from type arguments and lookups.
+    # Inspect only element starts and closing brackets to preserve multiline values.
+    model.nodes.each do |node, parents|
+      next unless node.is_a?(ProjectLint::Model::M::LiteralList)
+
+      closing = closings[[node.line, node.pos]]
+      next unless closing && closing.line > node.line
+
+      indent = PuppetLint::Data.manifest_lines[node.line - 1][/\A[ \t]*/].length
+      # An inline resource title starts one level inside the resource's opening brace.
+      if parents.last.is_a?(ProjectLint::Model::M::ResourceBody) && parents[-2].line == node.line
+        indent += 2
+      end
+      node.values.each do |value|
+        check_array_line_indentation(value.line, value.pos, indent + 2, 'the array element')
+      end
+      check_array_line_indentation(closing.line, closing.column, indent, 'the closing array bracket')
+    end
+  end
+
   def check_opening_brace_spacing
     tokens.select { |token| token.type == :LBRACE }.each do |opening|
       following = opening.next_token
@@ -259,6 +299,7 @@ PuppetLint.new_check(:project_layout) do
   end
 
   def check
+    check_array_indentation
     check_opening_brace_spacing
     tokens.each do |token|
       next unless token.type == :COMMA && token.next_code_token

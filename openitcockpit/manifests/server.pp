@@ -58,8 +58,8 @@ class openitcockpit::server (
   if (!empty($webserver_security_header_directives)) {
     # Report directives that conflict with centrally managed security headers.
     $webserver_security_header_fail_text = join([
-        'openitcockpit::server webserver_directives must not set managed security headers because /etc/nginx/openitc/custom.conf manages them by default:', # lint:ignore:140chars
-        join($webserver_security_header_directives, ', '),
+      'openitcockpit::server webserver_directives must not set managed security headers because /etc/nginx/openitc/custom.conf manages them by default:', # lint:ignore:140chars
+      join($webserver_security_header_directives, ', '),
     ], ' ')
   } else {
     # Allow web configuration generation when no security-header overrides conflict.

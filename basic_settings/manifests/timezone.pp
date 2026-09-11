@@ -47,19 +47,19 @@ class basic_settings::timezone (
       'Ubuntu': {
         # Combine extra NTP pools with the Ubuntu defaults.
         $ntp_all_pools = flatten($ntp_extra_pools, [
-            '0.ubuntu.pool.ntp.org',
-            '1.ubuntu.pool.ntp.org',
-            '2.ubuntu.pool.ntp.org',
-            '3.ubuntu.pool.ntp.org',
+          '0.ubuntu.pool.ntp.org',
+          '1.ubuntu.pool.ntp.org',
+          '2.ubuntu.pool.ntp.org',
+          '3.ubuntu.pool.ntp.org',
         ])
       }
       'Debian': {
         # Combine extra NTP pools with the Debian defaults.
         $ntp_all_pools = flatten($ntp_extra_pools, [
-            '0.debian.pool.ntp.org',
-            '1.debian.pool.ntp.org',
-            '2.debian.pool.ntp.org',
-            '3.debian.pool.ntp.org',
+          '0.debian.pool.ntp.org',
+          '1.debian.pool.ntp.org',
+          '2.debian.pool.ntp.org',
+          '3.debian.pool.ntp.org',
         ])
       }
       default: {

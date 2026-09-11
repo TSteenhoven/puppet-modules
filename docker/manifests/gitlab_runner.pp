@@ -173,9 +173,9 @@ define docker::gitlab_runner (
           if ($auto_register) {
             # Read the token from stdin inside the container, keeping it out of Docker arguments and its stored environment.
             $token_reader = join([
-                  'set -eu; umask 077; exec >/dev/null 2>&1;',
-                  'CI_SERVER_TOKEN=$(cat); export CI_SERVER_TOKEN;',
-                  'exec gitlab-runner register "$@"',
+              'set -eu; umask 077; exec >/dev/null 2>&1;',
+              'CI_SERVER_TOKEN=$(cat); export CI_SERVER_TOKEN;',
+              'exec gitlab-runner register "$@"',
             ], ' ')
 
             # Reuse Compose container selection and argument escaping while retaining the private token input.
