@@ -256,6 +256,22 @@ class ChecksTest < Minitest::Test
     assert_empty findings(safe.sub('command => $script', 'command => Sensitive.new($script)'), 'project_shell')
   end
 
+  def test_optional_shell_guard_accepts_undef_without_accepting_unescaped_input
+    code = <<~'PUPPET'
+      define example::guard (String $argument, Boolean $enabled = true) {
+        if $enabled {
+          $argument_shell = stdlib::shell_escape($argument)
+          $guard = Sensitive.new("/bin/test -e ${argument_shell}")
+        } else {
+          $guard = undef
+        }
+        exec { 'example': command => '/bin/true', unless => $guard }
+      }
+    PUPPET
+    assert_empty findings(code, 'project_shell')
+    refute_empty findings(code.sub('stdlib::shell_escape($argument)', '$argument'), 'project_shell')
+  end
+
   def test_shell_scope_and_multiple_assignments
     code = <<~'PUPPET'
       class example (String $argument) {

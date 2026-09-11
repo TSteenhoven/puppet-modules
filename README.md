@@ -23,6 +23,7 @@ De modules kiezen veilige standaardinstellingen en zijn zo opgebouwd dat Puppet 
 - [Modules](#modules)
   - [`basic_settings`](#basic_settings)
   - [`docker`](#docker)
+    - [GitLab Runner](#gitlab-runner)
   - [`gitlab`](#gitlab)
   - [`letsencrypt`](#letsencrypt)
   - [`mysql`](#mysql)
@@ -237,7 +238,7 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 
 #### Doel
 
-`docker` installeert Docker CE. `docker::compose` beheert een Compose-project onder `/opt/docker/<naam>`. Met `docker::compose_proxy` publiceer je zo'n Compose-stack via Nginx. De module bevat ook kant-en-klare configuraties voor Authentik en Twenty.
+`docker` installeert Docker CE. `docker::compose` beheert een Compose-project onder `/opt/docker/<naam>`. Met `docker::compose_proxy` publiceer je zo'n Compose-stack via Nginx. De module bevat ook kant-en-klare configuraties voor Authentik, Twenty en GitLab Runner.
 
 #### Belangrijkste eigenschappen
 
@@ -247,10 +248,13 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 - Kan containerstatus, healthchecks, toegestane eenmalige containers en orphans monitoren.
 - Kan een Compose-stack via een Nginx reverse proxy publiceren en gebruikt standaard HTTPS naar de containerapplicatie.
 - Levert Authentik- en Twenty-configuratie met `Sensitive` geheimen en een optionele Nginx-proxy.
+- Levert GitLab Runner met optionele eenmalige registratie en behoud van de actieve runnerconfiguratie.
 
 #### Belangrijke aandachtspunten
 
 Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor gedownloade Compose-bestanden HTTPS met een checksum. `docker::compose_proxy` vereist `nginx` en gebruikt standaard HTTPS naar de achterliggende applicatie. Kies alleen HTTP als die applicatie geen TLS ondersteunt. `docker::authentik` verwijdert standaard de eerste beheerder `akadmin`; zet `akadmin_remove => false` als deze gebruiker moet blijven bestaan. Puppet maakt de map `custom-templates` aan, maar beheert de inhoud niet.
+
+Met de bestaande `basic_settings::systemd`-inrichting start Puppet een nieuwe Compose-service direct en koppelt deze aan het gekozen target voor volgende boots. `ensure => absent` verwijdert alleen de projectmap, inclusief lokale bind-mountgegevens. Ontkoppel en stop de stack daarom zelf voordat je Puppet de map laat verwijderen, en maak een back-up van gegevens die je wilt bewaren.
 
 #### Basisvoorbeeld
 
@@ -272,7 +276,25 @@ docker::compose { 'example':
 }
 ```
 
-Meer Compose-, proxy-, Authentik- en Twenty-varianten staan in [`examples/docker.pp`](examples/docker.pp).
+Met `docker::compose_exec` voer je een commando uit in één draaiende container van een Compose-service. Geef het commando als argumentenlijst op en gebruik `creates` of `unless` om onnodige herhaling te voorkomen. De define wacht op de bijbehorende `docker::compose`-stack en stopt bij ontbrekende of meerdere passende containers. Zie de [Puppet Strings](docker/manifests/compose_exec.pp) voor de interface en [`examples/docker.pp`](examples/docker.pp) voor dit gebruik en Compose-, proxy-, Authentik- en Twenty-varianten.
+
+#### GitLab Runner
+
+Met `docker::gitlab_runner` gebruik je een daarvoor bestemde host of VM voor vertrouwde projecten en builds. Richt eerst Docker en `basic_settings::systemd` in en maak de runner in GitLab aan. De manager krijgt toegang tot de host-Docker-socket en heeft daarmee vergaande macht over de host. Jobcontainers krijgen die socket en de runnerconfiguratie niet mee en draaien zonder privileged mode. De vaste jobpolicy `if-not-present` kan gecachte private images zonder nieuwe registry-autorisatie hergebruiken en houdt veranderlijke tags niet vanzelf actueel.
+
+Automatische registratie staat standaard uit. Voor een nieuwe registratie met `auto_register => true` lever je de runner authentication token aan als `Sensitive[String]` uit je beveiligde secretvoorziening. Het voorbeeld veronderstelt dat de Hiera-lookup dit type teruggeeft. `image_tag` kiest de GitLab Runner-image; de standaardimage voor jobs blijft `alpine:latest`.
+
+```puppet
+docker::gitlab_runner { 'gitlab-runner':
+  auto_register => true,
+  runner_token  => lookup('profile::gitlab_runner::runner_token', Sensitive[String]),
+  require       => Class['docker'],
+}
+```
+
+Na het starten van de Compose-container voert Puppet de registratie uit via `docker exec` met `register --non-interactive`. Zodra `config.toml` bestaat, wordt registratie overgeslagen. Dat voorkomt normale herregistratie, maar controleert niet of bestaande configuratie volledig of geldig is. Controleer de runner daarom na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien.
+
+Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. Puppet verwijdert alleen de bootstrapkopie en behoudt de actieve token en systeemidentiteit. Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. De [handleiding bij het voorbeeld](examples/gitlab_runner.md) beschrijft registratie, herstel en onderhoud. Zie ook [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp) en de [Puppet Strings](docker/manifests/gitlab_runner.pp).
 
 ### `gitlab`
 
@@ -761,6 +783,7 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 - [`examples/site.pp`](examples/site.pp): Gecombineerde basisinstellingen, webserver, PHP, SSH, Docker, MySQL en profielopbouw.
 - [`examples/docker.pp`](examples/docker.pp): Compose, monitoring, Nginx-proxy, Authentik en Twenty.
+- [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp): GitLab Runner met eenmalige registratie; [registratie, herstel en onderhoud](examples/gitlab_runner.md).
 - [`examples/web.pp`](examples/web.pp): Nginx, PHP-FPM, Let's Encrypt, TLS, security headers en reverse proxies.
 - [`examples/data-services.pp`](examples/data-services.pp): MySQL, RabbitMQ en vnStat.
 - [`examples/monitoring.pp`](examples/monitoring.pp): OpenITCOCKPIT-agent, eigen checks en monitoringinstellingen.

@@ -30,6 +30,14 @@ node 'container-basic.example.org' {
     target                     => 'services',
     require                    => Class['docker'],
   }
+
+  # The application's own read-only status command prevents repeating initialization.
+  docker::compose_exec { 'initialize-example':
+    command      => ['/usr/local/bin/app', 'initialize'],
+    compose_name => 'example',
+    service      => 'web',
+    unless       => ['/usr/local/bin/app', 'initialized'],
+  }
 }
 
 node 'container-cleanup.example.org' {

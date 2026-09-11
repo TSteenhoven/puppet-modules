@@ -681,6 +681,8 @@ Controleer sudo-, logrotate-, audit-, monitoring- en servicepaden tegen de echte
 
 Interpoleer geen ruwe Puppet-waarden in exec-commando's, `onlyif` of `unless`. Bereid dynamische shellwoorden voor met `stdlib::shell_escape(...)`, noem ze `*_shell` en gebruik ze zonder extra aanhalingstekens als shellwoord. Escape runtimevariabelen en substituties in dubbele Puppet-strings, zoals `\$tmpdir`, `\$1` en `\$(...)`.
 
+Een optionele guard mag `undef` zijn. De shellcheck accepteert die ontbrekende waarde en controleert de escaping in de takken die wel een commando opleveren.
+
 Elke echte shellparserlaag heeft één quotinggrens nodig. Een script opgebouwd uit ge-escapete woorden krijgt zelf eenmaal quoting als buitenste `-c`-argument; escape dezelfde laag niet dubbel. Een statisch script mag eenmaal als geheel worden ge-escapet. Test samengestelde commando's met letterlijke waarden die spaties, aanhalingstekens en shelltekens bevatten. Dat een waarde ge-escapet is, bewijst nog niet dat ze op de juiste plaats in het commando wordt gebruikt.
 
 Behoud afsluitende SQL-puntkomma's. Escape de hele SQL-string en gebruik `provider => shell` wanneer puntkomma's of guards anders als aparte commando's worden gelezen.

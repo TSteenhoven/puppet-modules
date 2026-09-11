@@ -80,9 +80,6 @@ define docker::authentik_admin (
 
   # Manage the administrator only after a Compose owner has been resolved.
   if ($compose_contract_fail_text == undef) {
-    # Resolve the running container from Docker labels at execution time instead of duplicating Compose-owned paths here.
-    $service = 'server'
-
     # Resolve the optional username before validation and command construction.
     $username_correct = $username ? {
       undef   => $title,
@@ -104,21 +101,6 @@ define docker::authentik_admin (
     if ($present_input_fail_text == undef) {
       # Validate title-derived usernames before using them in the generated command.
       if ($username_correct =~ /\A[A-Za-z0-9@._+-]+\z/) {
-        # Escape common dynamic shell words at the Docker CLI boundary.
-        $compose_name_shell = stdlib::shell_escape($compose_name)
-        $service_shell = stdlib::shell_escape($service)
-        $username_shell = stdlib::shell_escape($username_correct)
-
-        # Locate the running Compose service container by Docker labels so no compose path values are duplicated in this defined type.
-        $container_lookup_command = join([
-            'container_id=$(/usr/bin/docker ps',
-            "--filter label=com.docker.compose.project=${compose_name_shell}",
-            "--filter label=com.docker.compose.service=${service_shell}",
-            "--format '{{.ID}}'",
-            '| /usr/bin/head -n 1)',
-        ], ' ')
-        $container_required_command = 'test -n "$container_id" || exit 1'
-
         # Unwrap credentials only for account creation; removal does not consume a password.
         $password_unwrapped = $ensure ? {
           present => $password.unwrap,
@@ -128,15 +110,12 @@ define docker::authentik_admin (
           # Build creation or removal commands only after validating the consumed credentials.
           if ($ensure == present) {
             # Pass managed Authentik values as environment variables to keep the Python block static.
-            $email_shell = stdlib::shell_escape($email)
-            $group_name_shell = stdlib::shell_escape($group_name)
-            $password_shell = stdlib::shell_escape($password_unwrapped)
-            $authentik_env_args = join([
-                "-e AK_ADMIN_USERNAME=${username_shell}",
-                "-e AK_ADMIN_EMAIL=${email_shell}",
-                "-e AK_ADMIN_PASSWORD=${password_shell}",
-                "-e AK_ADMIN_GROUP=${group_name_shell}",
-            ], ' ')
+            $authentik_environment = {
+              'AK_ADMIN_USERNAME' => $username_correct,
+              'AK_ADMIN_EMAIL'    => $email,
+              'AK_ADMIN_PASSWORD' => $password,
+              'AK_ADMIN_GROUP'    => $group_name,
+            }
 
             # The present guard confirms the user, password, active state, email, and superuser group membership.
             $check_python = join([
@@ -204,7 +183,7 @@ define docker::authentik_admin (
             ], "\n")
           } else {
             # For absent users, only the username is needed and email or password input is intentionally ignored.
-            $authentik_env_args = "-e AK_ADMIN_USERNAME=${username_shell}"
+            $authentik_environment = { 'AK_ADMIN_USERNAME' => $username_correct }
 
             # The absent guard succeeds when the requested Authentik user no longer exists.
             $check_python = join([
@@ -232,36 +211,15 @@ define docker::authentik_admin (
             ], "\n")
           }
 
-          # Build the Docker exec command and heredocs for Puppet's shell provider so Python code is sent through stdin.
-          $docker_exec_command = join([
-              '/usr/bin/docker exec -i',
-              $authentik_env_args,
-              '"$container_id"',
-              'ak shell',
-          ], ' ')
-          $check_command = join([
-              $container_lookup_command,
-              $container_required_command,
-              "${docker_exec_command} <<'PY'",
-              $check_python,
-              'PY',
-          ], "\n")
-          $update_command = join([
-              $container_lookup_command,
-              $container_required_command,
-              "${docker_exec_command} <<'PY'",
-              $update_python,
-              'PY',
-          ], "\n")
-
-          # Run the Authentik mutation only when the guard detects drift.
-          exec { "docker_authentik_admin_${ensure}_${compose_name}_${username_correct}":
-            command   => Sensitive.new($update_command),
-            logoutput => false,
-            provider  => shell,
-            require   => $compose_require,
-            timeout   => $timeout,
-            unless    => Sensitive.new($check_command),
+          # Let the shared Compose exec handle transport; ak shell accepts Python through Django's command option.
+          docker::compose_exec { "docker_authentik_admin_${ensure}_${compose_name}_${username_correct}":
+            command      => ['ak', 'shell', '-c', $update_python],
+            compose_name => $compose_name,
+            service      => 'server',
+            environment  => $authentik_environment,
+            timeout      => $timeout,
+            unless       => ['ak', 'shell', '-c', $check_python],
+            require      => $compose_require,
           }
         } else {
           fail('docker::authentik_admin password must not be empty or contain newlines.')

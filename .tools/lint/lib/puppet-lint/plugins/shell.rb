@@ -26,7 +26,7 @@ module ProjectLint
     # Results distinguish a shell word from a complete script and unknown runtime data.
     def classify(node, visited = [])
       case node
-      when M::LiteralString then :static
+      when M::LiteralString, M::LiteralUndef then :static
       when M::LiteralList
         node.values.all? { |value| classify(value, visited) != :raw } ? :script : :raw
       when M::BlockExpression

@@ -55,6 +55,11 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Keep a necessary supporting refactor local to the affected area.
 - Explain any supporting refactor in the final response.
 
+### Reuse And Shared Abstractions
+
+- When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change. Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
+- Inspect existing abstractions before adding a new one, and validate each migrated caller's behavior and dependencies. Preserve caller-specific security and lifecycle requirements.
+
 ### Git Commits
 
 - AI agents must never create, amend, or rewrite Git commits through Git commands, APIs, or other tools.

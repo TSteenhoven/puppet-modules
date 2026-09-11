@@ -310,6 +310,13 @@ define docker::compose (
                 daemon_reload => $daemon_reload,
                 require       => Basic_settings::Systemd_target["${basic_settings::systemd::cluster_id}-${target}"],
               }
+
+              # The shared service wrapper manages enablement only; Compose must also start on its first Puppet run.
+              # Wait for both the unit and target binding to be loaded before starting or refreshing the stack.
+              Service <| title == $service_name |> {
+                ensure  => running,
+                require +> Exec[$daemon_reload],
+              }
             }
 
             # Monitor the rendered Compose stack separately from the orchestration service unit.
