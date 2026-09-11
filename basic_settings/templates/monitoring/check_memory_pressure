@@ -24,20 +24,20 @@ STATE_UNKNOWN=3
 
 # Thresholds and data paths keep memory pressure evaluation local and fixture-friendly.
 MEM_AVAILABLE_PROFILES=<%= @memory_available_profiles_spec_shell %>
-MEM_AVAILABLE_WARNING_OVERRIDE=""
-MEM_AVAILABLE_CRITICAL_OVERRIDE=""
+MEM_AVAILABLE_WARNING_OVERRIDE=${MEM_AVAILABLE_WARNING_OVERRIDE:-""}
+MEM_AVAILABLE_CRITICAL_OVERRIDE=${MEM_AVAILABLE_CRITICAL_OVERRIDE:-""}
 SWAP_FREE_PROFILES=<%= @swap_free_profiles_spec_shell %>
-SWAP_FREE_WARNING_OVERRIDE=""
-SWAP_FREE_CRITICAL_OVERRIDE=""
-SWAP_WARNING_PERCENT=80
-SWAP_CRITICAL_PERCENT=95
-SWAP_IO_WARNING_KIB=1
-SWAP_IO_CRITICAL_KIB=64
-SWAP_IO_CRITICAL_SAMPLE_MIN=2
-INCLUDE_TOP_SWAP_PROCESSES=1
-TOP_SWAP_PROCESSES_LIMIT=10
-SAMPLE_COUNT=3
-SAMPLE_INTERVAL=1
+SWAP_FREE_WARNING_OVERRIDE=${SWAP_FREE_WARNING_OVERRIDE:-""}
+SWAP_FREE_CRITICAL_OVERRIDE=${SWAP_FREE_CRITICAL_OVERRIDE:-""}
+SWAP_WARNING_PERCENT=${SWAP_WARNING_PERCENT:-80}
+SWAP_CRITICAL_PERCENT=${SWAP_CRITICAL_PERCENT:-95}
+SWAP_IO_WARNING_KIB=${SWAP_IO_WARNING_KIB:-1}
+SWAP_IO_CRITICAL_KIB=${SWAP_IO_CRITICAL_KIB:-64}
+SWAP_IO_CRITICAL_SAMPLE_MIN=${SWAP_IO_CRITICAL_SAMPLE_MIN:-2}
+INCLUDE_TOP_SWAP_PROCESSES=${INCLUDE_TOP_SWAP_PROCESSES:-1}
+TOP_SWAP_PROCESSES_LIMIT=${TOP_SWAP_PROCESSES_LIMIT:-10}
+SAMPLE_COUNT=${SAMPLE_COUNT:-3}
+SAMPLE_INTERVAL=${SAMPLE_INTERVAL:-1}
 
 # Data paths can be overridden by the environment for lightweight validation without adding a separate fixture parser or config file to the runtime check.
 MEMINFO_PATH=${MEMINFO_PATH:-/proc/meminfo}
@@ -55,9 +55,11 @@ DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 LONG_OUTPUT_SEP="__CHECK_MEMORY_PRESSURE_NL__"
 
 # Parse options. Puppet normally supplies these through monitoring_custom cmd, but the script stays directly usable for Nagios, Naemon, Icinga, and debugging.
-USAGE_TEXT="Usage: $0 [-w swap_warning_percent] [-c swap_critical_percent] [-m memory_available_warning] [-M memory_available_critical] [-f swap_free_warning] [-F swap_free_critical] [-i swap_io_warning_kib] [-I swap_io_critical_kib] [-n swap_io_critical_samples] [-p] [-P] [-l top_swap_processes_limit] [-s sample_count] [-t sample_interval]"
+USAGE_TEXT="Usage: $0 [-w swap_warning_percent] [-c swap_critical_percent] [-m memory_available_warning] [-M memory_available_critical] [-f swap_free_warning] [-F swap_free_critical] [-i swap_io_warning_kib] [-I swap_io_critical_kib] [-n swap_io_critical_samples] [-p] [-P] [-l top_swap_processes_limit] [-s sample_count] [-t sample_interval] [-L chars] [-b meminfo_path] [-v vmstat_path] [-V sample_paths_csv] [-B second_sample_path] [-r pressure_path] [-o proc_path] [-u passwd_path]
+Environment: SWAP_WARNING_PERCENT (-w); SWAP_CRITICAL_PERCENT (-c); MEM_AVAILABLE_WARNING_OVERRIDE (-m); MEM_AVAILABLE_CRITICAL_OVERRIDE (-M); SWAP_FREE_WARNING_OVERRIDE (-f); SWAP_FREE_CRITICAL_OVERRIDE (-F); SWAP_IO_WARNING_KIB (-i); SWAP_IO_CRITICAL_KIB (-I); SWAP_IO_CRITICAL_SAMPLE_MIN (-n); INCLUDE_TOP_SWAP_PROCESSES (-p); INCLUDE_TOP_SWAP_PROCESSES (-P); TOP_SWAP_PROCESSES_LIMIT (-l); SAMPLE_COUNT (-s); SAMPLE_INTERVAL (-t); DETAIL_LIMIT (-L); MEMINFO_PATH (-b); VMSTAT_PATH (-v); VMSTAT_SAMPLE_PATHS (-V); VMSTAT_SECOND_PATH (-B); PRESSURE_MEMORY_PATH (-r); PROC_PATH (-o); PASSWD_PATH (-u).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'w:c:m:M:f:F:i:I:n:pPl:s:t:' opt; do
+while getopts ':w:c:m:M:f:F:i:I:n:pPl:s:t:L:b:v:V:B:r:o:u:h' opt; do
     case "$opt" in
         w) SWAP_WARNING_PERCENT="$OPTARG" ;;
         c) SWAP_CRITICAL_PERCENT="$OPTARG" ;;
@@ -73,11 +75,26 @@ while getopts 'w:c:m:M:f:F:i:I:n:pPl:s:t:' opt; do
         l) TOP_SWAP_PROCESSES_LIMIT="$OPTARG" ;;
         s) SAMPLE_COUNT="$OPTARG" ;;
         t) SAMPLE_INTERVAL="$OPTARG" ;;
+        L) DETAIL_LIMIT=$OPTARG ;;
+        b) MEMINFO_PATH=$OPTARG ;;
+        v) VMSTAT_PATH=$OPTARG ;;
+        V) VMSTAT_SAMPLE_PATHS=$OPTARG ;;
+        B) VMSTAT_SECOND_PATH=$OPTARG ;;
+        r) PRESSURE_MEMORY_PATH=$OPTARG ;;
+        o) PROC_PATH=$OPTARG ;;
+        u) PASSWD_PATH=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
+case "$INCLUDE_TOP_SWAP_PROCESSES" in
+    0|1) : ;;
+    *) die "INCLUDE_TOP_SWAP_PROCESSES must be 0 or 1" ;;
+esac
+for data_path in "$MEMINFO_PATH" "$VMSTAT_PATH" "$PRESSURE_MEMORY_PATH" "$PROC_PATH" "$PASSWD_PATH"; do
+    [ -n "$data_path" ] || die "data paths must not be empty"
+done
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;
 esac

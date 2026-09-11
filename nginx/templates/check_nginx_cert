@@ -6,7 +6,7 @@
 # Usage: check_nginx_cert -n "app.example.org alias.example.org" -f /etc/nginx/conf.d/app.conf [-l characters] [-t seconds] [-c days] [-w days]
 # Optional runtime defaults are initialized below and overridden independently by getopts.
 # The agent must allow the script's timeout budget, including its three-second termination/output reserve.
-# --worker is a private supervisor protocol; the ordinary CLI has no additional configuration-file or environment overrides.
+# --worker is a private supervisor protocol; it receives the supervisor's effective settings as explicit options.
 # Exit codes: 0 healthy, 1 usable but nearing expiry, 2 proven target defect or critical lifetime, 3 incomplete or unsupported assessment.
 
 # Early failures contain fixed text only and still leave operator guidance visible.
@@ -36,12 +36,12 @@ TZ=UTC
 export LC_ALL TZ
 umask 077
 NGINX_CONFIG=<%= @nginx_config_shell %>
-CONFIG_FILE=''
-SERVER_NAME=''
-DETAIL_LIMIT=6000
-AGENT_TIMEOUT=30
-VALIDITY_CRITICAL=14
-VALIDITY_WARNING=30
+CONFIG_FILE=${CONFIG_FILE:-''}
+SERVER_NAME=${SERVER_NAME:-''}
+DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
+AGENT_TIMEOUT=${AGENT_TIMEOUT:-30}
+VALIDITY_CRITICAL=${VALIDITY_CRITICAL:-14}
+VALIDITY_WARNING=${VALIDITY_WARNING:-30}
 SYSTEM_TRUST=/etc/ssl/certs/ca-certificates.crt
 STATE=0
 SUMMARY='local certificates are valid and match their names and keys'
@@ -58,8 +58,11 @@ if [ "${1:-}" = --worker ] && [ "$#" -ge 2 ] && [ -d "$2" ]; then
     WORK=$2
     shift 2
 fi
+USAGE_TEXT="Usage: $0 -n names -f vhost_file [-l detail_limit] [-t timeout] [-c critical_days] [-w warning_days]
+Environment: SERVER_NAME (-n); CONFIG_FILE (-f); DETAIL_LIMIT (-l); AGENT_TIMEOUT (-t); VALIDITY_CRITICAL (-c); VALIDITY_WARNING (-w).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'n:f:l:t:c:w:h' opt; do
+while getopts ':n:f:l:t:c:w:h' opt; do
     case "$opt" in
         n) SERVER_NAME=$OPTARG ;;
         f) CONFIG_FILE=$OPTARG ;;
@@ -67,7 +70,7 @@ while getopts 'n:f:l:t:c:w:h' opt; do
         t) AGENT_TIMEOUT=$OPTARG ;;
         c) VALIDITY_CRITICAL=$OPTARG ;;
         w) VALIDITY_WARNING=$OPTARG ;;
-        *) die 'usage: check_nginx_cert -n names -f vhost_file [-l detail_limit] [-t timeout] [-c critical_days] [-w warning_days]' ;;
+        *) die "$USAGE_TEXT" ;;
     esac
 done
 shift $((OPTIND - 1))

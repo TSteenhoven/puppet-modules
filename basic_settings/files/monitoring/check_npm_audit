@@ -22,8 +22,8 @@ AUDIT_META=""
 AUDIT_PAYLOAD=""
 
 # The checked project path is mandatory; the visible name defaults to the directory basename.
-CHECK_DIR=""
-CHECK_NAME=""
+CHECK_DIR=${CHECK_DIR:-""}
+CHECK_NAME=${CHECK_NAME:-""}
 
 # Long output is capped independently from the summary and perfdata.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
@@ -40,12 +40,15 @@ SEP_STATUS="__CHECK_NPM_AUDIT_STATUS_$$__"
 STATE_CODE=3
 
 # CLI options select the audited project and the visible check name.
-USAGE_TEXT="Usage: $0 -d <directory> [-n <name>]"
+USAGE_TEXT="Usage: $0 -d <directory> [-n <name>] [-l chars]
+Environment: CHECK_DIR (-d); CHECK_NAME (-n); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'd:n:' opt; do
+while getopts ':d:n:l:h' opt; do
     case "$opt" in
         d) CHECK_DIR="$OPTARG" ;;
         n) CHECK_NAME="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done

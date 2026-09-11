@@ -17,7 +17,7 @@
 #   Compose file paths passed to the monitoring plugin.
 #
 # @param detail_limit
-#   Maximum number of diagnostic characters emitted before the `Interpretation:` section.
+#   Optional diagnostic character limit. `undef` omits -l and uses the environment value or script default.
 #
 # @param ensure
 #   Controls whether the monitoring check is present or absent.
@@ -35,7 +35,7 @@
 #   Monitoring interval in seconds.
 #
 # @param orphan_critical
-#   Treats orphaned Compose containers as critical when `true`.
+#   Optional orphan severity. True passes -O, false passes -o; undef uses the environment value or script default.
 #
 # @param package
 #   Monitoring package override passed to `basic_settings::monitoring_custom`.
@@ -47,7 +47,7 @@
 #   Optional Compose project name. `undef` lets Docker Compose infer it.
 #
 # @param starting_grace
-#   Grace period in seconds for containers in a starting state.
+#   Optional startup grace in seconds. `undef` omits -g and uses the environment value or script default.
 #
 # @param timeout
 #   Monitoring timeout in seconds.
@@ -56,17 +56,17 @@
 define docker::compose_monitoring (
   Pattern[/\A\/[A-Za-z0-9._\/-]+\z/]       $project_directory,
   Array[String]                            $compose_files     = [],
-  Integer                                  $detail_limit      = 6000,
+  Optional[Integer[1]]                     $detail_limit      = undef,
   Enum['present', 'absent']                $ensure            = present,
   Optional[String]                         $env_file          = undef,
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $expected_exited   = [],
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $health_required   = [],
   Integer                                  $interval          = 300,
-  Boolean                                  $orphan_critical   = false,
+  Optional[Boolean]                        $orphan_critical   = undef,
   Optional[String]                         $package           = undef,
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $profiles          = [],
   Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $project_name      = undef,
-  Integer                                  $starting_grace    = 300,
+  Optional[Integer[0]]                     $starting_grace    = undef,
   Integer                                  $timeout           = 60,
 ) {
   # Validate the stack identifier before constructing monitoring arguments and resource names.
@@ -98,7 +98,18 @@ define docker::compose_monitoring (
     }
     $orphan_critical_arg = $orphan_critical ? {
       true    => ' -O',
+      false   => ' -o',
       default => '',
+    }
+
+    # Omit unset runtime options so the executable resolves environment values and defaults.
+    $runtime_args = {
+      '-g' => $starting_grace,
+      '-l' => $detail_limit,
+    }.filter |$option, $value| { $value != undef }.map |$option, $value| {
+      # Quote each explicit runtime value as one shell argument.
+      $value_shell = stdlib::shell_escape(String($value))
+      " ${option} ${value_shell}"
     }
 
     # Join the command arguments together.
@@ -107,7 +118,8 @@ define docker::compose_monitoring (
       $project_name_arg,
       $compose_files_arg,
       $env_file_arg,
-      " -n ${name} -g ${starting_grace} -l ${detail_limit}",
+      " -n ${name}",
+      join($runtime_args, ''),
       $expected_exited_arg,
       $health_required_arg,
       $profiles_arg,
@@ -122,10 +134,25 @@ define docker::compose_monitoring (
       }
     }
 
+    # Own one shared executable independently of individual stack registrations.
+    if (!defined(Basic_settings::Monitoring_custom['docker_compose'])) {
+      basic_settings::monitoring_custom { 'docker_compose':
+        source   => 'puppet:///modules/docker/check_compose',
+        register => false,
+        package  => $package,
+        require  => Package['jq'],
+      }
+    }
+
+    # Retire the executable copies deployed by older per-stack registrations.
+    file { "/etc/openitcockpit-agent/plugins/check_docker_compose_${name}":
+      ensure => absent,
+    }
+
     # Create the monitoring resource for this stack.
     basic_settings::monitoring_custom { "docker_compose_${name}":
       ensure   => $ensure,
-      source   => 'puppet:///modules/docker/check_compose',
+      script   => 'docker_compose',
       cmd      => $cmd,
       friendly => "Docker Compose ${name}",
       interval => $interval,

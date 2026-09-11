@@ -38,7 +38,7 @@ HAS_V6=0
 
 # Interface filter input and bounded long-output state.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
-IF_FILTERS=""
+IF_FILTERS=${IF_FILTERS:-""}
 IF_LIST=<%= @interfaces_str_shell %>
 
 # IPv4 address class counters are emitted as global perfdata.
@@ -62,7 +62,7 @@ LONG_OUTPUT=""
 LONG_OUTPUT_SEP="__CHECK_NETWORK_NL__"
 SERVICES_IDS=""
 SERVICES_LIST=<%= @service_str_shell %>
-SERVICES=""
+SERVICES=${SERVICES:-""}
 STATE_CODE=0
 SVC_ACTIVE=0
 SVC_DOWN_LIST=""
@@ -79,9 +79,11 @@ WIRED_UP_COUNT=0
 WIRED_UP_LIST=""
 
 # CLI options can narrow service/interface scope and bound interface detail output for one check invocation.
-USAGE_TEXT="Usage: $0 [-s <services>] [-i <iface globs>] [-l <chars>]"
+USAGE_TEXT="Usage: $0 [-s <services>] [-i <iface globs>] [-l <chars>]
+Environment: SERVICES (-s); IF_FILTERS (-i); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 's:i:l:' opt; do
+while getopts ':s:i:l:h' opt; do
     case "$opt" in
         s) SERVICES="$OPTARG" ;;
         i) IF_FILTERS="$OPTARG" ;;

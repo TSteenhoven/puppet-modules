@@ -23,7 +23,20 @@ MAXLOG=${MAXLOG:-1000} # max characters per journal line in long output
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000} # max characters before Interpretation
 
 # The service name follows the timer name; this matches systemd's common .timer/.service pairing.
-USAGE_TEXT="Usage: $0 <timer>"
+USAGE_TEXT="Usage: $0 [-l chars] [-n lines] [-t seconds] [-m chars_per_line] <timer>
+Environment: DETAIL_LIMIT (-l); LOG_LINES (-n); WINDOW (-t); MAXLOG (-m).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
+OPTERR=0
+while getopts ':l:n:t:m:h' opt; do
+    case "$opt" in
+        l) DETAIL_LIMIT=$OPTARG ;;
+        n) LOG_LINES=$OPTARG ;;
+        t) WINDOW=$OPTARG ;;
+        m) MAXLOG=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
+done
+shift $((OPTIND - 1))
 [ "$#" -eq 1 ] || die "$USAGE_TEXT"
 TIMER_UNIT=$1
 SERVICE_UNIT=${TIMER_UNIT%.timer}.service

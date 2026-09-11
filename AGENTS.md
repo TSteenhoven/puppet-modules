@@ -34,12 +34,15 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
 - Validate with at least two targets that registrations invoke the same executable with their own settings and that retiring one target preserves the shared executable and other registrations.
 
-### Monitoring Check Defaults
+### Monitoring Check Configuration
 
-- For new monitoring checks, keep optional runtime defaults in the check executable and apply only explicitly supplied overrides from registrations. Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`.
-- Apply this contract to existing check settings when changing their default handling; keep unrelated checks outside the change scope.
+- All monitoring checks must resolve runtime settings in this order: explicit command-line option, non-empty environment variable, script default. Initialize each setting with `${VARIABLE:-default}` before `getopts`, so unset and empty environment variables use the default.
+- Provide command-line options for every configurable runtime setting, preserving existing option names and using the check's established conventions for additions. Apply explicit options to the initialized values and never reset them to environment values or defaults after parsing.
+- Validate effective settings after `getopts`, regardless of their source, including syntax, ranges, related threshold ordering, and boolean values. Preserve documented empty values for optional filters or overrides; reject invalid required values with Nagios UNKNOWN.
+- Keep optional runtime defaults in the check executable and apply only explicitly supplied overrides from registrations. Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`; retain existing managed daemon configuration and credential interfaces.
+- Document options and their environment variables in each check's help text, including repeated options and boolean reset options when applicable.
 - Review executor scheduling separately from script options and verify that the executor timeout allows the script's execution, termination, and output budget.
-- Validate omitted, explicit, partial, and invalid overrides with isolated synthetic checks, including effective threshold ordering and timeout behavior.
+- Validate each changed check with isolated synthetic checks covering defaults, environment-only settings, combined environment and CLI settings, empty and invalid values, and partial overrides. Include effective threshold ordering, repeated options, boolean resets, and timeout behavior where applicable.
 
 ## Working With The Existing Codebase
 

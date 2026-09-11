@@ -18,7 +18,7 @@ SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 TAIL=$(command -v tail 2>/dev/null) || die "tail not available"
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 
-# Runtime options are environment-driven so generated OpenITCOCKPIT calls can stay compact.
+# Journal limits and runtime policy can be set independently for each invocation.
 LOG_LINES=${LOG_LINES:-20}              # max journal lines to print below the summary
 WINDOW=${WINDOW:-600}                   # seconds of journal to scan (default 10m)
 MAXLOG=${MAXLOG:-1000}                  # max characters per journal line in long output
@@ -40,14 +40,27 @@ OUTSIDE_SUPPRESS=0
 FAIL_RE=${FAIL_RE:-'Failed with result|status=[1-9][0-9]*|segfault|core dumped|fatal|panic'}
 WARN_RE=${WARN_RE:-''} # keep empty by default (avoid noisy WARNINGs)
 
-# CLI options override environment schedule controls for one invocation.
-USAGE_TEXT="Usage: $0 [-W <HH:MM-HH:MM[,HH:MM-HH:MM...]>] [-D <dayspec>] [-a] <service>"
+# CLI options select schedule controls, journal limits and runtime policy for one invocation.
+USAGE_TEXT="Usage: $0 [-W <HH:MM-HH:MM[,HH:MM-HH:MM...]>] [-D <dayspec>] [-a] [-l chars] [-n lines] [-t seconds] [-m chars_per_line] [-r 0|1] [-s 0|1] [-o 0|1] [-F failure_regex] [-w warning_regex] [-A] <service>
+Environment: ACTIVE_WINDOWS (-W); ACTIVE_DAYS (-D); ACTIVE_ALERT_OUTSIDE (-a); DETAIL_LIMIT (-l); LOG_LINES (-n); WINDOW (-t); MAXLOG (-m); REQUIRE_ACTIVE (-r); SCAN_LOGS (-s); SCAN_LOGS_OUTSIDE (-o); FAIL_RE (-F); WARN_RE (-w); ACTIVE_ALERT_OUTSIDE (-A).
+Command-line options override non-empty environment values; unset or empty environment values use defaults.
+-a/-A enable/disable alerts for active services outside the schedule."
 OPTERR=0
-while getopts "W:D:a" OPT; do
+while getopts ":W:D:al:n:t:m:r:s:o:F:w:Ah" OPT; do
     case "$OPT" in
         W) ACTIVE_WINDOWS="$OPTARG" ;;
         D) ACTIVE_DAYS="$OPTARG" ;;
         a) ACTIVE_ALERT_OUTSIDE=1 ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        n) LOG_LINES=$OPTARG ;;
+        t) WINDOW=$OPTARG ;;
+        m) MAXLOG=$OPTARG ;;
+        r) REQUIRE_ACTIVE=$OPTARG ;;
+        s) SCAN_LOGS=$OPTARG ;;
+        o) SCAN_LOGS_OUTSIDE=$OPTARG ;;
+        F) FAIL_RE=$OPTARG ;;
+        w) WARN_RE=$OPTARG ;;
+        A) ACTIVE_ALERT_OUTSIDE=0 ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
@@ -206,6 +219,32 @@ day_in_spec() {
     done
     printf '%s\n' 0
 }
+
+# Reject malformed schedules before a typo can suppress a service failure.
+if [ -n "$ACTIVE_WINDOWS" ]; then
+    printf '%s\n' "$ACTIVE_WINDOWS" | $AWK '
+        {
+            count = split($0, windows, /[,[:space:]]+/)
+            for (i = 1; i <= count; i++) {
+                if (windows[i] !~ /^[0-9][0-9]:[0-9][0-9]-[0-9][0-9]:[0-9][0-9]$/) exit 1
+                split(windows[i], fields, /[:-]/)
+                if (fields[1] > 23 || fields[2] > 59 || fields[3] > 23 || fields[4] > 59) exit 1
+            }
+        }
+    ' || die "invalid ACTIVE_WINDOWS schedule"
+fi
+if [ -n "$ACTIVE_DAYS" ]; then
+    DAY_PARTS=$(printf '%s' "$ACTIVE_DAYS" | $TR ',' ' ')
+    [ -n "$DAY_PARTS" ] || die "invalid ACTIVE_DAYS schedule"
+    for DAY_PART in $DAY_PARTS; do
+        case "$DAY_PART" in
+            *-*)
+                [ -n "$(day_to_num "${DAY_PART%-*}")" ] && [ -n "$(day_to_num "${DAY_PART#*-}")" ] || die "invalid ACTIVE_DAYS range"
+                ;;
+            *) [ -n "$(day_to_num "$DAY_PART")" ] || die "invalid ACTIVE_DAYS day" ;;
+        esac
+    done
+fi
 
 # Capture current time once so day/window checks agree throughout the run.
 NOW_TS=$($DATE +%s)

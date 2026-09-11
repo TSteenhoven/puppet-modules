@@ -107,6 +107,8 @@ OpenITCOCKPIT is het monitoringsysteem dat dit project automatisch kan instellen
 
 De checks volgen het Nagios-pluginmodel en kunnen daardoor ook vanuit Naemon, Nagios of Icinga worden uitgevoerd. Ze gebruiken Nagios-exitcodes, noemen de belangrijkste oorzaak in de korte uitvoer, leveren perfdata voor grafieken en tonen extra uitleg in de long output. Controleer bij los gebruik welke commando's, argumenten en door Puppet ingevulde waarden de check nodig heeft.
 
+Gebruik bij een geïnstalleerde check `-h` om de opties en bijbehorende omgevingsvariabelen te bekijken. Voor een eenmalige controle kun je hiermee drempels en uitvoerlimieten aanpassen. Commandline-opties gaan voor op omgevingsvariabelen; de volledige werkwijze staat in het [configuratiecontract](AGENTS.md#monitoring-check-configuration). Pas bij langere looptijden ook de timeout van de executor aan: een instelling in het script verandert die niet.
+
 Met `basic_settings::monitoring_custom` kun je een eigen script in de OpenITCOCKPIT-pluginmap plaatsen en registreren. De defined types `monitoring_service`, `monitoring_timer` en `monitoring_npm_audit` zijn bedoeld voor veelvoorkomende systemd- en npm-controles. De checks zelf staan onder `files/` en `templates/`; zie ook [Beschikbare checks](#beschikbare-checks) en [`examples/monitoring.pp`](examples/monitoring.pp).
 
 Nginx-vhosts met HTTPS en ingevulde certificaat- en sleutelpaden krijgen automatisch een lokale certificaatcontrole. Alle registraties gebruiken één gedeeld script; certificaatpaden worden tijdens de controle uit de Nginx-configuratie gelezen. Met `monitoring_cert => false` verwijder je de registratie voor een vhost.

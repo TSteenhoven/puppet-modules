@@ -15,14 +15,14 @@ SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 SYSTEMD_ANALYZE=$(command -v systemd-analyze 2>/dev/null) || die "systemd-analyze not available"
 
 # Runtime options that control boot grace, output limits, and stricter reload handling.
-BOOT_GRACE=300
-MAX_DETAIL_LINES=10
-MAX_FAILED_UNIT_LINES=10
-MAX_VERIFY_LINES=10
+BOOT_GRACE=${BOOT_GRACE:-300}
+MAX_DETAIL_LINES=${MAX_DETAIL_LINES:-10}
+MAX_FAILED_UNIT_LINES=${MAX_FAILED_UNIT_LINES:-10}
+MAX_VERIFY_LINES=${MAX_VERIFY_LINES:-10}
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
-QUIET=0
-SHOW_RAW_VERIFY=0
-STRICT_RELOAD=0
+QUIET=${QUIET:-0}
+SHOW_RAW_VERIFY=${SHOW_RAW_VERIFY:-0}
+STRICT_RELOAD=${STRICT_RELOAD:-0}
 
 # Formatting sequences used when building multi-line detail sections.
 LINE_BREAK='\n'
@@ -100,11 +100,14 @@ NEED_DAEMON_RELOAD_RC=U
 VERIFY_RC=U
 
 # Usage text is shared by option parsing and numeric validation failures.
-USAGE_TEXT="Usage: $0 [-g seconds] [-m verify_lines] [-d detail_lines] [-q] [-r] [-R]"
+USAGE_TEXT="Usage: $0 [-g seconds] [-m verify_lines] [-d detail_lines] [-q] [-r] [-R] [-l chars] [-f failed_unit_lines] [-Q] [-s] [-S]
+Environment: BOOT_GRACE (-g); MAX_VERIFY_LINES (-m); MAX_DETAIL_LINES (-d); MAX_FAILED_UNIT_LINES (-d/-f); QUIET (-q/-Q); STRICT_RELOAD (-r/-s); SHOW_RAW_VERIFY (-R/-S); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults.
+-q/-Q enable/disable quiet output; -r/-s enable/disable strict reload; -R/-S enable/disable raw verification output. -d sets both detail line limits; -f changes only failed-unit lines."
 
 # Parse validation options before helper definitions and systemd calls so invalid invocations fail cleanly during setup.
 OPTERR=0
-while getopts 'g:m:d:qrR' opt; do
+while getopts ':g:m:d:qrRl:f:QsSh' opt; do
     case "$opt" in
         g) BOOT_GRACE="$OPTARG" ;;
         m) MAX_VERIFY_LINES="$OPTARG" ;;
@@ -115,12 +118,23 @@ while getopts 'g:m:d:qrR' opt; do
         q) QUIET=1 ;;
         r) STRICT_RELOAD=1 ;;
         R) SHOW_RAW_VERIFY=1 ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        f) MAX_FAILED_UNIT_LINES=$OPTARG ;;
+        Q) QUIET=0 ;;
+        s) STRICT_RELOAD=0 ;;
+        S) SHOW_RAW_VERIFY=0 ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
 shift $((OPTIND - 1))
 
 [ $# -eq 0 ] || die "$USAGE_TEXT"
+for flag_value in "$QUIET" "$SHOW_RAW_VERIFY" "$STRICT_RELOAD"; do
+    case "$flag_value" in
+        0|1) : ;;
+        *) die "quiet, raw verification and strict reload flags must be 0 or 1" ;;
+    esac
+done
 case "$BOOT_GRACE" in
     ''|*[!0-9]*) die "$USAGE_TEXT" ;;
 esac

@@ -791,9 +791,9 @@ Gebruik deze opbouw:
 
 1. Fouthelper.
 2. Benodigde binaries zoeken.
-3. Defaults.
+3. Standaardwaarden en omgevingsvariabelen initialiseren volgens het [configuratiecontract voor monitoringchecks](../../AGENTS.md#monitoring-check-configuration).
 4. Eén POSIX `while getopts ... opt; do`-blok.
-5. Helpers.
+5. Helpers en validatie van de uiteindelijke instellingen, vóór gebruik in de hoofdlogica.
 6. Hoofdlogica.
 
 Zoek afhankelijkheden rechtstreeks met `COMMAND=$(command -v command 2>/dev/null) || die ...`. Roep `$COMMAND` zonder aanhalingstekens aan op de commandopositie en quote de data-argumenten, tests en toekenningen. Gebruik shellbuiltins rechtstreeks en `printf` in plaats van `echo`.
@@ -806,11 +806,13 @@ Lange uitvoer staat standaard aan; voeg alleen op verzoek schakelaars daarvoor t
 
 Een check die Puppet-data nodig heeft is een ERB-template met directe shelltoekenningen. Beperk ERB tot variabele-invoeging en Puppet-voorbereiding tot standaardwaarden voor beheerde configuratie, serialisatie en shellveilige waarden. Voeg alleen een checkconfiguratiebestand of parser toe als dat gevraagd is of al gebruikelijk is.
 
-Zet bij nieuwe checks de standaardwaarden voor optionele runtime-instellingen in het script, vóór `getopts`. Geef de bijbehorende Puppet-parameters een passend `Optional[...]`-type met `undef` als standaardwaarde. Voeg een CLI-optie alleen toe wanneer de parameter is ingevuld; laat bij `undef` zowel de optie als het argument weg. Neem de scriptdefaults niet opnieuw op als terugvalwaarden in manifests, wrappers of ERB-expressies. Pas dit ook toe wanneer je de verwerking van standaardwaarden voor een bestaande instelling wijzigt.
+Het [configuratiecontract in `AGENTS.md`](../../AGENTS.md#monitoring-check-configuration) bepaalt hoe checks commandline-opties, omgevingsvariabelen en standaardwaarden verwerken en valideren. Controleer dit met tijdelijke synthetische invoer voor iedere gewijzigde check; Puppet-lint controleert deze shelllogica niet.
 
-Laat iedere expliciete optie alleen de bijbehorende scriptdefault vervangen. Controleer daarna de effectieve waarden in het script, ook als slechts één van twee bij elkaar horende drempels is opgegeven. Puppet mag twee expliciete drempels alvast vergelijken, maar mag voor die controle geen ontbrekende scriptdefault namaken. Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie; controleer afzonderlijk dat die timeout ruimte laat voor uitvoering, beëindiging en uitvoer van het script. Deze samenhang hoort bij de inhoudelijke review en wordt niet automatisch door de linter bewezen.
+Geef Puppet-parameters voor optionele runtime-instellingen een passend `Optional[...]`-type met `undef` als standaardwaarde. Voeg een CLI-optie alleen toe wanneer de parameter is ingevuld; laat bij `undef` zowel de optie als het argument weg. Neem de scriptdefaults niet opnieuw op als terugvalwaarden in manifests, wrappers of ERB-expressies. Pas dit toe bij nieuwe instellingen en wanneer je de verwerking van standaardwaarden voor een bestaande instelling wijzigt.
 
-Geef iedere beheerde waarde één leidende invoerroute. Dupliceer deze niet tussen CLI en configuratie zonder compatibiliteitsreden. Gebruik CLI-opties voor runtimefilters en drempels die niet via configuratie worden beheerd.
+Puppet mag twee expliciete drempels alvast vergelijken, maar mag voor die controle geen ontbrekende scriptdefault namaken. Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie. Een scriptoptie of omgevingsvariabele wijzigt die agentinstellingen niet; beoordeel hun samenhang volgens `AGENTS.md`.
+
+Behoud voor beheerde daemonconfiguratie en inloggegevens de bestaande invoerroute. Dupliceer die gegevens niet in nieuwe CLI-opties of omgevingsvariabelen. De runtime-instellingen van de check volgen het hierboven genoemde configuratiecontract.
 
 Lees bij voorkeur de effectieve daemonconfiguratie, zoals `vnstat --showconfig`, in plaats van dubbele opties, sysfs-terugvalroutes of aparte checkinstellingen. Valideer drempelsyntaxis, eenheden, omvang, volgorde en runtimebetekenis in de shellcheck.
 

@@ -72,7 +72,6 @@ define basic_settings::monitoring_npm_audit (
   }
 
   # Do thing based on package
-  $file_ensure = $ensure ? { 'present' => 'file', default => $ensure }
   case $package_correct {
     'openitcockpit': {
       # Resolve the registration name and check whether the shared executable is already managed.
@@ -104,9 +103,9 @@ define basic_settings::monitoring_npm_audit (
 
   # Check if script path is not defined
   if (!$script_exists) {
-    # Create script
+    # Preserve the shared executable when an individual registration is retired.
     file { $script_path:
-      ensure => $file_ensure,
+      ensure => file,
       source => 'puppet:///modules/basic_settings/monitoring/check_npm_audit',
       owner  => $uid,
       group  => $gid,
@@ -118,7 +117,7 @@ define basic_settings::monitoring_npm_audit (
       # Normalize the resource title into a valid sudo command-alias identifier.
       $sudo_cmnd = regsubst("monitoring_npm_audit_${name}", '[^A-Za-z0-9]', '_', 'G').upcase
       file { "/etc/sudoers.d/${sudoers_prefix}25-monitoring_npm_audit_${name}":
-        ensure  => $file_ensure,
+        ensure  => file,
         owner   => 'root',
         group   => $gid,
         mode    => '0440',

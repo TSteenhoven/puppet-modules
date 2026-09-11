@@ -37,18 +37,18 @@ STATE_UNKNOWN=3
 
 # Thresholds, filters, and config paths are kept together because capacity policy is resolved in one pass.
 DEFAULT_EXCLUDE_REGEX='^lo$|^docker.*|^veth.*|^br-.*|^virbr.*|^tun.*|^tap.*|^wg.*'
-CHECK_CONFIG='/etc/vnstat-monitoring.conf'
-VNSTAT_CONFIG='/etc/vnstat.conf'
-INCLUDE_REGEX=''
-EXCLUDE_REGEX=$DEFAULT_EXCLUDE_REGEX
-CAPACITY_WARNING_PERCENT='80'
-CAPACITY_CRITICAL_PERCENT='90'
-GROWTH_DAY_WARNING_PERCENT='25'
-GROWTH_DAY_CRITICAL_PERCENT='50'
-GROWTH_MONTH_WARNING_PERCENT='25'
-GROWTH_MONTH_CRITICAL_PERCENT='50'
-LAST_UPDATE_WARNING_SECONDS='900'
-LAST_UPDATE_CRITICAL_SECONDS='1800'
+CHECK_CONFIG=${CHECK_CONFIG:-'/etc/vnstat-monitoring.conf'}
+VNSTAT_CONFIG=${VNSTAT_CONFIG:-'/etc/vnstat.conf'}
+INCLUDE_REGEX=${INCLUDE_REGEX:-''}
+EXCLUDE_REGEX=${EXCLUDE_REGEX:-$DEFAULT_EXCLUDE_REGEX}
+CAPACITY_WARNING_PERCENT=${CAPACITY_WARNING_PERCENT:-'80'}
+CAPACITY_CRITICAL_PERCENT=${CAPACITY_CRITICAL_PERCENT:-'90'}
+GROWTH_DAY_WARNING_PERCENT=${GROWTH_DAY_WARNING_PERCENT:-'25'}
+GROWTH_DAY_CRITICAL_PERCENT=${GROWTH_DAY_CRITICAL_PERCENT:-'50'}
+GROWTH_MONTH_WARNING_PERCENT=${GROWTH_MONTH_WARNING_PERCENT:-'25'}
+GROWTH_MONTH_CRITICAL_PERCENT=${GROWTH_MONTH_CRITICAL_PERCENT:-'50'}
+LAST_UPDATE_WARNING_SECONDS=${LAST_UPDATE_WARNING_SECONDS:-'900'}
+LAST_UPDATE_CRITICAL_SECONDS=${LAST_UPDATE_CRITICAL_SECONDS:-'1800'}
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 
 # Runtime state collected while all interfaces are evaluated.
@@ -80,9 +80,11 @@ SUMMARY_UNKNOWN=''
 PERFDATA=''
 
 # CLI options tune config paths, filters, thresholds, and bounded long output.
-USAGE_TEXT="Usage: $0 [-C check_config] [-V vnstat_config] [-i include_regex] [-x exclude_regex] [-w capacity_warning_percent] [-c capacity_critical_percent] [-d growth_day_warning_percent] [-D growth_day_critical_percent] [-m growth_month_warning_percent] [-M growth_month_critical_percent] [-u last_update_warning_seconds] [-U last_update_critical_seconds] [-l chars]"
+USAGE_TEXT="Usage: $0 [-C check_config] [-V vnstat_config] [-i include_regex] [-x exclude_regex] [-w capacity_warning_percent] [-c capacity_critical_percent] [-d growth_day_warning_percent] [-D growth_day_critical_percent] [-m growth_month_warning_percent] [-M growth_month_critical_percent] [-u last_update_warning_seconds] [-U last_update_critical_seconds] [-l chars]
+Environment: CHECK_CONFIG (-C); VNSTAT_CONFIG (-V); INCLUDE_REGEX (-i); EXCLUDE_REGEX (-x); CAPACITY_WARNING_PERCENT (-w); CAPACITY_CRITICAL_PERCENT (-c); GROWTH_DAY_WARNING_PERCENT (-d); GROWTH_DAY_CRITICAL_PERCENT (-D); GROWTH_MONTH_WARNING_PERCENT (-m); GROWTH_MONTH_CRITICAL_PERCENT (-M); LAST_UPDATE_WARNING_SECONDS (-u); LAST_UPDATE_CRITICAL_SECONDS (-U); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'C:V:i:x:w:c:d:D:m:M:u:U:l:' opt; do
+while getopts ':C:V:i:x:w:c:d:D:m:M:u:U:l:h' opt; do
     case "$opt" in
         C) CHECK_CONFIG="$OPTARG" ;;
         V) VNSTAT_CONFIG="$OPTARG" ;;

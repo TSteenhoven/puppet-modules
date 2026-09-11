@@ -22,29 +22,32 @@ PS=$(command -v ps 2>/dev/null) || die "ps not available"
 
 # Queue depth thresholds apply only to queues with consumers.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
-WARN="25" # warning threshold for queue backlog (can be set via -w)
-CRIT="30" # critical threshold for queue backlog (via -c)
+WARN=${WARN:-"25"} # warning threshold for queue backlog (can be set via -w)
+CRIT=${CRIT:-"30"} # critical threshold for queue backlog (via -c)
 
 # rabbitmqadmin is used only for rate metrics and needs the managed config file.
-RABBITMQADMCONF=<%= @admin_config_path_shell %>
+RABBITMQADMCONF=${RABBITMQADMCONF:-<%= @admin_config_path_shell %>}
 
 # CLI options keep the same external contract as the generated custom check registration.
-USAGE_TEXT="Usage: $0 [-w <warn_threshold>] [-c <crit_threshold>] [-C <rabbitmqadmin.conf>]"
+USAGE_TEXT="Usage: $0 [-w <warn_threshold>] [-c <crit_threshold>] [-C <rabbitmqadmin.conf>] [-l chars]
+Environment: WARN (-w); CRIT (-c); RABBITMQADMCONF (-C); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'w:c:C:' opt; do
-  case "$opt" in
-    w) WARN="$OPTARG" ;;
-    c) CRIT="$OPTARG" ;;
-    C) RABBITMQADMCONF="$OPTARG" ;;
-    *) die "$USAGE_TEXT" ;;
-  esac
+while getopts ':w:c:C:l:h' opt; do
+    case "$opt" in
+        w) WARN="$OPTARG" ;;
+        c) CRIT="$OPTARG" ;;
+        C) RABBITMQADMCONF="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
 done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
 for numeric_value in "$WARN" "$CRIT" "$DETAIL_LIMIT"; do
-  case "$numeric_value" in
-    ''|*[!0-9]*) die "queue thresholds and output limits must be numeric" ;;
-  esac
+    case "$numeric_value" in
+        ''|*[!0-9]*) die "queue thresholds and output limits must be numeric" ;;
+    esac
 done
 [ "$CRIT" -ge "$WARN" ] || die "critical queue threshold must be greater than or equal to warning threshold"
 [ "$DETAIL_LIMIT" -ge 1 ] || die "DETAIL_LIMIT must be at least 1"

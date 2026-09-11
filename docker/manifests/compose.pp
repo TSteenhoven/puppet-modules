@@ -40,7 +40,7 @@
 # lint:endignore
 #
 # @param monitoring_detail_limit
-#   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
+#   Optional diagnostic character limit. `undef` omits -l and uses the environment value or script default.
 #
 # @param monitoring_expected_exited
 #   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
@@ -52,13 +52,13 @@
 #   Monitoring interval in seconds for the Compose stack check.
 #
 # @param monitoring_orphan_critical
-#   Treats orphaned Compose containers as critical when `true`.
+#   Optional orphan severity. True passes -O, false passes -o; undef uses the environment value or script default.
 #
 # @param monitoring_profiles
 #   Compose profiles passed to the monitoring check.
 #
 # @param monitoring_starting_grace
-#   Grace period in seconds before starting containers are considered a problem.
+#   Optional startup grace in seconds. `undef` omits -g and uses the environment value or script default.
 #
 # @param monitoring_timeout
 #   Timeout in seconds for the Compose stack monitoring check.
@@ -79,13 +79,13 @@ define docker::compose (
   Enum['present', 'absent']                    $ensure                     = present,
   Optional[Variant[String, Sensitive[String]]] $env_content                = undef,
   Optional[String]                             $env_source                 = undef,
-  Integer                                      $monitoring_detail_limit    = 6000,
+  Optional[Integer[1]]                         $monitoring_detail_limit    = undef,
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited = [],
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required = [],
   Integer                                      $monitoring_interval        = 300,
-  Boolean                                      $monitoring_orphan_critical = false,
+  Optional[Boolean]                            $monitoring_orphan_critical = undef,
   Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles        = [],
-  Integer                                      $monitoring_starting_grace  = 300,
+  Optional[Integer[0]]                         $monitoring_starting_grace  = undef,
   Integer                                      $monitoring_timeout         = 60,
   Hash[Pattern[/\A[A-Za-z0-9_.-]+\z/], Struct[{
         Optional[owner] => String[1],

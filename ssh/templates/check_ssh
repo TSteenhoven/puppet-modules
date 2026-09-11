@@ -26,25 +26,28 @@ ALLOWED_USERS=<%= @check_users_str_shell %>
 
 # The service name is resolved from the platform's fixed SSH service selection.
 SERVICE='<%= @service %>'
-CRIT_THRESH=2      # critical session count (active)
-WARN_THRESH=1      # warning session count (active)
+CRIT_THRESH=${CRIT_THRESH:-2} # critical session count (active)
+WARN_THRESH=${WARN_THRESH:-1} # warning session count (active)
 LONG_OUTPUT=""
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 LONG_OUTPUT_SEP="__CHECK_SSH_NL__"
-MAX_IDLE=5         # minutes: session idle-time <= MAX_IDLE => active
-MAX_AGE=30         # minutes: session age > MAX_AGE => CRITICAL
+MAX_IDLE=${MAX_IDLE:-5} # minutes: session idle-time <= MAX_IDLE => active
+MAX_AGE=${MAX_AGE:-30} # minutes: session age > MAX_AGE => CRITICAL
 STATE_CODE=0
-USAGE_TEXT="Usage: $0 [-c <crit>] [-w <warn>] [-t <max-age>] [-a <max-age>] [-i <max-idle>]"
+USAGE_TEXT="Usage: $0 [-c <crit>] [-w <warn>] [-t <max-age>] [-a <max-age>] [-i <max-idle>] [-l chars]
+Environment: CRIT_THRESH (-c); WARN_THRESH (-w); MAX_AGE (-t); MAX_IDLE (-i); MAX_AGE (-a); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 
 # CLI overrides are runtime thresholds only; `-a` is kept as a compatibility alias for `-t`.
 OPTERR=0
-while getopts 'c:w:t:i:a:' opt; do
+while getopts ':c:w:t:i:a:l:h' opt; do
     case "$opt" in
         c) CRIT_THRESH="$OPTARG" ;;
         w) WARN_THRESH="$OPTARG" ;;
         t) MAX_AGE="$OPTARG" ;;
         i) MAX_IDLE="$OPTARG" ;;
         a) MAX_AGE="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done

@@ -23,16 +23,51 @@ WARN_MSG=""
 STATE_CODE=0
 
 # Offset, jitter, and root-distance thresholds are seconds; perfdata uses the same values with `s` UOM.
-JITTER_CRIT=0.2 # 200ms
-JITTER_WARN=0.1 # 100ms
-OFFSET_CRIT=0.125 # 125ms
-OFFSET_WARN=0.05 # 50ms
-ROOT_CRIT=5 # 5s (timesyncd RootDistanceMaxSec default)
-ROOT_WARN=0.5 # 500ms
+JITTER_CRIT=${JITTER_CRIT:-0.2} # 200ms
+JITTER_WARN=${JITTER_WARN:-0.1} # 100ms
+OFFSET_CRIT=${OFFSET_CRIT:-0.125} # 125ms
+OFFSET_WARN=${OFFSET_WARN:-0.05} # 50ms
+ROOT_CRIT=${ROOT_CRIT:-5} # 5s (timesyncd RootDistanceMaxSec default)
+ROOT_WARN=${ROOT_WARN:-0.5} # 500ms
 
 # High stratum is treated as a synchronization quality signal.
-STRAT_CRIT=15 # >15 ~= unsynchronised
-STRAT_WARN=10
+STRAT_CRIT=${STRAT_CRIT:-15} # >15 ~= unsynchronised
+STRAT_WARN=${STRAT_WARN:-10}
+
+USAGE_TEXT="Usage: $0 [-l chars] [-w offset_warning_seconds] [-c offset_critical_seconds] [-j jitter_warning_seconds] [-J jitter_critical_seconds] [-r root_warning_seconds] [-R root_critical_seconds] [-s stratum_warning] [-S stratum_critical]
+Environment: DETAIL_LIMIT (-l); OFFSET_WARN (-w); OFFSET_CRIT (-c); JITTER_WARN (-j); JITTER_CRIT (-J); ROOT_WARN (-r); ROOT_CRIT (-R); STRAT_WARN (-s); STRAT_CRIT (-S).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
+OPTERR=0
+while getopts ':l:w:c:j:J:r:R:s:S:h' opt; do
+    case "$opt" in
+        l) DETAIL_LIMIT=$OPTARG ;;
+        w) OFFSET_WARN=$OPTARG ;;
+        c) OFFSET_CRIT=$OPTARG ;;
+        j) JITTER_WARN=$OPTARG ;;
+        J) JITTER_CRIT=$OPTARG ;;
+        r) ROOT_WARN=$OPTARG ;;
+        R) ROOT_CRIT=$OPTARG ;;
+        s) STRAT_WARN=$OPTARG ;;
+        S) STRAT_CRIT=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ "$#" -eq 0 ] || die "$USAGE_TEXT"
+
+for threshold_value in "$OFFSET_WARN" "$OFFSET_CRIT" "$JITTER_WARN" "$JITTER_CRIT" "$ROOT_WARN" "$ROOT_CRIT"; do
+    $AWK -v value="$threshold_value" 'BEGIN { exit !(value ~ /^[0-9]+([.][0-9]+)?$/ && value >= 0) }' || die "time thresholds must be non-negative seconds"
+done
+for stratum_value in "$STRAT_WARN" "$STRAT_CRIT"; do
+    case "$stratum_value" in
+        ''|*[!0-9]*) die "stratum thresholds must be integers" ;;
+    esac
+    [ "$stratum_value" -le 16 ] || die "stratum thresholds must not exceed 16"
+done
+$AWK -v warn="$OFFSET_WARN" -v crit="$OFFSET_CRIT" 'BEGIN { exit !(warn <= crit) }' || die "critical offset must be at least warning"
+$AWK -v warn="$JITTER_WARN" -v crit="$JITTER_CRIT" 'BEGIN { exit !(warn <= crit) }' || die "critical jitter must be at least warning"
+$AWK -v warn="$ROOT_WARN" -v crit="$ROOT_CRIT" 'BEGIN { exit !(warn <= crit) }' || die "critical root distance must be at least warning"
+[ "$STRAT_WARN" -le "$STRAT_CRIT" ] || die "critical stratum must be at least warning"
 
 # Validate the long-output cap before any diagnostic details are rendered.
 case "$DETAIL_LIMIT" in

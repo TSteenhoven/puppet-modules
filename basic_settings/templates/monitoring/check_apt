@@ -58,15 +58,22 @@ LAST_UPDATE_AGE_SEC=0
 
 # Final Nagios state and metadata-age threshold.
 STATE_CODE=0 # 0 OK, 1 WARNING, 2 CRITICAL, 3 UNKNOWN
-GRACE=172800 # 48h
+GRACE=${GRACE:-172800} # 48h
 CHECK_START=$($DATE +%s)
 
-# CLI option overrides the metadata-age grace period for this invocation.
-USAGE_TEXT="Usage: $0 [-c <seconds>]"
+# CLI options tune metadata age, changelog collection and output limits for this invocation.
+USAGE_TEXT="Usage: $0 [-c <seconds>] [-t seconds] [-g groups] [-b seconds] [-l chars] [-s packages]
+Environment: GRACE (-c); CHANGELOG_FETCH_TIMEOUT (-t); CHANGELOG_GROUP_LIMIT (-g); CHANGELOG_TOTAL_BUDGET (-b); DETAIL_LIMIT (-l); SECURITY_PACKAGE_SUMMARY_LIMIT (-s).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts "c:" opt; do
+while getopts ":c:t:g:b:l:s:h" opt; do
     case "$opt" in
         c) GRACE=$OPTARG ;;
+        t) CHANGELOG_FETCH_TIMEOUT=$OPTARG ;;
+        g) CHANGELOG_GROUP_LIMIT=$OPTARG ;;
+        b) CHANGELOG_TOTAL_BUDGET=$OPTARG ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        s) SECURITY_PACKAGE_SUMMARY_LIMIT=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done

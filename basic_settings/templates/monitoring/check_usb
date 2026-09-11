@@ -24,7 +24,7 @@ WC=$(command -v wc 2>/dev/null)   || die "wc not available"
 # Unauthorized detection uses the configured expected/any lists so a known device does not suddenly become unauthorized outside its active window.
 # Missing/required checks use the active lists so alerts only happen when the current time/day says the rule matters.
 # Any-required input and active/configured match state.
-ANYREQ_IDS="" # -a CSV
+ANYREQ_IDS=${ANYREQ_IDS:-""} # -a CSV
 ANYREQ_LIST=<%= @usb_any_requirements_shell %>
 ANYREQ_ACTIVE_REQUIREMENT_LIST=""
 ANYREQ_MATCHED_LIST=""
@@ -37,7 +37,7 @@ ANYREQ_VP_IDS_CONFIGURED=""
 ANYREQ_VP_IDS_ACTIVE=""
 
 # Expected devices are both an authorization source and an active presence requirement.
-EXPECTED_IDS="" # -e CSV
+EXPECTED_IDS=${EXPECTED_IDS:-""} # -e CSV
 EXPECTED_LIST=<%= @usb_expected_shell %>
 EXPECTED_LIST_MISSING=""
 EXPECTED_MISSING_COUNT=0
@@ -66,15 +66,17 @@ UNAUTHORIZED_DEV_LIST=""
 # Whitelist entries authorize matching devices without making them required.
 WHITELISTED_COUNT=0
 WHITELISTED_DEV_LIST=""
-WHITELIST_IDS="" # -w CSV
+WHITELIST_IDS=${WHITELIST_IDS:-""} # -w CSV
 WHITELIST_LIST=<%= @usb_whitelist_shell %>
 WHITELIST_SERIALS_ACTIVE=""
 WHITELIST_VP_IDS_ACTIVE=""
 
 # Parse rule and output options for one check invocation.
-USAGE="Usage: $0 [-w <list>] [-e <list>] [-a <list>] [-l <chars>]"
+USAGE="Usage: $0 [-w <list>] [-e <list>] [-a <list>] [-l <chars>]
+Environment: WHITELIST_IDS (-w); EXPECTED_IDS (-e); ANYREQ_IDS (-a); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts "w:e:a:l:" OPT; do
+while getopts ":w:e:a:l:h" OPT; do
     case "$OPT" in
         w) WHITELIST_IDS="$OPTARG" ;;
         e) EXPECTED_IDS="$OPTARG"  ;;

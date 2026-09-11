@@ -21,19 +21,20 @@ SED=$(command -v sed 2>/dev/null) || die "sed not available"
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 
 # Compose identity and input paths define the project view being checked.
-CHECK_NAME=""
-COMPOSE_FILES=""
-ENV_FILE=""
-PROFILE_LIST=""
-PROJECT_DIRECTORY=""
-PROJECT_NAME=""
+CHECK_NAME=${CHECK_NAME:-""}
+COMPOSE_FILES=${COMPOSE_FILES:-""}
+COMPOSE_FILES_CLI=0
+ENV_FILE=${ENV_FILE:-""}
+PROFILE_LIST=${PROFILE_LIST:-""}
+PROJECT_DIRECTORY=${PROJECT_DIRECTORY:-""}
+PROJECT_NAME=${PROJECT_NAME:-""}
 
 # Runtime policy knobs control tolerated startup, expected exits, health requirements, orphan severity, and total diagnostic size.
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
-EXPECTED_EXITED=""
+EXPECTED_EXITED=${EXPECTED_EXITED:-""}
 EXPECTED_LIST=""
-HEALTH_REQUIRED=""
-ORPHAN_CRITICAL=0
+HEALTH_REQUIRED=${HEALTH_REQUIRED:-""}
+ORPHAN_CRITICAL=${ORPHAN_CRITICAL:-0}
 STARTING_GRACE=${STARTING_GRACE:-300}
 
 # State files remember restart counts between check runs.
@@ -73,13 +74,23 @@ HEALTH_REQUIRED_MISSING=0
 PRESENT_SERVICES=""
 
 # CLI options define the Compose identity, expected exceptions, and diagnostic limits.
-USAGE_TEXT="Usage: $0 -d project_directory [-p project_name] [-f compose_file] [-e env_file] [-n name] [-g seconds] [-l chars] [-x services] [-H services] [-P profiles] [-O]"
+USAGE_TEXT="Usage: $0 -d project_directory [-p project_name] [-f compose_file] [-e env_file] [-n name] [-g seconds] [-l chars] [-x services] [-H services] [-P profiles] [-O] [-S state_directory] [-o]
+Environment: PROJECT_DIRECTORY (-d); PROJECT_NAME (-p); COMPOSE_FILES (-f); ENV_FILE (-e); CHECK_NAME (-n); STARTING_GRACE (-g); DETAIL_LIMIT (-l); EXPECTED_EXITED (-x); HEALTH_REQUIRED (-H); PROFILE_LIST (-P); ORPHAN_CRITICAL (-O); STATE_DIR (-S); ORPHAN_CRITICAL (-o).
+Command-line options override non-empty environment values; unset or empty environment values use defaults.
+The first -f replaces COMPOSE_FILES from the environment; repeated -f options append files. -O enables orphan critical status; -o disables it."
 OPTERR=0
-while getopts 'd:p:f:e:n:g:l:x:H:P:O' opt; do
+while getopts ':d:p:f:e:n:g:l:x:H:P:OS:oh' opt; do
     case "$opt" in
         d) PROJECT_DIRECTORY="$OPTARG" ;;
         p) PROJECT_NAME="$OPTARG" ;;
-        f) COMPOSE_FILES="${COMPOSE_FILES:+$COMPOSE_FILES,}$OPTARG" ;;
+        f)
+            if [ "$COMPOSE_FILES_CLI" -eq 0 ]; then
+                COMPOSE_FILES=$OPTARG
+                COMPOSE_FILES_CLI=1
+            else
+                COMPOSE_FILES="${COMPOSE_FILES:+$COMPOSE_FILES,}$OPTARG"
+            fi
+            ;;
         e) ENV_FILE="$OPTARG" ;;
         n) CHECK_NAME="$OPTARG" ;;
         g) STARTING_GRACE="$OPTARG" ;;
@@ -88,11 +99,18 @@ while getopts 'd:p:f:e:n:g:l:x:H:P:O' opt; do
         H) HEALTH_REQUIRED="$OPTARG" ;;
         P) PROFILE_LIST="$OPTARG" ;;
         O) ORPHAN_CRITICAL=1 ;;
+        S) STATE_DIR=$OPTARG ;;
+        o) ORPHAN_CRITICAL=0 ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
+case "$ORPHAN_CRITICAL" in
+    0|1) : ;;
+    *) die "ORPHAN_CRITICAL must be 0 or 1" ;;
+esac
+[ -n "$STATE_DIR" ] || die "state directory must not be empty"
 
 # Check whether a value contains only decimal digits.
 is_number() {

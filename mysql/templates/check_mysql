@@ -18,15 +18,15 @@ if [ "$SYSTEMD_ENABLE" = true ]; then
 fi
 
 # Credentials are read from the local Debian-maintained defaults file unless the caller overrides it.
-DEFAULTS_FILE="/etc/mysql/debian.cnf"
+DEFAULTS_FILE=${DEFAULTS_FILE:-"/etc/mysql/debian.cnf"}
 
 # Connection and cache thresholds stay local because this check manages one MySQL endpoint.
-WARN_CONN_CURR_PCT=90   # WARNING when current connections >= 90%
-CRIT_CONN_CURR_PCT=95   # CRITICAL at 95%
-WARN_CONN_PEAK_PCT=90   # WARNING when historical peak >= 90%
-CRIT_CONN_PEAK_PCT=95   # CRITICAL at 95%
-WARN_HIT_PCT=95         # WARNING when buffer hit < 95%
-CRIT_HIT_PCT=90         # CRITICAL when buffer hit < 90%
+WARN_CONN_CURR_PCT=${WARN_CONN_CURR_PCT:-90} # WARNING when current connections >= 90%
+CRIT_CONN_CURR_PCT=${CRIT_CONN_CURR_PCT:-95} # CRITICAL at 95%
+WARN_CONN_PEAK_PCT=${WARN_CONN_PEAK_PCT:-90} # WARNING when historical peak >= 90%
+CRIT_CONN_PEAK_PCT=${CRIT_CONN_PEAK_PCT:-95} # CRITICAL at 95%
+WARN_HIT_PCT=${WARN_HIT_PCT:-95} # WARNING when buffer hit < 95%
+CRIT_HIT_PCT=${CRIT_HIT_PCT:-90} # CRITICAL when buffer hit < 90%
 
 # Runtime state collects the worst status and human-readable causes.
 LONG_OUTPUT=""
@@ -35,17 +35,32 @@ LONG_OUTPUT_SEP="__CHECK_MYSQL_NL__"
 STATE_CODE=0
 ISSUES=""
 
-# CLI options only select the credentials file; thresholds are intentionally fixed by the managed check.
-USAGE_TEXT="Usage: $0 [-c <config_file>]"
+# CLI options select the credentials file, percentage thresholds and diagnostic limit.
+USAGE_TEXT="Usage: $0 [-c <config_file>] [-l chars] [-w current_warning_percent] [-W current_critical_percent] [-p peak_warning_percent] [-P peak_critical_percent] [-b hit_warning_percent] [-B hit_critical_percent]
+Environment: DEFAULTS_FILE (-c); DETAIL_LIMIT (-l); WARN_CONN_CURR_PCT (-w); CRIT_CONN_CURR_PCT (-W); WARN_CONN_PEAK_PCT (-p); CRIT_CONN_PEAK_PCT (-P); WARN_HIT_PCT (-b); CRIT_HIT_PCT (-B).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts "c:" opt; do
+while getopts ":c:l:w:W:p:P:b:B:h" opt; do
     case "$opt" in
         c) DEFAULTS_FILE="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        w) WARN_CONN_CURR_PCT=$OPTARG ;;
+        W) CRIT_CONN_CURR_PCT=$OPTARG ;;
+        p) WARN_CONN_PEAK_PCT=$OPTARG ;;
+        P) CRIT_CONN_PEAK_PCT=$OPTARG ;;
+        b) WARN_HIT_PCT=$OPTARG ;;
+        B) CRIT_HIT_PCT=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
+for threshold_value in "$WARN_CONN_CURR_PCT" "$CRIT_CONN_CURR_PCT" "$WARN_CONN_PEAK_PCT" "$CRIT_CONN_PEAK_PCT" "$WARN_HIT_PCT" "$CRIT_HIT_PCT"; do
+    $AWK -v value="$threshold_value" 'BEGIN { exit !(value ~ /^(0|[1-9][0-9]*)$/ && value >= 0 && value <= 100) }' || die "thresholds must be integer percentages between 0 and 100 without leading zeroes"
+done
+$AWK -v warn="$WARN_CONN_CURR_PCT" -v crit="$CRIT_CONN_CURR_PCT" 'BEGIN { exit !(warn <= crit) }' || die "critical current connection threshold must be at least warning"
+$AWK -v warn="$WARN_CONN_PEAK_PCT" -v crit="$CRIT_CONN_PEAK_PCT" 'BEGIN { exit !(warn <= crit) }' || die "critical peak connection threshold must be at least warning"
+$AWK -v warn="$WARN_HIT_PCT" -v crit="$CRIT_HIT_PCT" 'BEGIN { exit !(crit <= warn) }' || die "critical cache hit threshold must not exceed warning"
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;
 esac

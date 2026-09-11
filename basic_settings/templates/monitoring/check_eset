@@ -29,10 +29,10 @@ WARN_MSG=""
 STATE_CODE=0
 
 # Update and scan staleness thresholds are operator-tunable through CLI options.
-CRIT_NO_SCAN_DAYS=14  # CRITICAL if >14 days
-CRIT_UPDATE_MIN=1440   # CRITICAL if >24h
-WARN_NO_SCAN_DAYS=7   # WARNING if no on-demand scan in >7 days
-WARN_UPDATE_MIN=720   # WARNING if no engine update for >12h
+CRIT_NO_SCAN_DAYS=${CRIT_NO_SCAN_DAYS:-14} # CRITICAL if >14 days
+CRIT_UPDATE_MIN=${CRIT_UPDATE_MIN:-1440} # CRITICAL if >24h
+WARN_NO_SCAN_DAYS=${WARN_NO_SCAN_DAYS:-7} # WARNING if no on-demand scan in >7 days
+WARN_UPDATE_MIN=${WARN_UPDATE_MIN:-720} # WARNING if no engine update for >12h
 
 # Latest scan metrics are parsed from ESET lslog output and exported as perfdata.
 ENGINE_VER=0
@@ -55,30 +55,30 @@ WAP_FLAG=/opt/eset/efs/etc/WAP_DISABLED
 NOW_EPOCH=$($DATE +%s)
 UPDATE_AGE_MIN=999999
 
-# Keep the long-output history cap numeric before AWK uses it as a ring-buffer size.
-case "$SCAN_HISTORY_LIMIT" in
-    ''|*[!0-9]*) SCAN_HISTORY_LIMIT=5 ;;
-esac
-[ "$SCAN_HISTORY_LIMIT" -ge 1 ] || SCAN_HISTORY_LIMIT=5
-case "$DETAIL_LIMIT" in
-    ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;
-esac
-[ "$DETAIL_LIMIT" -ge 1 ] || die "long-output detail character limit must be at least 1"
-
 # CLI thresholds keep operational tuning outside of the static template.
-USAGE_TEXT="Usage: $0 [-n <days>] [-N <days>] [-u <min>] [-U <min>]"
+USAGE_TEXT="Usage: $0 [-n <days>] [-N <days>] [-u <min>] [-U <min>] [-l chars] [-s scans]
+Environment: WARN_NO_SCAN_DAYS (-n); CRIT_NO_SCAN_DAYS (-N); WARN_UPDATE_MIN (-u); CRIT_UPDATE_MIN (-U); DETAIL_LIMIT (-l); SCAN_HISTORY_LIMIT (-s).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts 'n:N:u:U:' opt; do
-  case "$opt" in
-    n) WARN_NO_SCAN_DAYS="$OPTARG" ;;
-    N) CRIT_NO_SCAN_DAYS="$OPTARG" ;;
-    u) WARN_UPDATE_MIN="$OPTARG" ;;
-    U) CRIT_UPDATE_MIN="$OPTARG" ;;
-    *) die "$USAGE_TEXT" ;;
-  esac
+while getopts ':n:N:u:U:l:s:h' opt; do
+    case "$opt" in
+        n) WARN_NO_SCAN_DAYS="$OPTARG" ;;
+        N) CRIT_NO_SCAN_DAYS="$OPTARG" ;;
+        u) WARN_UPDATE_MIN="$OPTARG" ;;
+        U) CRIT_UPDATE_MIN="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        s) SCAN_HISTORY_LIMIT=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
 done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
+for limit_value in "$SCAN_HISTORY_LIMIT" "$DETAIL_LIMIT"; do
+    case "$limit_value" in
+        ''|*[!0-9]*) die "scan history and detail limits must be numeric" ;;
+    esac
+    [ "$limit_value" -ge 1 ] || die "scan history and detail limits must be at least 1"
+done
 for threshold_value in "$WARN_NO_SCAN_DAYS" "$CRIT_NO_SCAN_DAYS" "$WARN_UPDATE_MIN" "$CRIT_UPDATE_MIN"; do
     case "$threshold_value" in
         ''|*[!0-9]*) die "scan and update thresholds must be numeric" ;;

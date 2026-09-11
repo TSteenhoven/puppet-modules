@@ -35,6 +35,19 @@ TABLE_COUNT=0
 TABLE_EMPTY=""
 TOTAL_RULES=0
 
+USAGE_TEXT="Usage: $0 [-l chars]
+Environment: DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
+OPTERR=0
+while getopts ':l:h' opt; do
+    case "$opt" in
+        l) DETAIL_LIMIT=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ "$#" -eq 0 ] || die "$USAGE_TEXT"
+
 # Keep potentially large blacklist sections bounded while preserving the summary count.
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;

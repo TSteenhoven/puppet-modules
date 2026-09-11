@@ -22,7 +22,7 @@
 #
 # @param detail_limit
 # lint:ignore:140chars
-#   Optional diagnostic character limit before the always-visible Interpretation section. `undef` omits -l and uses the script default.
+#   Optional diagnostic character limit before the always-visible Interpretation section. `undef` omits -l and uses the environment value or script default.
 # lint:endignore
 #
 # @param ensure
@@ -41,17 +41,17 @@
 #
 # @param timeout
 # lint:ignore:140chars
-#   Optional timeout override in seconds for both script and agent. `undef` omits -t and uses the script default and monitoring_custom's agent default. The script reserves three seconds for termination and output and kills remaining children.
+#   Optional timeout override in seconds for both script and agent. `undef` omits -t and uses the script environment value or default, while the agent uses monitoring_custom's default. The script reserves three seconds for termination and output and kills remaining children.
 # lint:endignore
 #
 # @param validity_critical
 # lint:ignore:140chars
-#   Optional critical validity threshold in days. `undef` omits -c and uses the script default. The minimum remaining validity must be strictly below the threshold to trigger it. Must be below the effective warning threshold; the script validates combinations with omitted values.
+#   Optional critical validity threshold in days. `undef` omits -c and uses the environment value or script default. The minimum remaining validity must be strictly below the threshold to trigger it. Must be below the effective warning threshold; the script validates combinations with omitted values.
 # lint:endignore
 #
 # @param validity_warning
 # lint:ignore:140chars
-#   Optional warning validity threshold in days. `undef` omits -w and uses the script default. Remaining validity must be strictly below the threshold to trigger it. Must exceed the effective critical threshold; the script validates combinations with omitted values. Expired/not-yet-valid certificates are always critical.
+#   Optional warning validity threshold in days. `undef` omits -w and uses the environment value or script default. Remaining validity must be strictly below the threshold to trigger it. Must exceed the effective critical threshold; the script validates combinations with omitted values. Expired/not-yet-valid certificates are always critical.
 # lint:endignore
 #
 # @api public

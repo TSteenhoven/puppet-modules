@@ -23,8 +23,8 @@ fi
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 
 # Last-run age thresholds decide when stale Puppet runs become WARNING or CRITICAL.
-CRIT_AGE=3600 # 60 minutes (your preference: >1h = critical)
-WARN_AGE=2700 # 45 minutes
+CRIT_AGE=${CRIT_AGE:-3600} # 60 minutes (your preference: >1h = critical)
+WARN_AGE=${WARN_AGE:-2700} # 45 minutes
 
 # Runtime status and last-run fields are derived from Puppet's lastrun summary.
 EXITCODE_STATE=0 # 0=OK, 1=WARNING, 2=CRITICAL
@@ -41,12 +41,19 @@ RUN_JOURNAL_END_GRACE=${RUN_JOURNAL_END_GRACE:-120}
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 
 # CLI options tune last-run age thresholds without changing the managed check registration.
-USAGE_TEXT="Usage: $0 [-w warn_seconds] [-c crit_seconds]"
+USAGE_TEXT="Usage: $0 [-w warn_seconds] [-c crit_seconds] [-l chars] [-n lines] [-N lines] [-s seconds] [-e seconds]
+Environment: WARN_AGE (-w); CRIT_AGE (-c); DETAIL_LIMIT (-l); LOG_LINES (-n); LOG_SCAN_LINES (-N); RUN_JOURNAL_START_GRACE (-s); RUN_JOURNAL_END_GRACE (-e).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 OPTERR=0
-while getopts "w:c:" opt; do
+while getopts ":w:c:l:n:N:s:e:h" opt; do
     case "$opt" in
         w) WARN_AGE="$OPTARG" ;;
         c) CRIT_AGE="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        n) LOG_LINES=$OPTARG ;;
+        N) LOG_SCAN_LINES=$OPTARG ;;
+        s) RUN_JOURNAL_START_GRACE=$OPTARG ;;
+        e) RUN_JOURNAL_END_GRACE=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done

@@ -32,8 +32,8 @@ UNAME=$(command -v uname 2>/dev/null) || die "uname not available"
 DMI_DIR="/sys/devices/virtual/dmi/id"
 
 # Queue thresholds protect against dropped audit events and can be tuned at runtime.
-DROPPED_CRIT="1"
-QUEUE_WARN=""
+DROPPED_CRIT=${DROPPED_CRIT:-"1"}
+QUEUE_WARN=${QUEUE_WARN:-""}
 
 # Summary state accumulates security-sensitive audit findings while keeping context in long output.
 CRITICAL_REASONS=""
@@ -42,15 +42,18 @@ LONG_OUTPUT=""
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 LONG_OUTPUT_SEP="__CHECK_AUDIT_NL__"
 STATE_CODE=0 # 0 OK, 1 WARNING, 2 CRITICAL, 3 UNKNOWN
-USAGE_TEXT="Usage: $0 [-q <int>] [-d <int>]"
+USAGE_TEXT="Usage: $0 [-q <int>] [-d <int>] [-l chars]
+Environment: QUEUE_WARN (-q); DROPPED_CRIT (-d); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
 WARNING_REASONS=""
 
 # CLI options tune queue and lost-event thresholds without changing the managed rule set.
 OPTERR=0
-while getopts 'q:d:' opt; do
+while getopts ':q:d:l:h' opt; do
     case "$opt" in
         q) QUEUE_WARN="$OPTARG" ;;
         d) DROPPED_CRIT="$OPTARG" ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
         *) die "$USAGE_TEXT" ;;
     esac
 done
@@ -60,6 +63,9 @@ shift $((OPTIND - 1))
 # Runtime thresholds are numeric audit counters and must fail before host state is evaluated.
 case "$DROPPED_CRIT" in
     ''|*[!0-9]*) die "dropped threshold must be numeric" ;;
+esac
+case "$QUEUE_WARN" in
+    *[!0-9]*) die "queue warning threshold must be numeric" ;;
 esac
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;

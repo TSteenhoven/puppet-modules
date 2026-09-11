@@ -16,9 +16,23 @@ GITLAB_RAILS=$(command -v gitlab-rails 2>/dev/null) || die "gitlab-rails not ava
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 
-# License warning lead time is configurable through the environment for direct check use.
+# License warning lead time and diagnostic output limit.
 LIC_WARN_DAYS=${LIC_WARN_DAYS:-30}
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
+USAGE_TEXT="Usage: $0 [-w license_warning_days] [-l chars]
+Environment: LIC_WARN_DAYS (-w); DETAIL_LIMIT (-l).
+Command-line options override non-empty environment values; unset or empty environment values use defaults."
+OPTERR=0
+while getopts ':w:l:h' opt; do
+    case "$opt" in
+        w) LIC_WARN_DAYS=$OPTARG ;;
+        l) DETAIL_LIMIT=$OPTARG ;;
+        *) die "$USAGE_TEXT" ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ "$#" -eq 0 ] || die "$USAGE_TEXT"
+
 case "$LIC_WARN_DAYS" in
     ''|*[!0-9]*) die "LIC_WARN_DAYS must be numeric" ;;
 esac
