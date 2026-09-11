@@ -16,7 +16,7 @@ GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 RABBITMQCTL=$(command -v rabbitmqctl 2>/dev/null) || die "rabbitmqctl not available"
 RABBITMQADMIN=$(command -v rabbitmqadmin 2>/dev/null || true)
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 fi
 PS=$(command -v ps 2>/dev/null) || die "ps not available"
 

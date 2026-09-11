@@ -14,7 +14,7 @@ SYSTEMD_ENABLE='<%= @systemd_enable %>'
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 MYSQLADMIN=$(command -v mysqladmin 2>/dev/null) || die "mysqladmin not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 fi
 
 # Credentials are read from the local Debian-maintained defaults file unless the caller overrides it.

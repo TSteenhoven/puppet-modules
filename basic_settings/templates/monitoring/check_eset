@@ -17,7 +17,7 @@ DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
 fi
 TAIL=$(command -v tail 2>/dev/null) || die "tail not available"
 PS=$(command -v ps 2>/dev/null) || die "ps not available"

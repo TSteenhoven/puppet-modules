@@ -365,13 +365,6 @@ class basic_settings::packages (
     }
   }
 
-  # Ensure that apt-daily timers is always running
-  service { ['apt-daily.timer', 'apt-daily-upgrade.timer']:
-    ensure  => running,
-    enable  => true,
-    require => Package['systemd'],
-  }
-
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     basic_settings::monitoring_custom { 'apt':
@@ -391,6 +384,13 @@ class basic_settings::packages (
 
   # Check if we have systemd
   if ($systemd_enable) {
+    # Keep APT automation enabled only when systemd owns these timers.
+    service { ['apt-daily.timer', 'apt-daily-upgrade.timer']:
+      ensure  => running,
+      enable  => true,
+      require => Package['systemd'],
+    }
+
     # Reload systemd deamon
     exec { 'packages_systemd_daemon_reload':
       command     => '/usr/bin/systemctl daemon-reload',

@@ -18,10 +18,10 @@ GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 IP=$(command -v ip 2>/dev/null) || die "ip not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-NETWORKCTL=$(command -v networkctl 2>/dev/null)  || die "networkctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    NETWORKCTL=$(command -v networkctl 2>/dev/null)  || die "networkctl not available"
 else
-PS=$(command -v ps 2>/dev/null) || die "ps not available"
+    PS=$(command -v ps 2>/dev/null) || die "ps not available"
 fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 

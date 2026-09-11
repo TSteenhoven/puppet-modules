@@ -15,7 +15,7 @@ AWK=$(command -v awk 2>/dev/null) || die "awk not available"
 NFT=$(command -v nft 2>/dev/null) || die "nft not available"
 SORT=$(command -v sort 2>/dev/null) || die "sort not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 

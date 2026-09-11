@@ -20,9 +20,9 @@ TR=$(command -v tr 2>/dev/null) || die "tr not available"
 RM=$(command -v rm 2>/dev/null) || die "rm not available"
 MV=$(command -v mv 2>/dev/null) || die "mv not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null)  || die "systemctl not available"
 else
-PS=$(command -v ps 2>/dev/null) || die "ps not available"
+    PS=$(command -v ps 2>/dev/null) || die "ps not available"
 fi
 
 # Connection and CLI paths are local to the Mirth installation.

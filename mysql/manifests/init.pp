@@ -46,8 +46,9 @@ class mysql (
   Optional[String]  $root_password             = undef,
   Hash              $settings                  = {},
 ) {
-  # Use systemd settings
+  # Reuse the existing baseline selection for systemd settings and the monitoring template.
   $basic_settings_enable = defined(Class['basic_settings'])
+  $systemd_enable = defined(Package['systemd'])
 
   # Resolve backup contact details and backend selection from available monitoring settings.
   $monitoring_enable = defined(Class['basic_settings::monitoring']);
@@ -143,7 +144,7 @@ class mysql (
     }
 
     # Disable automatic MySQL startup only when systemd owns service ordering.
-    if (defined(Package['systemd'])) {
+    if ($systemd_enable) {
       # Disable MySQL server service
       service { 'mysql':
         ensure  => undef,
@@ -318,8 +319,8 @@ class mysql (
     mode   => '0700', # Only root
   }
 
-  # Schedule database backups through systemd only when its package is managed.
-  if (defined(Package['systemd'])) {
+  # Use the same systemd selection for database backups, service settings, and monitoring.
+  if ($systemd_enable) {
     # Create systemd service
     basic_settings::systemd_service { 'automysqlbackup':
       description   => 'Automysqlbackup service',

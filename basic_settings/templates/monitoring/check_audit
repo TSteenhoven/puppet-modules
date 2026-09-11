@@ -21,8 +21,8 @@ DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
-JOURNALCTL=$(command -v journalctl 2>/dev/null) || die "journalctl not available"
+    SYSTEMDCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    JOURNALCTL=$(command -v journalctl 2>/dev/null) || die "journalctl not available"
 fi
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 PS=$(command -v ps 2>/dev/null) || die "ps not available"

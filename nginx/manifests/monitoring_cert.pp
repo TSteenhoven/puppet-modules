@@ -21,7 +21,9 @@
 #   Absolute path supplied by the owner of the target File resource; distinguishes vhosts with identical server names.
 #
 # @param detail_limit
-#   Diagnostic character limit before the always-visible Interpretation section. The default is 6000.
+# lint:ignore:140chars
+#   Optional diagnostic character limit before the always-visible Interpretation section. `undef` omits -l and uses the script default.
+# lint:endignore
 #
 # @param ensure
 #   `present` registers only with an active monitoring backend; `absent` removes the registration while preserving the shared executable.
@@ -54,15 +56,15 @@
 #
 # @api public
 define nginx::monitoring_cert (
-  Stdlib::Absolutepath        $config_file,
-  Integer[1, 100000]          $detail_limit      = 6000,
-  Enum['present', 'absent']   $ensure            = present,
-  Integer[1]                  $interval          = 300,
-  Optional[String[1]]         $registration_name = undef,
-  Optional[String]            $server_name       = undef,
-  Optional[Integer[5, 300]]   $timeout           = undef,
-  Optional[Integer[1, 36500]] $validity_critical = undef,
-  Optional[Integer[2, 36501]] $validity_warning  = undef,
+  Stdlib::Absolutepath         $config_file,
+  Optional[Integer[1, 100000]] $detail_limit      = undef,
+  Enum['present', 'absent']    $ensure            = present,
+  Integer[1]                   $interval          = 300,
+  Optional[String[1]]          $registration_name = undef,
+  Optional[String]             $server_name       = undef,
+  Optional[Integer[5, 300]]    $timeout           = undef,
+  Optional[Integer[1, 36500]]  $validity_critical = undef,
+  Optional[Integer[2, 36501]]  $validity_warning  = undef,
 ) {
   # Require the Nginx parent that owns the shared certificate-check executable.
   if (defined(Class['nginx'])) {
@@ -83,10 +85,10 @@ define nginx::monitoring_cert (
 
         # Escape required arguments; optional runtime defaults belong to the shared script.
         $config_file_shell = stdlib::shell_escape($config_file)
-        $detail_limit_shell = stdlib::shell_escape(String($detail_limit))
 
         # Omit each unset override independently, without serializing undef as an empty argument.
         $check_overrides = {
+          '-l' => $detail_limit,
           '-t' => $timeout,
           '-c' => $validity_critical,
           '-w' => $validity_warning,
@@ -99,7 +101,6 @@ define nginx::monitoring_cert (
         # Combine the target and limits into this registration's arguments.
         $check_cmd = join(concat([
           "-n ${server_name_shell} -f ${config_file_shell}",
-          "-l ${detail_limit_shell}",
         ], $check_overrides), ' ')
 
         # A File is the normal contract; standalone callers can order their owner wrapper before this helper.

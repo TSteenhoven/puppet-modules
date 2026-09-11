@@ -25,7 +25,7 @@ TIMEOUT=$(command -v timeout 2>/dev/null || true)
 TR=$(command -v tr 2>/dev/null) || die "tr not available"
 CHMOD=$(command -v chmod 2>/dev/null || true)
 if [ "$SYSTEMD_ENABLE" = true ]; then
-SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
+    SYSTEMCTL=$(command -v systemctl 2>/dev/null) || die "systemctl not available"
 fi
 
 # Managed input files and cache locations used by the APT check.

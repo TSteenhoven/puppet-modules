@@ -67,6 +67,12 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change. Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
 - Inspect existing abstractions before adding a new one, and validate each migrated caller's behavior and dependencies. Preserve caller-specific security and lifecycle requirements.
 
+### Shell Formatting
+
+- Use four spaces per indentation level when adding or changing first-party Bash or POSIX shell code, including shell code in templates.
+- Preserve literal whitespace in heredocs and multiline quoted data when reindenting code.
+- Review shell indentation in the source and rendered template output; Puppet-lint does not validate shell formatting.
+
 ### Git Commits
 
 - AI agents must never create, amend, or rewrite Git commits through Git commands, APIs, or other tools.
