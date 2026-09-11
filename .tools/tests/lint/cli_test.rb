@@ -3,8 +3,37 @@ require_relative 'test_helper'
 class CliTest < Minitest::Test
   include LintTestSupport
 
-  def cli(*arguments, directory: LintTestSupport::ROOT)
-    Open3.capture3(Gem.bin_path('puppet-lint', 'puppet-lint'), *arguments, chdir: directory)
+  def cli(*arguments, directory: LintTestSupport::ROOT, env: {})
+    Open3.capture3(env, Gem.bin_path('puppet-lint', 'puppet-lint'), *arguments, chdir: directory)
+  end
+
+  # Count the configured diagnostic lines; GitHub annotations repeat the same findings.
+  def diagnostics(output, check)
+    output.lines.grep(/\A.+:\d+:\d+: #{Regexp.escape(check)}: (?:warning|error|fixed|ignored): /)
+  end
+
+  def test_diagnostic_counts_are_independent_of_github_annotations
+    Dir.mktmpdir('lint_github_annotations_') do |directory|
+      file = File.join(directory, 'project_layout.pp')
+      code = <<~'PUPPET'
+        $values = [
+              'first',
+              'second',
+        ]
+        $other = [1] + [2]
+      PUPPET
+      [nil, 'synthetic_test'].each do |github_action|
+        [[], ['--fix']].each do |options|
+          File.write(file, code)
+          output, errors, status = cli(*options, file, env: { 'GITHUB_ACTION' => github_action })
+          refute status.success?, output + errors
+          assert_equal 2, diagnostics(output, 'project_layout').length, output
+          assert_equal 1, diagnostics(output, 'project_arrays').length, output
+          assert_equal github_action ? 3 : 0, output.lines.grep(/\A::warning /).length, output
+          assert_equal code, File.read(file)
+        end
+      end
+    end
   end
 
   def test_default_and_project_checks_are_present_and_enabled
@@ -74,7 +103,7 @@ class CliTest < Minitest::Test
         File.write(file, code)
         output, errors, status = cli(*options, file)
         refute status.success?, output + errors
-        assert_equal 1, output.lines.count { |line| line.include?('project_layout') }, output
+        assert_equal 1, diagnostics(output, 'project_layout').length, output
         assert_includes output, ':3:1: project_layout: warning: Remove blank lines immediately after an opening brace'
         assert_equal code, File.read(file)
       end
@@ -98,7 +127,7 @@ class CliTest < Minitest::Test
         File.write(file, code)
         output, errors, status = cli(*options, file)
         refute status.success?, output + errors
-        assert_equal 3, output.lines.count { |line| line.include?('project_layout') }, output
+        assert_equal 3, diagnostics(output, 'project_layout').length, output
         assert_includes output, ':2:7: project_layout: warning: Use 2 leading spaces for the array element'
         assert_includes output, ':4:5: project_layout: warning: Use 0 leading spaces for the closing array bracket'
         assert_equal code, File.read(file)
@@ -122,7 +151,7 @@ class CliTest < Minitest::Test
       File.write(file, code)
       output, errors, status = cli('--fix', file)
       refute status.success?, errors
-      assert_equal 1, output.lines.count { |line| line.include?('project_variable_sections') }, output
+      assert_equal 1, diagnostics(output, 'project_variable_sections').length, output
       assert_equal code, File.read(file)
     end
   end
@@ -138,7 +167,7 @@ class CliTest < Minitest::Test
         File.write(file, code)
         output, errors, status = cli('--fix', file)
         refute status.success?, errors
-        assert_equal 1, output.lines.count { |line| line.include?('project_if_sections') }, output
+        assert_equal 1, diagnostics(output, 'project_if_sections').length, output
         assert_equal code, File.read(file)
         File.write(file, "# Explain the operation and its prerequisites.\n#{code}")
         output, errors, status = cli(file)
@@ -162,7 +191,7 @@ class CliTest < Minitest::Test
       File.write(file, code)
       output, errors, status = cli('--fix', file)
       refute status.success?, output + errors
-      assert_equal 1, output.lines.count { |line| line.include?('project_variable_sections') }, output
+      assert_equal 1, diagnostics(output, 'project_variable_sections').length, output
       assert_includes output, 'section at line 5'
       assert_includes output, 'checking purpose and evaluation order'
       assert_equal code, File.read(file)
@@ -191,7 +220,7 @@ class CliTest < Minitest::Test
       File.write(file, code)
       output, errors, status = cli('--fix', file)
       refute status.success?, errors
-      assert_equal 1, output.lines.count { |line| line.include?('project_positive_flow') }, output
+      assert_equal 1, diagnostics(output, 'project_positive_flow').length, output
       assert_equal code, File.read(file)
     end
   end
@@ -217,7 +246,7 @@ class CliTest < Minitest::Test
       output, errors, status = cli('--only-checks', 'project_positive_flow', '--fix', file)
       refute status.success?, output + errors
       assert_includes output, 'no implementation may follow'
-      assert_equal 2, output.lines.count { |line| line.include?('project_positive_flow') }, output
+      assert_equal 2, diagnostics(output, 'project_positive_flow').length, output
       assert_equal code, File.read(file)
 
       corrected = code.sub("  notify { 'outside-validation': }\n", '')
@@ -241,7 +270,7 @@ class CliTest < Minitest::Test
       File.write(file, code)
       output, errors, status = cli('--fix', file)
       refute status.success?, output + errors
-      assert_equal 1, output.lines.count { |line| line.include?('project_monitoring_backend') }, output
+      assert_equal 1, diagnostics(output, 'project_monitoring_backend').length, output
       assert_equal code, File.read(file)
       File.write(file, code.sub("== 'synthetic_backend'", "!= 'none'"))
       output, errors, status = cli(file)
@@ -261,7 +290,7 @@ class CliTest < Minitest::Test
         File.write(file, code)
         output, errors, status = cli('--only-checks', 'project_class_check_reuse', '--fix', file)
         refute status.success?, output + errors
-        assert_equal 1, output.lines.count { |line| line.include?('project_class_check_reuse') }, output
+        assert_equal 1, diagnostics(output, 'project_class_check_reuse').length, output
         assert_equal code, File.read(file)
       end
     end

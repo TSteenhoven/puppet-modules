@@ -45,6 +45,12 @@ Deze taak zoekt uitsluitend onder `.tools/tests/lint/**/*_test.rb`. Op dit momen
 
 Bekijk de genoemde test en vergelijk het verwachte resultaat met de uitvoer van de tool. Controleer welke invoer de test gebruikt en welk gedrag de assertion vastlegt. Herstel de oorzaak en voer de betreffende tests opnieuw uit. Sla een falende test niet over om de taak te laten slagen.
 
+Puppet-lint voegt in GitHub Actions annotaties toe aan de gewone meldingen. De CLI-tests controleren beide uitvoervormen en tellen iedere lintmelding één keer. Wil je de hele testsuite lokaal met deze CI-uitvoer draaien, gebruik dan:
+
+```sh
+GITHUB_ACTION=synthetic_test bundle exec rake test
+```
+
 Stopt de taak voordat er tests worden uitgevoerd, controleer dan eerst de [installatie](../lint/README.md#installatie) en je werkmap. Controleer na het toevoegen of verplaatsen van tests ook of de verwachte tests daadwerkelijk zijn uitgevoerd; een geslaagde taak zonder tests is onvoldoende.
 
 ## Tests toevoegen
