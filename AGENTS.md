@@ -34,6 +34,13 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
 - Validate with at least two targets that registrations invoke the same executable with their own settings and that retiring one target preserves the shared executable and other registrations.
 
+### Monitoring Check Defaults
+
+- For new monitoring checks, keep optional runtime defaults in the check executable and apply only explicitly supplied overrides from registrations. Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`.
+- Apply this contract to existing check settings when changing their default handling; keep unrelated checks outside the change scope.
+- Review executor scheduling separately from script options and verify that the executor timeout allows the script's execution, termination, and output budget.
+- Validate omitted, explicit, partial, and invalid overrides with isolated synthetic checks, including effective threshold ordering and timeout behavior.
+
 ## Working With The Existing Codebase
 
 ### Preparation

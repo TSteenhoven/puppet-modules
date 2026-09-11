@@ -804,7 +804,11 @@ Lange uitvoer staat standaard aan; voeg alleen op verzoek schakelaars daarvoor t
 
 #### Invoer en configuratie
 
-Een check die Puppet-data nodig heeft is een ERB-template met directe shelltoekenningen. Beperk ERB tot variabele-invoeging en Puppet-voorbereiding tot defaults, serialisatie en shellveilige waarden. Voeg alleen een checkconfiguratiebestand of parser toe als dat gevraagd is of al gebruikelijk is.
+Een check die Puppet-data nodig heeft is een ERB-template met directe shelltoekenningen. Beperk ERB tot variabele-invoeging en Puppet-voorbereiding tot standaardwaarden voor beheerde configuratie, serialisatie en shellveilige waarden. Voeg alleen een checkconfiguratiebestand of parser toe als dat gevraagd is of al gebruikelijk is.
+
+Zet bij nieuwe checks de standaardwaarden voor optionele runtime-instellingen in het script, vóór `getopts`. Geef de bijbehorende Puppet-parameters een passend `Optional[...]`-type met `undef` als standaardwaarde. Voeg een CLI-optie alleen toe wanneer de parameter is ingevuld; laat bij `undef` zowel de optie als het argument weg. Neem de scriptdefaults niet opnieuw op als terugvalwaarden in manifests, wrappers of ERB-expressies. Pas dit ook toe wanneer je de verwerking van standaardwaarden voor een bestaande instelling wijzigt.
+
+Laat iedere expliciete optie alleen de bijbehorende scriptdefault vervangen. Controleer daarna de effectieve waarden in het script, ook als slechts één van twee bij elkaar horende drempels is opgegeven. Puppet mag twee expliciete drempels alvast vergelijken, maar mag voor die controle geen ontbrekende scriptdefault namaken. Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie; controleer afzonderlijk dat die timeout ruimte laat voor uitvoering, beëindiging en uitvoer van het script. Deze samenhang hoort bij de inhoudelijke review en wordt niet automatisch door de linter bewezen.
 
 Geef iedere beheerde waarde één leidende invoerroute. Dupliceer deze niet tussen CLI en configuratie zonder compatibiliteitsreden. Gebruik CLI-opties voor runtimefilters en drempels die niet via configuratie worden beheerd.
 

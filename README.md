@@ -513,10 +513,6 @@ Declareer `nginx` vóór de vhosts. `nginx::server` regelt de afhankelijkheden v
 
 De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten. Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
 
-Geef voor TLS-monitoring expliciete DNS-namen op in `server_name` en beheer interne root-CA's via de systeemtrust. De resourcetitel geldt niet als vervanging voor `server_name`. De check controleert alle concrete aliases en geeft een TLS-redirectvhost een eigen registratie. Nginx-wildcardnamen, regexnamen, dynamische certificaatpaden en versleutelde sleutels kunnen niet volledig worden beoordeeld. Houd privésleutels afgeschermd: de check gebruikt de bestaande rootidentiteit van de agent en verruimt geen bestandsrechten.
-
-De controle leest de actuele configuratie en bestanden; zij bewijst niet welk certificaat draaiende Nginx-workers aanbieden en vernieuwt of herlaadt niets. Een configuratiefout in een andere vhost kan de beoordeling blokkeren. Test de check onder de echte agent en diens systemd-beperkingen voordat je de meldingen in gebruik neemt. Gebruik bij het verwijderen van een vhost eerst `ensure => absent` om ook de configuratie en de registraties op te ruimen.
-
 #### Basisvoorbeeld
 
 ```puppet

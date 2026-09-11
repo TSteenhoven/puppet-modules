@@ -353,13 +353,13 @@ define nginx::server (
     $security_dir = "/etc/nginx/security/${name}"
     $securitytxt_file = "${security_dir}/security.txt"
 
-    # Use the first server_name as the public host for Canonical and fallback contacts.
-    if ($server_name != undef and $server_name != '') {
-      # Use the first configured server name as the security.txt host identity.
-      $securitytxt_server_name = split($server_name, ' ')[0]
+    # Share the primary host identity between security.txt and certificate-check registration names.
+    if ($server_name != undef and $server_name =~ /\S/) {
+      # Use the first configured server name, including when names are separated by tabs or newlines.
+      $server_name_primary = split(strip($server_name), '\s+')[0]
     } else {
-      # Fall back to the resource title for the security.txt host identity.
-      $securitytxt_server_name = $name
+      # Fall back to the resource title for labels and security.txt, never for certificate validation.
+      $server_name_primary = $name
     }
 
     # Prefer explicit vhost contacts, then nginx-wide contacts, then monitoring mail.
@@ -375,7 +375,7 @@ define nginx::server (
           }
         } else {
           # Last resort: use the primary vhost name so the generated Contact is domain-local.
-          $securitytxt_contacts_correct = ["mailto:info@${securitytxt_server_name}"]
+          $securitytxt_contacts_correct = ["mailto:info@${server_name_primary}"]
         }
       } else {
         # Inherit security.txt contacts from the Nginx class.
@@ -484,7 +484,7 @@ define nginx::server (
     )
 
     # security.txt canonical always points at the standard well-known URL for this vhost.
-    $securitytxt_canonical_correct = "https://${securitytxt_server_name}/.well-known/security.txt"
+    $securitytxt_canonical_correct = "https://${server_name_primary}/.well-known/security.txt"
 
     # Only calculate Expires after validating the configured day count.
     if ($securitytxt_expires_days_correct > 0) {
@@ -759,16 +759,18 @@ define nginx::server (
 
     # Register the main HTTPS identity using the configuration path owned by this vhost.
     nginx::monitoring_cert { "${name}/main":
-      ensure      => $monitoring_cert_ensure,
-      config_file => $config_file,
-      server_name => $server_name,
+      ensure            => $monitoring_cert_ensure,
+      config_file       => $config_file,
+      registration_name => "${server_name_primary}/main",
+      server_name       => $server_name,
     }
 
     # Give the TLS redirect its own identity so its certificate cannot replace the main target's assessment.
     nginx::monitoring_cert { "${name}/redirect":
-      ensure      => $monitoring_redirect_ensure,
-      config_file => $config_file,
-      server_name => $redirect_from,
+      ensure            => $monitoring_redirect_ensure,
+      config_file       => $config_file,
+      registration_name => "${server_name_primary}/redirect",
+      server_name       => $redirect_from,
     }
 
     # Rebuild security.txt after the vhost config changes by removing the stale fallback first.

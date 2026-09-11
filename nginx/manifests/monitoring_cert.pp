@@ -1,7 +1,7 @@
 # @summary Registers a local Nginx TLS certificate and key check.
 #
 # lint:ignore:140chars
-# Requires the nginx class and the File resource supplied by config_file. The normal caller is nginx::server, which registers separate main and redirect checks and supplies its own configuration path. This helper never includes monitoring classes or creates executable copies. The nginx class owns one shared root-owned 0700 check_nginx_cert script and its OpenSSL, CA certificate and coreutils dependencies through basic_settings::monitoring_custom. This helper passes safely escaped server names, the configuration file and check settings as arguments. A SHA256 of the complete title gives each registration a stable identity without lossy name normalization.
+# Requires the nginx class and the File resource supplied by config_file. The normal caller is nginx::server, which registers separate main and redirect checks and supplies its own configuration path. This helper never includes monitoring classes or creates executable copies. The nginx class owns one shared root-owned 0700 check_nginx_cert script and its OpenSSL, CA certificate and coreutils dependencies through basic_settings::monitoring_custom. This helper passes safely escaped server names, the configuration file and check settings as arguments.
 # The script uses nginx -T with nginx::config_file and the binary default prefix, discovers paths at runtime and validates against self-issued roots from the Debian/Ubuntu system trust bundle. Custom service command-line overrides are outside this module contract. Install internal root CAs through the system trust mechanism. ssl_trusted_certificate is inspected separately and never supplies missing offered intermediates or trust anchors. Concrete DNS aliases are checked; Nginx wildcard/regex names, dynamic paths and encrypted keys are UNKNOWN. Nothing renews certificates, reloads Nginx or verifies a live endpoint. Root access is required under the existing agent sandbox; private keys remain private and certificates beneath protected home directories are unassessable.
 # Automatic vhost checks follow nginx::server lifecycle, including ensure => absent and monitoring_cert => false. The shared concat registry removes retired registrations on every apply, including deleted declarations; no per-vhost executable remains to clean up. The shared script follows the nginx class monitoring state. Keep basic_settings::monitoring declared with package => none during backend retirement.
 # lint:endignore
@@ -29,37 +29,48 @@
 # @param interval
 #   Agent execution interval in seconds. The default is 300; every active vhost check runs nginx -T once per interval.
 #
+# @param registration_name
+# lint:ignore:140chars
+#   Readable identity between check_nginx_ and _cert; undef uses the resource title. Characters other than ASCII letters, digits, underscores and hyphens become underscores. Names must remain unique on the host after normalization; collisions fail catalog compilation. nginx::server supplies the first main server_name followed by /main or /redirect, falling back to its title when server_name is empty. This identity only labels the registration and never replaces the server_name argument used for certificate validation.
+# lint:endignore
+#
 # @param server_name
 #   Actual server_name directive input, separate from the title. `undef` or empty input produces UNKNOWN without a title fallback.
 #
 # @param timeout
-#   Agent timeout in seconds, default 30. The script reserves three seconds for termination and output and kills remaining children.
+# lint:ignore:140chars
+#   Optional timeout override in seconds for both script and agent. `undef` omits -t and uses the script default and monitoring_custom's agent default. The script reserves three seconds for termination and output and kills remaining children.
+# lint:endignore
 #
 # @param validity_critical
-#   Critical when the minimum remaining validity is strictly less than this many days, default 14. Must be below validity_warning.
+# lint:ignore:140chars
+#   Optional critical validity threshold in days. `undef` omits -c and uses the script default. The minimum remaining validity must be strictly below the threshold to trigger it. Must be below the effective warning threshold; the script validates combinations with omitted values.
+# lint:endignore
 #
 # @param validity_warning
 # lint:ignore:140chars
-#   Warning when remaining validity is strictly less than this many days, default 30. Expired/not-yet-valid certificates are always critical.
+#   Optional warning validity threshold in days. `undef` omits -w and uses the script default. Remaining validity must be strictly below the threshold to trigger it. Must exceed the effective critical threshold; the script validates combinations with omitted values. Expired/not-yet-valid certificates are always critical.
 # lint:endignore
 #
 # @api public
 define nginx::monitoring_cert (
-  Stdlib::Absolutepath      $config_file,
-  Integer[1, 100000]        $detail_limit      = 6000,
-  Enum['present', 'absent'] $ensure            = present,
-  Integer[1]                $interval          = 300,
-  Optional[String]          $server_name       = undef,
-  Integer[5, 300]           $timeout           = 30,
-  Integer[1, 36500]         $validity_critical = 14,
-  Integer[2, 36501]         $validity_warning  = 30,
+  Stdlib::Absolutepath        $config_file,
+  Integer[1, 100000]          $detail_limit      = 6000,
+  Enum['present', 'absent']   $ensure            = present,
+  Integer[1]                  $interval          = 300,
+  Optional[String[1]]         $registration_name = undef,
+  Optional[String]            $server_name       = undef,
+  Optional[Integer[5, 300]]   $timeout           = undef,
+  Optional[Integer[1, 36500]] $validity_critical = undef,
+  Optional[Integer[2, 36501]] $validity_warning  = undef,
 ) {
   # Require the Nginx parent that owns the shared certificate-check executable.
   if (defined(Class['nginx'])) {
     # Validate settings only for active registrations; retirement does not consume the path or thresholds.
     $active = $ensure == present and defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none'
     $settings_valid = $active ? {
-      true    => ($validity_critical < $validity_warning and $config_file !~ /[\r\n\t]/),
+      true    => (($validity_critical == undef or $validity_warning == undef or $validity_critical < $validity_warning)
+        and $config_file !~ /[\r\n\t]/),
       default => true,
     }
     if ($settings_valid) {
@@ -70,19 +81,26 @@ define nginx::monitoring_cert (
         $server_name_shell = stdlib::shell_escape($server_name_correct)
         $check_friendly = "Nginx TLS ${server_name_correct}"
 
-        # Escape the configuration path and numeric limits before passing them to the shared certificate check.
+        # Escape required arguments; optional runtime defaults belong to the shared script.
         $config_file_shell = stdlib::shell_escape($config_file)
         $detail_limit_shell = stdlib::shell_escape(String($detail_limit))
-        $timeout_shell = stdlib::shell_escape(String($timeout))
-        $validity_critical_shell = stdlib::shell_escape(String($validity_critical))
-        $validity_warning_shell = stdlib::shell_escape(String($validity_warning))
+
+        # Omit each unset override independently, without serializing undef as an empty argument.
+        $check_overrides = {
+          '-t' => $timeout,
+          '-c' => $validity_critical,
+          '-w' => $validity_warning,
+        }.filter |$option, $value| { $value != undef }.map |$option, $value| {
+          # Escape only supplied values before appending their fixed option names.
+          $value_shell = stdlib::shell_escape(String($value))
+          "${option} ${value_shell}"
+        }
 
         # Combine the target and limits into this registration's arguments.
-        $check_cmd = join([
+        $check_cmd = join(concat([
           "-n ${server_name_shell} -f ${config_file_shell}",
-          "-l ${detail_limit_shell} -t ${timeout_shell}",
-          "-c ${validity_critical_shell} -w ${validity_warning_shell}",
-        ], ' ')
+          "-l ${detail_limit_shell}",
+        ], $check_overrides), ' ')
 
         # A File is the normal contract; standalone callers can order their owner wrapper before this helper.
         $check_require = [
@@ -96,8 +114,9 @@ define nginx::monitoring_cert (
       }
 
       # Keep the registration identity stable when a target is enabled or retired.
-      $check_id = "nginx_cert_${stdlib::sha256($name)}"
       $check_ensure = $active ? { true => present, default => absent }
+      $registration_name_correct = $registration_name ? { undef => $name, default => $registration_name }
+      $check_id = "nginx_${regsubst($registration_name_correct, '[^A-Za-z0-9_-]', '_', 'G')}_cert"
 
       # Apply this target's arguments and lifecycle to its registration against the shared executable.
       basic_settings::monitoring_custom { $check_id:

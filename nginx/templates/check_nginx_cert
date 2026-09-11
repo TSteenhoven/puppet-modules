@@ -3,7 +3,9 @@
 # Local configuration and file validation, never a probe of a live TLS connection.
 # Requires Nginx >= 1.9.2, OpenSSL >= 1.1.1, POSIX awk/dash and GNU coreutils (date, stat, timeout).
 # Puppet templates the main configuration path once. Each registration passes its target and settings as CLI arguments.
-# Usage: check_nginx_cert -n "app.example.org alias.example.org" -f /etc/nginx/conf.d/app.conf -w 30 -c 14 -t 30 -l 6000
+# Usage: check_nginx_cert -n "app.example.org alias.example.org" -f /etc/nginx/conf.d/app.conf -l 6000 [-t seconds] [-c days] [-w days]
+# Optional runtime defaults are initialized below and overridden independently by getopts.
+# The agent must allow the script's timeout budget, including its three-second termination/output reserve.
 # --worker is a private supervisor protocol; the ordinary CLI has no additional configuration-file or environment overrides.
 # Exit codes: 0 healthy, 1 usable but nearing expiry, 2 proven target defect or critical lifetime, 3 incomplete or unsupported assessment.
 
@@ -37,9 +39,9 @@ NGINX_CONFIG=<%= @nginx_config_shell %>
 CONFIG_FILE=''
 SERVER_NAME=''
 DETAIL_LIMIT=''
-AGENT_TIMEOUT=''
-VALIDITY_CRITICAL=''
-VALIDITY_WARNING=''
+AGENT_TIMEOUT=30
+VALIDITY_CRITICAL=14
+VALIDITY_WARNING=30
 SYSTEM_TRUST=/etc/ssl/certs/ca-certificates.crt
 STATE=0
 SUMMARY='local certificates are valid and match their names and keys'
@@ -65,7 +67,7 @@ while getopts 'n:f:l:t:c:w:h' opt; do
         t) AGENT_TIMEOUT=$OPTARG ;;
         c) VALIDITY_CRITICAL=$OPTARG ;;
         w) VALIDITY_WARNING=$OPTARG ;;
-        *) die 'usage: check_nginx_cert -n names -f vhost_file -w warning_days -c critical_days -t timeout -l detail_limit' ;;
+        *) die 'usage: check_nginx_cert -n names -f vhost_file -l detail_limit [-t timeout] [-c critical_days] [-w warning_days]' ;;
     esac
 done
 shift $((OPTIND - 1))
