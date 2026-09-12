@@ -43,7 +43,8 @@ node 'container-basic.example.org' {
 node 'container-cleanup.example.org' {
   class { 'docker': }
 
-  # Retire the old stack through its lifecycle resource.
+  # Back up required data, detach the systemd target binding, reload systemd and stop the stack before applying this removal.
+  # This deletes the project directory and local bind-mount data; retire the service configuration separately.
   docker::compose { 'old-example':
     ensure  => absent,
     require => Class['docker'],

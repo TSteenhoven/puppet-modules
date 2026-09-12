@@ -29,7 +29,9 @@
 #   Optional Compose file source, default undef. Must start with `https://`, `file:///`, or `puppet:///`; excludes compose_content.
 #
 # @param ensure
-#   Controls whether the Compose project directory and service are present or absent.
+#   Defaults to present. Absent removes only the project directory, including project-local bind-mount data.
+#   It does not stop containers or remove systemd units and target bindings. Docker named volumes are not removed.
+#   Back up required data, detach the target binding, reload systemd and stop the stack before removal; retire its service separately.
 #
 # @param env_content
 #   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit `Sensitive[String]` values are passed through.

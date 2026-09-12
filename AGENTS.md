@@ -251,29 +251,37 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### README Scope
 
 - Adapt README content to the document's purpose and audience rather than imposing the same outline on module overviews and tooling guides.
-- Add detail to the root README only when users need it before use, it changes a security or compatibility decision, or the basic example requires it.
-- Never turn the root README into an exhaustive parameter or implementation reference.
+- Add detail to the root README only when users need it before use or during the described operation, it changes a security or compatibility decision, or the basic example requires it.
+- Never treat a technical change as an automatic reason to expand `Belangrijke aandachtspunten`. First determine whether users must choose, configure, prepare, check, or perform something differently, then update existing guidance before adding a passage.
+- Keep exhaustive parameter descriptions and developer-only implementation detail in their [designated locations](#language-and-authority), outside the root user guide.
 - Keep the lint README focused on using validation tooling, with a clearly separated reference for the conventions and review criteria it owns.
 - Use the lint README as the style and organization reference for `.tools/tests/README.md`: explain purpose and prerequisites before commands, then cover troubleshooting and adding tests. Adapt sections to tool testing and link to the lint guide for installation and lint rules.
-- Keep developer-only implementation detail out of the root user guide.
 - Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
 
 ### README Navigation And Prerequisites
 
-- Keep required prerequisites and security- or compatibility-critical conditions beside the action they affect.
+- Keep required prerequisites, essential warnings, and security- or compatibility-critical conditions beside the action they affect. When relocating elaboration, retain the warning and required action there and add a targeted link to the detail.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
 - Maintain a `## Inhoudsopgave` near the top with main-section links and relevant nested module or tooling-task links; never label it `Legenda`.
 - Maintain a bottom-level list of expanded examples.
 
 ### README Module Sections
 
-- Present module guidance in this order: purpose, standard usage, main properties, risks and limitations, compact example, then expanded examples or Puppet Strings.
+- Preserve the existing module order and present guidance in this order: purpose, standard usage, main properties, relevant considerations, compact example, then expanded examples or Puppet Strings. Do not introduce new fixed subheadings for every module.
 - List at most eight main properties, using fewer when they suffice.
-- State pre-use conditions, operational risks, and limitations.
 - Include one compact basic example.
 - Link to a relevant scenario in `examples/`.
 - Point readers to Puppet Strings for the public interface.
-- Move expanded variants and authoritative parameter detail to their designated locations when a section grows.
+- Keep expanded variants and authoritative parameter detail in their [designated locations](#language-and-authority). Reuse existing documentation rather than creating a document for each detail or copying complete descriptions across layers.
+
+#### Important Considerations
+
+- Limit `Belangrijke aandachtspunten` to concrete, module-specific conditions, risks, limitations, and non-obvious choices needed before use or during the described operation. Apply this selection question: must the user know this to use the module correctly, make a relevant choice, or prevent a concrete error, unsafe situation, or unexpected change?
+- Make the applicable condition, consequence, and required user action clear where relevant. Use this as a content check, not a mandatory sentence template.
+- Exclude complete parameter descriptions, internal execution order, test results, development history, and general administration advice without a concrete need for the described use. Include filenames, permissions, defaults, and other technical details only when they affect a user's choice or action.
+- Assess risk severity as well as frequency. Never remove warnings about data loss, lost administrative access, overwritten configuration, security, or incompatibility solely because they describe rare events or lengthen the text.
+- Write this section as natural continuous prose, with a separate paragraph for each independent topic. Do not use bullets, numbered lists, or tables within it, or replace a list with one long comma- or semicolon-separated sentence.
+- Omit the heading when no relevant considerations remain. Let concrete user impact determine the necessary detail.
 
 ### README Style
 
@@ -293,7 +301,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Give each paragraph one coherent topic, separating independent instructions instead of compressing them to shorten the document.
 - Describe concrete actions, conditions, and consequences.
 - Explain non-obvious choices when the explanation helps the reader act correctly.
-- Use headings, lists, and tables when they help navigation or comparison.
+- Use headings, lists, and tables when they help navigation or comparison, except within `Belangrijke aandachtspunten`, where the [prose requirement](#important-considerations) applies. Retain useful lists elsewhere, including main properties and installation steps.
 - Never add content to fill a template or make sections look uniform.
 
 #### Terminology And Preservation
@@ -302,8 +310,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Explain project-specific concepts before using them.
 - Start README prose list items with a capital letter.
 - Preserve the case of identifiers, module names, class names, paths, and literals.
-- Preserve intentional author viewpoints, warnings, and project context when reorganizing content.
-- Preserve technical requirements, exceptions, safeguards, and operational knowledge during editorial changes.
+- Preserve intentional author viewpoints and relevant project context when reorganizing content.
+- Preserve necessary technical requirements, warnings, exceptions, safeguards, and operational knowledge in their designated documentation layers; preservation does not require keeping all elaboration in the README. Remove duplicate explanations and demonstrably obsolete information only after the [editorial review](#editorial-review).
 
 ### Markdown
 
@@ -313,9 +321,10 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Editorial Review
 
-- Review the complete affected reading path, including surrounding headings and paragraphs.
+- For every substantive change, review the complete affected documentation sections and surrounding reading path, including the relevant README section. Check relevance, repetition, contradictions, and placement of technical detail, not just the newest addition. Do not move unnecessary considerations below the basic example.
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.
-- Check that commands, paths, options, and references match the accompanying examples and current implementation.
+- Verify technical claims that are changed, relocated, or removed as obsolete against current manifests, Puppet Strings, scripts, templates, and examples. Do not treat the README as implementation evidence; report unresolved differences and retain necessary warnings until they can be resolved.
+- Check that commands, paths, options, and references match the accompanying examples and current implementation. Verify changed links and confirm that relocated information is actually present at the destination.
 - Review explanatory passages as continuous prose, aloud if useful, to correct awkward phrasing and unexplained topic changes without changing technical meaning.
 - Compare changed prose in `.tools/lint/README.md` and `.tools/tests/README.md` with representative root README passages against the [README style guidance](#readme-style).
 - Include a short representative passage in the review for owner feedback.
@@ -324,8 +333,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Limits Of Automated Editorial Checks
 
 - Never treat automated technical checks as proof that an explanation is clear, pleasant to read, or useful for the reader's task.
-- Never use AI-detection scores or word blacklists to assess prose quality.
-- Never judge explanatory prose by sentence quotas or fixed paragraph lengths; the [policy structure limits](#rule-structure) apply specifically to `AGENTS.md` rules.
+- Never use AI-detection scores or word blacklists to assess prose quality or content relevance.
+- Never impose fixed word, sentence, or paragraph counts or paragraph lengths on explanatory prose, including through automated checks; the [policy structure limits](#rule-structure) apply specifically to `AGENTS.md` rules.
 
 ## Completion Checklist
 

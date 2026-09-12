@@ -4,6 +4,8 @@
 # This defined type deploys the module-shipped `docker/files/authentik.yaml` Compose file. Declare `docker` before using it. The resource title becomes the Compose project name, so multiple Authentik stacks can be managed on the same host when ports and public names do not conflict. When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the defined type declares `docker::compose` directly. By default, the bundled bootstrap `akadmin` user is removed after the stack is managed.
 # lint:endignore
 #
+# The `custom-templates` directory is created for the stack; supply and maintain its contents separately.
+#
 # @example Deploy Authentik with generated `.env` content
 #   class { 'docker': }
 #
@@ -38,7 +40,7 @@
 #   Removes the bundled Authentik bootstrap `akadmin` user through `docker::authentik_admin` when `true`.
 #
 # @param ensure
-#   Controls whether the Authentik Compose project directory and service are present or absent.
+#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing a stack.
 #
 # @param image_tag
 #   Docker image tag written as `AUTHENTIK_TAG`.

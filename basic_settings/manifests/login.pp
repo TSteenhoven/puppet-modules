@@ -4,6 +4,18 @@
 # This class installs core login tooling, creates the `wheel` group, manages sudoers and PAM configuration, controls console getty availability, and adds audit coverage for login, PAM, sudoers, and optional vulnerability-scanner exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo customizations.
 # lint:endignore
 #
+# lint:ignore:140chars
+# The shell policy in `/etc/profile.d/tmout.sh` sets a readonly, exported `TMOUT` only when an interactive shell loads it. Non-interactive shells skip this initialization. Bash enforces the idle timeout; Dash does not enforce an idle timeout through `TMOUT`.
+#
+# Standard Bash login routes on Debian and Ubuntu load `/etc/profile.d` through `/etc/profile`, including console and interactive SSH logins, `su -`, and `sudo -i`. Verify that custom shells and profiles load the managed policy and support its timeout behavior.
+#
+# Updating this timeout does not terminate existing sessions or restart SSH. Reloading the profile preserves an existing readonly value without an error; open a new login shell to apply a changed value.
+#
+# Scripts started from an interactive shell can inherit `TMOUT`. Bash also uses it as the default timeout for `read` and for terminal input in `select`; set an explicit `read -t` timeout or remove `TMOUT` from the child script's own environment when needed.
+# lint:endignore
+#
+# @see https://manpages.ubuntu.com/manpages/jammy/man1/bash.1.html Bash TMOUT and shell startup behavior
+#
 # @example Manage the default hardened login profile
 #   include basic_settings::login
 #

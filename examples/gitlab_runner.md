@@ -52,12 +52,6 @@ Pause the runner in GitLab and drain active jobs before maintenance or removal. 
 
 ## Validation before use
 
-Run the module regression tests from the repository root after the [documented bundle setup](../.tools/lint/README.md#installatie):
-
-```sh
-bundle exec ruby -Itests/docker -e 'Dir["tests/docker/*_test.rb"].sort.each { |file| require_relative file }'
-```
-
-These tests compile synthetic catalogs and check URL/address validation, rendered mapping variants, registration arguments, dependency order, private files and preservation of the other Compose callers. They do not apply a host catalog or connect to GitLab. When `docker compose` is available, they also validate and interpolate rendered files with `config`; set `DOCKER_COMPOSE` to a standalone Compose executable if needed. Without Compose, those checks are explicitly skipped. The central `bundle exec rake test` command remains limited to tool tests.
+Run the [repository validation commands](../.tools/lint/README.md#code-controleren) after the documented bundle setup. The central `bundle exec rake test` command tests repository tools; it does not validate this runner's behavior. Validate catalogs and rendered configuration with temporary synthetic checks outside the repository, including URL/address validation, mapping variants, registration arguments, dependency order, private files and preservation of other Compose stacks.
 
 On an isolated Linux host, validate the Compose file with `docker compose config --quiet`, register a disposable test runner and execute a job that checks out a repository and uploads an artifact. Repeat Puppet and `--noop`, remove the bootstrap token, recreate the manager and reboot. Verify job containers have no host-socket or Runner-config mounts and are not privileged. Test two stacks and manually retire one while the other continues running. Record unavailable checks separately; a successful local command is not proof that CI jobs work.

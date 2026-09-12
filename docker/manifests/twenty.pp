@@ -49,7 +49,7 @@
 #   PostgreSQL user written as `PG_DATABASE_USER`.
 #
 # @param ensure
-#   Controls whether the Twenty Compose project directory and service are present or absent.
+#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing a stack.
 #
 # @param host
 #   Local Twenty upstream host used by Nginx when `server_name` is set.

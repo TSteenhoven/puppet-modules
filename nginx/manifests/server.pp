@@ -4,6 +4,10 @@
 # This defined type renders `/etc/nginx/conf.d/<title>.conf`, optional fallback `security.txt` content, HTTP/HTTPS listeners, redirects, PHP-FPM locations, static or reverse-proxy locations, TLS settings, and secure-by-default response headers. Applications can override or disable individual headers when they intentionally manage those headers themselves. Strict CSP or HSTS settings can break applications that depend on external scripts, stylesheets, APIs, iframes, analytics, or legacy TLS clients, so vhost-specific overrides should be tested.
 # lint:endignore
 #
+# Declare `nginx` first, but do not require the whole class from a vhost or a wrapper that changes Nginx configuration.
+# That dependency orders the service before the configuration, whose notification orders it after the configuration, creating a cycle.
+# The vhost already requires the package and configuration directory; use specific package or file resources for extra dependencies.
+#
 # @example Static HTTPS vhost with secure defaults
 #   nginx::server { 'www.example.org':
 #     docroot             => '/var/www/www.example.org',

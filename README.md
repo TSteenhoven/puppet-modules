@@ -222,13 +222,13 @@ Onderliggende classes en defined types kunnen ook los worden gebruikt. Dat is ha
 
 #### Belangrijke aandachtspunten
 
-De class kan belangrijke serverconfiguratie en conflicterende pakketten vervangen. Controleer vooral sudoers, firewall, netwerk, bootloader, APT-bronnen, automatische updates en de gekozen bron voor Puppet Server. Niet ieder pakket is voor iedere Linux-versie en architectuur beschikbaar; de class schakelt een niet-ondersteunde pakketbron daarom uit. `basic_settings::login_user` houdt home- en SSH-bestanden privé en accepteert voor aangeleverde home- of sleutelbestanden alleen `puppet:///`, `file:///` en HTTPS.
+De class kan belangrijke serverconfiguratie en conflicterende pakketten vervangen. Controleer vooral sudoers, firewall, netwerk, bootloader, APT-bronnen, automatische updates en de gekozen bron voor Puppet Server.
 
-`basic_settings::login` beheert de timeout voor een inactieve interactieve Bash-shell via `/etc/profile.d/tmout.sh`. De bestaande parameter `basic_settings::environment` geeft de serveromgeving door aan `basic_settings::login::environment`: `production` (de standaard) krijgt `TMOUT=900` (15 minuten), iedere andere waarde krijgt `TMOUT=1800` (30 minuten). Stel deze parameter in je serverprofiel of Hiera in op de werkelijke serveromgeving; de Puppet-codeomgeving bepaalt deze waarde niet automatisch. Dit zijn gekozen beleidswaarden, geen garantie dat je aan een beveiligingsnorm voldoet.
+Niet ieder pakket is voor iedere Linux-versie en architectuur beschikbaar; de class schakelt een niet-ondersteunde pakketbron daarom uit. Controleer of de benodigde pakketbronnen op jouw platform worden ingeschakeld.
 
-Puppet verwijdert bij de migratie uitsluitend het oude `/etc/profile.d/timeout.sh` en schrijft `tmout.sh` als regulier bestand met eigenaar en groep `root` en rechten `0644`. De instelling wordt readonly en geëxporteerd zodra een interactieve shell het profiel laadt. Bij de standaard Bash-loginroutes op Debian en Ubuntu leest `/etc/profile` de bestanden in `/etc/profile.d`, ook bij een consolelogin, interactieve SSH-login, `su -` en `sudo -i`. Een aangepaste shell of profielinrichting moet je afzonderlijk controleren; Dash voert geen idle timeout op basis van `TMOUT` uit.
+`basic_settings::login` stelt een timeout in voor interactieve Bash-shells: 15 minuten in `production` en 30 minuten in andere serveromgevingen. De shell sluit als je zo lang niets invoert aan de prompt. Stel `basic_settings::environment` in je profiel of Hiera in op de werkelijke serveromgeving; de Puppet-codeomgeving bepaalt deze waarde niet automatisch. Open na een wijziging een nieuwe login-shell om de timeout toe te passen. Controleer bij een afwijkende shell of profielinrichting of de timeout werkt; zie de [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp).
 
-De wijziging beëindigt geen bestaande sessies en herstart SSH niet. Bij herhaald laden blijft een al readonly ingestelde waarde behouden, zonder foutmelding; open een nieuwe login-shell om een gewijzigde waarde toe te passen. Niet-interactieve shells slaan de instelling over. Bash gebruikt `TMOUT` bij het wachten aan de prompt, maar ook als standaardtimeout voor `read` en bij `select`; scripts die vanuit een interactieve shell starten kunnen de geëxporteerde waarde erven. Geef zulke scripts waar nodig een eigen `read -t`-timeout of verwijder `TMOUT` uit hun eigen omgeving. Zie de [Bash-handleiding](https://manpages.ubuntu.com/manpages/jammy/man1/bash.1.html) voor dit gedrag.
+Scripts die vanuit zo'n shell starten kunnen `TMOUT` erven, waardoor ook `read` en `select` een timeout krijgen. Geef zulke scripts waar nodig een eigen `read -t`-timeout of verwijder `TMOUT` uit hun eigen omgeving.
 
 #### Basisvoorbeeld
 
@@ -240,7 +240,7 @@ class { 'basic_settings':
 }
 ```
 
-Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site.pp); `/etc/hosts`-varianten staan in [`examples/hosts.pp`](examples/hosts.pp). De [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp) beschrijven de logininstellingen.
+Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site.pp); `/etc/hosts`-varianten staan in [`examples/hosts.pp`](examples/hosts.pp). De Puppet Strings bij [`basic_settings`](basic_settings/manifests/init.pp) en [`basic_settings::login_user`](basic_settings/manifests/login_user.pp) beschrijven de instellingen voor de serverbasis en gebruikers, inclusief bestandsrechten en toegestane bronnen voor home- en sleutelbestanden.
 
 ### `docker`
 
@@ -260,9 +260,15 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 
 #### Belangrijke aandachtspunten
 
-Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor gedownloade Compose-bestanden HTTPS met een checksum. `docker::compose_proxy` vereist `nginx` en gebruikt standaard HTTPS naar de achterliggende applicatie. Kies alleen HTTP als die applicatie geen TLS ondersteunt. `docker::authentik` verwijdert standaard de eerste beheerder `akadmin`; zet `akadmin_remove => false` als deze gebruiker moet blijven bestaan. Puppet maakt de map `custom-templates` aan, maar beheert de inhoud niet.
+Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Voor het starten en beheren van de stacks als systemd-service is ook `basic_settings::systemd` nodig.
 
-Met de bestaande `basic_settings::systemd`-inrichting start Puppet een nieuwe Compose-service direct en koppelt deze aan het gekozen target voor volgende boots. `ensure => absent` verwijdert alleen de projectmap, inclusief lokale bind-mountgegevens. Ontkoppel en stop de stack daarom zelf voordat je Puppet de map laat verwijderen, en maak een back-up van gegevens die je wilt bewaren.
+Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor gedownloade Compose-bestanden HTTPS met een checksum.
+
+`docker::compose_proxy` vereist `nginx` en gebruikt standaard HTTPS naar de achterliggende applicatie. Kies alleen HTTP als die applicatie geen TLS ondersteunt.
+
+`docker::authentik` verwijdert standaard de eerste beheerder `akadmin`; zet `akadmin_remove => false` als deze gebruiker moet blijven bestaan. Het [Authentik-voorbeeld](examples/docker.pp) laat zien hoe je een eigen beheerder aanmaakt.
+
+`docker::compose` verwijdert met `ensure => absent` alleen de projectmap, inclusief lokale bind-mountgegevens. De containers worden niet gestopt en de systemd-configuratie blijft staan. Ontkoppel en stop de stack daarom zelf voordat je Puppet de map laat verwijderen, en maak een back-up van gegevens die je wilt bewaren. Zie ook de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp).
 
 #### Basisvoorbeeld
 
@@ -284,13 +290,15 @@ docker::compose { 'example':
 }
 ```
 
-Met `docker::compose_exec` voer je een commando uit in één draaiende container van een Compose-service. Geef het commando als argumentenlijst op en gebruik `creates` of `unless` om onnodige herhaling te voorkomen. De define wacht op de bijbehorende `docker::compose`-stack en stopt bij ontbrekende of meerdere passende containers. Zie de [Puppet Strings](docker/manifests/compose_exec.pp) voor de interface en [`examples/docker.pp`](examples/docker.pp) voor dit gebruik en Compose-, proxy-, Authentik- en Twenty-varianten.
+Compose-, proxy-, Authentik- en Twenty-varianten staan in [`examples/docker.pp`](examples/docker.pp), met een voorbeeld van een eenmalig commando via `docker::compose_exec`. Zie de Puppet Strings bij [`docker::compose_exec`](docker/manifests/compose_exec.pp) voor commando's en uitvoeringsvoorwaarden en bij [`docker::authentik`](docker/manifests/authentik.pp) voor de applicatie-instellingen en eigen templates.
 
 #### GitLab Runner
 
-Met `docker::gitlab_runner` gebruik je een daarvoor bestemde host of VM voor vertrouwde projecten en builds. Richt eerst Docker en `basic_settings::systemd` in en maak de runner in GitLab aan. De manager krijgt toegang tot de host-Docker-socket en heeft daarmee vergaande macht over de host. Jobcontainers krijgen die socket en de runnerconfiguratie niet mee en draaien zonder privileged mode. De vaste jobpolicy `if-not-present` kan gecachte private images zonder nieuwe registry-autorisatie hergebruiken en houdt veranderlijke tags niet vanzelf actueel.
+Met `docker::gitlab_runner` gebruik je een daarvoor bestemde host of VM voor vertrouwde projecten en builds. Richt eerst Docker en `basic_settings::systemd` in en maak de runner in GitLab aan. De manager krijgt toegang tot de host-Docker-socket en heeft daarmee vergaande macht over de host. Jobcontainers krijgen die socket en de runnerconfiguratie niet mee en draaien zonder privileged mode.
 
-Automatische registratie staat standaard uit. Voor een nieuwe registratie met `auto_register => true` lever je de runner authentication token aan als `Sensitive[String]` uit je beveiligde secretvoorziening. Het voorbeeld veronderstelt dat de Hiera-lookup dit type teruggeeft. `image_tag` kiest de GitLab Runner-image; de standaardimage voor jobs blijft `alpine:latest`.
+De vaste jobpolicy `if-not-present` kan gecachte private images zonder nieuwe registry-autorisatie hergebruiken en houdt veranderlijke tags niet vanzelf actueel. Beperk daarom welke projecten de runner mogen gebruiken.
+
+Automatische registratie staat standaard uit. Voor een nieuwe registratie met `auto_register => true` lever je de runner authentication token aan als `Sensitive[String]` uit je beveiligde secretvoorziening. Het voorbeeld veronderstelt dat de Hiera-lookup dit type teruggeeft.
 
 ```puppet
 docker::gitlab_runner { 'gitlab-runner':
@@ -300,13 +308,13 @@ docker::gitlab_runner { 'gitlab-runner':
 }
 ```
 
-Na het starten van de Compose-container voert Puppet de registratie uit via `docker exec` met `register --non-interactive`. Zodra `config.toml` bestaat, wordt registratie overgeslagen. Dat voorkomt normale herregistratie, maar controleert niet of bestaande configuratie volledig of geldig is. Controleer de runner daarom na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien.
+Zodra `config.toml` bestaat, slaat Puppet registratie over zonder de inhoud te controleren. Controleer de runner na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien; volg de [herstelprocedure](examples/gitlab_runner.md#subsequent-runs-and-failures).
 
-Met `runner_url` kies je de HTTPS-URL van de GitLab-server. Geef alleen `runner_ip` op als de hostnaam via normale DNS niet naar het juiste interne adres verwijst. Bijvoorbeeld: `runner_url => 'https://gitlab.example.org/'` met `runner_ip => '192.0.2.50'` levert binnen de runnercontainer de hostmapping `192.0.2.50 gitlab.example.org` op; de runner blijft verbinden met `https://gitlab.example.org/`. Registratie in dezelfde container gebruikt deze mapping ook.
+Geef alleen `runner_ip` op als de hostnaam in `runner_url` via normale DNS niet naar het juiste interne adres verwijst. Die instelling geldt alleen voor de runnercontainer; jobcontainers moeten GitLab zelf kunnen bereiken. Zie het [voorbeeld met een vast intern adres](examples/gitlab_runner.md#internal-gitlab-address) voor de configuratie en Compose-vereiste.
 
-Zonder `runner_ip`, of met een lege string, blijft normale DNS-resolutie gelden en ontbreekt `extra_hosts`. De mapping geldt alleen voor de runnercontainer; jobcontainers moeten GitLab zelf kunnen bereiken. Zie het [voorbeeld met een vast intern adres](examples/gitlab_runner.md#internal-gitlab-address) voor IPv4, IPv6 en de Compose-vereiste.
+Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. De actieve registratie blijft behouden. De [handleiding bij het voorbeeld](examples/gitlab_runner.md#subsequent-runs-and-failures) beschrijft welke gegevens Puppet bewaart.
 
-Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. Puppet verwijdert alleen de bootstrapkopie en behoudt de actieve token en systeemidentiteit. Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. De [handleiding bij het voorbeeld](examples/gitlab_runner.md) beschrijft registratie, herstel en onderhoud. Zie ook [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp) en de [Puppet Strings](docker/manifests/gitlab_runner.pp).
+Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. Volg daarna de [onderhouds- en verwijderprocedure](examples/gitlab_runner.md#security-and-maintenance). Zie ook [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp) en de [Puppet Strings](docker/manifests/gitlab_runner.pp).
 
 ### `gitlab`
 
@@ -324,7 +332,11 @@ Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verpli
 
 #### Belangrijke aandachtspunten
 
-De GitLab APT-bron moet vóór de installatie beschikbaar zijn, bijvoorbeeld via `basic_settings` met `gitlab_enable => true`. Het eerste rootwachtwoord is nog een parameter van het type String. Haal dit wachtwoord uit versleutelde Hiera-data en zet het niet rechtstreeks in een manifest. Het verplaatsen van `/opt/gitlab` en het uitvoeren van `gitlab-ctl reconfigure` kunnen veel wijzigen; controleer daarom eerst opslag, back-ups en het onderhoudsvenster.
+De GitLab APT-bron moet vóór de installatie beschikbaar zijn, bijvoorbeeld via `basic_settings` met `gitlab_enable => true`.
+
+Het eerste rootwachtwoord is nog een parameter van het type String. Haal dit wachtwoord uit versleutelde Hiera-data en zet het niet rechtstreeks in een manifest.
+
+Het verplaatsen van `/opt/gitlab` en het uitvoeren van `gitlab-ctl reconfigure` kunnen veel wijzigen; controleer daarom eerst opslag, back-ups en het onderhoudsvenster.
 
 #### Basisvoorbeeld
 
@@ -365,7 +377,9 @@ Een groter voorbeeld waarin GitLab samen met de serverbasis wordt gebruikt staat
 
 #### Belangrijke aandachtspunten
 
-De gekozen Certbot-plugin moet geïnstalleerd en bruikbaar zijn. De standaardplugin van `letsencrypt::certificate` is `nginx`. Declareer daarom `nginx` en controleer DNS, poort 80 en 443 en de route die Certbot voor de controle gebruikt. Certbot kan bij het vernieuwen van een certificaat extra commando's uitvoeren; test daarom ook het herladen van services en de toegang tot certificaatbestanden.
+De gekozen Certbot-plugin moet geïnstalleerd en bruikbaar zijn. Voor de standaardplugin `nginx` declareer je eerst `letsencrypt` en daarna `nginx`, zoals in het voorbeeld. Zo installeert Nginx ook de benodigde Certbot-plugin. Controleer DNS, poort 80 en 443 en de route die Certbot voor de controle gebruikt.
+
+Certbot kan bij het vernieuwen van een certificaat extra commando's uitvoeren; test daarom ook het herladen van services en de toegang tot certificaatbestanden.
 
 #### Basisvoorbeeld
 
@@ -407,7 +421,13 @@ Een volledige Nginx-, PHP- en certificaatcombinatie staat in [`examples/web.pp`]
 
 #### Belangrijke aandachtspunten
 
-`automysqlbackup_password` is verplicht en heeft het type `Sensitive[String]`. De root- en applicatiewachtwoorden zijn nog gewone String-parameters en horen daarom uit versleutelde Hiera-data te komen. Controleer of de bufferinstellingen bij het beschikbare RAM passen, test het terugzetten van back-ups en zorg dat de gekozen pakketversie overeenkomt met `package_version`.
+`automysqlbackup_password` is verplicht en heeft het type `Sensitive[String]`. De root- en applicatiewachtwoorden zijn nog gewone String-parameters en horen daarom uit versleutelde Hiera-data te komen.
+
+Gebruik je MySQL zonder `basic_settings::package_mysql`, stem dan `package_version` af op de geïnstalleerde versie. Met die pakketbron neemt de module de versie daarvan over; zie de [Puppet Strings bij `mysql`](mysql/manifests/init.pp).
+
+De module gebruikt vaste bufferinstellingen voor MySQL. Controleer of die bij het beschikbare RAM passen.
+
+Test het terugzetten van de automatisch gemaakte back-ups voordat je daarop vertrouwt.
 
 #### Basisvoorbeeld
 
@@ -449,7 +469,9 @@ Databases, gebruikers, grants, back-upinstellingen en RabbitMQ-combinaties staan
 
 #### Belangrijke aandachtspunten
 
-Richt eerst de OpenITCOCKPIT-server in en zorg dat `Package['openitcockpit']` in de Puppet-catalogus staat. De module beheert de volledige configuratiemap en verwijdert bestanden die niet door Puppet worden beheerd. Zet daarom geen handmatig gemaakte Naemon-configuratie in die map.
+Richt eerst de OpenITCOCKPIT-server in en zorg dat `Package['openitcockpit']` in de Puppet-catalogus staat.
+
+De module beheert de volledige configuratiemap en verwijdert bestanden die niet door Puppet worden beheerd. Zet daarom geen handmatig gemaakte Naemon-configuratie in die map.
 
 #### Basisvoorbeeld
 
@@ -481,7 +503,9 @@ De volledige OpenITCOCKPIT- en monitoringopbouw staat in [`examples/monitoring.p
 
 #### Belangrijke aandachtspunten
 
-Een fout netwerkplan kan de beheerverbinding verbreken. Controleer interfacenamen, renderer, routes, gateway en nameservers via consoletoegang voordat Puppet de configuratie toepast. WiFi-hashes kunnen wachtwoorden bevatten; lever die data vanuit afgeschermde Hiera aan.
+Een fout netwerkplan kan de beheerverbinding verbreken. Controleer interfacenamen, renderer, routes, gateway en nameservers via consoletoegang voordat Puppet de configuratie toepast.
+
+WiFi-hashes kunnen wachtwoorden bevatten; lever die data vanuit afgeschermde Hiera aan.
 
 #### Basisvoorbeeld
 
@@ -517,9 +541,11 @@ Een gecombineerde netwerkinrichting past in het basisprofiel van [`examples/site
 
 #### Belangrijke aandachtspunten
 
-Declareer `nginx` vóór de vhosts. `nginx::server` regelt de afhankelijkheden van het pakket en de configuratiemap zelf. Voeg bij een vhost of een wrapper die Nginx-configuratie wijzigt geen `require => Class['nginx']` toe: dat zou de service vóór het configuratiebestand plaatsen, terwijl een wijziging aan dat bestand juist de service moet kunnen verversen. Gebruik voor aanvullende afhankelijkheden de betreffende pakket- of bestandsresource.
+Declareer `nginx` vóór de vhosts. Voeg bij een vhost of een wrapper die Nginx-configuratie wijzigt geen `require => Class['nginx']` toe: dat kan een afhankelijkheidscyclus veroorzaken. Gebruik voor aanvullende afhankelijkheden de betreffende pakket- of bestandsresource; `nginx::server` regelt zijn pakket- en configuratieafhankelijkheden zelf.
 
-De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten. Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
+De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten.
+
+Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
 
 #### Basisvoorbeeld
 
@@ -555,7 +581,11 @@ De class `openitcockpit` groepeert de classes voor de OpenITCOCKPIT-agent en -se
 
 #### Belangrijke aandachtspunten
 
-Voor push-mode zijn `push_url` en een `Sensitive` API-key nodig. Maak de pull- of Prometheuspoorten alleen bereikbaar als de firewall en TLS goed zijn ingesteld. De serverclass gebruikt lokale onderdelen van Nginx, PHP-FPM, Naemon en Docker. Test een upgrade daarom voor de hele OpenITCOCKPIT-server en niet alleen voor één los onderdeel.
+Voor push-mode zijn `push_url` en een `Sensitive` API-key nodig.
+
+Maak de pull- of Prometheuspoorten alleen bereikbaar als de firewall en TLS goed zijn ingesteld.
+
+De serverclass gebruikt lokale onderdelen van Nginx, PHP-FPM, Naemon en Docker. Test een upgrade daarom voor de hele OpenITCOCKPIT-server en niet alleen voor één los onderdeel.
 
 #### Basisvoorbeeld
 
@@ -593,7 +623,11 @@ Pull-, push- en maatwerkcheckvarianten staan in [`examples/monitoring.pp`](examp
 
 #### Belangrijke aandachtspunten
 
-Zorg dat de gekozen PHP-versie in de ingestelde APT-bron beschikbaar is, bijvoorbeeld via Sury in `basic_settings`. De gebruiker, groep en socketrechten van een FPM-pool moeten passen bij de webserver. Stem geheugenlimieten en het aantal PHP-processen af op het beschikbare geheugen en de applicatie.
+Zorg dat de gekozen PHP-versie in de ingestelde APT-bron beschikbaar is, bijvoorbeeld via Sury in `basic_settings`.
+
+De gebruiker, groep en socketrechten van een FPM-pool moeten passen bij de webserver; anders kan die geen PHP-verzoeken doorgeven.
+
+Stem geheugenlimieten en het aantal PHP-processen af op het beschikbare geheugen en de applicatie.
 
 #### Basisvoorbeeld
 
@@ -634,7 +668,9 @@ Een volledige PHP-FPM-pool met Nginx staat in [`examples/web.pp`](examples/web.p
 
 #### Belangrijke aandachtspunten
 
-Deze class wijzigt de kernel- en bootconfiguratie en kan daardoor een server onbruikbaar maken als er iets misgaat. De huidige code is gemaakt voor Debian 12 (`bookworm`) met `basic_settings`; gebruik haar niet op Ubuntu of een andere Debian-versie. `proxmox_enable => true` schakelt de Proxmox-pakketbron op dit moment niet in. `basic_settings` verwijdert bovendien de bron- en sleutelbestanden die zijn eigen Proxmox-helper zou gebruiken. Beheer de pakketbron daarom voorlopig in een apart profiel met andere bestandspaden. Zorg voor consoletoegang, een recente back-up en een onderhoudsvenster voordat je deze class toepast.
+Deze class wijzigt de kernel- en bootconfiguratie en kan daardoor een server onbruikbaar maken als er iets misgaat. Zorg voor consoletoegang, een recente back-up en een onderhoudsvenster voordat je haar toepast. Gebruik de class uitsluitend op Debian 12 (`bookworm`) met `basic_settings`.
+
+`proxmox_enable => true` schakelt de Proxmox-pakketbron op dit moment niet in. `basic_settings` verwijdert bovendien de bron- en sleutelbestanden die zijn eigen Proxmox-helper zou gebruiken. Beheer de pakketbron daarom voorlopig in een apart profiel met andere bestandspaden.
 
 #### Basisvoorbeeld
 
@@ -666,7 +702,11 @@ De plaats van Proxmox in een serverprofiel wordt getoond in [`examples/site.pp`]
 
 #### Belangrijke aandachtspunten
 
-Regel de RabbitMQ APT-bron vóór de installatie. `rabbitmq::tcp` houdt de gewone TCP-poort ingeschakeld zolang de TLS-certificaten niet compleet zijn, zodat RabbitMQ bereikbaar blijft. Controleer daarom of het CA-certificaat, servercertificaat en de privésleutel aanwezig zijn voordat je onversleuteld verkeer uitschakelt. De wachtwoorden voor de managementplugin zijn nog String-parameters en horen uit versleutelde Hiera-data te komen.
+Regel de RabbitMQ APT-bron vóór de installatie.
+
+`rabbitmq::tcp` houdt de gewone TCP-poort ingeschakeld zolang niet alle drie de certificaatpaden zijn opgegeven, ook met `tcp_enable => false`. Geef daarom het CA-certificaat, servercertificaat en de privésleutel op en zorg dat die bestanden beschikbaar zijn voordat je onversleuteld verkeer uitschakelt.
+
+De wachtwoorden voor de managementplugin zijn nog String-parameters en horen uit versleutelde Hiera-data te komen.
 
 #### Basisvoorbeeld
 
@@ -709,9 +749,9 @@ Vhosts, exchanges, queues, bindings en gebruikers staan in [`examples/data-servi
 
 #### Belangrijke aandachtspunten
 
-De module overschrijft `/etc/ssh/sshd_config` met `# Managed by puppet` en de regel `Include /etc/ssh/sshd_config.d/*.conf`, zodat de beheerde `99-custom.conf` wordt ingelezen. Bestaande instellingen in het hoofdbestand verdwijnen. Neem instellingen die je wilt behouden vooraf over in de door Puppet beheerde configuratie.
+De module vervangt `/etc/ssh/sshd_config` en verwijdert onbekende bestanden in `/etc/ssh/sshd_config.d`. Bestaande instellingen in het hoofdbestand en onbeheerde drop-ins verdwijnen. Neem instellingen die je wilt behouden vooraf over in de door Puppet beheerde configuratie.
 
-De module purgeert onbekende bestanden in `/etc/ssh/sshd_config.d`. Verplaats of vertaal bestaande drop-ins voordat je haar activeert. Houd een tweede root- of consoleverbinding open en controleer sleutels, `allow_users`, firewall en eventuele socket activation vóór de eerste herstart.
+Houd een tweede root- of consoleverbinding open en controleer sleutels, `allow_users`, firewall en eventuele socket activation vóór de eerste herstart, zodat je de toegang niet verliest.
 
 #### Basisvoorbeeld
 
@@ -741,7 +781,9 @@ SSH in een gecombineerd webhostprofiel staat in [`examples/site.pp`](examples/si
 
 #### Belangrijke aandachtspunten
 
-`bandwidth_max` is de technische interfacesnelheid in Mbit/s, niet een databundel of waarschuwingsgrens. De standaardwaarde `0` schakelt de algemene vnStat-limiet uit. Een kritieke p95-drempel mag niet lager zijn dan de waarschuwing. Een waarde voor één interface gaat voor op de algemene waarde van de class.
+Gebruik voor `bandwidth_max` de technische interfacesnelheid in Mbit/s; een databundel of waarschuwingsgrens is daarvoor ongeschikt. De standaardwaarde `0` schakelt de algemene vnStat-limiet uit.
+
+Kies de p95-drempels afzonderlijk voor de monitoring, met de kritieke drempel minimaal gelijk aan de waarschuwing. De Puppet Strings bij [`vnstat`](vnstat/manifests/init.pp) en [`vnstat::ethernet`](vnstat/manifests/ethernet.pp) beschrijven hoe algemene instellingen en waarden per interface samenwerken.
 
 #### Basisvoorbeeld
 
