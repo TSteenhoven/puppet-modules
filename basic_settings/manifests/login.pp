@@ -1,4 +1,4 @@
-# @summary Manages login policy, sudo defaults, PAM hooks, MOTD, and getty state.
+# @summary Manages login policy, shell idle timeouts, sudo defaults, PAM hooks, MOTD, and getty state.
 #
 # lint:ignore:140chars
 # This class installs core login tooling, creates the `wheel` group, manages sudoers and PAM configuration, controls console getty availability, and adds audit coverage for login, PAM, sudoers, and optional vulnerability-scanner exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo customizations.
@@ -13,7 +13,9 @@
 #   }
 #
 # @param environment
-#   Environment label used in generated login messages and templates. The default is `production`.
+#   Server environment passed by `basic_settings::environment`, independent of the Puppet code environment; defaults to `production`.
+#   Selects the shell idle timeout: `production` uses 900 seconds; every other value uses 1800 seconds.
+#   Also used in generated login messages and templates.
 #
 # @param getty_enable
 #   Controls whether `getty@tty*` is enabled unless `gui_mode` forces getty on.
@@ -280,6 +282,27 @@ class basic_settings::login (
       content => template('basic_settings/login/motd/header'),
       notify  => Package['update-motd'],
     }
+  }
+
+  # Use the server environment already shared with login messages for the shell idle timeout.
+  $tmout = $environment ? {
+    'production' => 900,
+    default      => 1800,
+  }
+
+  # Remove the legacy profile before installing its replacement, without purging other profile fragments.
+  file { '/etc/profile.d/timeout.sh':
+    ensure => absent,
+  }
+
+  # Every login user must be able to source this profile; only root may change it.
+  file { '/etc/profile.d/tmout.sh':
+    ensure  => file,
+    content => template('basic_settings/login/tmout.sh'),
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/profile.d/timeout.sh'],
   }
 
   # Create profile trigger

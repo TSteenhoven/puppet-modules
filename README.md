@@ -224,6 +224,12 @@ Onderliggende classes en defined types kunnen ook los worden gebruikt. Dat is ha
 
 De class kan belangrijke serverconfiguratie en conflicterende pakketten vervangen. Controleer vooral sudoers, firewall, netwerk, bootloader, APT-bronnen, automatische updates en de gekozen bron voor Puppet Server. Niet ieder pakket is voor iedere Linux-versie en architectuur beschikbaar; de class schakelt een niet-ondersteunde pakketbron daarom uit. `basic_settings::login_user` houdt home- en SSH-bestanden privé en accepteert voor aangeleverde home- of sleutelbestanden alleen `puppet:///`, `file:///` en HTTPS.
 
+`basic_settings::login` beheert de timeout voor een inactieve interactieve Bash-shell via `/etc/profile.d/tmout.sh`. De bestaande parameter `basic_settings::environment` geeft de serveromgeving door aan `basic_settings::login::environment`: `production` (de standaard) krijgt `TMOUT=900` (15 minuten), iedere andere waarde krijgt `TMOUT=1800` (30 minuten). Stel deze parameter in je serverprofiel of Hiera in op de werkelijke serveromgeving; de Puppet-codeomgeving bepaalt deze waarde niet automatisch. Dit zijn gekozen beleidswaarden, geen garantie dat je aan een beveiligingsnorm voldoet.
+
+Puppet verwijdert bij de migratie uitsluitend het oude `/etc/profile.d/timeout.sh` en schrijft `tmout.sh` als regulier bestand met eigenaar en groep `root` en rechten `0644`. De instelling wordt readonly en geëxporteerd zodra een interactieve shell het profiel laadt. Bij de standaard Bash-loginroutes op Debian en Ubuntu leest `/etc/profile` de bestanden in `/etc/profile.d`, ook bij een consolelogin, interactieve SSH-login, `su -` en `sudo -i`. Een aangepaste shell of profielinrichting moet je afzonderlijk controleren; Dash voert geen idle timeout op basis van `TMOUT` uit.
+
+De wijziging beëindigt geen bestaande sessies en herstart SSH niet. Bij herhaald laden blijft een al readonly ingestelde waarde behouden, zonder foutmelding; open een nieuwe login-shell om een gewijzigde waarde toe te passen. Niet-interactieve shells slaan de instelling over. Bash gebruikt `TMOUT` bij het wachten aan de prompt, maar ook als standaardtimeout voor `read` en bij `select`; scripts die vanuit een interactieve shell starten kunnen de geëxporteerde waarde erven. Geef zulke scripts waar nodig een eigen `read -t`-timeout of verwijder `TMOUT` uit hun eigen omgeving. Zie de [Bash-handleiding](https://manpages.ubuntu.com/manpages/jammy/man1/bash.1.html) voor dit gedrag.
+
 #### Basisvoorbeeld
 
 ```puppet
@@ -234,7 +240,7 @@ class { 'basic_settings':
 }
 ```
 
-Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site.pp); `/etc/hosts`-varianten staan in [`examples/hosts.pp`](examples/hosts.pp).
+Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site.pp); `/etc/hosts`-varianten staan in [`examples/hosts.pp`](examples/hosts.pp). De [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp) beschrijven de logininstellingen.
 
 ### `docker`
 

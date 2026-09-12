@@ -38,7 +38,8 @@
 #   Enables local documentation packages through `basic_settings::locale`.
 #
 # @param environment
-#   Environment label used by login and network templates. The default is `production`.
+#   Server environment passed to login policy and network templates, independent of the Puppet code environment; defaults to `production`.
+#   See `basic_settings::login` for the environment-dependent shell idle timeout.
 #
 # @param firewall_package
 #   Firewall implementation passed to `basic_settings::network`.
