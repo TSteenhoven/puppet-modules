@@ -2,7 +2,8 @@
 #
 # Declare the corresponding `docker::compose` stack, directly or through an application wrapper.
 # This resource waits for that stack; it does not manage its files, start containers or allocate a terminal.
-# Container discovery must find exactly one running match. Missing or ambiguous matches fail without executing the command.
+# Container discovery excludes one-off `docker compose run` containers and must find exactly one running service container.
+# Missing or ambiguous matches fail without executing the command.
 # Commands and guards are marked Sensitive and output logging is disabled; never put secrets in command arguments.
 # Environment values are passed through Docker's command arguments and are visible to host/Docker administrators.
 # For secrets that must stay out of arguments, use a protected stdin_file and read it inside the container.
@@ -52,20 +53,21 @@ define docker::compose_exec (
 ) {
   # Validate environment keys before forming Docker options; values are escaped independently below.
   if ($environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
-    # Discover the current container at execution time, without copying Compose-owned paths into callers.
+    # Exclude temporary compose run containers, which share the project's service labels.
     $compose_name_shell = stdlib::shell_escape($compose_name)
     $service_shell = stdlib::shell_escape($service)
     $container_lookup_command = join([
       'container_id=$(/usr/bin/docker ps',
       "--filter label=com.docker.compose.project=${compose_name_shell}",
       "--filter label=com.docker.compose.service=${service_shell}",
+      '--filter label=com.docker.compose.oneoff=False',
       "--format '{{.ID}}') || exit 1",
     ], ' ')
 
     # Refuse ambiguous or missing discovery results before invoking Docker exec.
     $container_check_command = join([
       'case "$container_id" in',
-      '  ""|*[!a-fA-F0-9]*) echo "Expected exactly one running Compose service container" >&2; exit 1 ;;',
+      '    ""|*[!a-fA-F0-9]*) echo "Expected exactly one running Compose service container" >&2; exit 1 ;;',
       'esac',
     ], "\n")
 

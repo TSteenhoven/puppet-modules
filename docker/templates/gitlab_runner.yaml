@@ -1,3 +1,4 @@
+# Managed by puppet
 services:
   runner:
     image: gitlab/gitlab-runner:${TAG:-latest}

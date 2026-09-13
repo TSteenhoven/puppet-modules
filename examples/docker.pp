@@ -1,4 +1,4 @@
-# Docker-focused examples for Compose stacks, reverse proxies, and bundled app defined types.
+# Docker-focused examples for Compose stacks, reverse proxies, bundled apps, and GitLab Runner.
 # Replace hostnames, paths, checksums, and secrets with environment data.
 
 node 'container-basic.example.org' {
@@ -224,4 +224,34 @@ node 'twenty.example.org' {
     target                       => 'services',
     require                      => [Class['docker'], Package['nginx']],
   }
+}
+
+# Use a dedicated host or VM for trusted builds: the Runner manager's Docker socket grants host-level access.
+node 'gitlab-runner.example.org' {
+  class { 'basic_settings':
+    docker_enable => true,
+  }
+
+  # Install Docker after basic_settings prepares its APT source and systemd targets.
+  class { 'docker':
+    require => Class['basic_settings'],
+  }
+
+  # Create the runner in GitLab first; this protected lookup must return its authentication token as Sensitive[String].
+  # For encrypted Hiera returning a String, set lookup_options with convert_to: Sensitive for this profile key.
+  # Configure tags, protected access and untagged-job acceptance in GitLab when creating or editing the runner.
+  # For an internal GitLab, change runner_url and set runner_ip to its IPv4/IPv6 address; see the parameter's network requirements.
+  docker::gitlab_runner { 'gitlab-runner':
+    auto_register      => true,
+    image_tag          => 'latest',
+    runner_description => 'docker-runner',
+    runner_token       => lookup('profile::gitlab_runner::runner_token', Sensitive[String]),
+    runner_url         => 'https://gitlab.com/',
+    require            => Class['docker'],
+  }
+
+  # After successful registration, remove runner_token and its mandatory lookup; Puppet removes only the bootstrap copy.
+  # Before relying on the runner, test checkout, a job with an explicit image and artifact upload on an isolated Linux host.
+  # Verify actual manager/job/helper mounts, TLS and cache separately, then repeat Puppet, noop, replacement and reboot checks.
+  # Pause and drain jobs before maintenance; follow docker::gitlab_runner's recovery and removal guidance before deleting state.
 }

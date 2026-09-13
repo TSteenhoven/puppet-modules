@@ -294,7 +294,7 @@ Compose-, proxy-, Authentik- en Twenty-varianten staan in [`examples/docker.pp`]
 
 #### GitLab Runner
 
-Met `docker::gitlab_runner` gebruik je een daarvoor bestemde host of VM voor vertrouwde projecten en builds. Richt eerst Docker en `basic_settings::systemd` in en maak de runner in GitLab aan. De manager krijgt toegang tot de host-Docker-socket en heeft daarmee vergaande macht over de host. Jobcontainers krijgen die socket en de runnerconfiguratie niet mee en draaien zonder privileged mode.
+Met `docker::gitlab_runner` gebruik je een daarvoor bestemde host of VM voor vertrouwde projecten en builds. Richt eerst Docker en `basic_settings::systemd` in en maak de runner in GitLab aan. De manager gebruikt de Docker-daemon van de host om afzonderlijke CI-containers te starten en heeft via de socket vergaande macht over de host. Nieuwe automatische registraties geven jobs geen Docker-socket of runnerconfiguratie en schakelen privileged mode niet in. Controleer bij een bestaande registratie zelf de executorinstellingen in `config.toml`; Puppet beheert die inhoud niet.
 
 De vaste jobpolicy `if-not-present` kan gecachte private images zonder nieuwe registry-autorisatie hergebruiken en houdt veranderlijke tags niet vanzelf actueel. Beperk daarom welke projecten de runner mogen gebruiken.
 
@@ -308,13 +308,13 @@ docker::gitlab_runner { 'gitlab-runner':
 }
 ```
 
-Zodra `config.toml` bestaat, slaat Puppet registratie over zonder de inhoud te controleren. Controleer de runner na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien; volg de [herstelprocedure](examples/gitlab_runner.md#subsequent-runs-and-failures).
+Zodra `config.toml` bestaat, slaat Puppet registratie over zonder de inhoud te controleren. Controleer de runner na een mislukte of onderbroken registratie voordat je Puppet opnieuw laat draaien; volg de herstelinstructies bij `auto_register` in de [Puppet Strings](docker/manifests/gitlab_runner.pp).
 
-Geef alleen `runner_ip` op als de hostnaam in `runner_url` via normale DNS niet naar het juiste interne adres verwijst. Die instelling geldt alleen voor de runnercontainer; jobcontainers moeten GitLab zelf kunnen bereiken. Zie het [voorbeeld met een vast intern adres](examples/gitlab_runner.md#internal-gitlab-address) voor de configuratie en Compose-vereiste.
+Geef alleen `runner_ip` op als de hostnaam in `runner_url` via normale DNS niet naar het juiste interne adres verwijst. Die instelling geldt alleen voor de runnercontainer; jobcontainers moeten GitLab zelf kunnen bereiken. De parameterdocumentatie bij `runner_ip` beschrijft de Compose-vereiste en hoe je zo nodig de netwerkconfiguratie van de executor aanpast.
 
-Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. De actieve registratie blijft behouden. De [handleiding bij het voorbeeld](examples/gitlab_runner.md#subsequent-runs-and-failures) beschrijft welke gegevens Puppet bewaart.
+Na succesvolle registratie kun je `runner_token` weglaten; pas dan ook de verplichte lookup in je profiel aan. De actieve registratie blijft behouden.
 
-Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. Volg daarna de [onderhouds- en verwijderprocedure](examples/gitlab_runner.md#security-and-maintenance). Zie ook [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp) en de [Puppet Strings](docker/manifests/gitlab_runner.pp).
+Pauzeer de runner in GitLab en laat lopende jobs afronden vóór onderhoud of verwijdering: de eindige stoptijd kan langere jobs afbreken. Volg de procedure bij `ensure` in de Puppet Strings voordat je de stack verwijdert. Het volledige voorbeeld voor een aparte Runner-host staat in [`examples/docker.pp`](examples/docker.pp).
 
 ### `gitlab`
 
@@ -834,8 +834,7 @@ De checks worden automatisch door relevante modules geregistreerd wanneer OpenIT
 De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specifieke waarden in profielen of Hiera en neem voorbeeldgeheimen nooit letterlijk over.
 
 - [`examples/site.pp`](examples/site.pp): Gecombineerde basisinstellingen, webserver, PHP, SSH, Docker, MySQL en profielopbouw.
-- [`examples/docker.pp`](examples/docker.pp): Compose, monitoring, Nginx-proxy, Authentik en Twenty.
-- [`examples/gitlab_runner.pp`](examples/gitlab_runner.pp): GitLab Runner met eenmalige registratie; [registratie, herstel en onderhoud](examples/gitlab_runner.md).
+- [`examples/docker.pp`](examples/docker.pp): Compose, monitoring, Nginx-proxy, Authentik, Twenty en een aparte GitLab Runner-host met eenmalige registratie.
 - [`examples/web.pp`](examples/web.pp): Nginx, PHP-FPM, Let's Encrypt, TLS, security headers en reverse proxies.
 - [`examples/data-services.pp`](examples/data-services.pp): MySQL, RabbitMQ en vnStat.
 - [`examples/monitoring.pp`](examples/monitoring.pp): OpenITCOCKPIT-agent, eigen checks en monitoringinstellingen.
