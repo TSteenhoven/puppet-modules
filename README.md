@@ -398,7 +398,7 @@ class { 'nginx':
 letsencrypt::certificate { 'app.example.org':
   domains => ['app.example.org', 'www.app.example.org'],
   plugin  => 'nginx',
-  require => [Class['letsencrypt'], Class['nginx']],
+  require => [Class['letsencrypt', 'nginx']],
 }
 ```
 

@@ -90,7 +90,7 @@ class basic_settings::package_mongodb (
     exec { 'package_mongodb_source':
       command => "/usr/bin/rm ${file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_shell}",
-      require => [Package['apt'], Package['mongodb-org-server']],
+      require => [Package['apt', 'mongodb-org-server']],
     }
 
     # Remove Gitlab key

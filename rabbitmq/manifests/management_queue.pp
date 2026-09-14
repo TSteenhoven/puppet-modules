@@ -116,21 +116,21 @@ define rabbitmq::management_queue (
         exec { "rabbitmq_management_queue_${name}":
           command => $create_correct,
           unless  => $find,
-          require => [Package['grep'], Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
+          require => [Package['grep'], Exec['rabbitmq_management_admin_cli', "rabbitmq_management_vhost_${vhost_name}"]],
         }
 
         # Check if durable of the exchange is the same
         exec { "rabbitmq_management_queue_${name}_durable":
           command => "${delete} && ${create_correct}",
           unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} list queues name durable | /usr/bin/grep ${name_shell} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${name_durable_pattern_shell}", # lint:ignore:140chars
-          require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_queue_${name}"]],
+          require => [Package['coreutils', 'grep'], Exec["rabbitmq_management_queue_${name}"]],
         }
 
         # Check if arguments of the exchange is the same
         exec { "rabbitmq_management_queue_${name}_arguments":
           command => "${delete} && ${create_correct}",
           unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} --format raw_json list queues name arguments | sed 's/},{/'\\},\\\\n{'/g' | /usr/bin/grep ${name_json_pattern_shell} | /usr/bin/grep ${arguments_pattern_shell}", # lint:ignore:140chars
-          require => [Package['coreutils'], Package['grep'], Package['sed'], Exec["rabbitmq_management_queue_${name}"]],
+          require => [Package['coreutils', 'grep', 'sed'], Exec["rabbitmq_management_queue_${name}"]],
         }
       }
 

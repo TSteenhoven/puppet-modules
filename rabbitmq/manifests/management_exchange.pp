@@ -56,14 +56,14 @@ define rabbitmq::management_exchange (
         exec { "rabbitmq_management_exchange_${name}":
           command => $create,
           unless  => $find,
-          require => [Package['grep'], Exec['rabbitmq_management_admin_cli'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
+          require => [Package['grep'], Exec['rabbitmq_management_admin_cli', "rabbitmq_management_vhost_${vhost_name}"]],
         }
 
         # Check if type of the exchange is the same
         exec { "rabbitmq_management_exchange_${name}_type":
           command => "${delete} && ${create}",
           unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} list exchanges name type | /usr/bin/grep ${name_shell} | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${name_type_pattern_shell}", # lint:ignore:140chars
-          require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_exchange_${name}"]],
+          require => [Package['coreutils', 'grep'], Exec["rabbitmq_management_exchange_${name}"]],
         }
       }
       'absent': {

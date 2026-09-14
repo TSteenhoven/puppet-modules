@@ -50,7 +50,7 @@ define rabbitmq::management_vhost (
         exec { "rabbitmq_management_vhost_${exec_name}_type":
           command => "/usr/sbin/rabbitmqctl update_vhost_metadata ${name_shell} --default-queue-type ${type_shell}",
           unless  => "/usr/sbin/rabbitmqctl --quiet list_vhosts --no-table-headers name default_queue_type | /usr/bin/grep ${name_shell} | /usr/bin/tr '[:blank:]' '|' | /usr/bin/grep ${name_type_pattern_shell}", # lint:ignore:140chars
-          require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${exec_name}"]],
+          require => [Package['coreutils', 'grep'], Exec["rabbitmq_management_vhost_${exec_name}"]],
         }
       }
       'absent': {

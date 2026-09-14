@@ -468,6 +468,7 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_layout` | Arrays over meerdere regels gebruiken de [afgesproken inspringing](#inspringing). Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
 | `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
+| `project_resource_references` | Direct aangrenzende references van hetzelfde resourcetype in een array worden samengevoegd; titels binnen een reference staan alfabetisch. `--fix` herstelt letterlijke titels zonder tussenliggend commentaar. Zie [resource references](#resource-references) voor de afbakening. |
 | `project_if_sections` | Iedere `if` of `unless` krijgt een toelichting boven de voorbereidende variabelen, of boven de voorwaarde als die voorbereiding ontbreekt. Een `elsif` hoort bij dezelfde keten; geneste voorwaarden krijgen hun eigen toelichting. |
 | `project_variable_sections` | Variabelen direct na een openende `{` krijgen binnen het blok een toelichting. Na een groep met onderlinge afhankelijkheden begint een losstaande toekenning een nieuwe toegelichte groep. Waar mogelijk noemt de melding een bestaande groep om samenvoegen te beoordelen. |
 | `project_class_check_reuse` | Herhaalde `defined(Class['...'])`-controles binnen een class of defined type delen één variabele. Bij één gebruik staat de controle rechtstreeks in de expressie. Aantoonbaar gebruik vanuit andere classes of ERB telt mee. |
@@ -555,6 +556,20 @@ Een `defined(...)`-controle ziet alleen wat tijdens evaluatie al bekend is, niet
 Bouw geen paden, poorten, bestandsnamen of unitnamen van een andere bouwsteen opnieuw op als een resource, alias, servicetitel of geaccepteerde API die waarde beschikbaar maakt. Test de daadwerkelijke afspraak tussen beide resources.
 
 Voeg geen ongedocumenteerde gemaksparameters toe nadat een interface-uitbreiding is afgewezen. Gebruik de geaccepteerde interface of stabiele externe runtimemetadata.
+
+#### Resource references
+
+Voeg direct aangrenzende references van hetzelfde resourcetype binnen een array samen tot één reference. Sorteer de titels binnen die reference alfabetisch. Dit geldt voor alle resourcetypen, inclusief classes en eigen defined types. Gebruik bijvoorbeeld `[Package['console-setup', 'keyboard-configuration']]` waar eerst `[Package['console-setup'], Package['keyboard-configuration']]` stond.
+
+Verschillende types blijven gescheiden. Een ander array-element onderbreekt de reeks: `[Package['zulu'], Service['nginx'], Package['alpha']]` blijft zo staan. De linter voegt geen afzonderlijke functieargumenten, geneste arrays of kanten van een relatiepijl samen, omdat daarmee de betekenis kan veranderen.
+
+`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De check sorteert letterlijke titels op hun stringwaarde, hoofdlettergevoelig en zonder aanhalingstekens mee te tellen. Bestaande correcte references blijven ongemoeid; dubbele titels worden behouden. Met `--fix` laat je de check samenvoegen en sorteren:
+
+```sh
+bundle exec puppet-lint --fix --only-checks project_resource_references path/to/manifest.pp
+```
+
+Controleer daarna de diff en voer de [volledige controles](#code-controleren) uit. Bevat een samen te voegen reeks dynamische titels of commentaar tussen de references, dan blijft de melding staan en pas je de code zelf aan. Hetzelfde geldt voor verkeerd gesorteerde letterlijke titels met tussenliggend commentaar. Behoud de toelichting bij de juiste resource en beoordeel de volgorde van dynamische titels aan de hand van de waarden die ze kunnen krijgen; de linter berekent die waarden niet. Puppet-datatypen zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
 
 #### Volgorde en meldingen
 

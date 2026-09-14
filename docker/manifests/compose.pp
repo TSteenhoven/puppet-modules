@@ -250,12 +250,12 @@ define docker::compose (
               # Determine the service subscription based
               if ($env_source != undef or $env_content != undef) {
                 # Start and refresh the stack only after both Compose and environment files are managed.
-                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$compose_file], File[$env_file]]
-                $service_subscribe = File[$compose_file, $env_file]
+                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$env_file, $compose_file]]
+                $service_subscribe = File[$env_file, $compose_file]
               } else {
                 # Start and refresh the stack using only the Compose file when no environment file is configured.
                 $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$compose_file]]
-                $service_subscribe = [File[$compose_file]]
+                $service_subscribe = File[$compose_file]
               }
               $service_require = concat($service_require_base, $project_directory_resources)
 

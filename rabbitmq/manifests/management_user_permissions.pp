@@ -61,8 +61,7 @@ define rabbitmq::management_user_permissions (
       unless  => "/usr/sbin/rabbitmqctl --quiet list_user_permissions --no-table-headers ${user_shell} | /usr/bin/grep -F -x -- ${permissions_line_shell}", # lint:ignore:140chars
       require => [
         Package['grep'],
-        Exec["rabbitmq_management_vhost_${vhost_name}"],
-        Exec["rabbitmq_management_user_${user}"],
+        Exec["rabbitmq_management_user_${user}", "rabbitmq_management_vhost_${vhost_name}"],
       ],
     }
   } else {

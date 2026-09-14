@@ -235,8 +235,8 @@ class nginx (
     $monitoring_cert_content = template('nginx/check_nginx_cert')
     $monitoring_cert_ensure = present
     $monitoring_cert_require = [
-      File[$config_file], File['monitoring_location_plugins'],
-      Package['nginx'], Package['openssl'], Package['ca-certificates'], Package['coreutils'],
+      File[$config_file, 'monitoring_location_plugins'],
+      Package['ca-certificates', 'coreutils', 'nginx', 'openssl'],
     ]
   } else {
     # Remove the shared certificate check when no supported monitoring backend is active.
@@ -343,7 +343,7 @@ class nginx (
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
-    require => [File['nginx_fastcgi_params'], File['nginx_snippets']],
+    require => [File['nginx_fastcgi_params', 'nginx_snippets']],
     notify  => Service['nginx'],
   }
 

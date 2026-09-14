@@ -76,10 +76,11 @@ define rabbitmq::management_binding (
           command => $create_correct,
           unless  => $find,
           require => [
-            Package['coreutils'],
-            Package['grep'],
-            Exec['rabbitmq_management_admin_cli'],
-            Exec["rabbitmq_management_vhost_${vhost_name}"],
+            Package[
+              'coreutils',
+              'grep',
+            ],
+            Exec['rabbitmq_management_admin_cli', "rabbitmq_management_vhost_${vhost_name}"],
           ],
         }
 
@@ -90,7 +91,7 @@ define rabbitmq::management_binding (
           exec { "rabbitmq_management_binding_${name}_routing_key":
             command => "${delete} && ${create_correct}",
             unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination routing_key | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_routing_key_pattern_shell}", # lint:ignore:140chars
-            require => [Package['coreutils'], Package['grep'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
+            require => [Package['coreutils', 'grep'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
           }
         }
       }
@@ -99,7 +100,7 @@ define rabbitmq::management_binding (
         exec { "rabbitmq_management_binding_${name}":
           onlyif  => $find,
           command => $delete,
-          require => [Package['coreutils'], Package['grep'], Exec['rabbitmq_management_admin_cli']],
+          require => [Package['coreutils', 'grep'], Exec['rabbitmq_management_admin_cli']],
         }
       }
       default: {

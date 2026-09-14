@@ -30,11 +30,11 @@ define letsencrypt::certificate (
     case $plugin {
       'nginx': {
         # Require the Nginx authenticator alongside Certbot and its shell helper.
-        $certificate_require = [Package['certbot'], Package['grep'], Package['python3-certbot-nginx']]
+        $certificate_require = [Package['certbot', 'grep', 'python3-certbot-nginx']]
       }
       default: {
         # Require Certbot and its shell helper without an Nginx authenticator.
-        $certificate_require = [Package['certbot'], Package['grep']]
+        $certificate_require = [Package['certbot', 'grep']]
       }
     }
 

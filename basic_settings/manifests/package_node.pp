@@ -84,14 +84,14 @@ class basic_settings::package_node (
       command => "/usr/bin/curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${key_shell}",
       notify  => Exec['package_node_source_reload'],
-      require => [Package['apt'], Package['apt-transport-https'], Package['curl'], Package['gnupg']],
+      require => [Package['apt', 'apt-transport-https', 'curl', 'gnupg']],
     }
 
     # Install Node.js only after the managed source and key have been applied.
     package { 'nodejs':
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
-      require         => [File['package_node_source'], Exec['package_node_key'], Exec['package_node_source_reload']],
+      require         => [File['package_node_source'], Exec['package_node_key', 'package_node_source_reload']],
     }
 
     # Ensure the shared Puppet helper directory exists before installing the npm permission helper.
@@ -146,7 +146,7 @@ class basic_settings::package_node (
       ensure  => absent,
       path    => $file,
       notify  => Exec['package_node_source_reload'],
-      require => [Package['apt'], Package['nodejs']],
+      require => [Package['apt', 'nodejs']],
     }
 
     # Remove the matching keyring so the disabled repo leaves no trusted signing material behind.
@@ -154,7 +154,7 @@ class basic_settings::package_node (
       ensure  => absent,
       path    => $key,
       notify  => Exec['package_node_source_reload'],
-      require => [Package['apt'], Package['nodejs']],
+      require => [Package['apt', 'nodejs']],
     }
   }
 }

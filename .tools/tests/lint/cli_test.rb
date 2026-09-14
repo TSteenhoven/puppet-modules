@@ -46,6 +46,44 @@ class CliTest < Minitest::Test
     output, _, status = cli('--list-checks')
     assert status.success?
     enabled.each { |check| assert_includes output.lines.map(&:strip), check.to_s }
+    assert_includes enabled, :project_resource_references
+  end
+
+  def test_resource_references_fix_works_with_standard_checks_and_is_idempotent
+    Dir.mktmpdir('lint_references_') do |directory|
+      file = File.join(directory, 'references.pp')
+      File.write(file, "$refs = [Package[\"zulu\"], Package[\"alpha\"], Service['nginx'], Service['apache2']]\n")
+      output, errors, status = cli(file)
+      refute status.success?, output + errors
+      assert_equal 2, diagnostics(output, 'project_resource_references').length
+
+      output, errors, status = cli('--fix', file)
+      assert status.success?, output + errors
+      expected = "$refs = [Package['alpha', 'zulu'], Service['apache2', 'nginx']]\n"
+      assert_equal expected, File.read(file)
+      output, errors, status = cli('--fix', file)
+      assert status.success?, output + errors
+      assert_empty diagnostics(output, 'project_resource_references')
+      assert_equal expected, File.read(file)
+    end
+  end
+
+  def test_resource_references_fix_preserves_comments_and_keeps_the_warning
+    Dir.mktmpdir('lint_reference_comments_') do |directory|
+      file = File.join(directory, 'references.pp')
+      code = <<~'PUPPET'
+        $refs = [
+          File['/tmp/z'], # Keep the reason attached to this resource.
+          File['/tmp/a'],
+        ]
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, output + errors
+      assert_equal 1, diagnostics(output, 'project_resource_references').length
+      assert_includes output, '[review]'
+      assert_equal code, File.read(file)
+    end
   end
 
   def test_puppet_source_ignore_keeps_the_additional_check_active_with_fix

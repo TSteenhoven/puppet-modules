@@ -100,11 +100,11 @@ class gitlab (
     }
 
     # Set requirements
-    $requirements = [File['/opt/gitlab'], Package['dpkg'], Package['grep']]
+    $requirements = [File['/opt/gitlab'], Package['dpkg', 'grep']]
   } else {
     # Set requirements
     $install_dir_correct = '/opt/gitlab'
-    $requirements = [Package['dpkg'], Package['grep']]
+    $requirements = [Package['dpkg', 'grep']]
   }
 
   # Escape install environment values before they are embedded in the shell command.

@@ -100,7 +100,7 @@ class basic_settings::login (
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
       $mesg_disable = true
-      $require = Package['wtmpdb', 'libpam-wtmpdb']
+      $require = Package['libpam-wtmpdb', 'wtmpdb']
     }
     default: {
       # Retain mesg n in login profiles on the legacy path without wtmpdb dependencies.

@@ -5,6 +5,7 @@
 --load=.tools/lint/lib/puppet-lint/plugins/monitoring.rb
 --load=.tools/lint/lib/puppet-lint/plugins/parameters.rb
 --load=.tools/lint/lib/puppet-lint/plugins/resources.rb
+--load=.tools/lint/lib/puppet-lint/plugins/resource_references.rb
 --load=.tools/lint/lib/puppet-lint/plugins/shell.rb
 --relative
 --fail-on-warnings
