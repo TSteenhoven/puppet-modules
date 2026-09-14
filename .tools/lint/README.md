@@ -121,9 +121,9 @@ Een geslaagde lintscan betekent dat de code aan de automatische checks voldoet. 
 
 Een lintmelding noemt het bestand, de regel, de kolom, de checknaam en de oorzaak. Ook een waarschuwing laat de scan mislukken. De eigen checks vind je op naam onder [Beschikbare projectchecks](#beschikbare-projectchecks); de bijbehorende codeafspraken staan verderop in de naslag. Voor standaardchecks kun je de [uitleg van Puppet-lint](https://puppetlabs.github.io/puppet-lint/#checks) raadplegen.
 
-1. Bekijk de genoemde regel samen met het parameterblok, de resource of het commando waar deze bij hoort.
-2. Herstel de oorzaak volgens de betreffende afspraak. Voor een bewust lange regel volg je de gerichte uitzondering onder [Lange regels](#lange-regels). Voor een Puppet-fileservermount volg je de uitleg bij [bestandsbronnen](#templates-en-bestandsbronnen).
-3. Voer de volledige lintscan en tests opnieuw uit. Controleer een gewijzigd manifest ook met de parser zoals hierboven beschreven.
+Volg de [werkwijze voor linting en autofix in `AGENTS.md`](../../AGENTS.md#linting-and-autofix). Hieronder staat hoe je [autofix uitvoert en begrenst](#automatisch-corrigeren-autofix).
+
+Bekijk bij resterende meldingen de genoemde regel samen met het parameterblok, de resource of het commando waar deze bij hoort. Herstel de oorzaak volgens de betreffende afspraak. Voor een bewust lange regel volg je de gerichte uitzondering onder [Lange regels](#lange-regels). Voor een Puppet-fileservermount volg je de uitleg bij [bestandsbronnen](#templates-en-bestandsbronnen).
 
 Stopt de linter voordat hij code kan controleren, herstel dan eerst de installatie. Controleer bij Ruby- of Bundler-fouten de actieve Ruby en de stappen onder [Gems installeren](#gems-installeren). Bij een ontbrekende plugin moeten de volledige checkout, de geïnstalleerde bundle en de werkmap kloppen. Onder [Werking van de controles](#werking-van-de-controles) lees je welke configuratiebestanden de CLI laadt en hoe je uitsluitend de projectconfiguratie gebruikt.
 
@@ -143,13 +143,13 @@ bundle exec puppet-lint --fix --only-checks project_resource_references path/to/
 
 Niet iedere lintmelding kan automatisch worden opgelost. Ontbrekende toelichtingen, inhoudelijke keuzes en onduidelijke constructies vragen handmatige aanpassing. Zonder `--fix` controleert de linter alleen, zolang je persoonlijke configuratie automatisch repareren niet inschakelt; zie [Werking van de controles](#werking-van-de-controles). Ook CI voert alleen de controles uit.
 
-De projectchecks corrigeren ontbrekende of overtollige lege regels, array-inspringing, spaties na komma's en de opmaak van parameterlijsten wanneer de constructie daarvoor geschikt is. Staat er commentaar tussen de betrokken tokens of is de parameteropmaak onduidelijk, dan blijft de melding staan voor handmatige beoordeling. Het [overzicht van alle custom checks](AUTOFIX_REVIEW.md#assessment-of-every-custom-check) vermeldt per check of autofix beschikbaar is en waarom.
+De projectchecks corrigeren ontbrekende of overtollige lege regels, array-inspringing, spaties na komma's en de opmaak van parameterlijsten wanneer de constructie daarvoor geschikt is. Staat er commentaar tussen de betrokken tokens of is de parameteropmaak onduidelijk, dan blijft de melding staan voor handmatige beoordeling.
 
 De projectcheck `project_resource_references` voegt aangrenzende references samen en sorteert letterlijke titels bij expliciete resourceafhankelijkheden en relatieketens. Bevat de buitenste array daarna één reference, dan verwijdert de check die overbodige array. Bij een gewone variabele of functieaanroep kan samenvoegen of sorteren de arraystructuur of de betekenis van de volgorde veranderen; daarvoor blijft een melding staan. De voorwaarden staan bij [Resource references](#resource-references).
 
 Voor Puppet Strings breekt `project_documentation_layout` gewone tekst af zonder woorden of backtick-inhoud te splitsen, bewaart paragrafen en herstelt herkenbare tag-inspringing en sectiescheiding. De check verwijdert een `140chars`-blok alleen als het uitsluitend gewone documentatie bevat. Een toelichtende reden of een gecombineerde lintuitzondering blijft staan voor handmatige beoordeling. Lengte- of opmaakproblemen in summaries, voorbeeldcode, lijsten, tabellen, codeblokken en onduidelijke Markdown vragen eveneens handmatige aanpassing; daarvoor blijft een melding met `[review]` staan.
 
-Controleer na een autofix de inhoud en betekenis in de diff en voer de [volledige controles](#code-controleren) opnieuw uit, inclusief de parser voor ieder gewijzigd manifest. Meldingen van bijvoorbeeld de standaardcheck `140chars` kunnen nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
+Meldingen van bijvoorbeeld de standaardcheck `140chars` kunnen na autofix nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
 
 Met `--fix` meldt Puppet-lint geslaagde correcties als `fixed`. Een resterende waarschuwing of fout laat het commando nog steeds mislukken. Bij een syntaxfout schrijft de CLI het manifest niet weg. Genegeerde meldingen worden niet gecorrigeerd; de projectafspraken over [toegestane uitzonderingen](#lange-regels) blijven gelden. Er is geen aparte Rake-task voor autofix: het native commando biedt al de benodigde bestandsselectie en checkselectie.
 
@@ -519,7 +519,7 @@ De projectchecks voor documentatie en parametervolgorde vullen de standaardcheck
 
 ### Veilige autofixes ontwikkelen
 
-Begin bij de gebruikte bundle: controleer `bundle exec puppet-lint --version` en bekijk de implementatie met `bundle show puppet-lint`. De [beoordeling van de bestaande checks](AUTOFIX_REVIEW.md) beschrijft de onderzochte API, de afbakening per check en de verschillen met upstream. Gebruik voor generieke correcties de bestaande upstream-check als die exact dezelfde regel afdekt.
+Begin bij de gebruikte bundle: controleer `bundle exec puppet-lint --version` en bekijk de implementatie met `bundle show puppet-lint`. Volg de [afspraken voor hergebruik en autofixontwikkeling in `AGENTS.md`](../../AGENTS.md#linting-and-autofix).
 
 Een custom check krijgt alleen autofix als de uitkomst vaststaat, het Puppet-gedrag gelijk blijft en een tweede fixrun niets meer verandert. De correctie mag geen informatie verzinnen, ontwerpkeuze maken of commentaar verliezen. Controleer ook dat het resultaat geldige Puppet-code is en dat dezelfde regel na de correctie geen melding meer geeft. Bewijs dit voor de hele constructie die je wijzigt; alleen de gemelde regel bekijken is niet voldoende.
 

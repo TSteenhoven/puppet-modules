@@ -186,6 +186,23 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Never pin Ruby or Bundler versions in setup commands or runtime configuration.
 - Use the root Gemfile, lockfile, standard CLI, and regression tests through the [documented bundle setup](.tools/lint/README.md#installatie).
 
+### Linting And Autofix
+
+The workflow for code changes is `lint → autofix → lint → manual remainder → tests`.
+
+- Use existing checks and safe autofixes from `puppet-lint`, installed plugins, and project custom checks. Do not reproduce supported detection or safe correction logic manually or in separate tools.
+- Run the relevant configured linter first to identify deviations before resolving individual lint findings.
+- Apply available autofixes within the task's scope only when the correction is demonstrably safe and deterministic. Automatic corrections must preserve functional behavior, Puppet resource relationships, dependencies, and intended configuration. Review corrections manually when their safety cannot be demonstrated.
+- Rerun the linter after autofix, then resolve only the remaining findings manually. Follow the [lint usage instructions](.tools/lint/README.md#automatisch-corrigeren-autofix) for commands and selection options.
+- Review the complete diff after corrections to confirm that automatic changes are semantically correct and within scope.
+- Complete the [required checks](#required-checks) and applicable CI checks before marking the change complete.
+
+#### Autofix Development
+
+- Implement custom autofixes through the native `puppet-lint` fix mechanism under the safety criteria above, and require idempotence. Never build a separate formatter or autofix engine.
+- Verify each fix through detection, exact correction, a clean rescan, and an unchanged second fix run, including interactions with enabled checks and lint suppressions. Follow the [autofix development guidance](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for implementation and review.
+- Report custom checks that appear suitable for safe autofix but lack it as linter improvements. Implement them only when linter development is within the task's scope.
+
 ### Test Scope
 
 - Add or maintain repository-owned automated tests only for repository tools.
@@ -205,11 +222,6 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 - Keep `test` and the default Rake task responsible for recursive discovery across all tool test subdirectories.
 - Keep `test:lint` limited to the linter tests under `.tools/tests/lint/`.
-
-### Linter Autofix
-
-- Add autofix to a custom lint check only when the correction is deterministic, semantically safe, and idempotent. Use the native `puppet-lint` fix mechanism; never build a separate formatter or autofix engine.
-- Verify each fix through detection, exact correction, a clean rescan, and an unchanged second fix run, including interactions with enabled checks and lint suppressions. Follow the [autofix development guidance](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for implementation and review.
 
 ### Test Structure Maintenance
 
