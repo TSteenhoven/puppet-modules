@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name = 'puppet-lint-project'
-  spec.version = '0.1.0'
-  spec.summary = 'Project Puppet-lint checks and shared lint configuration'
+  spec.name = 'lint-project'
+  spec.version = '0.1.1'
+  spec.summary = 'Project Puppet-lint checks, RuboCop, and shared lint configuration'
   spec.authors = ['Puppet modules maintainers']
   spec.license = 'Apache-2.0'
   spec.homepage = 'https://github.com/DevSysEngineer/puppet-modules'
@@ -15,5 +15,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'puppet-lint', '~> 5.1'
   spec.add_dependency 'puppet-lint-param-types', '~> 3.0'
   spec.add_dependency 'puppet-lint-trailing_comma-check', '~> 3.0'
+  spec.add_dependency 'rubocop', '~> 1.91'
   spec.add_dependency 'syslog', '~> 0.4'
 end

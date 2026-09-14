@@ -7,4 +7,3 @@ gemspec path: '.tools/lint'
 gem 'metadata-json-lint', require: false
 gem 'minitest'
 gem 'rake'
-gem 'rubocop', require: false

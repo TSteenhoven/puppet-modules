@@ -73,7 +73,7 @@ module LintCliSupport
   def copy_project_config(root)
     FileUtils.mkdir_p(File.join(root, '.tools/lint/config'))
     config = File.read(File.join(LintTestSupport::ROOT, '.puppet-lint.rc'))
-    entry = File.join(Gem::Specification.find_by_name('puppet-lint-project').full_gem_path, 'lib/project_lint.rb')
+    entry = File.join(Gem::Specification.find_by_name('lint-project').full_gem_path, 'lib/project_lint.rb')
     File.write(File.join(root, '.puppet-lint.rc'), config.sub('.tools/lint/lib/project_lint.rb', entry))
     FileUtils.cp(File.join(LintTestSupport::ROOT, '.tools/lint/config/puppet-lint.rc'),
                  File.join(root, '.tools/lint/config'))

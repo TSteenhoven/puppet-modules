@@ -853,4 +853,4 @@ Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving
 
 De tooltests controleren het ontwikkelgereedschap. Valideer gewijzigd modulegedrag en documentatievoorbeelden daarom afzonderlijk volgens de [aanvullende validatie](.tools/lint/README.md#aanvullende-validatie).
 
-Je kunt de linter ook buiten deze repository gebruiken. Volg daarvoor de [installatie en werkwijze voor je eigen Puppet-project](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project).
+Je kunt de linter ook buiten deze repository gebruiken. Begin bij de [aanbevolen projectstructuur](.tools/lint/README.md#aanbevolen-projectstructuur) voor de koppeling met `global-modules` en de plaats van eigen tools en configuratie. Volg daarna de [installatie en werkwijze voor je eigen Puppet-project](.tools/lint/README.md#installatie-in-je-project).

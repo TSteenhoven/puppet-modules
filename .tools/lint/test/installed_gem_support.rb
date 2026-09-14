@@ -25,9 +25,9 @@ module InstalledGemSupport
   end
 
   def install_gem
-    package = File.join(@project, 'puppet-lint-project.gem')
+    package = File.join(@project, 'lint-project.gem')
     gem_root = File.join(LintTestSupport::ROOT, '.tools/lint')
-    run_success('gem', 'build', 'puppet-lint-project.gemspec', '--output', package, directory: gem_root)
+    run_success('gem', 'build', 'lint-project.gemspec', '--output', package, directory: gem_root)
     run_success('gem', 'install', '--local', '--ignore-dependencies', '--no-document', '--install-dir', @gem_home,
                 package)
   end
@@ -35,13 +35,12 @@ module InstalledGemSupport
   def prepare_bundle
     write('Gemfile', <<~RUBY)
       source 'https://rubygems.org'
-      gem 'puppet-lint-project', '= 0.1.0', require: false
-      gem 'rubocop', require: false
+      gem 'lint-project', '= 0.1.1', require: false
     RUBY
     # Seed the consumer resolution with the tested dependency versions, then let Bundler resolve the installed gem.
     FileUtils.cp(File.join(LintTestSupport::ROOT, 'Gemfile.lock'), File.join(@project, 'Gemfile.lock'))
     run_success('bundle', 'install', '--local')
-    run_success('bundle', 'info', '--path', 'puppet-lint-project')
+    run_success('bundle', 'info', '--path', 'lint-project')
     @installed = @output.strip
     @env['BUNDLE_FROZEN'] = 'true'
   end

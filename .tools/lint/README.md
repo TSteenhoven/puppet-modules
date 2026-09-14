@@ -1,8 +1,8 @@
 # Puppet-lint en RuboCop
 
-Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. Deze handleiding bevat de dagelijkse werkwijze, alle Puppet-codeafspraken en reviewcriteria, en de uitleg voor onderhoud en gebruik vanuit andere projecten. De linter is verpakt als de interne Ruby-gem `puppet-lint-project`. De [tooltests](#tests-uitvoeren-en-uitbreiden) controleren de checks, autofixes en installatie vanuit andere projecten.
+Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. Deze handleiding bevat de dagelijkse werkwijze, alle Puppet-codeafspraken en reviewcriteria, en de uitleg voor onderhoud en gebruik vanuit andere projecten. De linter is verpakt als de interne Ruby-gem `lint-project`. De [tooltests](#tests-uitvoeren-en-uitbreiden) controleren de checks, autofixes en installatie vanuit andere projecten.
 
-Met [RuboCop](#ruby-code-controleren) controleer je de eigen Ruby-code, waaronder de implementatie van de Puppet-linter en de tooltests.
+Met [RuboCop](#ruby-code-controleren) controleer je de eigen Ruby-code, waaronder de implementatie van de Puppet-linter en de tooltests. De gem installeert beide linters en levert hun gedeelde regelprofielen mee. Je voert iedere linter met zijn eigen commando uit.
 
 ## Leeswijzer
 
@@ -21,7 +21,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
 | Ruby-code controleren of veilig corrigeren | [RuboCop gebruiken](#ruby-code-controleren). |
 | Een bestaande lintcheck aanpassen | [Een check toevoegen of wijzigen](#een-check-toevoegen-of-wijzigen) en de bijbehorende [technische werking](#technische-werking-van-de-checks). |
 | Een nieuwe lintcheck of autofix ontwikkelen | [Linter ontwikkelen en onderhouden](#linter-ontwikkelen-en-onderhouden), inclusief [veilige autofixes](#veilige-autofixes-ontwikkelen). |
-| De centrale linter in een ander Puppet-project gebruiken | [Downstream-installatie, configuratie en CI](#de-linter-gebruiken-in-een-ander-puppet-project). |
+| De centrale linter in een ander Puppet-project gebruiken | [Aanbevolen projectstructuur](#aanbevolen-projectstructuur), gevolgd door [installatie, configuratie en CI](#installatie-in-je-project). |
 
 ## Inhoudsopgave
 
@@ -82,11 +82,13 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
   - [Een gem bouwen en versie uitbrengen](#een-gem-bouwen-en-versie-uitbrengen)
 - [De linter gebruiken in een ander Puppet-project](#de-linter-gebruiken-in-een-ander-puppet-project)
   - [Benodigdheden](#benodigdheden)
+  - [Aanbevolen projectstructuur](#aanbevolen-projectstructuur)
   - [Installatie in je project](#installatie-in-je-project)
   - [Eigen lintconfiguratie](#eigen-lintconfiguratie)
   - [Eigen code controleren](#eigen-code-controleren)
   - [Aanroepen van modules controleren](#aanroepen-van-modules-controleren)
   - [Ruby controleren in een ander project](#ruby-controleren-in-een-ander-project)
+  - [Eigen tooltests](#eigen-tooltests)
   - [Aanvullende tests](#aanvullende-tests)
   - [Controle in CI](#controle-in-ci)
   - [Problemen oplossen](#problemen-oplossen)
@@ -277,7 +279,7 @@ De [Gemfile](../../Gemfile) bevat geen vaste gemversies. [`Gemfile.lock`](../../
 
 Krijg je een Bundler-fout met `/System/Library/Frameworks/Ruby.framework` of `/usr/bin/bundle` in de melding, dan gebruikt je terminal nog de macOS-installatie. Controleer eerst `ruby --version`, `command -v ruby` en `command -v bundle` en herstel de PATH-instelling hierboven. Bundler installeren met de oude systeem-Ruby of `sudo gem install` lost die versieverschillen niet op.
 
-De root-Gemfile laadt de lokale gemspec onder `.tools/lint/`. Die beschrijft de runtime-afhankelijkheden: Puppet-lint, de twee externe lintplugins, OpenVox en `syslog`. De root-Gemfile voegt alleen het ontwikkelgereedschap toe: `metadata-json-lint`, RuboCop, Minitest en Rake. Er is één lockfile voor lokaal ontwikkelen en CI. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
+De root-Gemfile laadt de lokale gemspec onder `.tools/lint/`. Die beschrijft de runtime-afhankelijkheden: Puppet-lint, de twee externe lintplugins, RuboCop, OpenVox en `syslog`. De root-Gemfile voegt alleen het ontwikkelgereedschap toe: `metadata-json-lint`, Minitest en Rake. Er is één lockfile voor lokaal ontwikkelen en CI. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
 
 ## Naslag
 
@@ -827,11 +829,11 @@ Voer tijdens het werk `bundle exec rake test:lint` uit en sluit af met de [volle
 
 ### Technische werking van de checks
 
-De interne gem maakt de runtime-afhankelijkheden, laadpaden en gedeelde profielen beschikbaar aan andere projecten zonder dat zij onze ontwikkelbundle hoeven te gebruiken. De gem volgt de [RubyGems-libraryconventies](https://guides.rubygems.org/make-your-own-gem/): een entrypoint, eigen code onder `ProjectLint` en runtime-afhankelijkheden in de [gemspec](puppet-lint-project.gemspec). Het root-Gemfile en Rakefile blijven verantwoordelijk voor de ontwikkeling van alle repositorytools. Een tweede ontwikkelbundle binnen de gem is niet nodig. De [Bundler-documentatie](https://bundler.io/guides/git.html) beschrijft hoe dezelfde gem vanuit een checkout of Git-bron kan worden gebruikt.
+De interne gem maakt de runtime-afhankelijkheden, laadpaden en gedeelde profielen beschikbaar aan andere projecten zonder dat zij onze ontwikkelbundle hoeven te gebruiken. De gem volgt de [RubyGems-libraryconventies](https://guides.rubygems.org/make-your-own-gem/): een entrypoint, eigen code onder `ProjectLint` en runtime-afhankelijkheden in de [gemspec](lint-project.gemspec). Het root-Gemfile en Rakefile blijven verantwoordelijk voor de ontwikkeling van alle repositorytools. Een tweede ontwikkelbundle binnen de gem is niet nodig. De [Bundler-documentatie](https://bundler.io/guides/git.html) beschrijft hoe dezelfde gem vanuit een checkout of Git-bron kan worden gebruikt.
 
 ```text
 .tools/lint/
-├── puppet-lint-project.gemspec
+├── lint-project.gemspec
 ├── lib/
 │   ├── project_lint.rb
 │   └── project_lint/
@@ -924,7 +926,7 @@ end
 
 Gebruik `assert_fix(before, after, :project_check_name)` voor detectie, exacte correctie, parservalidatie van de gecorrigeerde uitvoer, een schone hercontrole en een ongewijzigde tweede fixrun. Controleer onveilige constructies ook met `fix: true`: hun invoer moet behouden blijven. De tests voor [referencefixes](test/reference_merging_test.rb) en [documentatie](test/documentation_structure_test.rb) laten beide kanten zien. De [interactietests](test/cross_check_autofix_test.rb) controleren gedeelde tokengebieden met meerdere checks.
 
-De `cli_*_test.rb`-bestanden controleren native bestandsuitvoer, exitcodes, configuratie en suppressions. [`external_project_test.rb`](test/external_project_test.rb) bouwt en installeert de echte `.gem` in een tijdelijk project met een eigen bundle. Daarmee worden ook de verpakte profielen en de optionele RuboCop-route gecontroleerd. De tests gebruiken reeds geïnstalleerde dependencies en `bundle install --local`; ze hebben geen netwerk, productiegegevens of beheerde hosts nodig. Grotere of hergebruikte Puppet-fragmenten staan als afzonderlijke `.pp`-fixtures bij de tests. De expliciete `fixture`-aanroep wijst naar dat bestand; `fixture_set` leest een benoemde verzameling en faalt als die leeg is. Korte invoer staat direct in Ruby. De CLI-tests hebben daarnaast synthetische Ruby-invoer voor het laden van plugins en persoonlijke configuratie.
+De `cli_*_test.rb`-bestanden controleren native bestandsuitvoer, exitcodes, configuratie en suppressions. [`external_project_test.rb`](test/external_project_test.rb) bouwt en installeert de echte `.gem` in een tijdelijk project met een eigen bundle. [`external_ruby_test.rb`](test/external_ruby_test.rb) controleert dat dezelfde dependency ook RuboCop en het gedeelde Ruby-profiel beschikbaar maakt, zonder aparte RuboCop-regel in de Gemfile. De tests gebruiken reeds geïnstalleerde dependencies en `bundle install --local`; ze hebben geen netwerk, productiegegevens of beheerde hosts nodig. Grotere of hergebruikte Puppet-fragmenten staan als afzonderlijke `.pp`-fixtures bij de tests. De expliciete `fixture`-aanroep wijst naar dat bestand; `fixture_set` leest een benoemde verzameling en faalt als die leeg is. Korte invoer staat direct in Ruby. De CLI-tests hebben daarnaast synthetische Ruby-invoer voor het laden van plugins en persoonlijke configuratie.
 
 Onderzoek een fout eerst bij de vermelde input en assertion. Voer de betreffende test tijdens het ontwikkelen apart uit, bijvoorbeeld `bundle exec ruby .tools/lint/test/reference_merging_test.rb`, en sluit af met alle tooltests. Voor de GitHub-uitvoervorm kun je `GITHUB_ACTION=synthetic_test bundle exec rake test` gebruiken; diagnostiektellingen moeten in beide uitvoervormen gelijk blijven.
 
@@ -957,11 +959,11 @@ De workflow gebruikt de nieuwste stabiele Ruby en installeert Bundler zonder ver
 
 ### Een gem bouwen en versie uitbrengen
 
-Het [versienummer en de runtime-afhankelijkheden](puppet-lint-project.gemspec) horen bij de gem. Bouw na de volledige validatie een pakket vanuit zijn eigen map:
+Het [versienummer en de runtime-afhankelijkheden](lint-project.gemspec) horen bij de gem. Bouw na de volledige validatie een pakket vanuit zijn eigen map:
 
 ```sh
 cd .tools/lint
-gem build puppet-lint-project.gemspec --output /tmp/puppet-lint-project.gem
+gem build lint-project.gemspec --output /tmp/lint-project.gem
 ```
 
 Het pakket bevat alleen `lib/`, `config/`, de README en de licentie. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
@@ -970,62 +972,118 @@ Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODUL
 
 ## De linter gebruiken in een ander Puppet-project
 
-Voeg `puppet-lint-project` toe aan de eigen ontwikkelbundle van je project. Je gebruikt de gedeelde checks en profielen uit één gemversie; jouw project bepaalt de te controleren bestanden en het Puppet-modulepad. Een checkout van alle Puppet-modules is alleen nodig als je die modules gebruikt, niet om de linter te kunnen laden.
+Voeg `lint-project` toe aan de eigen ontwikkelbundle van je project. Je gebruikt de gedeelde checks en profielen uit één gemversie; jouw project bepaalt de te controleren bestanden en het Puppet-modulepad. Een checkout van alle Puppet-modules is alleen nodig als je die modules gebruikt, niet om de linter te kunnen laden.
 
 ### Benodigdheden
 
 Gebruik de nieuwste stabiele Ruby en Bundler en een eigen Gemfile. Voor het controleren van aanroepen moeten de betreffende Puppet-modules lokaal vindbaar zijn. De linter haalt geen modules, catalogi, Hiera of productie-instellingen op.
 
+### Aanbevolen projectstructuur
+
+Gebruik voor nieuwe projecten die deze moduleverzameling als `global-modules` opnemen de onderstaande indeling. Die sluit aan op de [installatie van de Puppet-modules](../../README.md#installatie). Zo staan dependencies, configuratie en eigen gereedschap in ieder afnemend project op een herkenbare plaats.
+
+```text
+Puppet/
+├── Gemfile
+├── Gemfile.lock
+├── .puppet-lint.rc
+├── .rubocop.yml
+├── AGENTS.md
+├── README.md
+├── Rakefile                         # Alleen nodig voor eigen taken of tooltests.
+├── .tools/                          # Alleen nodig voor eigen gereedschap.
+│   └── <tool-name>/
+│       ├── bin/                     # Uitvoerbare ingangen, indien nodig.
+│       ├── lib/                     # Ruby-code van deze tool, indien nodig.
+│       ├── test/
+│       │   ├── <behavior>_test.rb
+│       │   ├── test_helper.rb       # Alleen voor werkelijk gedeelde testhulp.
+│       │   └── fixtures/            # Alleen voor benodigde synthetische invoer.
+│       └── README.md
+├── global-modules/                  # Deze repository als Git-submodule.
+│   └── .tools/lint/
+│       └── lint-project.gemspec
+├── modules/
+│   └── profile/manifests/init.pp
+└── environments/
+    └── production/
+        ├── environment.conf
+        └── manifests/site.pp
+```
+
+De namen `profile` en `production` zijn voorbeelden. Voeg de modules en environments toe die jouw project gebruikt. Maak `.tools/`, toolmappen en een Rakefile pas aan wanneer je eigen gereedschap of taken nodig hebt. Voor het gebruiken van `lint-project` volstaan de dependency en de configuratiebestanden in de projectroot.
+
+| Onderdeel | Afspraak |
+| --- | --- |
+| `Gemfile` en `Gemfile.lock` | Eén ontwikkelbundle in de projectroot voor lokaal werk en CI. Laad `lint-project` als dependency en voeg alleen extra gereedschap toe dat het eigen project gebruikt. |
+| `.puppet-lint.rc` en `.rubocop.yml` | Bewaar hier de eigen bestandsselectie en laad de gedeelde profielen uit de gem volgens de voorbeelden hieronder. |
+| `global-modules/` | Beheer deze dependency via de Git-submodule en de gekozen revisie. Gebruik de gem uit die checkout; voer de controles vanuit de eigen projectroot uit. |
+| `.tools/<tool-name>/` | Eén map per eigen tool, met een concrete naam. Gebruik `bin/` voor uitvoerbare ingangen en `lib/` voor Ruby-librarycode wanneer die nodig zijn; een klein zelfstandig script mag rechtstreeks in de toolmap staan. |
+| `.tools/<tool-name>/test/` | Houd gedragstests, helpers en fixtures bij de tool die ze controleren. De [testindeling en uitvoering](#eigen-tooltests) beschrijven ook bestaande testmappen. |
+| `Rakefile` | Houd eigen taken in de projectroot. Ontdek tooltests recursief onder `.tools/**/test/**/*_test.rb` en voeg alleen bestaande tools toe als `test:<tool-name>`. |
+
+Kopieer de linterimplementatie, gedeelde profielen of gemtests niet naar een eigen `.tools/lint/`. Laad ook geen tweede Gemfile of Rakefile uit `global-modules`: die bestanden zijn bedoeld voor de ontwikkeling van de gedeelde tooling. Een eigen taak mag de gedocumenteerde CLI aanroepen, maar hoeft geen checks, configuratieloader of dependency-installatie opnieuw te implementeren. Verbeteringen die voor alle afnemers gelden, horen in de gedeelde gem.
+
+Leg in de eigen `AGENTS.md` vast dat dit de gekozen toolingindeling is en verwijs naar deze sectie via `global-modules/.tools/lint/README.md#aanbevolen-projectstructuur`. Verwijs voor lintregels en reviewcriteria naar dezelfde handleiding, zodat ze op één plek onderhouden worden. De `AGENTS.md` in de submodule beschrijft het werk aan die repository; afnemers leggen de afspraken voor hun eigen project expliciet vast.
+
+Een bestaand project met een andere indeling hoeft daarvoor geen Puppet-modules of environments te verplaatsen. Beschrijf de afwijkende paden in de eigen README en houd Gemfile, bestandsselectie, modulepad en CI daarmee in overeenstemming. De indeling is een aanbevolen werkwijze; de linter dwingt geen mapnamen af. Gebruik je een los gempakket, dan vervalt `global-modules/` als installatievereiste en blijven de afspraken voor de eigen tooling hetzelfde.
+
 ### Installatie in je project
 
-Heb je een gebouwd gempakket ontvangen, installeer dat dan eerst. Geef het echte bestandspad op; zet geen credentials in commando’s of je Gemfile:
+Heb je deze repository al als `global-modules` opgenomen, haal dan eerst de submodule en zijn dependencies op volgens de [module-installatie](../../README.md#installatie). Voeg vervolgens dit toe aan de Gemfile in je eigen projectroot:
+
+```ruby
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gem 'lint-project', path: 'global-modules/.tools/lint', require: false
+```
+
+Dit pad wijst naar de map met `lint-project.gemspec`, `lib/` en `config/`. De Git-submodule legt de bronrevisie vast; je eigen Gemfile.lock legt de overige gemversies vast. Voer `bundle install` uit vanuit je projectroot en neem de Gemfile, lockfile en submodulerevisie op in je eigen versiebeheer. Daarmee installeer je zowel Puppet-lint als RuboCop; een aparte `gem 'rubocop'` is niet nodig.
+
+Zonder checkout kun je een gebouwd gempakket gebruiken. Geef het echte bestandspad op; zet geen credentials in commando’s of je Gemfile:
 
 ```sh
 gem install bundler
-gem install /path/to/puppet-lint-project.gem
+gem install /path/to/lint-project.gem
 ```
 
-Voeg vervolgens deze dependency toe aan je Gemfile. Gebruik daarnaast `gem 'rubocop', require: false` als je ook het [gedeelde Ruby-profiel](#ruby-controleren-in-een-ander-project) wilt gebruiken:
+Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:`-dependency:
 
 ```ruby
 source 'https://rubygems.org'
 
-gem 'puppet-lint-project', '~> 0.1.0', require: false
+gem 'lint-project', '~> 0.1.1', require: false
 ```
 
-Voer `bundle install` uit en neem Gemfile en Gemfile.lock op in je eigen versiebeheer. De gemspec levert de runtime-dependencies; de lockfile van jouw project legt de gekozen combinatie vast. Een interne gemserver kan hetzelfde pakket aanbieden via de gebruikelijke Bundler-sourceconfiguratie. Er is geen gedeelde `BUNDLE_GEMFILE` of apart installatieprogramma nodig.
+Voer daarna ook `bundle install` uit. Een interne gemserver kan hetzelfde pakket aanbieden via de gebruikelijke Bundler-sourceconfiguratie. Er is geen gedeelde `BUNDLE_GEMFILE` of apart installatieprogramma nodig.
 
-Werk je rechtstreeks tegen een checkout of Git-bron, dan ondersteunt Bundler ook een `path:`- of `git:`-dependency. Bijvoorbeeld:
-
-```ruby
-gem 'puppet-lint-project', path: 'dependencies/lint', require: false
-```
-
-`dependencies/lint` is hier de map met de gemspec, `lib/` en `config/`. Bij een checkout van deze volledige moduleverzameling staat die gem onder `.tools/lint/`. Alleen voor de installatie vanuit die monorepo is dat interne pad nodig; de CLI en configuratie gebruiken altijd de geïnstalleerde gem. Een Git-dependency heeft daarom `glob: '.tools/lint/*.gemspec'` nodig. Leg de gekozen revisie vast in Gemfile.lock en controleer updates in je eigen CI.
+Bundler ondersteunt ook een rechtstreekse `git:`-dependency. Voor deze repository heeft die `glob: '.tools/lint/*.gemspec'` nodig. Leg de gekozen revisie vast in Gemfile.lock en controleer updates in je eigen CI. Het pad `.tools/lint` is alleen nodig om de gem in de monorepo te vinden; de CLI en configuratie gebruiken daarna de geïnstalleerde gem.
 
 ### Eigen lintconfiguratie
 
-Bewaar projectspecifieke bestandsuitsluitingen in je eigen `.puppet-lint.rc`. De gewone lintregels en uitvoerinstellingen komen uit het meegeleverde `config/puppet-lint.rc`. Dit is bijvoorbeeld een lokale configuratie:
+Bewaar projectspecifieke bestandsuitsluitingen in je eigen `.puppet-lint.rc`. De gewone lintregels en uitvoerinstellingen komen uit het meegeleverde `config/puppet-lint.rc`. Voor de aanbevolen indeling sluit je de gedeelde modules en geïnstalleerde gems uit van de eigen stijlscan:
 
 ```text
---ignore-paths=dependencies/*,vendor/*,spec/*
+--ignore-paths=global-modules/*,./global-modules/*,vendor/*,./vendor/*
 ```
 
 Houd de modules die nodig zijn voor interfacecontrole beschikbaar, ook als hun code buiten de stijlscan valt. Voeg geen regeluitsluitingen toe om echte fouten te verbergen; de toegestane lokale suppressions staan bij de betreffende [codeafspraken](#naslag).
 
 ### Eigen code controleren
 
-Voer vanuit je projectroot uit:
+Het voorbeeld hieronder gebruikt de aanbevolen indeling en controleert twee concrete manifests. Voer het vanuit je projectroot uit:
 
 ```sh
 set -e
-lint_gem="$(bundle info --path puppet-lint-project)"
-export PROJECT_LINT_MODULEPATH="$PWD/modules:$PWD/dependencies"
+lint_gem="$(bundle info --path lint-project)"
+export PROJECT_LINT_MODULEPATH="$PWD/global-modules:$PWD/modules"
 test -f .puppet-lint.rc
-bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc manifests/site.pp modules/profile/manifests/init.pp
+bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc environments/production/manifests/site.pp modules/profile/manifests/init.pp
 ```
 
-Vervang de modulemappen en manifestpaden door bestaande paden in jouw project. De modulemappen moeten absoluut zijn. Het voorbeeld stopt met `set -e` bij een fout. `test -f` is nodig omdat de native CLI een ontbrekend optiebestand stilzwijgend overslaat. `--no-config` voorkomt dat systeem- of persoonlijke lintopties worden ingelezen. De twee `--config`-opties lezen eerst het gedeelde profiel en vervolgens je eigen bestandsuitsluitingen.
+Vervang de modulemappen en manifestpaden door bestaande paden in jouw project. De modulemappen moeten absoluut zijn en dezelfde volgorde hebben als in de gekozen Puppet environment; het voorbeeld volgt de [module-installatie](../../README.md#installatie), met `global-modules` vóór `modules`. Voeg andere gebruikte modulemappen expliciet toe. Het voorbeeld stopt met `set -e` bij een fout. `test -f` is nodig omdat de native CLI een ontbrekend optiebestand stilzwijgend overslaat. `--no-config` voorkomt dat systeem- of persoonlijke lintopties worden ingelezen. De twee `--config`-opties lezen eerst het gedeelde profiel en vervolgens je eigen bestandsuitsluitingen.
 
 Geef één directory op om die recursief te scannen, of geef één of meer concrete manifestbestanden mee. De native CLI ondersteunt geen combinatie van meerdere directoryscans in één aanroep. Controleer iedere eigen manifestmap wanneer je project meerdere mappen gebruikt en laat CI bij een ontbrekende of lege selectie falen. De keuze van te controleren bestanden is een verantwoordelijkheid van je project; de linter kan niet vaststellen of je alle productiecode hebt geselecteerd.
 
@@ -1046,25 +1104,67 @@ Bij vindbare declaraties controleert `project_interface_calls` verplichte parame
 
 ### Ruby controleren in een ander project
 
-RuboCop is optioneel en wordt geen runtime-afhankelijkheid van de Puppet-linter. Voeg `gem 'rubocop', require: false` toe aan je eigen Gemfile en voer `bundle install` uit. Laat je `.rubocop.yml` het gedeelde profiel erven met de [native `inherit_gem`-optie](https://docs.rubocop.org/rubocop/latest/configuration.html):
+Bundler installeert RuboCop automatisch als dependency van `lint-project`. Maak in de hoofdmap van je eigen project een `.rubocop.yml` die het gedeelde profiel erft met de [native `inherit_gem`-optie](https://docs.rubocop.org/rubocop/latest/configuration.html):
 
 ```yaml
 inherit_gem:
-  puppet-lint-project: config/rubocop.yml
+  lint-project: config/rubocop.yml
+
+inherit_mode:
+  merge:
+    - Include
+    - Exclude
 
 AllCops:
   Include:
     - '.tools/**/*.rb'
+    - '.tools/**/*.rake'
     - '.tools/**/*.gemspec'
   Exclude:
+    - 'global-modules/**/*'
     - 'vendor/**/*'
+    - '**/templates/**/*'
 ```
 
-Het gedeelde profiel bepaalt de Ruby-regels. Je eigen configuratie bepaalt aanvullende bestandsselectie, bijvoorbeeld voor verborgen toolmappen of vendored code. De Ruby-configuratie laadt geen Puppet-checks en heeft geen eigen Ruby-lintengine. Voer de gewone CLI uit:
+Het gedeelde profiel gebruikt de standaardregels van RuboCop en schakelt nieuwe checks in. Met `inherit_mode` voeg je de eigen bestandsselectie toe aan de standaardselectie, zodat ook gewone Ruby-bestanden, Gemfile en Rakefile gecontroleerd blijven. De scan neemt eigen tools onder `.tools/` mee en slaat `global-modules/` over. Pas de uitgesloten dependency- en templatemappen aan je eigen project aan; templates valideer je na renderen. De Ruby-configuratie laadt geen Puppet-checks. Voer vanuit je projectroot de gewone CLI uit:
 
 ```sh
 bundle exec rubocop --config .rubocop.yml
 ```
+
+Voer de Ruby-scan ook in je eigen CI uit. Puppet-lint en RuboCop hebben afzonderlijke commando's: een Puppet-lintscan voert geen Ruby-scan uit.
+
+### Eigen tooltests
+
+Test eigen gereedschap onder `.tools/<tool-name>/test/`, met bestandsnamen die eindigen op `_test.rb`. Zet gedeelde voorbereiding in `test_helper.rb` wanneer meerdere tests die nodig hebben en bewaar grotere synthetische invoer onder `test/fixtures/`. Fixtures mogen zo nodig per gedrag worden gegroepeerd. Gebruik korte invoer direct in de test en los paden op vanaf het testbestand, zodat de uitvoering niet afhangt van de huidige werkmap.
+
+Maak geen afzonderlijke centrale `.tools/test/` of `.tools/tests/`. Staan eigen tooltests nu in een rootmap `test/`, `tests/` of `spec/`, verplaats dan alleen die tooltests naar de bijbehorende tool. Behoud de dekking en werk require-paden, fixtures, taken, CI en documentatie samen bij. Verwijder de oude map pas als die leeg is. Bestaande module- of catalogustests blijven bij de eigen validatie van het afnemende project en horen niet onder `.tools/`.
+
+Gebruik voor Ruby-tooltests Minitest en Rake uit de eigen ontwikkelbundle. Voeg deze dependencies alleen toe als je zulke tests hebt:
+
+```ruby
+gem 'minitest'
+gem 'rake'
+```
+
+Voer daarna `bundle install` uit. In een project met alleen tooltests kan de root-Rakefile de selectie als volgt vastleggen:
+
+```ruby
+# frozen_string_literal: true
+
+require 'rake/testtask'
+
+Rake::TestTask.new(:test) do |task|
+  task.pattern = '.tools/**/test/**/*_test.rb'
+  task.warning = false
+end
+
+task default: :test
+```
+
+Voer vanuit de projectroot `bundle exec rake test` uit, lokaal en in CI. Controleer het aantal uitgevoerde tests; een geslaagde taak met nul tests bewijst niets. Een aanvullende `test:<tool-name>`-taak selecteert alleen `.tools/<tool-name>/test/**/*_test.rb`. Heeft het project al een verzameltaak voor andere tests, voeg de toolselectie dan als afzonderlijke taak toe en behoud de bestaande dekking en het standaardgedrag.
+
+Laat de selectie alleen de eigen tools doorlopen. De tests onder `global-modules/.tools/lint/test/` horen bij de ontwikkeling van de gedeelde gem en draaien in de CI van die repository. Het afnemende project hoeft die suite niet te kopiëren of via zijn eigen Rakefile te laden. Wie alleen de linters gebruikt, heeft daarvoor geen eigen testmap of testtaak nodig.
 
 ### Aanvullende tests
 
@@ -1078,7 +1178,7 @@ De gemtests controleren het lintgereedschap. Ze vervangen geen catalogus-, templ
 
 ### Controle in CI
 
-Gebruik dezelfde Gemfile, lockfile, configuratie en CLI-aanroepen als lokaal. Onderstaande GitHub Actions-workflow gaat ervan uit dat je gembron toegankelijk is en de checkout de benodigde Puppet-modules bevat. Voeg anders vóór de lintstap de bestaande installatiestappen van je project toe.
+Gebruik dezelfde Gemfile, lockfile, configuratie en CLI-aanroepen als lokaal. Onderstaande GitHub Actions-workflow volgt de aanbevolen indeling en haalt `global-modules` met zijn submodules op. Gebruik je een andere gembron of aanvullende Puppet-modules, voeg dan vóór de lintstap de bestaande installatiestappen van je project toe.
 
 ```yaml
 name: Puppet lint
@@ -1114,21 +1214,21 @@ jobs:
       - name: Check own Puppet manifests
         run: |
           test -f .puppet-lint.rc
-          lint_gem="$(bundle info --path puppet-lint-project)"
-          export PROJECT_LINT_MODULEPATH="$GITHUB_WORKSPACE/modules:$GITHUB_WORKSPACE/dependencies"
-          bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc manifests/site.pp modules/profile/manifests/init.pp
+          lint_gem="$(bundle info --path lint-project)"
+          export PROJECT_LINT_MODULEPATH="$GITHUB_WORKSPACE/global-modules:$GITHUB_WORKSPACE/modules"
+          bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc environments/production/manifests/site.pp modules/profile/manifests/init.pp
       - name: Check own Ruby code
         run: bundle exec rubocop --config .rubocop.yml
 ```
 
-Pas de bronselectie en modulemappen aan je project aan. De laatste stap hoort alleen bij projecten die RuboCop hebben toegevoegd. Bewaar credentials voor een interne gembron in de daarvoor bedoelde CI-instellingen; zet ze niet in deze configuratie. De [repositoryworkflow](#ci-van-deze-repository) toont de volledige validatie van de tooling zelf, inclusief de gemtests.
+Pas de bronselectie en modulemappen aan je project aan. De Ruby-stap gebruikt de hierboven beschreven `.rubocop.yml`; de gem levert het bijbehorende commando. Bewaar credentials voor een interne gembron in de daarvoor bedoelde CI-instellingen; zet ze niet in deze configuratie. De [repositoryworkflow](#ci-van-deze-repository) toont de volledige validatie van de tooling zelf, inclusief de gemtests.
 
 ### Problemen oplossen
 
 | Probleem | Controle en herstel |
 | --- | --- |
 | Bundler mist de gem of een executable | Controleer Ruby, `Gem.bindir`, PATH en de eigen Gemfile. Installeer het pakket of configureer de gembron en voer `bundle install` uit. |
-| Projectchecks ontbreken | Controleer `bundle show puppet-lint-project` en gebruik `--load` vóór andere projectopties. `--list-checks` moet de `project_*`-checks tonen. |
+| Projectchecks ontbreken | Controleer `bundle show lint-project` en gebruik `--load` vóór andere projectopties. `--list-checks` moet de `project_*`-checks tonen. |
 | Persoonlijke opties hebben invloed | Gebruik `--no-config` vóór de expliciete configuratiebestanden. |
 | Een scan slaagt terwijl eigen code fout is | Controleer of alle eigen manifests geselecteerd zijn. Probeer tijdelijk `$values = [1] + [2]`; verwacht `project_arrays` en een foutcode. `concat([1], [2])` hoort die melding op te lossen. |
 | Een onjuiste aanroep geeft geen melding | Controleer modulepad, modulevolgorde en manifestlocatie; valideer de catalogus voor gedrag dat lint niet kan bewijzen. |

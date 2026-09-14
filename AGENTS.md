@@ -241,6 +241,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Extract helpers only for existing shared complexity or a substantial standalone analysis; keep simple check-specific methods with their check and avoid speculative abstractions.
 - Treat the documented gem entrypoint, profiles, check names, and downstream settings as public contracts; version changes and validate packaged use from an independent project.
 - Keep local and CI execution on the same Bundler, Rake, and native CLI routes.
+- Keep downstream setup and CI examples aligned with the [recommended consumer layout](.tools/lint/README.md#aanbevolen-projectstructuur). Document supported layout differences without duplicating the linter implementation or shared profiles.
 
 ### Linting And Autofix
 

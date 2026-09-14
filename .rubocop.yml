@@ -1,5 +1,5 @@
 inherit_gem:
-  puppet-lint-project: config/rubocop.yml
+  lint-project: config/rubocop.yml
 
 inherit_mode:
   merge:

@@ -23,7 +23,7 @@ class LoadingTest < Minitest::Test
   def test_entrypoint_can_be_required_in_either_order_and_loaded_repeatedly
     ["require 'project_lint'; require 'puppet-lint'",
      "require 'puppet-lint'; require 'project_lint'"].each do |requires|
-      script = "#{requires}; 2.times { load Gem.loaded_specs.fetch('puppet-lint-project').full_gem_path + " \
+      script = "#{requires}; 2.times { load Gem.loaded_specs.fetch('lint-project').full_gem_path + " \
                "'/lib/project_lint.rb' }; puts PuppetLint.configuration.checks.grep(/^project_/).size"
       output, errors, status = Open3.capture3(RbConfig.ruby, '-e', script)
       assert status.success?, errors

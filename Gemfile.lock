@@ -1,11 +1,12 @@
 PATH
   remote: .tools/lint
   specs:
-    puppet-lint-project (0.1.0)
+    lint-project (0.1.1)
       openvox (~> 8.29)
       puppet-lint (~> 5.1)
       puppet-lint-param-types (~> 3.0)
       puppet-lint-trailing_comma-check (~> 3.0)
+      rubocop (~> 1.91)
       syslog (~> 0.4)
 
 GEM
@@ -121,11 +122,10 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  lint-project!
   metadata-json-lint
   minitest
-  puppet-lint-project!
   rake
-  rubocop
 
 BUNDLED WITH
   4.0.20
