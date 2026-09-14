@@ -58,22 +58,50 @@ class ResourceReferencesTest < Minitest::Test
     }.each do |type, (first, last)|
       assert_fix("Notify['target'] -> [#{type}['#{last}'], #{type}['#{first}']]\n",
                  "Notify['target'] -> #{type}['#{first}', '#{last}']\n")
+      assert_fix("Notify['target'] -> [#{type}['#{last}'], Notify['other'], #{type}['#{first}']]\n",
+                 "Notify['target'] -> [#{type}['#{first}', '#{last}'], Notify['other']]\n")
     end
   end
 
-  def test_different_types_and_nonadjacent_references_stay_separate
-    assert_unchanged("Notify['target'] -> [Package['zulu'], Service['nginx'], Package['alpha']]\n")
-    assert_unchanged("Notify['target'] -> [Package['zulu'], $extra, Package['alpha']]\n")
+  def test_nonadjacent_references_merge_at_the_first_occurrence
+    assert_fix("Notify['target'] -> [Package['zulu'], Service['nginx'], Package['alpha']]\n",
+               "Notify['target'] -> [Package['alpha', 'zulu'], Service['nginx']]\n")
+    assert_fix("Notify['target'] -> [Service['nginx'], Package['zulu'], File['/a'], Package['alpha'], Notify['other']]\n",
+               "Notify['target'] -> [Service['nginx'], Package['alpha', 'zulu'], File['/a'], Notify['other']]\n")
+    assert_unchanged("Notify['target'] -> [Service['nginx'], Package['alpha'], File['/a']]\n")
   end
 
   def test_multiple_independent_groups
     assert_fix("Notify['target'] -> [Package['z'], Package['a'], File['/z'], File['/a'], Package['b']]\n",
-               "Notify['target'] -> [Package['a', 'z'], File['/a', '/z'], Package['b']]\n", count: 2)
+               "Notify['target'] -> [Package['a', 'b', 'z'], File['/a', '/z']]\n", count: 2)
+    assert_fix("Notify['target'] -> [Package['z'], File['/z'], Service['z'], Package['b', 'a'], File['/a'], Service['a']]\n",
+               "Notify['target'] -> [Package['a', 'b', 'z'], File['/a', '/z'], Service['a', 'z']]\n", count: 3)
+  end
+
+  def test_nonadjacent_multiline_references_keep_other_entries_and_trailing_commas
+    before = "Notify['target'] -> [\n  Package['z'],\n  Service['z'],\n  Package['a'],\n  Service['a'],\n]\n"
+    after = "Notify['target'] -> [\n  Package['a', 'z'],\n  Service['a', 'z'],\n]\n"
+    assert_fix(before, after, count: 2)
+    assert_fix(before.sub("Service['a'],\n", "Service['a']\n"), after.sub("Service['a', 'z'],\n", "Service['a', 'z']\n"), count: 2)
+    assert_fix("Notify['target'] -> [\n  Package[\n    'z',\n    'b',\n  ],\n  Service['nginx'],\n  Package['a'],\n]\n",
+               "Notify['target'] -> [\n  Package[\n    'a',\n    'b',\n    'z',\n  ],\n  Service['nginx'],\n]\n")
+  end
+
+  def test_intervening_expressions_require_review_without_hiding_duplicate_types
+    ['$extra', "example::references()", "[Package['nested']]", "Service[$name]"].each do |other|
+      code = "Notify['target'] -> [Package['z'], #{other}, Package['a']]\n"
+      problems, fixed = lint(code, fix: true)
+      assert_equal [:warning], problems.map { |problem| problem[:kind] }
+      assert_includes problems.first[:message], '[review]'
+      assert_equal code, fixed
+    end
   end
 
   def test_resource_type_case_does_not_split_a_group
     assert_fix("Notify['target'] -> [Example::Widget['z'], Example::WIDGET['a']]\n",
                "Notify['target'] -> Example::Widget['a', 'z']\n")
+    assert_fix("Notify['target'] -> [Example::Widget['z'], Service['other'], Example::WIDGET['a']]\n",
+               "Notify['target'] -> [Example::Widget['a', 'z'], Service['other']]\n")
   end
 
   def test_identical_references_in_different_positions_are_each_checked
@@ -95,9 +123,15 @@ class ResourceReferencesTest < Minitest::Test
     %w[require before notify subscribe].each do |attribute|
       assert_fix("notify { 'example': #{attribute} => [Service['nginx'], Service['apache2']] }\n",
                  "notify { 'example': #{attribute} => Service['apache2', 'nginx'] }\n")
+      assert_fix("notify { 'example': #{attribute} => [Package['z'], Service['nginx'], Package['a']] }\n",
+                 "notify { 'example': #{attribute} => [Package['a', 'z'], Service['nginx']] }\n")
     end
     assert_fix("[File['/z'], File['/a']] -> Service['z', 'a']\n",
                "File['/a', '/z'] -> Service['a', 'z']\n", count: 2)
+    %w[-> ~> <- <~].each do |operator|
+      assert_fix("[File['/z'], Service['nginx'], File['/a']] #{operator} [Package['z'], Notify['other'], Package['a']]\n",
+                 "[File['/a', '/z'], Service['nginx']] #{operator} [Package['a', 'z'], Notify['other']]\n", count: 2)
+    end
   end
 
   def test_single_reference_arrays_are_unwrapped_in_every_metaparameter
@@ -163,6 +197,8 @@ class ResourceReferencesTest < Minitest::Test
     assert_unchanged("Notify['target'] -> [[Package['z']], [Package['a']]]\n")
     assert_fix("Notify['target'] -> [[Package['z'], Package['a']], Package['b']]\n",
                "Notify['target'] -> [[Package['a', 'z']], Package['b']]\n")
+    assert_fix("Notify['target'] -> [[Package['z'], Service['nginx'], Package['a']], Package['b']]\n",
+               "Notify['target'] -> [[Package['a', 'z'], Service['nginx']], Package['b']]\n")
   end
 
   def test_data_types_and_lookups_are_not_resource_references
@@ -175,6 +211,10 @@ class ResourceReferencesTest < Minitest::Test
   def test_comments_and_dynamic_titles_require_manual_merging
     [
       "Notify['target'] -> [Package['z'], # Keep this explanation.\n  Package['a']]\n",
+      "Notify['target'] -> [Package['z'], Service['nginx'], # Keep this explanation.\n  Package['a']]\n",
+      "Notify['target'] -> [Package['z'], Service['nginx'], Package['a'], # Explain the last package.\n]\n",
+      "Notify['target'] -> [Package['z'], Service['nginx'], Package['a'] /* Explain the last package. */]\n",
+      "Notify['target'] -> [Package[$name], Service['nginx'], Package['a']]\n",
       "Notify['target'] -> File['/z', /* Keep this explanation. */ '/a']\n",
       %q{Notify['target'] -> [File[$path], File["${root}/a"]]} + "\n",
       "Notify['target'] -> [File[join($parts, '/')], File['/a']]\n",
@@ -185,6 +225,20 @@ class ResourceReferencesTest < Minitest::Test
       assert_equal code, fixed
     end
     assert_unchanged(%q{Notify['target'] -> File[$path, "${root}/a"]} + "\n")
+  end
+
+  def test_nonadjacent_references_preserve_full_and_partial_suppressions
+    code = "Notify['target'] -> [\n  Package['z'],\n  Service['nginx'],\n  Package['a'],\n]\n"
+    ignored = "# lint:ignore:project_resource_references\n#{code}# lint:endignore\n"
+    problems, fixed = lint(ignored, fix: true)
+    assert_equal [:ignored], problems.map { |problem| problem[:kind] }
+    assert_equal ignored, fixed
+    ["Service['nginx'],", "Package['a'],"].each do |entry|
+      partial = code.sub(entry, "#{entry} # lint:ignore:project_resource_references")
+      problems, fixed = lint(partial, fix: true)
+      assert_equal [:warning], problems.map { |problem| problem[:kind] }
+      assert_equal partial, fixed
+    end
   end
 
   def test_trailing_comment_is_preserved
@@ -201,6 +255,8 @@ class ResourceReferencesTest < Minitest::Test
 
   def test_unicode_positions_and_titles
     assert_fix("Notify['target'] -> ['é', File['é', 'b', 'a']]\n", "Notify['target'] -> ['é', File['a', 'b', 'é']]\n")
+    assert_fix("Notify['target'] -> [File['é', 'B'], Service['nginx'], File['a', 'a']]\n",
+               "Notify['target'] -> [File['B', 'a', 'a', 'é'], Service['nginx']]\n")
   end
 
   def test_strings_and_comments_are_not_code
@@ -223,6 +279,11 @@ class ResourceReferencesTest < Minitest::Test
       "$refs = Notify['target'] -> [File['z'], File['a']]\n",
       "$refs = [1].map |$item| { Notify['target'] -> File['z', 'a'] }\n",
       "$refs = { 'require' => [File['z'], File['a']] }\n",
+      "$refs = [Package['z'], Service['nginx'], Package['a']]\n",
+      "example::call([Package['z'], Service['nginx'], Package['a']])\n",
+      "$first = [Package['z'], Service['nginx'], Package['a']][0]\n",
+      "notify { 'example': message => [Package['z'], Service['nginx'], Package['a']] }\n",
+      "$refs = Notify['target'] -> [Package['z'], Service['nginx'], Package['a']]\n",
     ].each do |code|
       problems, fixed = lint(code, fix: true)
       assert_equal [:warning], problems.map { |problem| problem[:kind] }

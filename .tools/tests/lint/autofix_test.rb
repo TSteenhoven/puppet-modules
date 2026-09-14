@@ -100,6 +100,10 @@ class AutofixTest < Minitest::Test
   def test_all_checks_fix_the_same_region_in_one_pass
     assert_fix("Notify['target'] -> [\n      File[\"/z\"],File[\"/a\"]\n]\n",
                "Notify['target'] -> File['/a', '/z']\n")
+    assert_fix("Notify['target'] -> [\n      Package[\"z\"],\n      Service[\"z\"],\n      Package[\"a\"],\n      Service[\"a\"]\n]\n",
+               "Notify['target'] -> [\n  Package['a', 'z'],\n  Service['a', 'z'],\n]\n")
+    assert_fix("Notify['target'] -> [Package[\"z\",\"b\"],Service[\"nginx\"],Package[\"a\",\"a\"]]\n",
+               "Notify['target'] -> [Package['a', 'a', 'b', 'z'], Service['nginx']]\n")
   end
 
   def test_repeated_indentation_fixes_handle_empty_whitespace_tokens

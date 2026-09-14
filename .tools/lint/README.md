@@ -260,7 +260,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | [`project_layout`](#inspringing) | Array-inspringing, lege regels na `{`, kommaspaties en afsluitende komma in parameterlijsten. | Voorwaardelijk | Commentaar tussen tokens en heredocs bij het einde van parameters. |
 | [`project_comment_spacing`](#toelichtingen-bij-code) | Lege regel vóór een zelfstandig toelichtingsblok na code. | Voorwaardelijk | Betekenis en plaatsing van de toelichting. |
 | [`project_resource_sections`](#toelichtingen-bij-code) | Eigen toelichting bij een resourcedeclaratie na een afgesloten blok. | Nee | Waarom de resource daar hoort. |
-| [`project_resource_references`](#resource-references) | Aangrenzende references, alfabetische letterlijke titels en overbodige buitenste dependency-array. | Voorwaardelijk | Relatiecontext, arraystructuur, dynamische titels, volgorde en commentaar. |
+| [`project_resource_references`](#resource-references) | References van hetzelfde type binnen een array, alfabetische letterlijke titels en overbodige buitenste dependency-array. | Voorwaardelijk | Relatiecontext, arraystructuur, dynamische expressies, volgorde en commentaar. |
 | [`project_if_sections`](#voorwaarden-toelichten) | Toelichting boven `if`/`unless` en aaneengesloten voorbereiding. | Nee | Inhoudelijke samenhang en evaluatievolgorde. |
 | [`project_variable_sections`](#variabelen-groeperen) | Toelichting aan het begin van een blok en na een aantoonbaar afhankelijke groep. | Nee | Groepsindeling en hints voor samenvoegen. |
 | [`project_class_check_reuse`](#classcontroles-hergebruiken) | Herhaalde letterlijke classcontroles en gebruik van hun resultaat, inclusief vindbare afnemers. | Nee | Evaluatievolgorde en indirect gebruik dat de analyse niet vindt. |
@@ -402,7 +402,7 @@ Een geslaagde scan bewijst geen geldige catalogus. Argumenttypen, onbekende para
 
 #### Resource references
 
-Schrijf direct aangrenzende references van hetzelfde resourcetype binnen een array als één reference met meerdere titels. Sorteer de titels alfabetisch. Dit geldt ook voor classes en eigen defined types. Bij een dependency-attribuut of een losse relatieketen laat je de buitenste array weg wanneer daarin nog maar één reference staat:
+Schrijf references van hetzelfde resourcetype binnen één array als één reference met meerdere titels, ook wanneer er references van andere typen tussen staan. Sorteer de titels alfabetisch en zet de samengevoegde reference op de plaats van de eerste reference van dat type. Dit geldt ook voor classes en eigen defined types. Beoordeel buiten dependency-attributen en losse relatieketens eerst de gevolgen voor de arraystructuur, zoals hieronder beschreven. Bij een dependency-attribuut of een losse relatieketen laat je de buitenste array weg wanneer daarin nog maar één reference staat:
 
 ```puppet
 # Both packages are prerequisites for this notification.
@@ -413,13 +413,13 @@ notify { 'packages-ready':
 
 Hier zou `require => [Package['zulu'], Package['alpha']]` dezelfde dependencies beschrijven, maar met onnodige herhaling. Ook een buitenste array zoals `[Package['alpha', 'zulu']]` is op deze plaats overbodig.
 
-Een ander array-element onderbreekt de reeks. Zo blijft `[Package['zulu'], Service['nginx'], Package['alpha']]` gescheiden. Voeg ook geen afzonderlijke functieargumenten, geneste arrays of kanten van een relatiepijl samen. Alleen de buitenste array rond één dependency-reference kan weg; meerdere elementen en geneste arraylagen blijven behouden.
+Zo wordt `require => [Package['zulu'], Service['nginx'], Package['alpha']]` geschreven als `require => [Package['alpha', 'zulu'], Service['nginx']]`. De service blijft als eigen reference aanwezig. Andere array-elementen onderbreken de controle op herhaalde resourcetypen niet. Voeg geen references uit afzonderlijke functieargumenten, verschillende arraylagen of kanten van een relatiepijl samen. Iedere geneste array wordt afzonderlijk gecontroleerd. Alleen de buitenste array rond één dependency-reference kan weg; meerdere elementen en geneste arraylagen blijven behouden.
 
-`project_resource_references` controleert aangrenzende references, de volgorde van letterlijke titels en overbodige buitenste arrays. Letterlijke titels worden hoofdlettergevoelig vergeleken op hun stringwaarde, zonder de aanhalingstekens mee te tellen. Dubbele titels blijven behouden. Datatypeparameters zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
+`project_resource_references` meldt afzonderlijke references van hetzelfde type binnen een array, ongesorteerde letterlijke titels en overbodige buitenste arrays. Letterlijke titels worden hoofdlettergevoelig vergeleken op hun stringwaarde, zonder de aanhalingstekens mee te tellen. Dubbele titels blijven behouden. Datatypeparameters zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
 
 Autofix kan dit herstellen bij `require`, `before`, `notify` en `subscribe`, en bij losse relatieketens met `->`, `~>`, `<-` of `<~`. In die context beschrijven de references relaties tussen resources. Bij andere toepassingen kan dezelfde herschrijving de betekenis veranderen: een [reference met meerdere titels levert een array op](https://help.puppet.com/core/current/Content/PuppetCore/lang_data_resource_reference.htm), waardoor `[Package['a', 'b']]` een geneste array bevat en `[Package['a'], Package['b']]` niet. Bij variabelen, functieargumenten, indexeringen en een gebruikt resultaat van een relatie-expressie beoordeel je de gevolgen zelf.
 
-Samenvoegen en sorteren gebeurt alleen automatisch bij letterlijke titels zonder tussenliggend commentaar. Dynamische titels en commentaar vragen handmatige aanpassing: behoud de toelichting bij de juiste resource en beoordeel welke waarden de titels kunnen krijgen. De linter rekent die waarden niet uit.
+Samenvoegen en sorteren gebeurt alleen automatisch bij letterlijke titels zonder commentaar in het te wijzigen gedeelte of bij een te verwijderen reference. Staan er andere elementen tussen de samen te voegen references, dan moeten ook die references met letterlijke titels zijn. Bij bijvoorbeeld een tussenliggende variabele, functieaanroep of geneste array volgt wel een melding, maar beoordeel je de samenvoeging zelf. Dat geldt ook voor dynamische titels en commentaar: behoud de toelichting bij de juiste resource en beoordeel welke waarden de expressies kunnen krijgen. De linter rekent die waarden niet uit.
 
 Een buitenste array rond één reference kan ook bij een dynamische titel worden verwijderd: `require => [Package[$packages]]` wordt `require => Package[$packages]`. De reference zelf verandert dan niet. Bevat de te wijzigen array commentaar, een heredoc of genegeerde code, dan weigert de autofix ook deze correctie.
 
@@ -807,7 +807,7 @@ De validatiecontrole herkent rechtstreekse Puppet-aanroepen van `warning()` en `
 
 #### References en relatiecontext
 
-`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De analyse loopt via de omvattende expressies naar de relatiecontext; ingebouwde datatypen en lokale typealiases worden uitgesloten. De correctie hergebruikt de oorspronkelijke titeltokens, zodat spelling, escapes en fixes van andere checks behouden blijven. De regels voor sortering, dubbele titels en het verwijderen van de buitenste array staan bij [Resource references](#resource-references).
+`project_resource_references` gebruikt de Puppet-AST om directe elementen van iedere array per resourcetype te groeperen. De analyse loopt via de omvattende expressies naar de relatiecontext; ingebouwde datatypen en lokale typealiases worden uitgesloten. De correctie hergebruikt de oorspronkelijke titeltokens in de eerste reference en verwijdert de overige references van dat type elk met hun voorafgaande komma. Daardoor blijven tussenliggende elementen en fixes van andere checks behouden, ook wanneer meerdere typen door elkaar staan. De regels voor sortering, dubbele titels en het verwijderen van de buitenste array staan bij [Resource references](#resource-references).
 
 #### Voorbereiding van voorwaarden
 

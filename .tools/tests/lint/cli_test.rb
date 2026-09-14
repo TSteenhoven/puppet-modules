@@ -223,7 +223,7 @@ class CliTest < Minitest::Test
   def test_resource_references_fix_works_with_standard_checks_and_is_idempotent
     Dir.mktmpdir('lint_references_') do |directory|
       file = File.join(directory, 'references.pp')
-      File.write(file, "Notify['target'] -> [Package[\"zulu\"], Package[\"alpha\"], Service['nginx'], Service['apache2']]\n")
+      File.write(file, "Notify['target'] -> [Package[\"zulu\"], Service['nginx'], Package[\"alpha\"], Service['apache2']]\n")
       output, errors, status = cli(file)
       refute status.success?, output + errors
       assert_equal 2, diagnostics(output, 'project_resource_references').length
@@ -232,6 +232,10 @@ class CliTest < Minitest::Test
       assert status.success?, output + errors
       expected = "Notify['target'] -> [Package['alpha', 'zulu'], Service['apache2', 'nginx']]\n"
       assert_equal expected, File.read(file)
+      ProjectLint::Model.new(File.read(file))
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+      assert_empty output
       output, errors, status = cli('--fix', file)
       assert status.success?, output + errors
       assert_empty diagnostics(output, 'project_resource_references')
@@ -245,6 +249,7 @@ class CliTest < Minitest::Test
       code = <<~'PUPPET'
         $refs = [
           File['/tmp/z'], # Keep the reason attached to this resource.
+          Service['nginx'],
           File['/tmp/a'],
         ]
       PUPPET

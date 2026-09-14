@@ -41,29 +41,40 @@ PuppetLint.new_check(:project_resource_references) do
     node.is_a?(ProjectLint::Model::M::LiteralString) || node.is_a?(ProjectLint::Model::M::QualifiedName)
   end
 
-  def inspect_references(references, relationship, wrapper = nil)
+  def inspect_references(references, relationship, wrapper = nil, safe_merge: true)
     titles = references.flat_map(&:keys)
     literal = titles.all? { |title| literal_title?(title) }
     unordered = literal && titles.map(&:value) != titles.map(&:value).sort
     change_titles = references.length > 1 || unordered
     return unless change_titles || wrapper
 
-    first = @positions.fetch([references.first.line, references.first.pos])
+    occurrences = references.map do |reference|
+      start = @positions.fetch([reference.line, reference.pos])
+      [start, @closings.fetch(start.next_code_token)]
+    end
+    first = occurrences.first.first
     opening = first.next_code_token
-    closing = @closings.fetch(@positions.fetch([references.last.line, references.last.pos]).next_code_token)
+    closing = occurrences.last.last
     outer_opening = @positions.fetch([wrapper.line, wrapper.pos]) if wrapper
     outer_closing = @closings.fetch(outer_opening) if wrapper
     span_first = outer_opening || first
     span_last = outer_closing || closing
+    if references.length > 1 && !wrapper
+      # A trailing comment can belong to a removed entry, including after its comma.
+      trailing = @source_tokens.drop(@source_tokens.index(closing) + 1).take_while do |token|
+        token.type == :COMMA || PuppetLint::Data.formatting_tokens.include?(token.type)
+      end
+      span_last = trailing.last || closing
+    end
     span = @source_tokens[@source_tokens.index(span_first)..@source_tokens.index(span_last)]
     commented = span.any? { |token| [:COMMENT, :SLASH_COMMENT, :MLCOMMENT].include?(token.type) }
     title_tokens = literal ? titles.map { |title| @positions.fetch([title.line, title.pos]) } : []
     # Heredocs have detached bodies; only ordinary literal tokens can be moved as one title.
     movable_titles = literal && title_tokens.all? { |token| [:SSTRING, :STRING, :NAME].include?(token.type) }
-    fixable = relationship && !commented && !ignored_span?(span_first, span_last) &&
+    fixable = relationship && safe_merge && !commented && !ignored_span?(span_first, span_last) &&
               !span.any? { |token| token.type == :HEREDOC_OPEN } && (!change_titles || movable_titles)
     message = if references.length > 1
-                'Merge adjacent references of the same resource type and sort their titles alphabetically'
+                'Merge references of the same resource type within the array and sort their titles alphabetically'
               elsif unordered
                 'Sort resource reference titles alphabetically'
               else
@@ -71,7 +82,8 @@ PuppetLint.new_check(:project_resource_references) do
               end
     message += '; remove the outer array around the resulting single reference' if wrapper && change_titles
     message += ' [review] Verify relationship context, array shape, title order and comments before changing this expression' unless fixable
-    @fixes << { first: first, opening: opening, closing: closing, outer_opening: outer_opening, outer_closing: outer_closing,
+    @fixes << { first: first, opening: opening, closing: closing, occurrences: occurrences,
+                outer_opening: outer_opening, outer_closing: outer_closing,
                 titles: titles.zip(title_tokens), fixable: fixable, merged: references.length > 1, change_titles: change_titles }
     notify(:warning, message: message, line: first.line, column: first.column, edit: @fixes.length - 1)
   end
@@ -92,15 +104,20 @@ PuppetLint.new_check(:project_resource_references) do
     model.nodes.each do |node, parents|
       next unless node.is_a?(m::LiteralList)
 
-      # Only sibling array entries can merge. Function arguments, nested arrays and relationship operands have separate meanings.
-      node.values.chunk { |value| reference?(value) ? value.left_expr.value : nil }.each do |type, group|
+      # Group siblings across the entire array without crossing into nested arrays or other operands.
+      node.values.each_with_index.group_by { |value, _| reference?(value) ? value.left_expr.value : nil }.each do |type, entries|
         next unless type
 
+        group = entries.map(&:first)
+        # Moving literal references past another literal reference cannot change expression evaluation.
+        # Unresolved entries may execute code or contain further references, so leave those crossings for review.
+        between = node.values[entries.first.last..entries.last.last]
+        safe_merge = group.length == 1 || between.all? { |value| reference?(value) && value.keys.all? { |title| literal_title?(title) } }
         relationship = relationship_context?(node, parents)
         parent = parents.reverse.find { |ancestor| !ancestor.is_a?(m::ParenthesizedExpression) }
         # Unwrap only the complete operand/value. Removing nested wrappers could expose new groups on a later run.
         wrapper = relationship && group.length == node.values.length && !parent.is_a?(m::LiteralList) ? node : nil
-        inspect_references(group, relationship, wrapper)
+        inspect_references(group, relationship, wrapper, safe_merge: safe_merge)
         # AST equality ignores source positions; track occurrences rather than structurally equal expressions.
         group.each { |reference| handled[reference.object_id] = true }
       end
@@ -131,6 +148,13 @@ PuppetLint.new_check(:project_resource_references) do
     edit = @fixes.fetch(problem[:edit])
     raise PuppetLint::NoFix unless edit[:fixable]
 
+    # Resolve each removal separately before editing; spans of interleaved type groups overlap.
+    removals = edit[:occurrences].drop(1).map do |first, last|
+      comma = first.prev_code_token
+      raise PuppetLint::NoFix unless comma&.type == :COMMA
+
+      token_span(comma, last)
+    end
     unwrap_reference(edit) if edit[:outer_opening]
     return unless edit[:change_titles]
 
@@ -145,9 +169,9 @@ PuppetLint.new_check(:project_resource_references) do
     end
 
     opening = edit[:opening]
-    closing = edit[:closing]
+    closing = edit[:occurrences].first.last
     interior = tokens[(tokens.index(opening) + 1)...tokens.index(closing)]
-    multiline = opening.line != closing.line
+    multiline = opening.line != (edit[:outer_opening] ? edit[:closing] : closing).line
     indent = line_prefix(opening)[/\A[ \t]*/]
     separator = multiline ? ",\n#{indent}  " : ', '
     # Reuse title tokens, preserving spelling, escapes, duplicates and fixes applied by other plugins.
@@ -158,7 +182,7 @@ PuppetLint.new_check(:project_resource_references) do
       replacement << token
     end
     replacement.concat(PuppetLint::Lexer.new.tokenise(",\n#{indent}")) if multiline
-    interior.each { |token| remove_token(token) }
+    (interior + removals.flatten).each { |token| remove_token(token) }
     index = tokens.index(opening) + 1
     replacement.each_with_index { |token, offset| add_token(index + offset, token) }
   end
