@@ -1,8 +1,8 @@
 # @summary Requests or removes a Certbot certificate.
 #
-# lint:ignore:140chars
-# This defined type runs Certbot for a named certificate after the `letsencrypt` class has installed shared defaults. It supports idempotent creation based on the certificate domain list and idempotent deletion based on the certificate name.
-# lint:endignore
+# This defined type runs Certbot for a named certificate after the `letsencrypt` class has installed shared defaults. It
+# supports idempotent creation based on the certificate domain list and idempotent deletion based on the certificate
+# name.
 #
 # @example Request an nginx certificate
 #   letsencrypt::certificate { 'www.example.org':

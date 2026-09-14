@@ -2,7 +2,8 @@
 #
 # Declare the corresponding `docker::compose` stack, directly or through an application wrapper.
 # This resource waits for that stack; it does not manage its files, start containers or allocate a terminal.
-# Container discovery excludes one-off `docker compose run` containers and must find exactly one running service container.
+# Container discovery excludes one-off `docker compose run` containers and must find exactly one running service
+# container.
 # Missing or ambiguous matches fail without executing the command.
 # Commands and guards are marked Sensitive and output logging is disabled; never put secrets in command arguments.
 # Environment values are passed through Docker's command arguments and are visible to host/Docker administrators.
@@ -17,7 +18,8 @@
 #   }
 #
 # @param command
-#   Executable and arguments inside the container. Each array element is escaped separately; use /bin/sh -c explicitly for shell code.
+#   Executable and arguments inside the container. Each array element is escaped separately; use /bin/sh -c explicitly
+#   for shell code.
 #
 # @param compose_name
 #   Title of the managed docker::compose resource and value of its Compose project label.
@@ -29,16 +31,20 @@
 #   Optional absolute host path checked by Puppet; an existing path skips execution. Default undef.
 #
 # @param environment
-#   Container process environment shared by command and unless, default empty. Use Sensitive values for secrets in Puppet reports.
+#   Container process environment shared by command and unless, default empty. Use Sensitive values for secrets in
+#   Puppet reports.
 #
 # @param stdin_file
-#   Optional absolute host file read as stdin for command only, enabling docker exec -i. Manage its permissions and dependency yourself.
+#   Optional absolute host file read as stdin for command only, enabling docker exec -i. Manage its permissions and
+#   dependency yourself.
 #
 # @param timeout
-#   Maximum seconds for each command or guard, default 120. Timing out the Docker client may leave the container process running.
+#   Maximum seconds for each command or guard, default 120. Timing out the Docker client may leave the container process
+#   running.
 #
 # @param unless
-#   Optional read-only executable and arguments inside the container. Exit 0 skips command; also runs during Puppet --noop. Default undef.
+#   Optional read-only executable and arguments inside the container. Exit 0 skips command; also runs during Puppet
+#   --noop. Default undef.
 #
 # @api public
 define docker::compose_exec (

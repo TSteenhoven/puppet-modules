@@ -9,8 +9,9 @@ This file governs project-wide agent workflow, task scope, collaboration, and ge
 
 ### Puppet Code Authority
 
-- Follow [the project puppet-lint configuration](.puppet-lint.rc), [project plugins](.tools/lint/lib/puppet-lint/plugins/), and [documented review criteria](.tools/lint/README.md) as the authoritative Puppet code conventions.
-- Root and local agent instructions must not contain separate, additional, or different Puppet code standards.
+- Agents must read and follow the [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/puppet-lint/plugins/) before adding or changing Puppet code or Puppet Strings documentation. These sources define the mandatory code conventions, formatting rules, and permitted exceptions.
+- Agents must apply the documented review criteria even when the automated lint checks pass.
+- Root and local agent instructions must reference these sources instead of duplicating, adding, or overriding Puppet code standards.
 - Changes to Puppet conventions must include their tests and all affected first-party code in the same change.
 
 ## Project Constraints

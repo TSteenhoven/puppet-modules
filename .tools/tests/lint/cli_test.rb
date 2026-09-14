@@ -47,6 +47,69 @@ class CliTest < Minitest::Test
     assert status.success?
     enabled.each { |check| assert_includes output.lines.map(&:strip), check.to_s }
     assert_includes enabled, :project_resource_references
+    assert_includes enabled, :project_documentation_layout
+  end
+
+  def test_documentation_fix_works_with_standard_checks_and_preserves_code_fixes
+    Dir.mktmpdir('lint_documentation_') do |directory|
+      FileUtils.mkdir_p(File.join(directory, 'example/manifests'))
+      file = File.join(directory, 'example/manifests/init.pp')
+      code = <<~PUPPET
+        # @summary Manages the example.
+        #
+        # lint:ignore:140chars
+        # #{('A description with a documented default. ' * 5).strip}
+        # lint:endignore
+        #
+        # @example Include the class
+        #   include example
+        #
+        # @api public
+        class example {
+          # Select the example value.
+          $value = "synthetic"
+        }
+      PUPPET
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      assert status.success?, output + errors
+      fixed = File.read(file)
+      refute_includes fixed, 'lint:ignore:140chars'
+      assert_includes fixed, "$value = 'synthetic'"
+      assert_includes fixed, "# @example Include the class\n#   include example\n"
+      output, errors, status = cli('--fix', file)
+      assert status.success?, output + errors
+      assert_equal fixed, File.read(file)
+      assert_empty diagnostics(output, 'project_documentation_layout')
+    end
+  end
+
+  def test_documentation_fix_requires_a_rescan_for_original_standard_length_findings
+    Dir.mktmpdir('lint_documentation_length_') do |directory|
+      FileUtils.mkdir_p(File.join(directory, 'example/manifests'))
+      file = File.join(directory, 'example/manifests/init.pp')
+      code = "# @summary Manages the example.\n#\n# #{('A description with a default. ' * 6).strip}\n#\n# @example Include the class\n#   include example\n#\n# @api public\nclass example {}\n"
+      File.write(file, code)
+      output, errors, status = cli('--fix', file)
+      refute status.success?, output + errors
+      assert_equal 1, diagnostics(output, '140chars').length
+      refute_equal code, File.read(file)
+      output, errors, status = cli(file)
+      assert status.success?, output + errors
+      assert_empty diagnostics(output, 'project_documentation_layout')
+    end
+  end
+
+  def test_scoped_documentation_fix_keeps_unsafe_summary_and_fails
+    Dir.mktmpdir('lint_documentation_review_') do |directory|
+      file = File.join(directory, 'example.pp')
+      code = "# @summary #{('A description with a default. ' * 6).strip}\nclass example {}\n"
+      File.write(file, code)
+      output, errors, status = cli('--only-checks', 'project_documentation_layout', '--fix', file)
+      refute status.success?, output + errors
+      assert_includes output, '[review]'
+      assert_equal code, File.read(file)
+    end
   end
 
   def test_resource_references_fix_works_with_standard_checks_and_is_idempotent

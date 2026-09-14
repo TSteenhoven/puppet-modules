@@ -1,9 +1,8 @@
 # @summary Manages RabbitMQ AMQP TCP and TLS listener configuration.
 #
 # This class requires `rabbitmq` and writes `/etc/rabbitmq/conf.d/tcp.conf`.
-# lint:ignore:140chars
-# When all certificate paths are provided, TLS is enabled and plain TCP follows `tcp_enable`; otherwise TLS is disabled and plain TCP is forced on so the broker remains reachable.
-# lint:endignore
+# When all certificate paths are provided, TLS is enabled and plain TCP follows `tcp_enable`; otherwise TLS is disabled
+# and plain TCP is forced on so the broker remains reachable.
 #
 # @example Enable TLS and disable plain TCP
 #   class { 'rabbitmq::tcp':
@@ -32,7 +31,8 @@
 #   TLS protocol list rendered into RabbitMQ configuration.
 #
 # @param tcp_enable
-#   Enables the plain TCP listener when TLS is available. Plain TCP is forced on when TLS certificate inputs are incomplete.
+#   Enables the plain TCP listener when TLS is available. Plain TCP is forced on when TLS certificate inputs are
+#   incomplete.
 #
 # @param tcp_port
 #   Plain AMQP listener port.

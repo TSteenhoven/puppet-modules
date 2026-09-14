@@ -1,8 +1,8 @@
 # @summary Installs Proxmox VE packages and kernel cleanup on Debian 12.
 #
-# lint:ignore:140chars
-# This class expects `basic_settings` platform detection to be available. It installs the selected Proxmox kernel for supported releases, schedules a reboot after kernel installation, installs `proxmox-ve` and `open-iscsi`, removes generic Linux kernel packages, and refreshes GRUB after kernel cleanup.
-# lint:endignore
+# This class expects `basic_settings` platform detection to be available. It installs the selected Proxmox kernel for
+# supported releases, schedules a reboot after kernel installation, installs `proxmox-ve` and `open-iscsi`, removes
+# generic Linux kernel packages, and refreshes GRUB after kernel cleanup.
 # Missing platform context or a platform other than Debian 12 fails before creating kernel-dependent resources.
 #
 # @example Install Proxmox after the basic server baseline

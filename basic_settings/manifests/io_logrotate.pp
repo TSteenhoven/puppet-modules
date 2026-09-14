@@ -1,8 +1,8 @@
 # @summary Manages a root-owned logrotate snippet.
 #
-# lint:ignore:140chars
-# This defined type writes `/etc/logrotate.d/<title>` from the module template and ensures the logrotate package and configuration directory exist when they are not already managed. It centralizes the repository's secure logrotate file ownership and mode defaults.
-# lint:endignore
+# This defined type writes `/etc/logrotate.d/<title>` from the module template and ensures the logrotate package and
+# configuration directory exist when they are not already managed. It centralizes the repository's secure logrotate file
+# ownership and mode defaults.
 #
 # @example Rotate an application log daily
 #   basic_settings::io_logrotate { 'example-app':
@@ -35,7 +35,8 @@
 #   Controls whether the logrotate snippet is present or absent.
 #
 # @param rotate
-#   Optional rotation count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise it falls back to 12.
+#   Optional rotation count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise it falls back
+#   to 12.
 #
 # @param rotate_copy
 #   Enables copy-based rotation when `true`. The default is `false`.

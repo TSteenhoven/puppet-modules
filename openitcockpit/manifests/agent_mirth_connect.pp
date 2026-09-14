@@ -1,8 +1,7 @@
 # @summary Registers a Mirth Connect check with the OpenITCOCKPIT agent.
 #
-# lint:ignore:140chars
-# This class adds a custom OpenITCOCKPIT check for Mirth Connect through the shared monitoring helper. It requires `openitcockpit::agent` so the agent directory and custom-check configuration exist.
-# lint:endignore
+# This class adds a custom OpenITCOCKPIT check for Mirth Connect through the shared monitoring helper. It requires
+# `openitcockpit::agent` so the agent directory and custom-check configuration exist.
 #
 # @example Enable the Mirth Connect check
 #   include openitcockpit::agent

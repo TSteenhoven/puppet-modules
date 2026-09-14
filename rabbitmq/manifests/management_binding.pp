@@ -1,8 +1,7 @@
 # @summary Manages a RabbitMQ binding through rabbitmqadmin.
 #
-# lint:ignore:140chars
-# This defined type requires `rabbitmq::management` and declares or deletes a binding between an exchange and queue. It also reconciles the routing key when one is supplied.
-# lint:endignore
+# This defined type requires `rabbitmq::management` and declares or deletes a binding between an exchange and queue. It
+# also reconciles the routing key when one is supplied.
 #
 # @example Bind an exchange to a queue
 #   rabbitmq::management_binding { 'failure_binding':

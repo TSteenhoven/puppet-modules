@@ -1,12 +1,13 @@
 # @summary Creates, updates, or removes an Authentik admin user in a Docker Compose stack.
 #
-# lint:ignore:140chars
-# This defined type talks directly to the running Authentik `server` Compose service with `ak shell`. When `ensure` is `present`, it creates the user when missing, activates existing users, updates the requested email and password, and ensures membership of a superuser group. When `ensure` is `absent`, it removes the requested user. The password is accepted as `Sensitive[String]` and the generated Puppet `exec` command and guard are also marked sensitive so the secret is not written to normal Puppet output.
-# lint:endignore
+# This defined type talks directly to the running Authentik `server` Compose service with `ak shell`. When `ensure` is
+# `present`, it creates the user when missing, activates existing users, updates the requested email and password, and
+# ensures membership of a superuser group. When `ensure` is `absent`, it removes the requested user. The password is
+# accepted as `Sensitive[String]` and the generated Puppet `exec` command and guard are also marked sensitive so the
+# secret is not written to normal Puppet output.
 #
-# lint:ignore:140chars
-# Declare `docker::authentik` or an equivalent `docker::compose` stack with the same `compose_name`. The stack must already be running; this resource does not start or restart Authentik.
-# lint:endignore
+# Declare `docker::authentik` or an equivalent `docker::compose` stack with the same `compose_name`. The stack must
+# already be running; this resource does not start or restart Authentik.
 #
 # @example Create or repair an Authentik admin account
 #   docker::authentik_admin { 'example.admin':
@@ -37,9 +38,8 @@
 #   Authentik group that should grant superuser access to the managed user.
 #
 # @param password
-# lint:ignore:140chars
-#   Password assigned to the Authentik user. Required when `ensure` is `present`; ignored when `ensure` is `absent`. Supply it from Hiera or a profile as a `Sensitive[String]` value.
-# lint:endignore
+#   Password assigned to the Authentik user. Required when `ensure` is `present`; ignored when `ensure` is `absent`.
+#   Supply it from Hiera or a profile as a `Sensitive[String]` value.
 #
 # @param timeout
 #   Maximum time in seconds for each Docker Compose operation.

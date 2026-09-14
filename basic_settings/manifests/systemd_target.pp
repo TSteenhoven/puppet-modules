@@ -1,8 +1,7 @@
 # @summary Manages a generated systemd target unit.
 #
-# lint:ignore:140chars
-# This defined type writes `/etc/systemd/system/<title>.target` from the shared template. It is the building block for the target ladder used by service modules to bind workloads into predictable startup phases.
-# lint:endignore
+# This defined type writes `/etc/systemd/system/<title>.target` from the shared template. It is the building block for
+# the target ladder used by service modules to bind workloads into predictable startup phases.
 #
 # @example Create an isolatable target
 #   basic_settings::systemd_target { 'core-services':

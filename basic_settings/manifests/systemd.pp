@@ -1,8 +1,8 @@
 # @summary Installs systemd and creates the repository target ladder.
 #
-# lint:ignore:140chars
-# This class installs systemd and related packages, removes cron/anacron in favor of systemd timers, creates the ordered target ladder used by service modules, and sets the host default target. The target ladder provides predictable ordering for system, storage, services, production, helper, and required-service workloads.
-# lint:endignore
+# This class installs systemd and related packages, removes cron/anacron in favor of systemd timers, creates the ordered
+# target ladder used by service modules, and sets the host default target. The target ladder provides predictable
+# ordering for system, storage, services, production, helper, and required-service workloads.
 #
 # @example Create the default target ladder
 #   include basic_settings::systemd
@@ -14,9 +14,8 @@
 #   Target suffix selected as the system default. The default is `helpers`.
 #
 # @param install_options
-# lint:ignore:140chars
-#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
-# lint:endignore
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are
+#   appended without deduplication so they remain effective.
 #
 # @api public
 class basic_settings::systemd (

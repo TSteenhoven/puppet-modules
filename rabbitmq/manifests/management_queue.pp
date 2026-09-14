@@ -1,8 +1,7 @@
 # @summary Manages a RabbitMQ queue through rabbitmqadmin.
 #
-# lint:ignore:140chars
-# This defined type requires `rabbitmq::management` and declares, deletes, or reconciles a queue in the selected vhost. It can manage durability, queue type, and arbitrary queue arguments.
-# lint:endignore
+# This defined type requires `rabbitmq::management` and declares, deletes, or reconciles a queue in the selected vhost.
+# It can manage durability, queue type, and arbitrary queue arguments.
 #
 # @example Create a quorum queue
 #   rabbitmq::management_queue { 'jobs':

@@ -1,8 +1,8 @@
 # @summary Installs PHP 8 core packages and selected extensions.
 #
-# lint:ignore:140chars
-# This class installs the selected PHP 8 minor version, common/opcache packages, optional extension packages, and default shared files used by PHP CLI/FPM consumers. It is deliberately package-focused; CLI and FPM service configuration lives in `php8::cli` and `php8::fpm`.
-# lint:endignore
+# This class installs the selected PHP 8 minor version, common/opcache packages, optional extension packages, and
+# default shared files used by PHP CLI/FPM consumers. It is deliberately package-focused; CLI and FPM service
+# configuration lives in `php8::cli` and `php8::fpm`.
 #
 # @example Install PHP 8.2 with common web extensions
 #   class { 'php8':
@@ -13,32 +13,59 @@
 #   }
 #
 # @param apcu Enables the APCu extension package.
+#
 # @param bcmath Enables the BCMath extension package.
+#
 # @param bz2 Enables the bzip2 extension package.
+#
 # @param curl Enables the cURL extension package.
+#
 # @param gd Enables the GD extension package.
+#
 # @param gearman Enables the Gearman extension package.
+#
 # @param gmp Enables the GMP extension package.
+#
 # @param imagick Enables the ImageMagick extension package.
+#
 # @param imap Enables the IMAP extension package.
+#
 # @param intl Enables the Intl extension package.
+#
 # @param ldap Enables the LDAP extension package.
+#
 # @param mbstring Enables the mbstring extension package.
+#
 # @param mcrypt Enables the mcrypt extension package.
+#
 # @param minor_version PHP 8 minor version to install, rendered as `php8.<minor>`.
+#
 # @param msgpack Enables the MessagePack extension package.
+#
 # @param mysql Enables the MySQL extension package.
+#
 # @param readline Enables the readline extension package.
+#
 # @param redis Enables the Redis extension package.
+#
 # @param rrd Enables the RRD extension package.
+#
 # @param skip_default_files Skips shared default PHP files when multiple PHP versions are managed.
+#
 # @param soap Enables the SOAP extension package.
+#
 # @param sqlite3 Enables the SQLite extension package.
+#
 # @param sybase Enables the Sybase extension package.
+#
 # @param uploadprogress Enables the uploadprogress extension package.
+#
 # @param xdebug Enables the Xdebug extension package.
+#
 # @param xml Enables the XML extension package.
+#
 # @param xmlrpc Enables the XML-RPC extension package.
+#
 # @param zip Enables the ZIP extension package.
 #
 # @api public

@@ -1,8 +1,8 @@
 # @summary Manages APT policy, unattended upgrades, package hygiene, and package audit rules.
 #
-# lint:ignore:140chars
-# This class installs core package-management tooling, removes desktop/update helpers that are not wanted on the target server profile, manages APT, apt-listchanges, needrestart, and unattended-upgrades configuration, optionally removes snapd, wires apt timers into systemd monitoring, and adds audit rules for package-management commands.
-# lint:endignore
+# This class installs core package-management tooling, removes desktop/update helpers that are not wanted on the target
+# server profile, manages APT, apt-listchanges, needrestart, and unattended-upgrades configuration, optionally removes
+# snapd, wires apt timers into systemd monitoring, and adds audit rules for package-management commands.
 #
 # @example Manage default package policy
 #   include basic_settings::packages

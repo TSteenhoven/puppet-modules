@@ -1,8 +1,7 @@
 # @summary Manages the MongoDB upstream APT repository and server package.
 #
-# lint:ignore:140chars
-# This private helper writes or removes the MongoDB package source and signing key, and installs or purges `mongodb-org-server` with the repository state. It is called by `basic_settings` after OS support has been calculated.
-# lint:endignore
+# This private helper writes or removes the MongoDB package source and signing key, and installs or purges
+# `mongodb-org-server` with the repository state. It is called by `basic_settings` after OS support has been calculated.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_mongodb':

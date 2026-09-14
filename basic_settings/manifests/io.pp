@@ -1,8 +1,9 @@
 # @summary Manages storage utilities, log rotation support, and IO audit rules.
 #
-# lint:ignore:140chars
-# This class installs common storage and compression utilities, removes packages that are not expected on the target server profile, optionally manages LVM, multipath, and NFS server packages, disables floppy support, and tunes journald output through a systemd drop-in when systemd is present. It also adds audit coverage for storage and logrotate tooling when auditd is managed.
-# lint:endignore
+# This class installs common storage and compression utilities, removes packages that are not expected on the target
+# server profile, optionally manages LVM, multipath, and NFS server packages, disables floppy support, and tunes
+# journald output through a systemd drop-in when systemd is present. It also adds audit coverage for storage and
+# logrotate tooling when auditd is managed.
 #
 # @example Use the default IO profile
 #   include basic_settings::io
@@ -13,17 +14,15 @@
 #   }
 #
 # @param log_rotate
-# lint:ignore:140chars
-#   Default rotation count used by `basic_settings::io_logrotate` when that defined type does not receive an explicit `rotate` value. The default is 14.
-# lint:endignore
+#   Default rotation count used by `basic_settings::io_logrotate` when that defined type does not receive an explicit
+#   `rotate` value. The default is 14.
 #
 # @param lvm_enable
 #   Installs and audits LVM tooling when `true`; purges the `lvm2` package when `false`.
 #
 # @param multipath_enable
-# lint:ignore:140chars
-#   Installs multipath tooling, manages `/etc/multipath.conf`, enables the `multipathd` service, and adds monitoring when available. `false` purges the multipath packages.
-# lint:endignore
+#   Installs multipath tooling, manages `/etc/multipath.conf`, enables the `multipathd` service, and adds monitoring
+#   when available. `false` purges the multipath packages.
 #
 # @param nfs_server_enable
 #   Installs `nfs-kernel-server` and `rpcbind` when `true`; purges them when `false`.

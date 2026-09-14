@@ -1,12 +1,16 @@
 # @summary Manages one Nginx virtual host.
 #
-# lint:ignore:140chars
-# This defined type renders `/etc/nginx/conf.d/<title>.conf`, optional fallback `security.txt` content, HTTP/HTTPS listeners, redirects, PHP-FPM locations, static or reverse-proxy locations, TLS settings, and secure-by-default response headers. Applications can override or disable individual headers when they intentionally manage those headers themselves. Strict CSP or HSTS settings can break applications that depend on external scripts, stylesheets, APIs, iframes, analytics, or legacy TLS clients, so vhost-specific overrides should be tested.
-# lint:endignore
+# This defined type renders `/etc/nginx/conf.d/<title>.conf`, optional fallback `security.txt` content, HTTP/HTTPS
+# listeners, redirects, PHP-FPM locations, static or reverse-proxy locations, TLS settings, and secure-by-default
+# response headers. Applications can override or disable individual headers when they intentionally manage those headers
+# themselves. Strict CSP or HSTS settings can break applications that depend on external scripts, stylesheets, APIs,
+# iframes, analytics, or legacy TLS clients, so vhost-specific overrides should be tested.
 #
 # Declare `nginx` first, but do not require the whole class from a vhost or a wrapper that changes Nginx configuration.
-# That dependency orders the service before the configuration, whose notification orders it after the configuration, creating a cycle.
-# The vhost already requires the package and configuration directory; use specific package or file resources for extra dependencies.
+# That dependency orders the service before the configuration, whose notification orders it after the configuration,
+# creating a cycle.
+# The vhost already requires the package and configuration directory; use specific package or file resources for extra
+# dependencies.
 #
 # @example Static HTTPS vhost with secure defaults
 #   nginx::server { 'www.example.org':
@@ -39,15 +43,15 @@
 #   Controls whether directory access is allowed by the generated root location.
 #
 # @param backlog
-# lint:ignore:140chars
-#   Listener backlog behavior. `-1` disables explicit backlog, `0` inherits the kernel connection limit, and values greater than zero set a custom backlog.
-# lint:endignore
+#   Listener backlog behavior. `-1` disables explicit backlog, `0` inherits the kernel connection limit, and values
+#   greater than zero set a custom backlog.
 #
 # @param client_max_body_size
 #   Optional `client_max_body_size` value for the vhost.
 #
 # @param content_security_policy
-#   CSP header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the managed header.
+#   CSP header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the managed
+#   header.
 #
 # @param default_server
 #   Marks this vhost as the default server for generated listen directives.
@@ -59,7 +63,8 @@
 #   Document root for static/PHP locations. `undef` is common for pure reverse proxy vhosts.
 #
 # @param ensure
-#   `present` manages the vhost; `absent` removes its configuration, security.txt fallback and both certificate checks before deletion.
+#   `present` manages the vhost; `absent` removes its configuration, security.txt fallback and both certificate checks
+#   before deletion.
 #
 # @param error_log
 #   Optional error log directive value.
@@ -116,7 +121,8 @@
 #   Additional location hashes rendered by the template.
 #
 # @param monitoring_cert
-#   Enables automatic local TLS checks with OpenITCOCKPIT and nonempty certificate/key values. `false` removes both checks.
+#   Enables automatic local TLS checks with OpenITCOCKPIT and nonempty certificate/key values. `false` removes both
+#   checks.
 #
 # @param php_fpm_directives
 #   Additional raw directives rendered into the PHP-FPM location.
@@ -170,7 +176,8 @@
 #   Optional TLS protocol string for the redirect server.
 #
 # @param referrer_policy
-#   Referrer-Policy header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the managed header.
+#   Referrer-Policy header value. `true` uses the module default, a string sets a vhost policy, and `false` disables the
+#   managed header.
 #
 # @param restart_service
 #   Notifies the Nginx service when the vhost file changes if `true`.
@@ -197,9 +204,8 @@
 #   Optional vhost-specific Preferred-Languages list.
 #
 # @param server_name
-# lint:ignore:140chars
-#   Space-separated Nginx `server_name` value. `undef` omits the directive and keeps the title fallback for security.txt; TLS monitoring then reports an unassessable target.
-# lint:endignore
+#   Space-separated Nginx `server_name` value. `undef` omits the directive and keeps the title fallback for
+#   security.txt; TLS monitoring then reports an unassessable target.
 #
 # @param ssl_buffer_size
 #   Optional `ssl_buffer_size` value.
@@ -211,7 +217,8 @@
 #   TLS private key path for the main HTTPS server.
 #
 # @param ssl_certificate_trusted
-#   Optional trust file for client-certificate and OCSP validation; it never replaces the certificate chain sent to clients.
+#   Optional trust file for client-certificate and OCSP validation; it never replaces the certificate chain sent to
+#   clients.
 #
 # @param ssl_ciphers
 #   TLS cipher list rendered as a colon-separated string.
@@ -232,16 +239,20 @@
 #   Optional `ssl_session_timeout` value.
 #
 # @param strict_transport_security
-#   HSTS header value. `true` uses the module default, a string sets a vhost value, and `false` disables the managed header.
+#   HSTS header value. `true` uses the module default, a string sets a vhost value, and `false` disables the managed
+#   header.
 #
 # @param try_files
-#   Root-location `try_files` behavior. `true` uses `$uri $uri/ =404`, a string supplies custom arguments, and `false` omits the directive.
+#   Root-location `try_files` behavior. `true` uses `$uri $uri/ =404`, a string supplies custom arguments, and `false`
+#   omits the directive.
 #
 # @param x_content_type_options
-#   X-Content-Type-Options header value. `true` uses `nosniff`, a string sets a vhost value, and `false` disables the managed header.
+#   X-Content-Type-Options header value. `true` uses `nosniff`, a string sets a vhost value, and `false` disables the
+#   managed header.
 #
 # @param x_frame_options
-#   X-Frame-Options header value. `true` uses `SAMEORIGIN`, a string sets a vhost value, and `false` disables the managed header.
+#   X-Frame-Options header value. `true` uses `SAMEORIGIN`, a string sets a vhost value, and `false` disables the
+#   managed header.
 #
 # @api public
 define nginx::server (

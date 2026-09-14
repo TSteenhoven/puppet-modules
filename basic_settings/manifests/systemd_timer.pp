@@ -1,8 +1,7 @@
 # @summary Manages a generated systemd timer unit and optional timer monitoring.
 #
-# lint:ignore:140chars
-# This defined type writes `/etc/systemd/system/<title>.timer`, manages timer enablement and optional runtime state, and registers monitoring through `basic_settings::monitoring_timer` when requested.
-# lint:endignore
+# This defined type writes `/etc/systemd/system/<title>.timer`, manages timer enablement and optional runtime state, and
+# registers monitoring through `basic_settings::monitoring_timer` when requested.
 #
 # @example Create a daily timer
 #   basic_settings::systemd_timer { 'example':

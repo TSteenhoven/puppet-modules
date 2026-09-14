@@ -1,8 +1,7 @@
 # @summary Manages one Naemon hostgroup configuration file.
 #
-# lint:ignore:140chars
-# This defined type writes a hostgroup configuration file below the directory prepared by the `naemon` class and notifies the `naemon` service.
-# lint:endignore
+# This defined type writes a hostgroup configuration file below the directory prepared by the `naemon` class and
+# notifies the `naemon` service.
 #
 # @example Add a hostgroup
 #   naemon::hostgroup { 'webservers':

@@ -1,8 +1,8 @@
 # @summary Creates or optionally drops a MySQL database.
 #
-# lint:ignore:140chars
-# This defined type uses the MySQL defaults file prepared by the `mysql` class to create a database with the requested charset and collation, optionally import a SQL file after creation, or drop the database only when explicit destruction is allowed.
-# lint:endignore
+# This defined type uses the MySQL defaults file prepared by the `mysql` class to create a database with the requested
+# charset and collation, optionally import a SQL file after creation, or drop the database only when explicit
+# destruction is allowed.
 #
 # @example Create a UTF-8 database
 #   mysql::database { 'app':

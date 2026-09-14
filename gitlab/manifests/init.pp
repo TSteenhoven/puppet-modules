@@ -1,8 +1,9 @@
 # @summary Installs GitLab EE and integrates it with local systemd, monitoring, and audit policy.
 #
-# lint:ignore:140chars
-# This class installs GitLab EE with the provided initial root credentials, optionally relocates `/opt/gitlab`, manages the SSL directory, disables vendor service enablement when systemd integration is available, binds GitLab into the shared target ladder, adds monitoring, and installs audit exclusions for known GitLab runtime behavior. The root password is used during installation and is passed to the install command as sensitive content.
-# lint:endignore
+# This class installs GitLab EE with the provided initial root credentials, optionally relocates `/opt/gitlab`, manages
+# the SSL directory, disables vendor service enablement when systemd integration is available, binds GitLab into the
+# shared target ladder, adds monitoring, and installs audit exclusions for known GitLab runtime behavior. The root
+# password is used during installation and is passed to the install command as sensitive content.
 #
 # @example Install GitLab with an explicit FQDN
 #   class { 'gitlab':
@@ -14,7 +15,8 @@
 #   Initial GitLab root password used by the package install command.
 #
 # @param install_dir
-#   Optional replacement target for `/opt/gitlab`. When set, the class creates the directory and symlinks `/opt/gitlab` to it.
+#   Optional replacement target for `/opt/gitlab`. When set, the class creates the directory and symlinks `/opt/gitlab`
+#   to it.
 #
 # @param nice_level
 #   Positive nice value converted to a negative service priority in the systemd drop-in. The default is 12.

@@ -1,8 +1,7 @@
 # @summary Registers monitoring for one or more systemd services.
 #
-# lint:ignore:140chars
-# This defined type installs the shared systemd-service check when needed and creates OpenITCOCKPIT custom-check fragments for the requested service units.
-# lint:endignore
+# This defined type installs the shared systemd-service check when needed and creates OpenITCOCKPIT custom-check
+# fragments for the requested service units.
 # It is used by service modules so monitoring output stays consistent across the repository.
 #
 # @example Monitor one service

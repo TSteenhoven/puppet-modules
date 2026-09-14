@@ -1,8 +1,8 @@
 # @summary Registers monitoring for a Docker Compose project.
 #
-# lint:ignore:140chars
-# This helper builds the command line for the shared `check_compose` plugin and registers it through `basic_settings::monitoring_custom`. It is normally called by `docker::compose`, but can be used directly for externally managed Compose projects that still need the repository's monitoring behavior.
-# lint:endignore
+# This helper builds the command line for the shared `check_compose` plugin and registers it through
+# `basic_settings::monitoring_custom`. It is normally called by `docker::compose`, but can be used directly for
+# externally managed Compose projects that still need the repository's monitoring behavior.
 #
 # @example Monitor an existing Compose project
 #   docker::compose_monitoring { 'example':

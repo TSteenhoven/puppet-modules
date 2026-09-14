@@ -1,8 +1,8 @@
 # @summary Manages the Mozilla APT repository for Debian or Ubuntu.
 #
-# lint:ignore:140chars
-# This private helper writes or removes the Mozilla package source and signing key. Ubuntu uses the Mozilla Team PPA; other supported systems use `packages.mozilla.org`. It is called by `basic_settings` after platform support has been calculated.
-# lint:endignore
+# This private helper writes or removes the Mozilla package source and signing key. Ubuntu uses the Mozilla Team PPA;
+# other supported systems use `packages.mozilla.org`. It is called by `basic_settings` after platform support has been
+# calculated.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_mozilla':

@@ -1,8 +1,10 @@
 # @summary Deploys the bundled Authentik Docker Compose stack.
 #
-# lint:ignore:140chars
-# This defined type deploys the module-shipped `docker/files/authentik.yaml` Compose file. Declare `docker` before using it. The resource title becomes the Compose project name, so multiple Authentik stacks can be managed on the same host when ports and public names do not conflict. When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the defined type declares `docker::compose` directly. By default, the bundled bootstrap `akadmin` user is removed after the stack is managed.
-# lint:endignore
+# This defined type deploys the module-shipped `docker/files/authentik.yaml` Compose file. Declare `docker` before using
+# it. The resource title becomes the Compose project name, so multiple Authentik stacks can be managed on the same host
+# when ports and public names do not conflict. When `server_name` is set, declare `nginx` as well so
+# `docker::compose_proxy` can add the reverse proxy; otherwise the defined type declares `docker::compose` directly. By
+# default, the bundled bootstrap `akadmin` user is removed after the stack is managed.
 #
 # The `custom-templates` directory is created for the stack; supply and maintain its contents separately.
 #
@@ -40,7 +42,8 @@
 #   Removes the bundled Authentik bootstrap `akadmin` user through `docker::authentik_admin` when `true`.
 #
 # @param ensure
-#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing a stack.
+#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing
+#   a stack.
 #
 # @param image_tag
 #   Docker image tag written as `AUTHENTIK_TAG`.
@@ -49,7 +52,8 @@
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
+#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration
+#   containers.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -70,43 +74,46 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param port
-# lint:ignore:140chars
-#   Local Authentik upstream port used by Nginx when `server_name` is set. The default `9443` matches the bundled Compose HTTPS listener and is also written as `COMPOSE_PORT_HTTPS`.
-# lint:endignore
+#   Local Authentik upstream port used by Nginx when `server_name` is set. The default `9443` matches the bundled
+#   Compose HTTPS listener and is also written as `COMPOSE_PORT_HTTPS`.
 #
 # @param scheme
-#   Upstream scheme used by Nginx when `server_name` is set. The default is `https`, so local proxy traffic is encrypted.
+#   Upstream scheme used by Nginx when `server_name` is set. The default is `https`, so local proxy traffic is
+#   encrypted.
 #
 # @param server_name
 #   Optional public Nginx `server_name`. When unset, only `docker::compose` is declared.
 #
 # @param smtp_from
-# lint:ignore:140chars
-#   Optional sender address written as `AUTHENTIK_EMAIL__FROM`. `undef` derives `authentik@<server_name>` or `authentik@basic_settings::server_fdqn` when SMTP is active.
-# lint:endignore
+#   Optional sender address written as `AUTHENTIK_EMAIL__FROM`. `undef` derives `authentik@<server_name>` or
+#   `authentik@basic_settings::server_fdqn` when SMTP is active.
 #
 # @param smtp_host
-# lint:ignore:140chars
-#   Optional SMTP relay host written as `AUTHENTIK_EMAIL__HOST`. `undef` inherits `basic_settings::smtp_server` when `basic_settings` is declared.
-# lint:endignore
+#   Optional SMTP relay host written as `AUTHENTIK_EMAIL__HOST`. `undef` inherits `basic_settings::smtp_server` when
+#   `basic_settings` is declared.
 #
 # @param smtp_password
-#   Optional SMTP password written as `AUTHENTIK_EMAIL__PASSWORD`. Empty values are omitted from the generated `.env` file.
+#   Optional SMTP password written as `AUTHENTIK_EMAIL__PASSWORD`. Empty values are omitted from the generated `.env`
+#   file.
 #
 # @param smtp_port
 #   Optional SMTP relay port written as `AUTHENTIK_EMAIL__PORT`. `undef` uses `25` only when an SMTP host is available.
 #
 # @param smtp_timeout
-#   Optional SMTP timeout in seconds written as `AUTHENTIK_EMAIL__TIMEOUT`. `undef` uses `10` only when an SMTP host is available.
+#   Optional SMTP timeout in seconds written as `AUTHENTIK_EMAIL__TIMEOUT`. `undef` uses `10` only when an SMTP host is
+#   available.
 #
 # @param smtp_use_ssl
-#   Optional implicit TLS/SSL setting written as `AUTHENTIK_EMAIL__USE_SSL`. `undef` uses `false` only when an SMTP host is available.
+#   Optional implicit TLS/SSL setting written as `AUTHENTIK_EMAIL__USE_SSL`. `undef` uses `false` only when an SMTP host
+#   is available.
 #
 # @param smtp_use_tls
-#   Optional STARTTLS setting written as `AUTHENTIK_EMAIL__USE_TLS`. `undef` uses `false` only when an SMTP host is available.
+#   Optional STARTTLS setting written as `AUTHENTIK_EMAIL__USE_TLS`. `undef` uses `false` only when an SMTP host is
+#   available.
 #
 # @param smtp_username
-#   Optional SMTP username written as `AUTHENTIK_EMAIL__USERNAME`. Empty values are omitted from the generated `.env` file.
+#   Optional SMTP username written as `AUTHENTIK_EMAIL__USERNAME`. Empty values are omitted from the generated `.env`
+#   file.
 #
 # @param ssl_certificate
 #   Public TLS certificate path for the generated Nginx vhost.
@@ -118,12 +125,12 @@
 #   Optional trusted certificate path for public OCSP configuration.
 #
 # @param ssl_verify
-# lint:ignore:140chars
-#   Verifies the Authentik upstream certificate when proxying over HTTPS. The default is `false` because the bundled stack exposes local HTTPS on `9443` with an application-managed certificate.
-# lint:endignore
+#   Verifies the Authentik upstream certificate when proxying over HTTPS. The default is `false` because the bundled
+#   stack exposes local HTTPS on `9443` with an application-managed certificate.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is `services`.
+#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is
+#   `services`.
 #
 # @api public
 define docker::authentik (

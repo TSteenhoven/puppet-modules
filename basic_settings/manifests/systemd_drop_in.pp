@@ -1,8 +1,8 @@
 # @summary Manages a systemd drop-in file for a unit or daemon configuration.
 #
-# lint:ignore:140chars
-# This defined type writes `<path>/<target_unit>.d/<title>.conf` from the shared drop-in template, creates the drop-in directory when needed, and notifies the selected daemon-reload exec. It is used throughout the repository to add service ordering, failure hooks, and hardening settings without replacing vendor units.
-# lint:endignore
+# This defined type writes `<path>/<target_unit>.d/<title>.conf` from the shared drop-in template, creates the drop-in
+# directory when needed, and notifies the selected daemon-reload exec. It is used throughout the repository to add
+# service ordering, failure hooks, and hardening settings without replacing vendor units.
 #
 # @example Add a service hardening drop-in
 #   basic_settings::systemd_drop_in { 'example_settings':

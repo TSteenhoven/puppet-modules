@@ -1,8 +1,9 @@
 # @summary Applies kernel, boot, sysctl, CPU, USB, and hardware hardening settings.
 #
-# lint:ignore:140chars
-# This class manages kernel-related packages and configuration for Debian and Ubuntu servers. It owns sysctl files, bootloader configuration, optional hugepage setup, kernel lockdown, MGLRU, TCP tuning, selected hardware tools, guest-agent packages, USB monitoring input, and audit rules for kernel-sensitive commands. Several settings directly affect boot behavior and should be changed only after validating the target hardware and virtualization platform.
-# lint:endignore
+# This class manages kernel-related packages and configuration for Debian and Ubuntu servers. It owns sysctl files,
+# bootloader configuration, optional hugepage setup, kernel lockdown, MGLRU, TCP tuning, selected hardware tools,
+# guest-agent packages, USB monitoring input, and audit rules for kernel-sensitive commands. Several settings directly
+# affect boot behavior and should be changed only after validating the target hardware and virtualization platform.
 #
 # @example Use the default hardened kernel profile
 #   include basic_settings::kernel
@@ -14,13 +15,15 @@
 #   }
 #
 # @param antivirus_package
-#   Optional antivirus integration name. Some values loosen lockdown behavior where the antivirus package needs kernel access.
+#   Optional antivirus integration name. Some values loosen lockdown behavior where the antivirus package needs kernel
+#   access.
 #
 # @param bootloader
 #   Bootloader family to manage. The default is `grub`; unsupported values skip bootloader-specific management.
 #
 # @param connection_max
-#   Connection backlog value used by sysctl templates and by consumers that inherit kernel connection limits. The default is 4096.
+#   Connection backlog value used by sysctl templates and by consumers that inherit kernel connection limits. The
+#   default is 4096.
 #
 # @param cpu_governor
 #   CPU governor policy used for physical hosts. The default is `performance`.
@@ -33,12 +36,12 @@
 #   `undef` enables it on physical hosts and disables it on virtual machines.
 #
 # @param hugepages
-#   Number of hugepages to configure. Values greater than zero create the `hugetlb` group and related systemd/sysctl handling.
+#   Number of hugepages to configure. Values greater than zero create the `hugetlb` group and related systemd/sysctl
+#   handling.
 #
 # @param install_options
-# lint:ignore:140chars
-#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
-# lint:endignore
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are
+#   appended without deduplication so they remain effective.
 #
 # @param ip_ra_enable
 #   Controls IPv6 router advertisement handling in generated sysctl and network defaults.
@@ -54,12 +57,13 @@
 #
 # @param memory_available_profiles
 #   Optional MemAvailable threshold profiles for memory-pressure monitoring.
-# lint:ignore:140chars
-#   `undef` resolves to the built-in RAM profile list. Each profile hash accepts `max_ram`, `warning`, and `critical`; the final profile uses `max_ram => undef` as the open-ended fallback. The generated check validates profile syntax, size values, and threshold ordering at runtime.
-# lint:endignore
+#   `undef` resolves to the built-in RAM profile list. Each profile hash accepts `max_ram`, `warning`, and `critical`;
+#   the final profile uses `max_ram => undef` as the open-ended fallback. The generated check validates profile syntax,
+#   size values, and threshold ordering at runtime.
 #
 # @param mglru_enable
-#   Controls Multi-Gen LRU. `true` uses the default `min_ttl_ms` of 1000, `false` disables MGLRU, and an integer sets a custom `min_ttl_ms`.
+#   Controls Multi-Gen LRU. `true` uses the default `min_ttl_ms` of 1000, `false` disables MGLRU, and an integer sets a
+#   custom `min_ttl_ms`.
 #
 # @param network_mode
 #   Kernel network hardening mode consumed by the sysctl templates.
@@ -68,19 +72,18 @@
 #   Selects the initramfs implementation to install and retain. Valid values are `initramfs` and `dracut`.
 #
 # @param security_lockdown
-# lint:ignore:140chars
-#   Controls kernel lockdown. `true` resolves to `integrity`, `false` resolves to `none`, and a string is written as the explicit requested mode. Secure Boot enforces at least `integrity`.
-# lint:endignore
+#   Controls kernel lockdown. `true` resolves to `integrity`, `false` resolves to `none`, and a string is written as the
+#   explicit requested mode. Secure Boot enforces at least `integrity`.
 #
 # @param swap_free_profiles
-# lint:ignore:140chars
-#   Optional SwapFree threshold profiles for memory-pressure monitoring. `undef` resolves to the built-in swap profile list. Each profile hash accepts `max_swap`, `warning`, and `critical`; the final profile uses `max_swap => undef` as the open-ended fallback. The generated check validates profile syntax, size values, and threshold ordering at runtime.
-# lint:endignore
+#   Optional SwapFree threshold profiles for memory-pressure monitoring. `undef` resolves to the built-in swap profile
+#   list. Each profile hash accepts `max_swap`, `warning`, and `critical`; the final profile uses `max_swap => undef` as
+#   the open-ended fallback. The generated check validates profile syntax, size values, and threshold ordering at
+#   runtime.
 #
 # @param tcp_congestion_control
-# lint:ignore:140chars
-#   TCP congestion-control mode. The `bbr` value writes the BBR sysctl snippet when kernel support is present; other values remove that snippet.
-# lint:endignore
+#   TCP congestion-control mode. The `bbr` value writes the BBR sysctl snippet when kernel support is present; other
+#   values remove that snippet.
 #
 # @param tcp_fastopen
 #   TCP Fast Open sysctl value used by kernel templates and consumers. The default is 3.

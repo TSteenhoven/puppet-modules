@@ -1,6 +1,7 @@
 # @summary Manages a RabbitMQ exchange through rabbitmqadmin.
 #
-# This defined type requires `rabbitmq::management` and declares, deletes, or reconciles an exchange in the selected vhost.
+# This defined type requires `rabbitmq::management` and declares, deletes, or reconciles an exchange in the selected
+# vhost.
 #
 # @example Create a direct exchange
 #   rabbitmq::management_exchange { 'failure_exchange':

@@ -1,8 +1,7 @@
 # @summary Creates one backend fragment for a systemd service check.
 #
-# lint:ignore:140chars
-# This internal helper is called by `basic_settings::monitoring_service` after the parent type has resolved package, friendly-name, and script-path settings.
-# lint:endignore
+# This internal helper is called by `basic_settings::monitoring_service` after the parent type has resolved package,
+# friendly-name, and script-path settings.
 # It renders one OpenITCOCKPIT custom-check fragment per service unit.
 #
 # @example Internal use through basic_settings::monitoring_service
@@ -32,7 +31,8 @@
 #   Controls whether the backend fragment is present or omitted.
 #
 # @param parent_force
-#   Forces use of the parent friendly name and script name even when the checked service title differs from the parent title.
+#   Forces use of the parent friendly name and script name even when the checked service title differs from the parent
+#   title.
 #
 # @api private
 define basic_settings::monitoring_service_part (

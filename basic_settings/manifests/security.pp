@@ -1,8 +1,8 @@
 # @summary Manages auditd, AppArmor, AIDE defaults, and security monitoring hooks.
 #
-# lint:ignore:140chars
-# This class installs and enables auditd and AppArmor, writes auditd and AIDE configuration files, registers baseline audit rules, creates the `auditmail` systemd service and timer, and adds monitoring checks when the shared monitoring class is active. Antivirus integrations can add audit exclusions and monitoring plugins.
-# lint:endignore
+# This class installs and enables auditd and AppArmor, writes auditd and AIDE configuration files, registers baseline
+# audit rules, creates the `auditmail` systemd service and timer, and adds monitoring checks when the shared monitoring
+# class is active. Antivirus integrations can add audit exclusions and monitoring plugins.
 #
 # @example Enable the default security baseline
 #   include basic_settings::security

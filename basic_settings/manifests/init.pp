@@ -1,8 +1,10 @@
 # @summary Orchestrates the shared baseline for hardened Debian and Ubuntu servers.
 #
-# lint:ignore:140chars
-# The main `basic_settings` class is the repository foundation. It manages base APT sources, systemd target composition, monitoring, security tooling, package hygiene, kernel and network defaults, timezone, locale, login policy, Puppet integration, and optional upstream package repositories for local service modules. Many service modules read state from this class when it is present, so changes here can affect service ordering, monitoring, package sources, and host hardening across the catalog.
-# lint:endignore
+# The main `basic_settings` class is the repository foundation. It manages base APT sources, systemd target composition,
+# monitoring, security tooling, package hygiene, kernel and network defaults, timezone, locale, login policy, Puppet
+# integration, and optional upstream package repositories for local service modules. Many service modules read state
+# from this class when it is present, so changes here can affect service ordering, monitoring, package sources, and host
+# hardening across the catalog.
 #
 # @example Build a web host baseline
 #   class { 'basic_settings':
@@ -14,7 +16,8 @@
 #   }
 #
 # @param antivirus_package
-#   Optional antivirus integration name used by kernel, network, package, and security components for compatibility exceptions.
+#   Optional antivirus integration name used by kernel, network, package, and security components for compatibility
+#   exceptions.
 #
 # @param backports
 #   Enables the OS backports repository when the detected platform allows it.
@@ -38,7 +41,8 @@
 #   Enables local documentation packages through `basic_settings::locale`.
 #
 # @param environment
-#   Server environment passed to login policy and network templates, independent of the Puppet code environment; defaults to `production`.
+#   Server environment passed to login policy and network templates, independent of the Puppet code environment;
+#   defaults to `production`.
 #   See `basic_settings::login` for the environment-dependent shell idle timeout.
 #
 # @param firewall_package
@@ -100,7 +104,8 @@
 #   Initramfs implementation selected for the kernel class.
 #
 # @param kernel_security_lockdown
-#   Kernel lockdown setting. `true` maps to `integrity`, `false` maps to `none`, and a string is treated as an explicit lockdown mode.
+#   Kernel lockdown setting. `true` maps to `integrity`, `false` maps to `none`, and a string is treated as an explicit
+#   lockdown mode.
 #
 # @param kernel_swap_free_profiles
 #   Optional SwapFree threshold profiles passed to `basic_settings::kernel`.
@@ -131,9 +136,8 @@
 #   MongoDB version used when the MongoDB repository is enabled.
 #
 # @param monitoring_package
-# lint:ignore:140chars
-#   Monitoring backend to configure. `none` disables generated monitoring integration and `openitcockpit` enables OpenITCOCKPIT custom checks.
-# lint:endignore
+#   Monitoring backend to configure. `none` disables generated monitoring integration and `openitcockpit` enables
+#   OpenITCOCKPIT custom checks.
 #
 # @param monitoring_package_install
 #   Installs the monitoring agent package when the selected backend supports it.
@@ -196,9 +200,8 @@
 #   Optional HTTPS proxy rendered into APT configuration.
 #
 # @param puppet_repo
-# lint:ignore:140chars
-#   Optional override for Puppet package layout. `undef` lets the class choose `remote` when Vox Pupuli is enabled and supported, otherwise `distro`.
-# lint:endignore
+#   Optional override for Puppet package layout. `undef` lets the class choose `remote` when Vox Pupuli is enabled and
+#   supported, otherwise `distro`.
 #
 # @param puppetserver_enable
 #   Enables Puppet Server/OpenVox Server package and service integration.
@@ -213,7 +216,8 @@
 #   Enables management of RabbitMQ upstream APT repositories when supported.
 #
 # @param server_fdqn
-#   Fully qualified host name passed to monitoring, security, package, and network templates. The default comes from Facter.
+#   Fully qualified host name passed to monitoring, security, package, and network templates. The default comes from
+#   Facter.
 #
 # @param server_timezone
 #   Timezone passed to `basic_settings::timezone`. The default is `UTC`.
@@ -225,7 +229,8 @@
 #   Enables snapd in package management. Ubuntu Pro may force this on when Pro is enabled.
 #
 # @param sudoers_dir_enable
-#   Allows `basic_settings::login` to own and purge `/etc/sudoers.d`. Set to `false` on hosts with existing unmanaged sudoers snippets.
+#   Allows `basic_settings::login` to own and purge `/etc/sudoers.d`. Set to `false` on hosts with existing unmanaged
+#   sudoers snippets.
 #
 # @param sury_enable
 #   Enables management of the Sury/Ondrej PHP APT repository when supported.

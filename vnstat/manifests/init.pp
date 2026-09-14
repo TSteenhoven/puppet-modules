@@ -1,8 +1,9 @@
 # @summary Installs and configures vnStat traffic accounting.
 #
-# lint:ignore:140chars
-# This class installs vnStat, builds `/etc/vnstat.conf` and `/etc/vnstat-monitoring.conf` through concat, and integrates the daemon with the local `basic_settings` systemd and logrotate helpers when those helpers are already present in the catalog. The default configuration lets vnstatd add newly discovered interfaces automatically so a host receives traffic accounting without a per-interface resource.
-# lint:endignore
+# This class installs vnStat, builds `/etc/vnstat.conf` and `/etc/vnstat-monitoring.conf` through concat, and integrates
+# the daemon with the local `basic_settings` systemd and logrotate helpers when those helpers are already present in the
+# catalog. The default configuration lets vnstatd add newly discovered interfaces automatically so a host receives
+# traffic accounting without a per-interface resource.
 #
 # @example Install vnStat with the default configuration
 #   class { 'vnstat': }
@@ -15,27 +16,27 @@
 #   }
 #
 # @param bandwidth_max
-# lint:ignore:140chars
-#   Global `MaxBandwidth` value in Mbit/s. The default `0` renders `MaxBandwidth 0`, which disables vnStat's global reject limit and prevents the monitoring check from using the global value as a positive capacity fallback. Set a positive value when all monitored interfaces can safely share the same fallback capacity.
-# lint:endignore
+#   Global `MaxBandwidth` value in Mbit/s. The default `0` renders `MaxBandwidth 0`, which disables vnStat's global
+#   reject limit and prevents the monitoring check from using the global value as a positive capacity fallback. Set a
+#   positive value when all monitored interfaces can safely share the same fallback capacity.
 #
 # @param nice_level
-# lint:ignore:140chars
-#   Positive nice value rendered as a negative systemd `Nice` setting for `vnstat.service`. The default `8` makes the daemon prefer responsiveness without running at the highest priority.
-# lint:endignore
+#   Positive nice value rendered as a negative systemd `Nice` setting for `vnstat.service`. The default `8` makes the
+#   daemon prefer responsiveness without running at the highest priority.
 #
 # @param p95_critical
-# lint:ignore:140chars
-#   Optional global 95th percentile critical threshold in Mbit/s for the monitoring check. `undef` leaves the global critical threshold unset.
-# lint:endignore
+#   Optional global 95th percentile critical threshold in Mbit/s for the monitoring check. `undef` leaves the global
+#   critical threshold unset.
 #   Interface-specific `vnstat::ethernet` values override this default.
 #
 # @param p95_warning
-#   Optional global 95th percentile warning threshold in Mbit/s for the monitoring check. `undef` leaves the global warning threshold unset.
+#   Optional global 95th percentile warning threshold in Mbit/s for the monitoring check. `undef` leaves the global
+#   warning threshold unset.
 #   Interface-specific `vnstat::ethernet` values override this default.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to `vnstat.service` when the shared systemd target ladder is present.
+#   `basic_settings::systemd` target suffix that should bind to `vnstat.service` when the shared systemd target ladder
+#   is present.
 #
 # @api public
 class vnstat (

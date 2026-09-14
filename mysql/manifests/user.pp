@@ -1,8 +1,8 @@
 # @summary Creates, updates, or removes a MySQL user account.
 #
-# lint:ignore:140chars
-# This defined type manages a MySQL account through SQL commands using the defaults file prepared by the `mysql` class. It handles MySQL version-specific password syntax and performs credential checks through root-only temporary files for MySQL 8 style authentication.
-# lint:endignore
+# This defined type manages a MySQL account through SQL commands using the defaults file prepared by the `mysql` class.
+# It handles MySQL version-specific password syntax and performs credential checks through root-only temporary files for
+# MySQL 8 style authentication.
 #
 # @example Create a MySQL application user
 #   mysql::user { 'app':
@@ -15,9 +15,8 @@
 #   Creates or updates the user when `present`; drops it when `absent`.
 #
 # @param password
-# lint:ignore:140chars
-#   Password assigned to the MySQL user. This parameter is currently a plain string and should be supplied carefully from trusted profile data.
-# lint:endignore
+#   Password assigned to the MySQL user. This parameter is currently a plain string and should be supplied carefully
+#   from trusted profile data.
 #
 # @param username
 #   MySQL username to manage.
@@ -26,9 +25,8 @@
 #   MySQL host part for the account. The default is `localhost`.
 #
 # @param password_latency
-# lint:ignore:140chars
-#   Selects the MySQL 8 password storage path. Use `authentication_string` for legacy `mysql_native_password`; the default uses MySQL's default method.
-# lint:endignore
+#   Selects the MySQL 8 password storage path. Use `authentication_string` for legacy `mysql_native_password`; the
+#   default uses MySQL's default method.
 #
 # @api public
 define mysql::user (

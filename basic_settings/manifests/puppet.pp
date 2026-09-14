@@ -1,8 +1,9 @@
 # @summary Manages Puppet agent/server package behavior, systemd integration, cleanup timers, and audit rules.
 #
-# lint:ignore:140chars
-# This class disables vendor service enablement, configures Puppet agent and optional Puppet Server/OpenVox Server paths for distro or remote packages, installs cleanup services and timers for filebucket and server reports, adds monitoring where available, and audits Puppet SSL and code directories. Server mode changes service ordering and creates Puppet-owned directories.
-# lint:endignore
+# This class disables vendor service enablement, configures Puppet agent and optional Puppet Server/OpenVox Server paths
+# for distro or remote packages, installs cleanup services and timers for filebucket and server reports, adds monitoring
+# where available, and audits Puppet SSL and code directories. Server mode changes service ordering and creates
+# Puppet-owned directories.
 #
 # @example Manage only the Puppet agent integration
 #   include basic_settings::puppet
@@ -17,7 +18,8 @@
 #   JVM heap size rendered for Puppet Server/OpenVox Server. Valid values are `512mb`, `1gb`, and `2gb`.
 #
 # @param repo
-#   Package layout to use. `distro` uses distribution paths and `remote` uses Puppet Labs/OpenVox-style `/opt/puppetlabs` paths.
+#   Package layout to use. `distro` uses distribution paths and `remote` uses Puppet Labs/OpenVox-style
+#   `/opt/puppetlabs` paths.
 #
 # @param server_dirname
 #   Directory name used for server configuration and state paths. The default is `puppetserver`.

@@ -1,8 +1,7 @@
 # @summary Manages one netplan ethernet YAML file.
 #
-# lint:ignore:140chars
-# This defined type renders `/etc/netplan/<title>.yaml` for an ethernet interface, inheriting DHCP and IP-version defaults from the `netplanio` class unless explicitly overridden. Changes notify the shared `netplan apply` exec.
-# lint:endignore
+# This defined type renders `/etc/netplan/<title>.yaml` for an ethernet interface, inheriting DHCP and IP-version
+# defaults from the `netplanio` class unless explicitly overridden. Changes notify the shared `netplan apply` exec.
 #
 # @example Configure a static ethernet interface
 #   netplanio::ethernet { 'ens18':
@@ -33,9 +32,8 @@
 #   Sets the netplan `optional` flag for the interface.
 #
 # @param routes
-# lint:ignore:140chars
-#   Optional route hash keyed by destination. Every destination maps to a hash containing at least `via`, for example `{ 'default' => { 'via' => '192.0.2.1' } }`.
-# lint:endignore
+#   Optional route hash keyed by destination. Every destination maps to a hash containing at least `via`, for example
+#   `{ 'default' => { 'via' => '192.0.2.1' } }`.
 #
 # @api public
 define netplanio::ethernet (

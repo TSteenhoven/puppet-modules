@@ -1,6 +1,7 @@
 # @summary Manages RabbitMQ permissions for one user and virtual host.
 #
-# This defined type requires `rabbitmq::management` and applies configure, write, and read permissions with `rabbitmqctl`.
+# This defined type requires `rabbitmq::management` and applies configure, write, and read permissions with
+# `rabbitmqctl`.
 #
 # @example Grant read/write access on the default vhost
 #   rabbitmq::management_user_permissions { 'app_default':

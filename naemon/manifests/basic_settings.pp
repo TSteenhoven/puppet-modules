@@ -1,8 +1,7 @@
 # @summary Creates a Naemon host entry for a host managed by basic_settings.
 #
-# lint:ignore:140chars
-# This defined type wraps `naemon::host` with a standard passive firewall check used for hosts that report through the repository's basic monitoring model.
-# lint:endignore
+# This defined type wraps `naemon::host` with a standard passive firewall check used for hosts that report through the
+# repository's basic monitoring model.
 #
 # @example Add a basic_settings host to Naemon
 #   naemon::basic_settings { 'web01':

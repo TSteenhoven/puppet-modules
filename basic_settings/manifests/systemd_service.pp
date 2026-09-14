@@ -1,8 +1,9 @@
 # @summary Manages a generated systemd service unit and optional monitoring.
 #
-# lint:ignore:140chars
-# This defined type writes `/etc/systemd/system/<title>.service` from the shared template, controls the service enablement state, registers service monitoring when requested, and automatically adds an npm audit check for Node.js services with a known working directory. Service hardening is supplied explicitly by the caller through the `service` hash.
-# lint:endignore
+# This defined type writes `/etc/systemd/system/<title>.service` from the shared template, controls the service
+# enablement state, registers service monitoring when requested, and automatically adds an npm audit check for Node.js
+# services with a known working directory. Service hardening is supplied explicitly by the caller through the `service`
+# hash.
 #
 # @example Create a hardened oneshot service
 #   basic_settings::systemd_service { 'example':

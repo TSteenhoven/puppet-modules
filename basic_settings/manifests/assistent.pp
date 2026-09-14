@@ -1,8 +1,9 @@
 # @summary Manages console assistant packages and local keyboard configuration.
 #
-# lint:ignore:140chars
-# This class removes desktop assistant packages that are not useful on hardened servers, optionally installs audio support, and manages `/etc/default/keyboard` and `/etc/default/console-setup`. It also manages keyboard debconf answers when `Package['debconf']` has already been declared. Keyboard configuration is enabled by default on physical hosts and disabled by default on virtual machines unless explicitly overridden.
-# lint:endignore
+# This class removes desktop assistant packages that are not useful on hardened servers, optionally installs audio
+# support, and manages `/etc/default/keyboard` and `/etc/default/console-setup`. It also manages keyboard debconf
+# answers when `Package['debconf']` has already been declared. Keyboard configuration is enabled by default on physical
+# hosts and disabled by default on virtual machines unless explicitly overridden.
 #
 # @example Use the default server-oriented assistant settings
 #   include basic_settings::assistent
@@ -20,9 +21,12 @@
 #   Console codeset identifier written to the console setup template. The default is `Lat15`.
 #
 # @param keyboard_enable
-#   Controls installation of console-setup and keyboard-configuration and management of their debconf answers and configuration.
-#   `undef` uses the host type default, `true` forces management on, and `false` purges the keyboard packages and `/etc/console-setup`.
-#   Debconf answers are managed only when `Package['debconf']` is already declared; packages and files are managed independently.
+#   Controls installation of console-setup and keyboard-configuration and management of their debconf answers and
+#   configuration.
+#   `undef` uses the host type default, `true` forces management on, and `false` purges the keyboard packages and
+#   `/etc/console-setup`.
+#   Debconf answers are managed only when `Package['debconf']` is already declared; packages and files are managed
+#   independently.
 #   Does not declare a keyboard reload or console service restart for configuration changes.
 #
 # @param keyboard_layout

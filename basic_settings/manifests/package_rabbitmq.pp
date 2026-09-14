@@ -1,8 +1,7 @@
 # @summary Manages RabbitMQ Erlang and server APT repositories.
 #
-# lint:ignore:140chars
-# This private helper writes or removes the RabbitMQ Erlang and RabbitMQ Server package sources and signing keys. It is called by `basic_settings` after OS support has been calculated.
-# lint:endignore
+# This private helper writes or removes the RabbitMQ Erlang and RabbitMQ Server package sources and signing keys. It is
+# called by `basic_settings` after OS support has been calculated.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_rabbitmq':

@@ -1,8 +1,7 @@
 # @summary Manages `/etc/gitlab/gitlab.rb` for an installed GitLab instance.
 #
-# lint:ignore:140chars
-# This class renders the GitLab omnibus configuration and refreshes `gitlab-ctl reconfigure` when it changes. It depends on the main `gitlab` class so it can reuse the resolved server FQDN and installation state.
-# lint:endignore
+# This class renders the GitLab omnibus configuration and refreshes `gitlab-ctl reconfigure` when it changes. It depends
+# on the main `gitlab` class so it can reuse the resolved server FQDN and installation state.
 #
 # @example Configure GitLab HTTPS and SSH settings
 #   class { 'gitlab::config':
@@ -17,10 +16,12 @@
 #   PostgreSQL shared buffer setting rendered into `gitlab.rb`.
 #
 # @param https
-#   Enables HTTPS-related GitLab configuration. When certificates are omitted, the template enables Let's Encrypt handling.
+#   Enables HTTPS-related GitLab configuration. When certificates are omitted, the template enables Let's Encrypt
+#   handling.
 #
 # @param logrotate_rotate
-#   Optional logrotate retention count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise uses 12.
+#   Optional logrotate retention count. `undef` inherits `basic_settings::io::log_rotate` when available, otherwise uses
+#   12.
 #
 # @param puma_max_memory_mb
 #   Puma memory limit in megabytes.

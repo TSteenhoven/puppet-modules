@@ -1,8 +1,8 @@
 # @summary Adds vnStat configuration for one ethernet interface.
 #
-# lint:ignore:140chars
-# This defined type appends optional concat fragments to `/etc/vnstat.conf` and `/etc/vnstat-monitoring.conf`. Use it for interface-specific configuration that should stay outside the global vnStat defaults, such as a known technical speed cap for `MaxBW<interface>` or 95th percentile monitoring thresholds.
-# lint:endignore
+# This defined type appends optional concat fragments to `/etc/vnstat.conf` and `/etc/vnstat-monitoring.conf`. Use it
+# for interface-specific configuration that should stay outside the global vnStat defaults, such as a known technical
+# speed cap for `MaxBW<interface>` or 95th percentile monitoring thresholds.
 #
 # @example Configure a known maximum bandwidth for one interface
 #   vnstat::ethernet { 'ens192':
@@ -17,9 +17,8 @@
 #   }
 #
 # @param bandwidth_max
-# lint:ignore:140chars
-#   Optional value for `MaxBW<interface>` in Mbit/s. Set this to the real technical interface speed, not a purchased traffic bundle or alert limit.
-# lint:endignore
+#   Optional value for `MaxBW<interface>` in Mbit/s. Set this to the real technical interface speed, not a purchased
+#   traffic bundle or alert limit.
 #   `undef` omits the interface-specific vnStat bandwidth fragment.
 #
 # @param ensure
@@ -33,15 +32,13 @@
 #
 # @param p95_critical
 #   Optional 95th percentile critical threshold in Mbit/s for this interface.
-# lint:ignore:140chars
-#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective inherited value when either 95th percentile threshold is configured for the interface or class.
-# lint:endignore
+#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective
+#   inherited value when either 95th percentile threshold is configured for the interface or class.
 #
 # @param p95_warning
 #   Optional 95th percentile warning threshold in Mbit/s for this interface.
-# lint:ignore:140chars
-#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective inherited value when either 95th percentile threshold is configured for the interface or class.
-# lint:endignore
+#   `undef` inherits the class-level threshold when one is configured. The monitoring fragment uses the effective
+#   inherited value when either 95th percentile threshold is configured for the interface or class.
 #
 # @api public
 define vnstat::ethernet (

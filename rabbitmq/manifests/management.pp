@@ -1,8 +1,8 @@
 # @summary Enables RabbitMQ management and manages local admin access.
 #
-# lint:ignore:140chars
-# This class requires `rabbitmq`, enables the management plugin, optionally creates the `guest` administrator account, writes management listener configuration, installs `rabbitmqadmin`, creates the default vhost, and adds monitoring and audit coverage. TLS for the management listener can be supplied directly or inherited from `rabbitmq::tcp`.
-# lint:endignore
+# This class requires `rabbitmq`, enables the management plugin, optionally creates the `guest` administrator account,
+# writes management listener configuration, installs `rabbitmqadmin`, creates the default vhost, and adds monitoring and
+# audit coverage. TLS for the management listener can be supplied directly or inherited from `rabbitmq::tcp`.
 #
 # @example Enable management with a non-default admin password
 #   class { 'rabbitmq::management':

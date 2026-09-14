@@ -1,8 +1,8 @@
 # @summary Installs and configures the OpenITCOCKPIT monitoring agent.
 #
-# lint:ignore:140chars
-# This class manages the OpenITCOCKPIT agent package, service wiring, custom check directories, persistent check state, `customchecks.ini`, and `/etc/openitcockpit-agent/config.ini`. Defaults are conservative: the agent binds to localhost, Prometheus export is disabled, and push-mode TLS verification is enabled.
-# lint:endignore
+# This class manages the OpenITCOCKPIT agent package, service wiring, custom check directories, persistent check state,
+# `customchecks.ini`, and `/etc/openitcockpit-agent/config.ini`. Defaults are conservative: the agent binds to
+# localhost, Prometheus export is disabled, and push-mode TLS verification is enabled.
 #
 # @example Configure push mode
 #   class { 'openitcockpit::agent':
@@ -48,7 +48,8 @@
 #   Optional proxy URL rendered into the agent configuration.
 #
 # @param push_apikey
-#   Sensitive API key used for push mode. Push mode is only enabled when this, `push_url`, and `push_enable` are all set.
+#   Sensitive API key used for push mode. Push mode is only enabled when this, `push_url`, and `push_enable` are all
+#   set.
 #
 # @param push_enable
 #   Enables push mode when `true` and the required URL/API key are present.
@@ -57,7 +58,8 @@
 #   OpenITCOCKPIT server URL used for push mode.
 #
 # @param sensorstats_enable
-#   Optional sensor statistics override. `undef` enables sensors on physical hosts and disables them on virtual machines.
+#   Optional sensor statistics override. `undef` enables sensors on physical hosts and disables them on virtual
+#   machines.
 #
 # @param services_enable
 #   Enables service statistics collection.

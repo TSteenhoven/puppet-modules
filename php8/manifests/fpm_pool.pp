@@ -1,8 +1,7 @@
 # @summary Manages one PHP-FPM pool configuration.
 #
-# lint:ignore:140chars
-# This defined type requires `php8::fpm` and writes `/etc/php/8.<minor>/fpm/pool.d/<title>.conf`. It resolves the socket path from the parent class defaults unless an explicit `listen` value is supplied.
-# lint:endignore
+# This defined type requires `php8::fpm` and writes `/etc/php/8.<minor>/fpm/pool.d/<title>.conf`. It resolves the socket
+# path from the parent class defaults unless an explicit `listen` value is supplied.
 #
 # @example Create an application pool
 #   php8::fpm_pool { 'app':

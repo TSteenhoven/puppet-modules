@@ -3,15 +3,21 @@
 # Declare `docker` and `basic_settings::systemd` first, with Docker's APT source available.
 # The title is the Compose project name; private state lives in `/opt/docker/<title>/config`.
 # Puppet manages the directory entry, never the contents of `config.toml` or `.runner_system_id`.
-# Registration uses docker::compose_exec in the running Compose container; an existing config.toml prevents another registration.
-# Existing configuration is not parsed or repaired; validate a failed or interrupted registration manually before retrying Puppet.
+# Registration uses docker::compose_exec in the running Compose container; an existing config.toml prevents another
+# registration.
+# Existing configuration is not parsed or repaired; validate a failed or interrupted registration manually before
+# retrying Puppet.
 # Use a dedicated host or VM for trusted builds: the manager's Docker socket grants host-level access.
-# New registrations use the host daemon for unprivileged job containers, `alpine:latest` and the `if-not-present` pull policy.
+# New registrations use the host daemon for unprivileged job containers, `alpine:latest` and the `if-not-present` pull
+# policy.
 # Manager mounts and runner_ip are not inherited by job containers; existing executor configuration remains unmanaged.
-# The manager bind-mounts the root-owned 0700 config directory and the host socket; the bootstrap token is outside both mounts.
-# The Docker executor creates separate build, helper and service containers; inspect their actual volumes and privileges.
+# The manager bind-mounts the root-owned 0700 config directory and the host socket; the bootstrap token is outside both
+# mounts.
+# The Docker executor creates separate build, helper and service containers; inspect their actual volumes and
+# privileges.
 # Check the effective DOCKER_HOST and runners.docker.host before relying on the host-daemon configuration.
-# The fixed if-not-present policy can reuse cached private images without fresh registry authorization; restrict runner access.
+# The fixed if-not-present policy can reuse cached private images without fresh registry authorization; restrict runner
+# access.
 # See the dedicated Runner node in `examples/docker.pp` for host setup, registration and validation steps.
 #
 # @example Deploy an already registered runner without retaining a bootstrap secret
@@ -24,25 +30,37 @@
 #   }
 #
 # @param auto_register
-#   Defaults to false. When true, run registration only while config.toml is absent; existing files require manual validation.
-#   The local existence guard has no registration side effects during noop, but also skips empty, damaged or partial files.
-#   After failure, pause Puppet runs and inspect local state and the GitLab runner manager through a protected admin session.
+#   Defaults to false. When true, run registration only while config.toml is absent; existing files require manual
+#   validation.
+#   The local existence guard has no registration side effects during noop, but also skips empty, damaged or partial
+#   files.
+#   After failure, pause Puppet runs and inspect local state and the GitLab runner manager through a protected admin
+#   session.
 #   A timeout can leave registration running inside the container; check the process before attempting recovery.
-#   Restore config.toml and .runner_system_id together, or reconcile the GitLab registration before deliberately removing state.
-#   Never delete config.toml just to force a retry; keep one Puppet agent responsible and avoid concurrent manual registration.
+#   Restore config.toml and .runner_system_id together, or reconcile the GitLab registration before deliberately
+#   removing state.
+#   Never delete config.toml just to force a retry; keep one Puppet agent responsible and avoid concurrent manual
+#   registration.
 #   When false, prepare an existing registration or register manually before using the runner.
 #
 # @param ensure
-#   Defaults to present. Absent uses Compose's directory removal; stop and detach the stack yourself before deleting local state.
-#   Pause the runner and drain jobs before maintenance; SIGQUIT has 240 seconds of Compose grace within a 300-second systemd stop.
-#   Before removal, back up required data, detach the systemd target binding, reload systemd and stop the stack with its files intact.
-#   Retire the systemd service and GitLab registration separately; absent does neither and does not remove Docker named volumes.
-#   Deleting the project directory loses its bootstrap token, runtime token, system identity and project-local bind-mount data.
+#   Defaults to present. Absent uses Compose's directory removal; stop and detach the stack yourself before deleting
+#   local state.
+#   Pause the runner and drain jobs before maintenance; SIGQUIT has 240 seconds of Compose grace within a 300-second
+#   systemd stop.
+#   Before removal, back up required data, detach the systemd target binding, reload systemd and stop the stack with its
+#   files intact.
+#   Retire the systemd service and GitLab registration separately; absent does neither and does not remove Docker named
+#   volumes.
+#   Deleting the project directory loses its bootstrap token, runtime token, system identity and project-local
+#   bind-mount data.
 #
 # @param image_tag
-#   Runner manager and registration image tag as a String, default latest. Tag syntax and availability are checked by Docker.
+#   Runner manager and registration image tag as a String, default latest. Tag syntax and availability are checked by
+#   Docker.
 #   Line breaks are rejected because this value is written to a single .env entry.
-#   Replacing the manager preserves its mounted registration; it does not change existing executor settings or register again.
+#   Replacing the manager preserves its mounted registration; it does not change existing executor settings or register
+#   again.
 #
 # @param monitoring_detail_limit
 #   Compose check diagnostic character limit, default 6000; passed unchanged to `docker::compose`.
@@ -72,23 +90,34 @@
 #   Local runner name used at registration and by validation, default docker-runner; no control characters.
 #
 # @param runner_ip
-#   Optional IPv4 or IPv6 address without a subnet, default undef. Undef or an empty string retains normal DNS resolution.
-#   Compose maps the hostname parsed from runner_url with Puppet's native URI type, including registration inside the manager.
+#   Optional IPv4 or IPv6 address without a subnet, default undef. Undef or an empty string retains normal DNS
+#   resolution.
+#   Compose maps the hostname parsed from runner_url with Puppet's native URI type, including registration inside the
+#   manager.
 #   Does not change the URL, TLS verification or Docker executor job containers.
 #   Requires Compose 2.24.1 or later for the HOST:IP form; omit subnet prefixes and IPv6 brackets.
-#   If GitLab is reachable only through this mapping, helper checkout and artifact upload can fail after registration succeeds.
-#   Provide DNS reachable from each container network, or merge extra_hosts into the existing runner's runners.docker table.
-#   For example: extra_hosts = ["gitlab.example.org:192.0.2.50"]. Preserve other entries, runtime tokens and system identity.
+#   If GitLab is reachable only through this mapping, helper checkout and artifact upload can fail after registration
+#   succeeds.
+#   Provide DNS reachable from each container network, or merge extra_hosts into the existing runner's runners.docker
+#   table.
+#   For example: extra_hosts = ["gitlab.example.org:192.0.2.50"]. Preserve other entries, runtime tokens and system
+#   identity.
 #   Apply that executor setting after first registration or while an existing runner is paused with jobs drained.
-#   Puppet does not reconcile it when runner_ip changes; review manager, helper and job DNS/TLS plus host-daemon registry access.
-#   Removing the mapping restores normal manager DNS; mapping changes refresh the manager, so pause and drain jobs first.
+#   Puppet does not reconcile it when runner_ip changes; review manager, helper and job DNS/TLS plus host-daemon
+#   registry access.
+#   Removing the mapping restores normal manager DNS; mapping changes refresh the manager, so pause and drain jobs
+#   first.
 #
 # @param runner_token
-#   Optional Sensitive runner authentication token, default undef; only required on the host for a new automatic registration.
+#   Optional Sensitive runner authentication token, default undef; only required on the host for a new automatic
+#   registration.
 #   Undef removes the bootstrap file without changing the runtime token; remove the profile's mandatory lookup too.
-#   Use an authentication token from a runner created in GitLab, not a legacy registration token; set access and tags in GitLab.
-#   The private bootstrap file is fed through stdin to CI_SERVER_TOKEN; no terminal is allocated and registration output is discarded.
-#   Sensitive protects normal output but does not encrypt every catalog/cache or hide secrets from host and Docker administrators.
+#   Use an authentication token from a runner created in GitLab, not a legacy registration token; set access and tags in
+#   GitLab.
+#   The private bootstrap file is fed through stdin to CI_SERVER_TOKEN; no terminal is allocated and registration output
+#   is discarded.
+#   Sensitive protects normal output but does not encrypt every catalog/cache or hide secrets from host and Docker
+#   administrators.
 #
 # @param runner_url
 #   GitLab instance HTTPS URL, default https://gitlab.com/; credentials, query strings and fragments are rejected.

@@ -2,10 +2,10 @@
 #
 # This defined type deploys the module-shipped `docker/files/twenty.yaml` Compose file.
 # Declare `docker` before using it.
-# lint:ignore:140chars
-# The resource title becomes the Compose project name, so multiple Twenty stacks can be managed on the same host when ports and public names do not conflict.
-# When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the defined type declares `docker::compose` directly.
-# lint:endignore
+# The resource title becomes the Compose project name, so multiple Twenty stacks can be managed on the same host when
+# ports and public names do not conflict.
+# When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the
+# defined type declares `docker::compose` directly.
 # The generated `SERVER_URL` uses `scheme` with the first `server_name`, or `host` when `server_name` is unset.
 #
 # @example Deploy Twenty with generated `.env` content
@@ -49,7 +49,8 @@
 #   PostgreSQL user written as `PG_DATABASE_USER`.
 #
 # @param ensure
-#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing a stack.
+#   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before removing
+#   a stack.
 #
 # @param host
 #   Local Twenty upstream host used by Nginx when `server_name` is set.
@@ -63,7 +64,8 @@
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
+#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration
+#   containers.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -84,7 +86,8 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param port
-#   Local Twenty upstream port used by Nginx when `server_name` is set. The default `3000` matches the bundled Compose listener.
+#   Local Twenty upstream port used by Nginx when `server_name` is set. The default `3000` matches the bundled Compose
+#   listener.
 #
 # @param redis_url
 #   Redis connection URL written as `REDIS_URL`.
@@ -124,7 +127,8 @@
 #   Twenty storage backend written as `STORAGE_TYPE`.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is `services`.
+#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is
+#   `services`.
 #
 # @api public
 define docker::twenty (

@@ -1,8 +1,8 @@
 # @summary Manages firewall, DHCP, systemd-networkd, DNS resolver, `/etc/hosts`, LLDP, and network audit policy.
 #
-# lint:ignore:140chars
-# This class installs the selected firewall package, removes competing firewall stacks when requested, manages DHCP client behavior, optional `/etc/hosts` ownership, optional netplan and wireless packages, systemd-networkd/resolved drop-ins, networkd-dispatcher hooks, LLDP identity, monitoring checks, and audit rules for network tooling.
-# lint:endignore
+# This class installs the selected firewall package, removes competing firewall stacks when requested, manages DHCP
+# client behavior, optional `/etc/hosts` ownership, optional netplan and wireless packages, systemd-networkd/resolved
+# drop-ins, networkd-dispatcher hooks, LLDP identity, monitoring checks, and audit rules for network tooling.
 # It reads kernel and monitoring state from `basic_settings` components when they are present.
 #
 # @example Manage the default nftables-based network profile
@@ -26,9 +26,8 @@
 #   Network configuration frontend to install. `netplan.io` installs netplan; `none` purges it.
 #
 # @param dhcp_enable
-# lint:ignore:140chars
-#   Enables DHCP client configuration when `true`. When `false`, the class can still retain DHCP tooling if the kernel/initramfs setup needs it.
-# lint:endignore
+#   Enables DHCP client configuration when `true`. When `false`, the class can still retain DHCP tooling if the
+#   kernel/initramfs setup needs it.
 #
 # @param dns_dnssec
 #   DNSSEC mode rendered into the systemd-resolved drop-in.
@@ -52,9 +51,8 @@
 #   Additional host aliases appended to the `127.0.0.1 localhost` record when hosts management is enabled.
 #
 # @param install_options
-# lint:ignore:140chars
-#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
-# lint:endignore
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are
+#   appended without deduplication so they remain effective.
 #
 # @param interfaces
 #   Interface name patterns used for systemd-networkd DHCP and router advertisement drop-ins.

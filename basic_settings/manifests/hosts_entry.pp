@@ -1,9 +1,8 @@
 # @summary Adds one managed host record to `/etc/hosts`.
 #
 # This defined type appends a single idempotent concat fragment to the hosts file owned by `basic_settings::hosts`.
-# lint:ignore:140chars
-# The fragment title is based on the IP address and host name so duplicate records surface as duplicate Puppet resources instead of producing repeated lines in `/etc/hosts`.
-# lint:endignore
+# The fragment title is based on the IP address and host name so duplicate records surface as duplicate Puppet resources
+# instead of producing repeated lines in `/etc/hosts`.
 #
 # @example Add the Puppet server to `/etc/hosts`
 #   basic_settings::hosts_entry { 'puppet':

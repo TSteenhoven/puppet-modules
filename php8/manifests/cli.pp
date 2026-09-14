@@ -1,8 +1,8 @@
 # @summary Installs PHP CLI configuration and optional Composer.
 #
-# lint:ignore:140chars
-# This class requires `php8`, installs the matching CLI package, writes CLI INI settings, optionally sets the default `php` alternative, and can install Composer after verifying the installer signature in a root-only temporary directory.
-# lint:endignore
+# This class requires `php8`, installs the matching CLI package, writes CLI INI settings, optionally sets the default
+# `php` alternative, and can install Composer after verifying the installer signature in a root-only temporary
+# directory.
 #
 # @example Configure PHP CLI with Composer
 #   class { 'php8::cli':
@@ -13,7 +13,8 @@
 #   Downloads, verifies, and installs Composer when `true`.
 #
 # @param ini_settings
-#   Hash of INI settings rendered into the CLI custom settings file. Must not include module-managed PHP INI settings such as `expose_php`.
+#   Hash of INI settings rendered into the CLI custom settings file. Must not include module-managed PHP INI settings
+#   such as `expose_php`.
 #
 # @api public
 class php8::cli (

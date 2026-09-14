@@ -1,8 +1,8 @@
 # @summary Prepares shared monitoring plumbing and failure notifications.
 #
-# lint:ignore:140chars
-# This class installs mail tooling for systemd failure notifications, writes the shared monitoring notification helper, and, when requested, prepares the OpenITCOCKPIT agent custom-check directory and `customchecks.ini`. Other modules use this class as the central source for monitoring package selection, notification mail, and sudoers-directory policy.
-# lint:endignore
+# This class installs mail tooling for systemd failure notifications, writes the shared monitoring notification helper,
+# and, when requested, prepares the OpenITCOCKPIT agent custom-check directory and `customchecks.ini`. Other modules use
+# this class as the central source for monitoring package selection, notification mail, and sudoers-directory policy.
 #
 # @example Enable OpenITCOCKPIT custom checks without installing the agent package
 #   class { 'basic_settings::monitoring':
@@ -13,12 +13,13 @@
 #   Mail transport service installed and enabled for failure notifications. The default is `postfix`.
 #
 # @param mail_to
-#   Default recipient address for the shared monitoring notification helper and systemd failure notification mail. The default is `root`.
+#   Default recipient address for the shared monitoring notification helper and systemd failure notification mail. The
+#   default is `root`.
 #
 # @param package
-# lint:ignore:140chars
-#   Monitoring integration to configure. `none` retires active Puppet-owned custom checks without deleting plugins; `openitcockpit` writes their configuration. Keep this class declared during retirement; an active systemd agent is restarted to discard cached checks.
-# lint:endignore
+#   Monitoring integration to configure. `none` retires active Puppet-owned custom checks without deleting plugins;
+#   `openitcockpit` writes their configuration. Keep this class declared during retirement; an active systemd agent is
+#   restarted to discard cached checks.
 #
 # @param package_install
 #   Installs and wires the `openitcockpit-agent` package when `true` and `package` is `openitcockpit`.
@@ -27,7 +28,8 @@
 #   Fully qualified host name used in notification subjects. The default comes from Facter.
 #
 # @param sudoers_dir_enable
-#   Mirrors the login sudoers.d ownership policy so generated monitoring sudoers snippets are named consistently with the rest of the host.
+#   Mirrors the login sudoers.d ownership policy so generated monitoring sudoers snippets are named consistently with
+#   the rest of the host.
 #
 # @api public
 class basic_settings::monitoring (

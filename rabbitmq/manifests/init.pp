@@ -1,8 +1,8 @@
 # @summary Installs RabbitMQ Server and applies service integration defaults.
 #
-# lint:ignore:140chars
-# This class installs Erlang and RabbitMQ, disables vendor enablement under systemd, binds `rabbitmq-server.service` into the shared target ladder, applies systemd hardening, creates the owned `/etc/rabbitmq/conf.d` tree, renders deprecated feature configuration, and prepares a root-owned TLS directory.
-# lint:endignore
+# This class installs Erlang and RabbitMQ, disables vendor enablement under systemd, binds `rabbitmq-server.service`
+# into the shared target ladder, applies systemd hardening, creates the owned `/etc/rabbitmq/conf.d` tree, renders
+# deprecated feature configuration, and prepares a root-owned TLS directory.
 #
 # @example Install RabbitMQ in the services target
 #   include rabbitmq

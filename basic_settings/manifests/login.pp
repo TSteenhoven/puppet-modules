@@ -1,18 +1,24 @@
 # @summary Manages login policy, shell idle timeouts, sudo defaults, PAM hooks, MOTD, and getty state.
 #
-# lint:ignore:140chars
-# This class installs core login tooling, creates the `wheel` group, manages sudoers and PAM configuration, controls console getty availability, and adds audit coverage for login, PAM, sudoers, and optional vulnerability-scanner exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo customizations.
-# lint:endignore
+# This class installs core login tooling, creates the `wheel` group, manages sudoers and PAM configuration, controls
+# console getty availability, and adds audit coverage for login, PAM, sudoers, and optional vulnerability-scanner
+# exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo
+# customizations.
 #
-# lint:ignore:140chars
-# The shell policy in `/etc/profile.d/tmout.sh` sets a readonly, exported `TMOUT` only when an interactive shell loads it. Non-interactive shells skip this initialization. Bash enforces the idle timeout; Dash does not enforce an idle timeout through `TMOUT`.
+# The shell policy in `/etc/profile.d/tmout.sh` sets a readonly, exported `TMOUT` only when an interactive shell loads
+# it. Non-interactive shells skip this initialization. Bash enforces the idle timeout; Dash does not enforce an idle
+# timeout through `TMOUT`.
 #
-# Standard Bash login routes on Debian and Ubuntu load `/etc/profile.d` through `/etc/profile`, including console and interactive SSH logins, `su -`, and `sudo -i`. Verify that custom shells and profiles load the managed policy and support its timeout behavior.
+# Standard Bash login routes on Debian and Ubuntu load `/etc/profile.d` through `/etc/profile`, including console and
+# interactive SSH logins, `su -`, and `sudo -i`. Verify that custom shells and profiles load the managed policy and
+# support its timeout behavior.
 #
-# Updating this timeout does not terminate existing sessions or restart SSH. Reloading the profile preserves an existing readonly value without an error; open a new login shell to apply a changed value.
+# Updating this timeout does not terminate existing sessions or restart SSH. Reloading the profile preserves an existing
+# readonly value without an error; open a new login shell to apply a changed value.
 #
-# Scripts started from an interactive shell can inherit `TMOUT`. Bash also uses it as the default timeout for `read` and for terminal input in `select`; set an explicit `read -t` timeout or remove `TMOUT` from the child script's own environment when needed.
-# lint:endignore
+# Scripts started from an interactive shell can inherit `TMOUT`. Bash also uses it as the default timeout for `read` and
+# for terminal input in `select`; set an explicit `read -t` timeout or remove `TMOUT` from the child script's own
+# environment when needed.
 #
 # @see https://manpages.ubuntu.com/manpages/jammy/man1/bash.1.html Bash TMOUT and shell startup behavior
 #
@@ -25,7 +31,8 @@
 #   }
 #
 # @param environment
-#   Server environment passed by `basic_settings::environment`, independent of the Puppet code environment; defaults to `production`.
+#   Server environment passed by `basic_settings::environment`, independent of the Puppet code environment; defaults to
+#   `production`.
 #   Selects the shell idle timeout: `production` uses 900 seconds; every other value uses 1800 seconds.
 #   Also used in generated login messages and templates.
 #
@@ -34,9 +41,8 @@
 #   The default is `false`.
 #
 # @param gui_mode
-# lint:ignore:140chars
-#   Selects GUI-related login behavior. `none` keeps the server minimal, `kiosk` enables getty and installs related session packages, and `adwaita-icon` is handled by the parent class for icon package selection.
-# lint:endignore
+#   Selects GUI-related login behavior. `none` keeps the server minimal, `kiosk` enables getty and installs related
+#   session packages, and `adwaita-icon` is handled by the parent class for icon package selection.
 #
 # @param hostname
 #   Hostname used by generated login templates. The default comes from Facter.
@@ -55,7 +61,8 @@
 #   Set this to `false` on hosts where existing sudoers snippets must remain.
 #
 # @param vulnerabilities_package
-#   Optional vulnerability scanner integration name. Currently only recognized values are handled by explicit case branches.
+#   Optional vulnerability scanner integration name. Currently only recognized values are handled by explicit case
+#   branches.
 #
 # @param vulnerabilities_user
 #   User account for the vulnerability scanner integration. It is only used when `vulnerabilities_package` is also set.

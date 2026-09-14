@@ -1,8 +1,9 @@
 # @summary Manages a local login user, home directory, SSH material, and audit coverage.
 #
-# lint:ignore:140chars
-# This defined type creates or removes a local user and optional matching group, manages a tightly permissioned home directory, SSH authorized keys and private key material, optional private shell startup files, and audit rules for the user's `.ssh` tree when auditd is available. Passwords are handled as `Sensitive` values and generated files are restricted to the managed user.
-# lint:endignore
+# This defined type creates or removes a local user and optional matching group, manages a tightly permissioned home
+# directory, SSH authorized keys and private key material, optional private shell startup files, and audit rules for the
+# user's `.ssh` tree when auditd is available. Passwords are handled as `Sensitive` values and generated files are
+# restricted to the managed user.
 #
 # @example Create a key-only user with a managed home directory
 #   basic_settings::login_user { 'deploy':
@@ -26,9 +27,8 @@
 #   Numeric user ID for the account.
 #
 # @param authorized_keys
-# lint:ignore:140chars
-#   Optional list of SSH public keys written to `authorized_keys`. `undef` purges SSH keys through the user resource; an empty array creates an empty managed file.
-# lint:endignore
+#   Optional list of SSH public keys written to `authorized_keys`. `undef` purges SSH keys through the user resource; an
+#   empty array creates an empty managed file.
 #
 # @param bash_aliases
 #   Optional content for `.bash_aliases`. Use `default` to render the module default template.
@@ -37,9 +37,8 @@
 #   Optional content for `.profile`. Use `default` to render the module default template.
 #
 # @param bashrc
-# lint:ignore:140chars
-#   Optional content for `.bashrc`. Use `default` to render the module default template, with a root-specific variant for the `root` account.
-# lint:endignore
+#   Optional content for `.bashrc`. Use `default` to render the module default template, with a root-specific variant
+#   for the `root` account.
 #
 # @param disable_group
 #   Prevents management of a matching group when `true`. The default is `false`.
@@ -54,28 +53,26 @@
 #   Controls whether the home directory and SSH/profile files are managed.
 #
 # @param home_force
-# lint:ignore:140chars
-#   Passed to managed home directory file resources. Use with care because it can force removal of unmanaged content when combined with purge/recurse options.
-# lint:endignore
+#   Passed to managed home directory file resources. Use with care because it can force removal of unmanaged content
+#   when combined with purge/recurse options.
 #
 # @param home_purge
 #   Purges unmanaged files below the home directory when `true` and recursion is enabled.
 #
 # @param home_recurse
-# lint:ignore:140chars
-#   Recurses through the home directory when `true`. Recursive management uses non-executable file modes while keeping directories traversable.
-# lint:endignore
+#   Recurses through the home directory when `true`. Recursive management uses non-executable file modes while keeping
+#   directories traversable.
 #
 # @param home_source
 #   Optional file source used to seed the home directory. Must start with `puppet:///`, `file:///`, or `https://`.
 #
 # @param password_max_age
-#   Optional password maximum age. `undef` selects a default based on whether the account has SSH keys or a locked password.
+#   Optional password maximum age. `undef` selects a default based on whether the account has SSH keys or a locked
+#   password.
 #
 # @param private_key
-# lint:ignore:140chars
-#   Optional file source for `${home}/.ssh/private.key`. Must start with `puppet:///`, `file:///`, or `https://`; the file is written with mode `0600`.
-# lint:endignore
+#   Optional file source for `${home}/.ssh/private.key`. Must start with `puppet:///`, `file:///`, or `https://`; the
+#   file is written with mode `0600`.
 #
 # @param shell
 #   Login shell for the account. The default is `/bin/bash`.

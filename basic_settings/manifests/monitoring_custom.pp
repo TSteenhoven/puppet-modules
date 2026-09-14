@@ -1,8 +1,8 @@
 # @summary Registers a custom monitoring script with the configured monitoring backend.
 #
-# lint:ignore:140chars
-# This defined type writes or removes a root-owned plugin script and registers it in OpenITCOCKPIT `customchecks.ini` when that backend is active. It centralizes plugin file permissions, scheduling metadata, and optional sudoers support for checks that need elevated privileges.
-# lint:endignore
+# This defined type writes or removes a root-owned plugin script and registers it in OpenITCOCKPIT `customchecks.ini`
+# when that backend is active. It centralizes plugin file permissions, scheduling metadata, and optional sudoers support
+# for checks that need elevated privileges.
 #
 # @example Register a custom OpenITCOCKPIT check
 #   basic_settings::monitoring_custom { 'example':
@@ -18,7 +18,8 @@
 #   Optional inline script content. Mutually exclusive in practice with `source`.
 #
 # @param ensure
-#   Controls whether the plugin script and registration are present or absent. `absent` also removes an old script with backend `none`.
+#   Controls whether the plugin script and registration are present or absent. `absent` also removes an old script with
+#   backend `none`.
 #
 # @param friendly
 #   Human-readable check name. `undef` uses a capitalized resource title.
@@ -30,17 +31,18 @@
 #   Monitoring package override. `undef` inherits `basic_settings::monitoring` when that class is declared.
 #
 # @param register
-#   Registers a runnable check when true. Set false to manage one shared script without creating a check for the script itself.
+#   Registers a runnable check when true. Set false to manage one shared script without creating a check for the script
+#   itself.
 #
 # @param root_required
-# lint:ignore:140chars
-#   Indicates whether the check requires root privileges. When a non-root plugin owner is used by a backend, this controls sudoers generation.
-# lint:endignore
+#   Indicates whether the check requires root privileges. When a non-root plugin owner is used by a backend, this
+#   controls sudoers generation.
 #
 # @param script
-# lint:ignore:140chars
-#   Title of another monitoring_custom resource that owns the shared script; only letters, digits, underscores, dots and hyphens are accepted. `undef` manages this check own script. With a title, this resource only registers arguments and never creates or removes the shared file; source and content must remain undef. The owner supplies its backend path and file dependency through this type.
-# lint:endignore
+#   Title of another monitoring_custom resource that owns the shared script; only letters, digits, underscores, dots and
+#   hyphens are accepted. `undef` manages this check own script. With a title, this resource only registers arguments
+#   and never creates or removes the shared file; source and content must remain undef. The owner supplies its backend
+#   path and file dependency through this type.
 #
 # @param source
 #   Optional file source for the plugin script. Must start with `puppet:///`, `file:///`, or `https://`.

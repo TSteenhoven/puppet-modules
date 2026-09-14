@@ -1,10 +1,21 @@
 # @summary Registers a local Nginx TLS certificate and key check.
 #
-# lint:ignore:140chars
-# Requires the nginx class and the File resource supplied by config_file. The normal caller is nginx::server, which registers separate main and redirect checks and supplies its own configuration path. This helper never includes monitoring classes or creates executable copies. The nginx class owns one shared root-owned 0700 check_nginx_cert script and its OpenSSL, CA certificate and coreutils dependencies through basic_settings::monitoring_custom. This helper passes safely escaped server names, the configuration file and check settings as arguments.
-# The script uses nginx -T with nginx::config_file and the binary default prefix, discovers paths at runtime and validates against self-issued roots from the Debian/Ubuntu system trust bundle. Custom service command-line overrides are outside this module contract. Install internal root CAs through the system trust mechanism. ssl_trusted_certificate is inspected separately and never supplies missing offered intermediates or trust anchors. Concrete DNS aliases are checked; Nginx wildcard/regex names, dynamic paths and encrypted keys are UNKNOWN. Nothing renews certificates, reloads Nginx or verifies a live endpoint. Root access is required under the existing agent sandbox; private keys remain private and certificates beneath protected home directories are unassessable.
-# Automatic vhost checks follow nginx::server lifecycle, including ensure => absent and monitoring_cert => false. The shared concat registry removes retired registrations on every apply, including deleted declarations; no per-vhost executable remains to clean up. The shared script follows the nginx class monitoring state. Keep basic_settings::monitoring declared with package => none during backend retirement.
-# lint:endignore
+# Requires the nginx class and the File resource supplied by config_file. The normal caller is nginx::server, which
+# registers separate main and redirect checks and supplies its own configuration path. This helper never includes
+# monitoring classes or creates executable copies. The nginx class owns one shared root-owned 0700 check_nginx_cert
+# script and its OpenSSL, CA certificate and coreutils dependencies through basic_settings::monitoring_custom. This
+# helper passes safely escaped server names, the configuration file and check settings as arguments.
+# The script uses nginx -T with nginx::config_file and the binary default prefix, discovers paths at runtime and
+# validates against self-issued roots from the Debian/Ubuntu system trust bundle. Custom service command-line overrides
+# are outside this module contract. Install internal root CAs through the system trust mechanism.
+# ssl_trusted_certificate is inspected separately and never supplies missing offered intermediates or trust anchors.
+# Concrete DNS aliases are checked; Nginx wildcard/regex names, dynamic paths and encrypted keys are UNKNOWN. Nothing
+# renews certificates, reloads Nginx or verifies a live endpoint. Root access is required under the existing agent
+# sandbox; private keys remain private and certificates beneath protected home directories are unassessable.
+# Automatic vhost checks follow nginx::server lifecycle, including ensure => absent and monitoring_cert => false. The
+# shared concat registry removes retired registrations on every apply, including deleted declarations; no per-vhost
+# executable remains to clean up. The shared script follows the nginx class monitoring state. Keep
+# basic_settings::monitoring declared with package => none during backend retirement.
 #
 # @example Monitor an explicitly managed vhost
 #   include nginx
@@ -21,38 +32,41 @@
 #   Absolute path supplied by the owner of the target File resource; distinguishes vhosts with identical server names.
 #
 # @param detail_limit
-# lint:ignore:140chars
-#   Optional diagnostic character limit before the always-visible Interpretation section. `undef` omits -l and uses the environment value or script default.
-# lint:endignore
+#   Optional diagnostic character limit before the always-visible Interpretation section. `undef` omits -l and uses the
+#   environment value or script default.
 #
 # @param ensure
-#   `present` registers only with an active monitoring backend; `absent` removes the registration while preserving the shared executable.
+#   `present` registers only with an active monitoring backend; `absent` removes the registration while preserving the
+#   shared executable.
 #
 # @param interval
 #   Agent execution interval in seconds. The default is 300; every active vhost check runs nginx -T once per interval.
 #
 # @param registration_name
-# lint:ignore:140chars
-#   Readable identity between check_nginx_ and _cert; undef uses the resource title. Characters other than ASCII letters, digits, underscores and hyphens become underscores. Names must remain unique on the host after normalization; collisions fail catalog compilation. nginx::server supplies the first main server_name followed by /main or /redirect, falling back to its title when server_name is empty. This identity only labels the registration and never replaces the server_name argument used for certificate validation.
-# lint:endignore
+#   Readable identity between check_nginx_ and _cert; undef uses the resource title. Characters other than ASCII
+#   letters, digits, underscores and hyphens become underscores. Names must remain unique on the host after
+#   normalization; collisions fail catalog compilation. nginx::server supplies the first main server_name followed by
+#   /main or /redirect, falling back to its title when server_name is empty. This identity only labels the registration
+#   and never replaces the server_name argument used for certificate validation.
 #
 # @param server_name
-#   Actual server_name directive input, separate from the title. `undef` or empty input produces UNKNOWN without a title fallback.
+#   Actual server_name directive input, separate from the title. `undef` or empty input produces UNKNOWN without a title
+#   fallback.
 #
 # @param timeout
-# lint:ignore:140chars
-#   Optional timeout override in seconds for both script and agent. `undef` omits -t and uses the script environment value or default, while the agent uses monitoring_custom's default. The script reserves three seconds for termination and output and kills remaining children.
-# lint:endignore
+#   Optional timeout override in seconds for both script and agent. `undef` omits -t and uses the script environment
+#   value or default, while the agent uses monitoring_custom's default. The script reserves three seconds for
+#   termination and output and kills remaining children.
 #
 # @param validity_critical
-# lint:ignore:140chars
-#   Optional critical validity threshold in days. `undef` omits -c and uses the environment value or script default. The minimum remaining validity must be strictly below the threshold to trigger it. Must be below the effective warning threshold; the script validates combinations with omitted values.
-# lint:endignore
+#   Optional critical validity threshold in days. `undef` omits -c and uses the environment value or script default. The
+#   minimum remaining validity must be strictly below the threshold to trigger it. Must be below the effective warning
+#   threshold; the script validates combinations with omitted values.
 #
 # @param validity_warning
-# lint:ignore:140chars
-#   Optional warning validity threshold in days. `undef` omits -w and uses the environment value or script default. Remaining validity must be strictly below the threshold to trigger it. Must exceed the effective critical threshold; the script validates combinations with omitted values. Expired/not-yet-valid certificates are always critical.
-# lint:endignore
+#   Optional warning validity threshold in days. `undef` omits -w and uses the environment value or script default.
+#   Remaining validity must be strictly below the threshold to trigger it. Must exceed the effective critical threshold;
+#   the script validates combinations with omitted values. Expired/not-yet-valid certificates are always critical.
 #
 # @api public
 define nginx::monitoring_cert (

@@ -1,8 +1,8 @@
 # @summary Manages timezone and systemd-timesyncd NTP configuration.
 #
-# lint:ignore:140chars
-# This class installs and enables systemd-timesyncd when systemd is available, renders `/etc/systemd/timesyncd.conf`, removes competing NTP packages, adds a monitoring check when monitoring is active, and delegates timezone setting to the vendored `timezone` module.
-# lint:endignore
+# This class installs and enables systemd-timesyncd when systemd is available, renders `/etc/systemd/timesyncd.conf`,
+# removes competing NTP packages, adds a monitoring check when monitoring is active, and delegates timezone setting to
+# the vendored `timezone` module.
 #
 # @example Set the server timezone
 #   class { 'basic_settings::timezone':
@@ -13,9 +13,8 @@
 #   Timezone name passed to the `timezone` module, such as `UTC` or `Europe/Amsterdam`.
 #
 # @param install_options
-# lint:ignore:140chars
-#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
-# lint:endignore
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are
+#   appended without deduplication so they remain effective.
 #
 # @param ntp_extra_pools
 #   Additional NTP pools prepended to the OS default pool list.

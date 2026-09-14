@@ -1,8 +1,8 @@
 # @summary Manages one netplan WiFi YAML file.
 #
-# lint:ignore:140chars
-# This defined type renders `/etc/netplan/<title>.yaml` for a WiFi interface, installs `wpasupplicant` when needed, stores generated WiFi configuration as sensitive content, and disables runtime power management for the interface device to avoid connectivity problems.
-# lint:endignore
+# This defined type renders `/etc/netplan/<title>.yaml` for a WiFi interface, installs `wpasupplicant` when needed,
+# stores generated WiFi configuration as sensitive content, and disables runtime power management for the interface
+# device to avoid connectivity problems.
 #
 # @example Configure a DHCP WiFi interface
 #   netplanio::wifi { 'wlan0':

@@ -29,6 +29,7 @@ Deze handleiding helpt je de controles te installeren, uit te voeren en meldinge
   - [Lange regels](#lange-regels)
   - [Parameters en resources](#parameters-en-resources)
   - [Commentaar en documentatie](#commentaar-en-documentatie)
+    - [Puppet Strings](#puppet-strings)
   - [Bestanden en beveiliging](#bestanden-en-beveiliging)
   - [Gedeelde services en systemd](#gedeelde-services-en-systemd)
   - [Shellscripts en monitoring](#shellscripts-en-monitoring)
@@ -464,7 +465,8 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | --- | --- |
 | `project_parameter_order` | Verplichte parameters eerst, optionele daarna, alfabetisch binnen elke groep. Een echte afhankelijkheid van een eerdere default mag de volgorde bepalen en moet worden toegelicht. |
 | `project_parameter_alignment` | Typen, namen, `=`-tekens en defaults staan over het volledige parameterblok uitgelijnd, ook bij geneste typen en waarden over meerdere regels. |
-| `project_documentation` | Classes en defined types hebben een samenvatting, voorbeeld, API-markering en parameterdocumentatie in dezelfde volgorde. Willekeurig afgebroken documentatiezinnen worden gemeld. |
+| `project_documentation` | Classes en defined types hebben een samenvatting, voorbeeld, API-markering en parameterdocumentatie in dezelfde volgorde. |
+| `project_documentation_layout` | Puppet Strings gebruikt afgebroken tekst, ingesprongen tagvervolgregels en lege commentregels tussen secties. `--fix` herstelt veilige tekst en verwijdert overbodige lengte-uitzonderingen; zie [Puppet Strings](#puppet-strings). |
 | `project_layout` | Arrays over meerdere regels gebruiken de [afgesproken inspringing](#inspringing). Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
 | `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
@@ -499,7 +501,7 @@ Bij een resourcetitel die direct achter de openende accolade begint, zoals `file
 
 De `140chars`-check blijft aan. Zet achter iedere bewust langere Puppet-regel `# lint:ignore:140chars`. Dit geldt ook voor lange URL's en templateaanroepen die Puppet-lint zelf al uitzondert. Plaats de markering buiten stringwaarden. Staat er al commentaar achter de code, zet dan de markering direct na de `#`, vóór de bestaande toelichting.
 
-Rond een lange commentaarregel, of een reeks lange commentaarregels, gebruik je `# lint:ignore:140chars` en `# lint:endignore`. Sluit het blok vóór de volgende korte regel. Zo blijft een commentaarzin leesbaar op één regel en blijven andere checks actief. Bekijk deze meldingen met `bundle exec puppet-lint --show-ignored .`.
+Breek [Puppet Strings-documentatie](#puppet-strings) af over commentregels. Een lange beschrijvende zin is geen reden om `140chars` uit te schakelen. Alleen voor een waarde die technisch niet veilig kan worden afgebroken, zoals een lange letterlijke waarde waarin spaties betekenis hebben, gebruik je een gericht blok met `# lint:ignore:140chars` en `# lint:endignore`. Sluit dat blok vóór de volgende gewone documentatieregel. Voor overige bewust lange commentaarregels blijft zo'n begrensd blok toegestaan. Bekijk genegeerde meldingen met `bundle exec puppet-lint --show-ignored .`.
 
 Zet nooit lintmarkeringen in gegenereerde strings of heredoc-inhoud. Heeft een waarde over meerdere regels een uitzondering nodig, plaats dan het kleinst mogelijke blok buiten de waarde. Puppet-code die uit een documentatievoorbeeld wordt gehaald heeft een eigen markering nodig wanneer die code boven 140 tekens komt.
 
@@ -579,7 +581,7 @@ Houd monitoring en audit bij de bijbehorende resource. Monitoringspecifieke conf
 
 ### Commentaar en documentatie
 
-Codecommentaar helpt de lezer begrijpen waarom de code nodig is, welke beperkingen gelden en welke gevolgen de code heeft. Een herhaling van wat de volgende regel doet is daarvoor niet voldoende. Schrijf dit commentaar in het Engels, met iedere zin op één fysieke regel. Echte lijsten, voorbeelden en syntaxis krijgen aparte regels. Verwijder bij een wijziging ook willekeurige regelafbrekingen in het nabije commentaar dat je raakt.
+Codecommentaar helpt de lezer begrijpen waarom de code nodig is, welke beperkingen gelden en welke gevolgen de code heeft. Een herhaling van wat de volgende regel doet is daarvoor niet voldoende. Schrijf dit commentaar in het Engels, met iedere zin op één fysieke regel. Echte lijsten, voorbeelden en syntaxis krijgen aparte regels. Voor Puppet Strings gelden de [afspraken voor afgebroken documentatietekst](#puppet-strings). Verwijder bij een wijziging willekeurige regelafbrekingen in overige geraakte toelichtingen.
 
 Zet een lege regel tussen code en een volgend zelfstandig commentaarblok, bijvoorbeeld na een variabeletoekenning. Direct na een openende `{`, `[` of `(` is die scheiding niet nodig. Aaneengesloten commentaarregels blijven bij elkaar; commentaar achter code en lintmarkeringen vormen zelf geen nieuw toelichtingsblok. `project_comment_spacing` controleert deze scheiding.
 
@@ -643,6 +645,42 @@ Beoordeel zelf of het commentaar en de gekozen groepen inhoudelijk kloppen. De l
 Documenteer elke publieke class en elk publiek defined type direct boven de declaratie. Voeg een eenregelige `@summary`, één `@param` per parameter in declaratievolgorde en een eenvoudig uitvoerbaar `@example` toe. Markeer nieuwe classes, defined types en functies als publieke of private API.
 
 De parameteruitleg moet duidelijk maken wat een parameter betekent, hoe de default werkt en wat bijzondere waarden zoals `undef`, `true` en `false` doen. Daarbij horen ook de beperkingen, afhankelijkheden, gegenereerde resources, het terugvalgedrag en de gevolgen voor beveiliging of compatibiliteit. De linter controleert de aanwezigheid en volgorde van tags; of de uitleg klopt en volledig is, blijft onderdeel van de inhoudelijke review.
+
+Volg voor de opbouw de [officiële Puppet Strings-stijlgids](https://help.puppet.com/core/current/Content/PuppetCore/puppet_strings_style.htm). Breek normale documentatietekst af over commentregels, bij voorkeur rond 120 tekens en uiterlijk bij 140 tekens, inclusief inspringing en commentteken. Kies waar mogelijk een logisch punt in de zin. Behoud woorden, technische identifiers, inline code en echte paragrafen.
+
+Houd `@summary` kort en op één regel; zet verdere uitleg als gewone beschrijving eronder. Plaats bij langere `@param`-uitleg alleen de parameternaam achter de tag en de beschrijving op vervolgregels. Laat die regels twee spaties inspringen ten opzichte van de tag: `#   ...`. Een korte beschrijving op dezelfde regel als `@param` blijft toegestaan. Scheid secties en afzonderlijke parameters met `#`, zonder een volledig lege broncoderegel in het documentatieblok. Laat bij `@example` de titel achter de tag staan en de code eronder, met behoud van de verdere code-inspringing.
+
+```puppet
+# @summary Manages local console configuration.
+#
+# This class manages console packages and configuration, using the host defaults
+# when no explicit override is supplied.
+#
+# @example Enable keyboard configuration
+#   class { 'example':
+#     keyboard_enable => true,
+#   }
+#
+# @param keyboard_enable
+#   Controls keyboard package and configuration management.
+#   `undef` uses the host default; `true` enables management and `false` disables it.
+#
+# @api public
+```
+
+`project_documentation_layout` controleert commentaar boven classes, defined types, Puppet-functies en type-declaraties. De check meldt afbreekbare tekst boven 120 tekens en documentatieregels boven 140 tekens, ook wanneer de standaardcheck een URL uitzondert. Een ondeelbaar element tussen 120 en 140 tekens mag blijven staan. Voor langere letterlijke waarden geldt uitsluitend de gerichte uitzondering onder [Lange regels](#lange-regels). Voorbeeldcode krijgt alleen een lengtemelding boven 140 tekens en wordt nooit als lopende tekst afgebroken.
+
+Laat veilige opmaakfouten herstellen met:
+
+```sh
+bundle exec puppet-lint --fix --only-checks project_documentation_layout path/to/manifest.pp
+```
+
+De autofix breekt gewone tekst af zonder woorden of backtick-inhoud te splitsen, bewaart paragrafen en herstelt herkenbare tag-inspringing en sectiescheiding. Hij verwijdert een `140chars`-blok alleen als het uitsluitend gewone documentatie bevat. Een toelichtende reden of een gecombineerde lintuitzondering blijft staan voor handmatige beoordeling.
+
+Lengte- of opmaakproblemen in summaries, voorbeeldcode, lijsten, tabellen, codeblokken en onduidelijke Markdown vragen handmatige aanpassing; daarvoor blijft een melding met `[review]` staan. Controleer ook bij een geslaagde autofix de inhoud en betekenis in de diff.
+
+Voer daarna de [volledige controles](#code-controleren) opnieuw uit. Bij een algemene `--fix` kunnen meldingen van de standaardcheck `140chars` nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
 
 #### Waar de uitleg hoort
 

@@ -1,8 +1,7 @@
 # @summary Manages the Docker upstream APT repository.
 #
-# lint:ignore:140chars
-# This private helper writes or removes the Docker APT source and signing key, supporting both classic `.list` files and deb822 `.sources` files. It is called by `basic_settings` after OS support has been calculated.
-# lint:endignore
+# This private helper writes or removes the Docker APT source and signing key, supporting both classic `.list` files and
+# deb822 `.sources` files. It is called by `basic_settings` after OS support has been calculated.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_docker':

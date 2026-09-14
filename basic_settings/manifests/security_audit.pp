@@ -1,8 +1,8 @@
 # @summary Writes a custom auditd rule fragment.
 #
-# lint:ignore:140chars
-# This defined type ensures auditd and `/etc/audit/rules.d` exist, then writes `/etc/audit/rules.d/<order>-<title>.rules` from the shared template. It is the repository-wide helper for adding package, service, and configuration audit coverage without duplicating file ownership and service notification logic.
-# lint:endignore
+# This defined type ensures auditd and `/etc/audit/rules.d` exist, then writes
+# `/etc/audit/rules.d/<order>-<title>.rules` from the shared template. It is the repository-wide helper for adding
+# package, service, and configuration audit coverage without duplicating file ownership and service notification logic.
 #
 # @example Add a custom audit rule
 #   basic_settings::security_audit { 'example':

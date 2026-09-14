@@ -1,8 +1,9 @@
 # @summary Installs and configures the Nginx service baseline.
 #
-# lint:ignore:140chars
-# This class installs Nginx, removes Apache, optionally installs the Certbot Nginx plugin, disables vendor service enablement under systemd, binds Nginx into the shared target ladder, applies service hardening, manages global Nginx configuration and owned config directories, prepares secure SSL/security fallback directories, and adds monitoring and logrotate integration.
-# lint:endignore
+# This class installs Nginx, removes Apache, optionally installs the Certbot Nginx plugin, disables vendor service
+# enablement under systemd, binds Nginx into the shared target ladder, applies service hardening, manages global Nginx
+# configuration and owned config directories, prepares secure SSL/security fallback directories, and adds monitoring and
+# logrotate integration.
 #
 # @example Install Nginx with default security.txt fallback settings
 #   include nginx

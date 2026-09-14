@@ -1,8 +1,8 @@
 # @summary Grants or revokes MySQL privileges for one user and object scope.
 #
-# lint:ignore:140chars
-# This defined type delegates privilege checks and changes to the module's root-only grant helper script. It escapes all dynamic command arguments before building shell commands and supports MySQL 8 privilege-list compatibility for `ALL PRIVILEGES`.
-# lint:endignore
+# This defined type delegates privilege checks and changes to the module's root-only grant helper script. It escapes all
+# dynamic command arguments before building shell commands and supports MySQL 8 privilege-list compatibility for
+# `ALL PRIVILEGES`.
 #
 # @example Grant privileges on one database
 #   mysql::grant { 'app':
@@ -27,9 +27,8 @@
 #   MySQL host part for the account. The default is `localhost`.
 #
 # @param privileges
-# lint:ignore:140chars
-#   Privilege list to grant or revoke. The list is sorted before comparison so privilege order does not affect idempotency. The default is `['ALL PRIVILEGES']`.
-# lint:endignore
+#   Privilege list to grant or revoke. The list is sorted before comparison so privilege order does not affect
+#   idempotency. The default is `['ALL PRIVILEGES']`.
 #
 # @param table
 #   Table scope for the privilege. The default is `*`.

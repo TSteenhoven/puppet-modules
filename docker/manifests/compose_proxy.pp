@@ -1,8 +1,8 @@
 # @summary Deploys one Docker Compose project behind an Nginx reverse proxy.
 #
-# lint:ignore:140chars
-# This defined type wraps `docker::compose` and adds an `nginx::server` vhost for applications that should be reachable through Nginx. It keeps Compose deployment behavior in one place and centralizes the common reverse-proxy directives used by Docker-backed applications. Declare `docker` and `nginx` before using this defined type directly.
-# lint:endignore
+# This defined type wraps `docker::compose` and adds an `nginx::server` vhost for applications that should be reachable
+# through Nginx. It keeps Compose deployment behavior in one place and centralizes the common reverse-proxy directives
+# used by Docker-backed applications. Declare `docker` and `nginx` before using this defined type directly.
 #
 # @example Proxy a Compose stack over local HTTPS without validating the upstream certificate
 #   class { 'docker': }
@@ -36,9 +36,8 @@
 #   CSP header value passed to `nginx::server`.
 #
 # @param ensure
-# lint:ignore:140chars
-#   Controls the Compose project state. The Nginx vhost is declared when this is `present`; when this is `absent`, only the Compose project removal is delegated.
-# lint:endignore
+#   Controls the Compose project state. The Nginx vhost is declared when this is `present`; when this is `absent`, only
+#   the Compose project removal is delegated.
 #
 # @param env_content
 #   Optional `.env` content passed to `docker::compose`.
@@ -83,9 +82,8 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param project_directories
-# lint:ignore:140chars
-#   Optional single-segment directories passed to `docker::compose` for creation below the Compose project directory. Values may override owner, group, and mode.
-# lint:endignore
+#   Optional single-segment directories passed to `docker::compose` for creation below the Compose project directory.
+#   Values may override owner, group, and mode.
 #
 # @param proxy_extra_directives
 #   Additional directives appended to the generated Nginx proxy location.
@@ -97,17 +95,15 @@
 #   Nginx proxy read timeout for long-lived requests and websocket sessions.
 #
 # @param proxy_scheme
-# lint:ignore:140chars
-#   Upstream scheme used by Nginx. The default is `https` so local proxy traffic is encrypted unless the caller explicitly opts out with `http`.
-# lint:endignore
+#   Upstream scheme used by Nginx. The default is `https` so local proxy traffic is encrypted unless the caller
+#   explicitly opts out with `http`.
 #
 # @param proxy_ssl_trusted_certificate
 #   Optional CA bundle path for verifying HTTPS upstream certificates.
 #
 # @param proxy_ssl_verify
-# lint:ignore:140chars
-#   Verifies HTTPS upstream certificates when `true`. The default is `false` so locally encrypted upstreams with self-signed certificates keep working.
-# lint:endignore
+#   Verifies HTTPS upstream certificates when `true`. The default is `false` so locally encrypted upstreams with
+#   self-signed certificates keep working.
 #
 # @param proxy_websocket
 #   Adds common websocket upgrade directives when `true`.

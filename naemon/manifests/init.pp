@@ -1,8 +1,9 @@
 # @summary Installs Naemon integration for OpenITCOCKPIT and manages service wiring.
 #
-# lint:ignore:140chars
-# This class installs the OpenITCOCKPIT Naemon package when the OpenITCOCKPIT package is present, requires the OpenITCOCKPIT package resource to be visible before declaration, prepares the Naemon configuration directory, disables vendor enablement under systemd, binds the service into the shared target ladder, and applies service hardening that still permits the files shared with OpenITCOCKPIT and web-facing tooling.
-# lint:endignore
+# This class installs the OpenITCOCKPIT Naemon package when the OpenITCOCKPIT package is present, requires the
+# OpenITCOCKPIT package resource to be visible before declaration, prepares the Naemon configuration directory, disables
+# vendor enablement under systemd, binds the service into the shared target ladder, and applies service hardening that
+# still permits the files shared with OpenITCOCKPIT and web-facing tooling.
 #
 # @example Enable Naemon after OpenITCOCKPIT packages are available
 #   include naemon

@@ -1,8 +1,7 @@
 # @summary Installs development tooling and audit coverage for compiler use.
 #
-# lint:ignore:140chars
-# This class installs the small development toolchain used by the repository, optionally pins a GCC version, removes unrelated LXD bootstrap tooling, and registers audit rules for compilers and build tools when auditd is available.
-# lint:endignore
+# This class installs the small development toolchain used by the repository, optionally pins a GCC version, removes
+# unrelated LXD bootstrap tooling, and registers audit rules for compilers and build tools when auditd is available.
 # Changing the GCC version can purge other GCC packages that this class knows how to replace.
 #
 # @example Install the default development tools
@@ -15,12 +14,12 @@
 #
 # @param gcc_version
 #   Optional GCC major version to install alongside the generic `gcc` package.
-#   `undef` installs only the default GCC package. Supported cleanup logic exists for the versions explicitly handled in the manifest.
+#   `undef` installs only the default GCC package. Supported cleanup logic exists for the versions explicitly handled in
+#   the manifest.
 #
 # @param install_options
-# lint:ignore:140chars
-#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are appended without deduplication so they remain effective.
-# lint:endignore
+#   Additional APT options; an empty array adds no caller options. Mandatory no-recommends and no-suggests flags are
+#   appended without deduplication so they remain effective.
 #
 # @api public
 class basic_settings::development (

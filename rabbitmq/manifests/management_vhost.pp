@@ -1,6 +1,7 @@
 # @summary Manages a RabbitMQ virtual host and default queue type.
 #
-# This defined type requires `rabbitmq::management` and creates, deletes, or reconciles a virtual host's default queue type metadata.
+# This defined type requires `rabbitmq::management` and creates, deletes, or reconciles a virtual host's default queue
+# type metadata.
 #
 # @example Create a quorum-default vhost
 #   rabbitmq::management_vhost { 'app':

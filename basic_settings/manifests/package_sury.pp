@@ -1,7 +1,8 @@
 # @summary Manages the Sury/Ondrej PHP APT repository.
 #
 # This private helper writes or removes the PHP package source and signing key.
-# Ubuntu systems use the Ondrej PPA key path; Debian systems install the Sury archive keyring package through a root-only temporary file.
+# Ubuntu systems use the Ondrej PPA key path; Debian systems install the Sury archive keyring package through a
+# root-only temporary file.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_sury':

@@ -1,8 +1,7 @@
 # @summary Manages OpenITCOCKPIT server or agent APT repository access.
 #
-# lint:ignore:140chars
-# This private helper writes or removes the OpenITCOCKPIT APT source, signing key, and root-only APT authentication file. It supports server and agent repositories plus stable or nightly channels.
-# lint:endignore
+# This private helper writes or removes the OpenITCOCKPIT APT source, signing key, and root-only APT authentication
+# file. It supports server and agent repositories plus stable or nightly channels.
 #
 # @example Internal use from basic_settings
 #   class { 'basic_settings::package_openitcockpit':

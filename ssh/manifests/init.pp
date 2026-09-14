@@ -1,8 +1,9 @@
 # @summary Manages hardened OpenSSH server configuration and monitoring.
 #
-# lint:ignore:140chars
-# This class installs OpenSSH packages, replaces `/etc/ssh/sshd_config` with an Include for the module-owned `/etc/ssh/sshd_config.d/*.conf`, writes a login banner and custom sshd configuration, supports socket-activated SSH on Ubuntu releases that use `ssh.socket`, optionally configures an alternative port, registers a monitoring check, and adds audit coverage for SSH configuration changes and SSH client execution.
-# lint:endignore
+# This class installs OpenSSH packages, replaces `/etc/ssh/sshd_config` with an Include for the module-owned
+# `/etc/ssh/sshd_config.d/*.conf`, writes a login banner and custom sshd configuration, supports socket-activated SSH on
+# Ubuntu releases that use `ssh.socket`, optionally configures an alternative port, registers a monitoring check, and
+# adds audit coverage for SSH configuration changes and SSH client execution.
 #
 # @example Manage SSH for key-only users
 #   class { 'ssh':
@@ -17,13 +18,15 @@
 #   }
 #
 # @param allow_users
-#   Users allowed by the generated sshd configuration. An empty list leaves the template without an explicit AllowUsers list.
+#   Users allowed by the generated sshd configuration. An empty list leaves the template without an explicit AllowUsers
+#   list.
 #
 # @param banner_text
 #   Text written to `/etc/issue.net`, `/etc/motd` and referenced by sshd.
 #
 # @param check_users
-#   Optional explicit user list passed to the SSH monitoring check. `undef` derives the list from the primary and alternative allowed users.
+#   Optional explicit user list passed to the SSH monitoring check. `undef` derives the list from the primary and
+#   alternative allowed users.
 #
 # @param host_key_algorithms
 #   Host key algorithms rendered into sshd configuration.
@@ -35,9 +38,8 @@
 #   Users for whom password authentication is allowed by match rules.
 #
 # @param permit_root_login
-# lint:ignore:140chars
-#   Controls `PermitRootLogin`. `false` writes `no`, `true` writes `yes`, and a string can set an explicit OpenSSH mode such as `prohibit-password`.
-# lint:endignore
+#   Controls `PermitRootLogin`. `false` writes `no`, `true` writes `yes`, and a string can set an explicit OpenSSH mode
+#   such as `prohibit-password`.
 #
 # @param port
 #   Primary SSH port.

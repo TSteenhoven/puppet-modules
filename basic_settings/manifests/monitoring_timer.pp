@@ -1,8 +1,8 @@
 # @summary Registers monitoring for a systemd timer unit.
 #
-# lint:ignore:140chars
-# This defined type installs the shared systemd-timer check when needed and creates an OpenITCOCKPIT custom-check fragment for `<title>.timer`. It is used by the local `basic_settings::systemd_timer` wrapper and by modules that manage operational timers.
-# lint:endignore
+# This defined type installs the shared systemd-timer check when needed and creates an OpenITCOCKPIT custom-check
+# fragment for `<title>.timer`. It is used by the local `basic_settings::systemd_timer` wrapper and by modules that
+# manage operational timers.
 #
 # @example Monitor a systemd timer
 #   basic_settings::monitoring_timer { 'automysqlbackup': }

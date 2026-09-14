@@ -1,8 +1,7 @@
 # @summary Manages a RabbitMQ user and tags.
 #
-# lint:ignore:140chars
-# This defined type requires `rabbitmq::management`. It creates or deletes a RabbitMQ user, optionally generates and stores a password in a matching managed local user's home directory, and reconciles RabbitMQ tags.
-# lint:endignore
+# This defined type requires `rabbitmq::management`. It creates or deletes a RabbitMQ user, optionally generates and
+# stores a password in a matching managed local user's home directory, and reconciles RabbitMQ tags.
 #
 # @example Create a monitoring user
 #   rabbitmq::management_user { 'monitoring':

@@ -1,8 +1,8 @@
 # @summary Registers an npm audit monitoring check for a Node.js working directory.
 #
-# lint:ignore:140chars
-# This defined type adds an OpenITCOCKPIT custom check that runs the shared `check_npm_audit` plugin for one application directory. It is usually created automatically by `basic_settings::systemd_service` when a service starts a Node.js process from a known working directory.
-# lint:endignore
+# This defined type adds an OpenITCOCKPIT custom check that runs the shared `check_npm_audit` plugin for one application
+# directory. It is usually created automatically by `basic_settings::systemd_service` when a service starts a Node.js
+# process from a known working directory.
 #
 # @example Monitor a Node.js application directory
 #   basic_settings::monitoring_npm_audit { 'frontend':

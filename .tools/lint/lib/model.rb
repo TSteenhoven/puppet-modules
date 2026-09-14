@@ -63,19 +63,6 @@ module ProjectLint
       parameters.sort_by { |parameter| [optional?(parameter) ? 1 : 0, parameter.name] }.each { |parameter| visit.call(parameter) }
       ordered
     end
-
-    def comments_before(declaration)
-      lines = code.lines
-      index = declaration.line - 2
-      result = []
-      while index >= 0 && lines[index].lstrip.start_with?('#')
-        # Bounded line-length directives are lint metadata, not Puppet Strings prose or tags.
-        text = lines[index].sub(/^\s*# ?/, '').chomp
-        result.unshift([index + 1, text]) unless text.match?(/\Alint:(?:ignore:140chars|endignore)\b/)
-        index -= 1
-      end
-      result
-    end
   end
 
   # Share node-position reporting, without ever including arbitrary source values in diagnostics.

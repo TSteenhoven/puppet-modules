@@ -19,9 +19,12 @@ class ExternalProjectTest < Minitest::Test
     write('.puppet-lint.rc', config.sub('global-modules/', 'dependencies/shared modules/puppet-modules/'))
     write('modules/profile/manifests/init.pp', <<~'PUPPET')
       # @summary Provides a synthetic local interface.
+      #
       # @param value A synthetic input.
+      #
       # @example Declare the local profile
       #   class { 'profile': value => 'synthetic' }
+      #
       # @api public
       class profile (
         String $value,

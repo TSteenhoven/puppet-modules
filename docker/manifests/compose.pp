@@ -1,9 +1,10 @@
 # @summary Deploys and monitors one Docker Compose project as a systemd service.
 #
-# lint:ignore:140chars
-# This defined type creates a root-only project directory under `/opt/docker`, manages optional `.env` content and project-local directories, validates rendered Compose content or a file from an HTTPS, local file, or Puppet file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
-# lint:endignore
-# It also registers a stack-level monitoring check so container health can be evaluated separately from the orchestration unit.
+# This defined type creates a root-only project directory under `/opt/docker`, manages optional `.env` content and
+# project-local directories, validates rendered Compose content or a file from an HTTPS, local file, or Puppet
+# file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
+# It also registers a stack-level monitoring check so container health can be evaluated separately from the
+# orchestration unit.
 # Declare `docker` before deploying a present stack; removal of a project directory does not require that class.
 #
 # @example Deploy a Compose stack from a Puppet file source
@@ -18,34 +19,37 @@
 #   }
 #
 # @param compose_checksum
-# lint:ignore:140chars
-#   Optional SHA256 checksum for compose_source, unavailable with compose_content. This is most useful for HTTPS sources where unexpected upstream changes should fail the Puppet run.
-# lint:endignore
+#   Optional SHA256 checksum for compose_source, unavailable with compose_content. This is most useful for HTTPS sources
+#   where unexpected upstream changes should fail the Puppet run.
 #
 # @param compose_content
-#   Optional rendered Compose content, default undef. Supply exactly one of compose_content and compose_source for a present stack.
+#   Optional rendered Compose content, default undef. Supply exactly one of compose_content and compose_source for a
+#   present stack.
 #
 # @param compose_source
-#   Optional Compose file source, default undef. Must start with `https://`, `file:///`, or `puppet:///`; excludes compose_content.
+#   Optional Compose file source, default undef. Must start with `https://`, `file:///`, or `puppet:///`; excludes
+#   compose_content.
 #
 # @param ensure
 #   Defaults to present. Absent removes only the project directory, including project-local bind-mount data.
 #   It does not stop containers or remove systemd units and target bindings. Docker named volumes are not removed.
-#   Back up required data, detach the target binding, reload systemd and stop the stack before removal; retire its service separately.
+#   Back up required data, detach the target binding, reload systemd and stop the stack before removal; retire its
+#   service separately.
 #
 # @param env_content
-#   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit `Sensitive[String]` values are passed through.
+#   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit `Sensitive[String]` values are passed
+#   through.
 #
 # @param env_source
-# lint:ignore:140chars
-#   Optional Puppet-compatible source for the `.env` file. When set, it takes precedence over `env_content` and must start with `https://`, `file:///`, or `puppet:///`.
-# lint:endignore
+#   Optional Puppet-compatible source for the `.env` file. When set, it takes precedence over `env_content` and must
+#   start with `https://`, `file:///`, or `puppet:///`.
 #
 # @param monitoring_detail_limit
 #   Optional diagnostic character limit. `undef` omits -l and uses the environment value or script default.
 #
 # @param monitoring_expected_exited
-#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration containers.
+#   Container names that are allowed to be exited without making the stack critical, such as one-shot migration
+#   containers.
 #
 # @param monitoring_health_required
 #   Container names that must have a healthy Docker health state.
@@ -66,12 +70,12 @@
 #   Timeout in seconds for the Compose stack monitoring check.
 #
 # @param project_directories
-# lint:ignore:140chars
-#   Optional single-segment directories created below the Compose project directory before the systemd service starts. Values may override owner, group, and mode. Only the directory entry is managed; contents remain unmanaged.
-# lint:endignore
+#   Optional single-segment directories created below the Compose project directory before the systemd service starts.
+#   Values may override owner, group, and mode. Only the directory entry is managed; contents remain unmanaged.
 #
 # @param target
-#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is `services`.
+#   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is
+#   `services`.
 #
 # @api public
 define docker::compose (

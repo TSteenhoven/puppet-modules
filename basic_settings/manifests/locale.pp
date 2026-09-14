@@ -1,8 +1,8 @@
 # @summary Manages locale, dictionary, and optional documentation packages.
 #
-# lint:ignore:140chars
-# This class keeps the server locale minimal by default. When enabled, it installs locale and dictionary packages and removes the static default locale file. When disabled, it purges locale dictionaries and writes `LANG=C.UTF-8` to `/etc/default/locale`.
-# lint:endignore
+# This class keeps the server locale minimal by default. When enabled, it installs locale and dictionary packages and
+# removes the static default locale file. When disabled, it purges locale dictionaries and writes `LANG=C.UTF-8` to
+# `/etc/default/locale`.
 #
 # @example Keep the minimal default locale
 #   include basic_settings::locale
