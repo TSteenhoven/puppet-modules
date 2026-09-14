@@ -2,14 +2,18 @@
 
 ## Scope And Authority
 
-This file governs project-wide agent workflow, task scope, collaboration, and general security responsibilities.
+This file governs project-wide development workflow, engineering responsibilities, and security. Its content and structure follow [Maintaining AGENTS.md](#maintaining-agentsmd).
 
 - Agents must read this file and the root `README.md` before making changes.
-- Local agent instructions may refine workflow within this baseline, but must not weaken or duplicate project-wide policy.
+- Local agent instructions may refine workflow within this baseline.
+- Local agent instructions must not weaken or duplicate project-wide policy.
 
 ### Puppet Code Authority
 
-- Agents must read and follow the [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/puppet-lint/plugins/) before adding or changing Puppet code or Puppet Strings documentation. These sources define the mandatory code conventions, formatting rules, and permitted exceptions.
+The [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/puppet-lint/plugins/) define the mandatory Puppet conventions, formatting rules, and permitted exceptions.
+
+- Agents must read these sources before adding or changing Puppet code or Puppet Strings documentation.
+- Agents must follow these sources for Puppet code and Puppet Strings documentation.
 - Agents must apply the documented review criteria even when the automated lint checks pass.
 - Root and local agent instructions must reference these sources instead of duplicating, adding, or overriding Puppet code standards.
 - Changes to Puppet conventions must include their tests and all affected first-party code in the same change.
@@ -28,23 +32,6 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Keep changes within first-party code and repository-owned documentation or tooling unless the task explicitly requires a vendored dependency change.
 - Never use vendored submodules as project style examples.
 
-### Shared Check Executables
-
-- When adding or changing monitoring checks, deploy one shared executable per check implementation on each managed host. Reuse it for every target registration; never generate executable copies or wrappers merely to embed different target values.
-- Pass target identity and settings that differ between registrations as runtime arguments or through an existing configuration interface. Limit executable templating to values shared by all registrations on the host.
-- Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
-- Validate with at least two targets that registrations invoke the same executable with their own settings and that retiring one target preserves the shared executable and other registrations.
-
-### Monitoring Check Configuration
-
-- All monitoring checks must resolve runtime settings in this order: explicit command-line option, non-empty environment variable, script default. Initialize each setting with `${VARIABLE:-default}` before `getopts`, so unset and empty environment variables use the default.
-- Provide command-line options for every configurable runtime setting, preserving existing option names and using the check's established conventions for additions. Apply explicit options to the initialized values and never reset them to environment values or defaults after parsing.
-- Validate effective settings after `getopts`, regardless of their source, including syntax, ranges, related threshold ordering, and boolean values. Preserve documented empty values for optional filters or overrides; reject invalid required values with Nagios UNKNOWN.
-- Keep optional runtime defaults in the check executable and apply only explicitly supplied overrides from registrations. Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`; retain existing managed daemon configuration and credential interfaces.
-- Document options and their environment variables in each check's help text, including repeated options and boolean reset options when applicable.
-- Review executor scheduling separately from script options and verify that the executor timeout allows the script's execution, termination, and output budget.
-- Validate each changed check with isolated synthetic checks covering defaults, environment-only settings, combined environment and CLI settings, empty and invalid values, and partial overrides. Include effective threshold ordering, repeated options, boolean resets, and timeout behavior where applicable.
-
 ## Working With The Existing Codebase
 
 ### Preparation
@@ -61,34 +48,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Preserve unrelated user changes.
 - Treat a user's corrective edit as the current preferred pattern.
 - Never restore an earlier agent approach unless the user explicitly requests it.
-- Keep changes scoped to the requested task and affected area.
-- Never perform unrelated refactors.
-- Keep a necessary supporting refactor local to the affected area.
-- Explain any supporting refactor in the final response.
-
-### Reuse And Shared Abstractions
-
-- When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change. Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
-- Inspect existing abstractions before adding a new one, and validate each migrated caller's behavior and dependencies. Preserve caller-specific security and lifecycle requirements.
-
-### Prerequisite Review
-
-- Identify which dependencies in changed code are operational prerequisites and which only affect execution order. Omitting a dependency reference must not be treated as disabling the dependent operation.
-- Verify that the documented contract supplies required prerequisites before use, skips the dependent optional operation when they are unavailable, or fails clearly for a required operation. Do not infer runtime availability solely from the presence or absence of a declaration.
-- Validate the dependent behavior with prerequisites present and absent, including relevant declaration or evaluation order. For Puppet-specific details, follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden).
-
-### Shell Formatting
-
-- Use four spaces per indentation level when adding or changing first-party Bash or POSIX shell code, including shell code in templates.
-- Preserve literal whitespace in heredocs and multiline quoted data when reindenting code.
-- Review shell indentation in the source and rendered template output; Puppet-lint does not validate shell formatting.
-
-### Managed File Identification
-
-- Include a `Managed by puppet` header in every file whose contents Puppet manages, whether supplied through inline content, templates, static sources, or concatenated fragments.
-- Use the exact line `# Managed by puppet` when the format supports hash comments. Place it at the start of the file, immediately after any required shebang or format header; use the format's native comment syntax when hash comments are invalid.
-- Omit the header only when it would invalidate the file, such as binary content, formats without comments, or cryptographic material. Document the format constraint beside the resource or content source.
-- Verify the header in the resulting file content when adding or changing a managed file. A comment in the Puppet manifest alone does not satisfy this requirement.
+- Keep changes, including supporting refactors, scoped to the requested task and affected area.
 
 ### Git Commits
 
@@ -100,6 +60,87 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Review effects on repository conventions, Puppet abstractions, and reusable wrappers.
 - Review effects on monitoring, logging, alerting, audit rules, and operational diagnostics.
 - Review effects on documentation, examples, supported platforms, compatibility, and operational commands.
+
+## Design And Implementation
+
+### Reuse And Shared Abstractions
+
+- Inspect existing abstractions before adding a new one.
+- When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change.
+- Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
+- Preserve caller-specific security and lifecycle requirements during migration.
+- Validate each migrated caller's behavior and dependencies.
+
+### Prerequisite Review
+
+- Identify which dependencies in changed code are operational prerequisites and which only affect execution order.
+- Never treat omission of a dependency reference as disabling the dependent operation.
+- Never infer runtime availability solely from the presence or absence of a declaration.
+- Verify that the documented contract supplies required prerequisites before use or defines behavior for their absence: skip an optional operation or fail clearly for a required operation.
+- Validate dependent behavior with prerequisites present and absent, including relevant declaration or evaluation order.
+- Follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden) for Puppet-specific details.
+
+### Shell Formatting
+
+- Use four spaces per indentation level when adding or changing first-party Bash or POSIX shell code, including shell code in templates.
+- Preserve literal whitespace in heredocs and multiline quoted data when reindenting code.
+- Review shell indentation in both the source and rendered template output. Puppet-lint does not validate shell formatting.
+
+### Managed File Identification
+
+- Include a `Managed by puppet` header in every file whose contents Puppet manages through inline content, templates, static sources, or concatenated fragments, unless the header would invalidate the format.
+- Use the exact line `# Managed by puppet` for formats with hash comments, or the format's native comment syntax otherwise.
+- Place the header at the start of the file, immediately after any required shebang or format header.
+- Document any format constraint requiring omission beside the resource or content source, including binary content, formats without comments, or cryptographic material.
+- Verify the header in the resulting file content when adding or changing a managed file. A comment in the Puppet manifest alone does not satisfy this requirement.
+
+## Monitoring Checks
+
+### Shared Check Executables
+
+- When adding or changing monitoring checks, deploy one executable per check implementation on each managed host, shared by every target registration.
+- Never generate executable copies or wrappers merely to embed different target values.
+- Pass target identity and settings that differ between registrations as runtime arguments or through an existing configuration interface.
+- Limit executable templating to values shared by all registrations on the host.
+- Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
+
+### Monitoring Check Configuration
+
+#### Runtime Settings
+
+- All monitoring checks must resolve runtime settings in this order: explicit command-line option, non-empty environment variable, script default.
+- Initialize each setting with `${VARIABLE:-default}` before `getopts`, so unset and empty environment variables use the default.
+- Provide command-line options for every configurable runtime setting.
+- Preserve existing option names.
+- Follow the check's established conventions for new options.
+- Apply explicit options to the initialized values.
+- Never reset settings to environment values or defaults after parsing.
+- Document options and their environment variables in each check's help text, including repeated options and boolean reset options when applicable.
+
+#### Effective Value Validation
+
+- Validate effective settings after `getopts`, regardless of source, for syntax, ranges, related threshold ordering, and boolean values.
+- Preserve documented empty values for optional filters or overrides.
+- Reject invalid required values with Nagios UNKNOWN.
+
+#### Registration And Configuration Interfaces
+
+- Keep optional runtime defaults in the check executable.
+- Apply only explicitly supplied overrides from registrations.
+- Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`.
+- Retain existing managed daemon configuration and credential interfaces.
+
+#### Executor Scheduling
+
+- Review executor scheduling separately from script options.
+- Verify that the executor timeout allows the script's execution, termination, and output budget.
+
+### Monitoring Validation
+
+- Validate each changed check with isolated synthetic checks covering defaults, environment-only settings, combined environment and CLI settings, empty and invalid values, and partial overrides.
+- Include effective threshold ordering, repeated options, boolean resets, and timeout behavior where applicable.
+- For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
+- For each changed check, validate that retiring one target preserves the shared executable and the other registrations.
 
 ## Security And Privacy
 
@@ -154,7 +195,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Replace real names, identifiers, addresses, numbers, timestamps, domains, hostnames, and environment-specific values.
 - Preserve only relationships needed to reproduce the issue.
 - Use consistent synthetic placeholders when correlation matters, without reusing production values.
-- Evaluate combinations of remaining fields for re-identification risk.
+- Evaluate combinations of remaining fields for re-identification of people, organizations, customers, systems, or environments.
 - Never call partially masked or pseudonymized data anonymous when re-identification remains reasonably possible.
 
 ### Minimum Disclosure
@@ -167,6 +208,9 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Outbound Review
 
 - Inspect the complete outbound content before sharing, including logs, stack traces, shell history, command output, request and response headers, URLs, query strings, comments, filenames, metadata, screenshots, diffs, archives, and copied surrounding context.
+
+### Unsafe Disclosure
+
 - Never disclose information when safe sanitization cannot be demonstrated with sufficient confidence.
 - Use approved internal documentation, tooling, colleagues, or secure support channels when external sharing is unsafe.
 
@@ -188,27 +232,37 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Linting And Autofix
 
-The workflow for code changes is `lint → autofix → lint → manual remainder → tests`.
+#### Existing Tools
 
-- Use existing checks and safe autofixes from `puppet-lint`, installed plugins, and project custom checks. Do not reproduce supported detection or safe correction logic manually or in separate tools.
+- Use existing checks and safe autofixes from `puppet-lint`, installed plugins, and project custom checks.
+- Never reproduce supported detection or safe correction logic manually or in separate tools.
+
+#### Correction Workflow
+
 - Run the relevant configured linter first to identify deviations before resolving individual lint findings.
-- Apply available autofixes within the task's scope only when the correction is demonstrably safe and deterministic. Automatic corrections must preserve functional behavior, Puppet resource relationships, dependencies, and intended configuration. Review corrections manually when their safety cannot be demonstrated.
-- Rerun the linter after autofix, then resolve only the remaining findings manually. Follow the [lint usage instructions](.tools/lint/README.md#automatisch-corrigeren-autofix) for commands and selection options.
+- Apply available autofixes within the task's scope only when they are demonstrably safe and deterministic, preserving functional behavior, Puppet resource relationships, dependencies, and intended configuration.
+- Review corrections manually when their safety cannot be demonstrated.
+- Follow the [lint usage instructions](.tools/lint/README.md#automatisch-corrigeren-autofix) for commands and selection options.
+- Rerun the linter after autofix.
+- Resolve only the remaining findings manually after the rescan.
 - Review the complete diff after corrections to confirm that automatic changes are semantically correct and within scope.
-- Complete the [required checks](#required-checks) and applicable CI checks before marking the change complete.
 
 #### Autofix Development
 
-- Implement custom autofixes through the native `puppet-lint` fix mechanism under the safety criteria above, and require idempotence. Never build a separate formatter or autofix engine.
-- Verify each fix through detection, exact correction, a clean rescan, and an unchanged second fix run, including interactions with enabled checks and lint suppressions. Follow the [autofix development guidance](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for implementation and review.
-- Report custom checks that appear suitable for safe autofix but lack it as linter improvements. Implement them only when linter development is within the task's scope.
+- Implement custom autofixes through the native `puppet-lint` fix mechanism under the [correction safety criteria](#correction-workflow).
+- Never build a separate formatter or autofix engine.
+- Require custom autofixes to be idempotent.
+- Follow the [autofix development guidance](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for implementation and review.
+- Verify each fix through detection, exact correction, a clean rescan, and an unchanged second fix run, including interactions with enabled checks and lint suppressions.
+- Report custom checks that appear suitable for safe autofix but lack it as linter improvements.
+- Implement those improvements only when linter development is within the task's scope.
 
 ### Test Scope
 
 - Add or maintain repository-owned automated tests only for repository tools.
 - Classify tests by the behavior their assertions verify, not by filenames, input formats, or implementation technologies.
 - Never add general module, catalog, repository syntax, template, script, or monitoring behavior tests to the repository, including indirect execution through tool tests, helpers, hooks, or task dependencies.
-- Perform required functional validation with existing validators and isolated temporary checks outside the repository. Record the commands and results in the change review without adding a permanent test suite for this validation.
+- Perform required functional validation with existing validators and isolated temporary checks outside the repository.
 
 ### Tool Test Structure
 
@@ -227,15 +281,17 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 
 - Update test discovery, path resolution, task definitions, CI, and affected documentation together when changing the test structure.
 - Remove superseded test directories, duplicate files, unused support data, obsolete tasks, and stale references after migration.
-- Preserve relevant regression coverage and explicitly report any intentionally removed tests.
+- Preserve relevant regression coverage.
+- Report any intentionally removed tests.
 - Verify that the expected tests are discovered and executed; a successful command with no applicable tests is not sufficient validation.
 
 ### Required Checks
 
 - Run the full lint scan with `bundle exec puppet-lint .` for every completed change.
-- Run all tool tests with `bundle exec rake test` for every completed change.
+- Run all tool tests with `bundle exec rake test` after any corrections and before completing each change.
 - Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path.
 - Perform the additional validation relevant to the change, as documented in the [validation guide](.tools/lint/README.md#code-controleren).
+- Complete applicable CI checks before marking the change complete.
 - Inspect the final change scope with `git diff --name-only`.
 - Require `git diff --check` to pass before completion.
 
@@ -245,7 +301,7 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 - Never treat vendored submodule tooling as validation of first-party modules.
 - Never treat passing lint as a replacement for functional validation or review.
 - Verify that the central lint solution and its required review evidence cover changed public interfaces.
-- Record applicable review outcomes and functional evidence in the change review.
+- Record applicable review outcomes and functional validation commands and results in the change review.
 - Report unavailable tooling, failed or unexecuted checks, fallback checks, and remaining uncertainty.
 - Never describe incomplete validation as complete.
 
@@ -269,43 +325,60 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 | Scripts and templates | Local, non-obvious technical reasons and constraints, internal behavior, and per-check output contracts. |
 | `examples/` | Expanded configuration scenarios. |
 | Tests | Tool behavior, regressions, edge cases, failure scenarios, and automatically verifiable tool contracts. |
-| Project or feature documentation | System structure, data flows, component relationships, configuration reference, operational procedures, troubleshooting, and scoped implementation or migration plans. |
+| Project documentation | System structure, data flows, component relationships, component purpose, installation, deployment, operations, and troubleshooting. |
+| Feature or implementation documentation | Feature-specific interfaces, implementation steps, temporary migrations, and acceptance scenarios outside project-wide policy. |
+| Configuration reference | Complete configuration variables, operational defaults, and exact startup or deployment commands outside Puppet Strings. |
 | ADRs | Architectural decisions, alternatives, trade-offs, and their rationale. |
 
 ### README Scope
 
 - Adapt README content to the document's purpose and audience rather than imposing the same outline on module overviews and tooling guides.
 - Add detail to the root README only when users need it before use or during the described operation, it changes a security or compatibility decision, or the basic example requires it.
-- Never treat a technical change as an automatic reason to expand `Belangrijke aandachtspunten`. First determine whether users must choose, configure, prepare, check, or perform something differently, then update existing guidance before adding a passage.
 - Keep exhaustive parameter descriptions and developer-only implementation detail in their [designated locations](#language-and-authority), outside the root user guide.
+- Reuse existing documentation for expanded variants and parameter details instead of creating a document for each detail or copying complete descriptions across layers.
+
+### Tooling READMEs
+
 - Keep the lint README focused on using validation tooling, with a clearly separated reference for the conventions and review criteria it owns.
-- Use the lint README as the style and organization reference for `.tools/tests/README.md`: explain purpose and prerequisites before commands, then cover troubleshooting and adding tests. Adapt sections to tool testing and link to the lint guide for installation and lint rules.
+- Use the lint README as the style and organization reference for `.tools/tests/README.md`, adapted to tool testing.
+- Explain purpose and prerequisites before commands in `.tools/tests/README.md`, followed by troubleshooting and adding tests.
+- Link from `.tools/tests/README.md` to the lint guide for installation and lint rules.
 - Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
 
 ### README Navigation And Prerequisites
 
-- Keep required prerequisites, essential warnings, and security- or compatibility-critical conditions beside the action they affect. When relocating elaboration, retain the warning and required action there and add a targeted link to the detail.
+- Keep required prerequisites, essential warnings, and security- or compatibility-critical conditions beside the action they affect, including when relocating elaboration.
+- Link to relocated elaboration from the warning and required action that remain at the point of use.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
 - Maintain a `## Inhoudsopgave` near the top with main-section links and relevant nested module or tooling-task links; never label it `Legenda`.
 - Maintain a bottom-level list of expanded examples.
 
 ### README Module Sections
 
-- Preserve the existing module order and present guidance in this order: purpose, standard usage, main properties, relevant considerations, compact example, then expanded examples or Puppet Strings. Do not introduce new fixed subheadings for every module.
+- Preserve the existing module order.
+- Present module guidance in this order: purpose, standard usage, main properties, relevant considerations, compact example, then expanded examples or Puppet Strings.
+- Never introduce new fixed subheadings for every module.
 - List at most eight main properties, using fewer when they suffice.
 - Include one compact basic example.
 - Link to a relevant scenario in `examples/`.
 - Point readers to Puppet Strings for the public interface.
-- Keep expanded variants and authoritative parameter detail in their [designated locations](#language-and-authority). Reuse existing documentation rather than creating a document for each detail or copying complete descriptions across layers.
 
 #### Important Considerations
 
-- Limit `Belangrijke aandachtspunten` to concrete, module-specific conditions, risks, limitations, and non-obvious choices needed before use or during the described operation. Apply this selection question: must the user know this to use the module correctly, make a relevant choice, or prevent a concrete error, unsafe situation, or unexpected change?
-- Make the applicable condition, consequence, and required user action clear where relevant. Use this as a content check, not a mandatory sentence template.
-- Exclude complete parameter descriptions, internal execution order, test results, development history, and general administration advice without a concrete need for the described use. Include filenames, permissions, defaults, and other technical details only when they affect a user's choice or action.
-- Assess risk severity as well as frequency. Never remove warnings about data loss, lost administrative access, overwritten configuration, security, or incompatibility solely because they describe rare events or lengthen the text.
-- Write this section as natural continuous prose, with a separate paragraph for each independent topic. Do not use bullets, numbered lists, or tables within it, or replace a list with one long comma- or semicolon-separated sentence.
-- Omit the heading when no relevant considerations remain. Let concrete user impact determine the necessary detail.
+- Limit `Belangrijke aandachtspunten` to module-specific conditions, risks, limitations, and non-obvious choices needed for correct use, a relevant choice, or prevention of a concrete error, unsafe situation, or unexpected change.
+- Never expand this section solely because a technical change occurred.
+- Update existing guidance before adding a passage when users must choose, configure, prepare, check, or perform something differently.
+- Exclude complete parameter descriptions, internal execution order, test results, development history, and general administration advice without a concrete need for the described use.
+- Include filenames, permissions, defaults, and other technical details only when they affect a user's choice or action.
+- Assess risk severity as well as frequency when selecting warnings.
+- Never remove warnings about data loss, lost administrative access, overwritten configuration, security, or incompatibility solely because they describe rare events or lengthen the text.
+
+#### Considerations Presentation
+
+- Make the applicable condition, consequence, and required user action clear where relevant, without imposing a sentence template.
+- Write `Belangrijke aandachtspunten` as natural continuous prose, with a separate paragraph for each independent topic.
+- Never use bullets, numbered lists, or tables within that section, or replace a list with one long comma- or semicolon-separated sentence.
+- Omit its heading when no relevant considerations remain.
 
 ### README Style
 
@@ -325,7 +398,8 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 - Give each paragraph one coherent topic, separating independent instructions instead of compressing them to shorten the document.
 - Describe concrete actions, conditions, and consequences.
 - Explain non-obvious choices when the explanation helps the reader act correctly.
-- Use headings, lists, and tables when they help navigation or comparison, except within `Belangrijke aandachtspunten`, where the [prose requirement](#important-considerations) applies. Retain useful lists elsewhere, including main properties and installation steps.
+- Use headings, lists, and tables when they help navigation or comparison, except where the [considerations presentation rules](#considerations-presentation) require prose.
+- Retain useful lists outside those considerations, including main properties and installation steps.
 - Never add content to fill a template or make sections look uniform.
 
 #### Terminology And Preservation
@@ -335,7 +409,8 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 - Start README prose list items with a capital letter.
 - Preserve the case of identifiers, module names, class names, paths, and literals.
 - Preserve intentional author viewpoints and relevant project context when reorganizing content.
-- Preserve necessary technical requirements, warnings, exceptions, safeguards, and operational knowledge in their designated documentation layers; preservation does not require keeping all elaboration in the README. Remove duplicate explanations and demonstrably obsolete information only after the [editorial review](#editorial-review).
+- Preserve necessary technical requirements, warnings, exceptions, safeguards, and operational knowledge in their designated documentation layers. Elaboration need not remain in the README.
+- Remove duplicate explanations and demonstrably obsolete information only after the [editorial review](#editorial-review).
 
 ### Markdown
 
@@ -345,10 +420,25 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 
 ### Editorial Review
 
-- For every substantive change, review the complete affected documentation sections and surrounding reading path, including the relevant README section. Check relevance, repetition, contradictions, and placement of technical detail, not just the newest addition. Do not move unnecessary considerations below the basic example.
+#### Scope And Reading Path
+
+- For every substantive change, review the complete affected documentation sections and surrounding reading path, including the relevant README section.
+- Check relevance, repetition, contradictions, and placement of technical detail across that reading path.
+- Never move unnecessary considerations below the basic example.
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.
-- Verify technical claims that are changed, relocated, or removed as obsolete against current manifests, Puppet Strings, scripts, templates, and examples. Do not treat the README as implementation evidence; report unresolved differences and retain necessary warnings until they can be resolved.
-- Check that commands, paths, options, and references match the accompanying examples and current implementation. Verify changed links and confirm that relocated information is actually present at the destination.
+
+#### Technical Evidence And Links
+
+- Verify technical claims that are changed, relocated, or removed as obsolete against current manifests, Puppet Strings, scripts, templates, and examples.
+- Never treat the README as implementation evidence.
+- Report unresolved differences between documentation and implementation.
+- Retain necessary warnings until those differences can be resolved.
+- Check that commands, paths, options, and references match the accompanying examples and current implementation.
+- Verify changed links.
+- Confirm that relocated information is present at its destination.
+
+#### Prose Review
+
 - Review explanatory passages as continuous prose, aloud if useful, to correct awkward phrasing and unexplained topic changes without changing technical meaning.
 - Compare changed prose in `.tools/lint/README.md` and `.tools/tests/README.md` with representative root README passages against the [README style guidance](#readme-style).
 - Include a short representative passage in the review for owner feedback.
@@ -364,23 +454,29 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 
 ### Workflow And Validation
 
-- Verify [preparation and scope](#working-with-the-existing-codebase), including preservation of user changes.
+- Verify [preparation and scope](#working-with-the-existing-codebase).
 - Verify [Puppet code authority](#puppet-code-authority).
-- Verify [documentation responsibilities](#documentation), including [editorial review](#editorial-review).
+- Verify applicable [design and implementation rules](#design-and-implementation) and [monitoring contracts](#monitoring-checks).
+- Verify [documentation responsibilities and review](#documentation).
 - Verify [impact review](#impact-review).
 - Verify the applicable [security reviews](#security-and-privacy).
 - Verify the [required checks and evidence](#validation-and-testing).
+- Verify [policy maintenance and final review](#maintaining-agentsmd) when changing this file.
 
 ### External Sharing
 
 - Verify [secrets protection](#secrets-and-authentication-material): no secrets, credentials, certificates, or key material were shared externally.
 - Verify [minimum disclosure](#minimum-disclosure) and [anonymization](#anonymization-and-synthetic-data): external material was minimal and synthetic or sufficiently anonymized.
 - Verify [outbound review](#outbound-review): hidden data in logs, screenshots, headers, URLs, filenames, and metadata was checked.
-- Verify the [disclosure restriction](#outbound-review): no sharing occurred when safe sanitization could not be demonstrated.
+- Verify the [disclosure restriction](#unsafe-disclosure): no sharing occurred when safe sanitization could not be demonstrated.
 
 ### Delivery
 
-- Include changed paths, relevant security and systemd decisions, README and `AGENTS.md` decisions, validation results, and unresolved assumptions or follow-up in the final response.
+- Identify changed paths in the final response.
+- Explain any supporting refactor in the final response.
+- Summarize relevant security and systemd decisions in the final response.
+- Explain README and `AGENTS.md` decisions in the final response.
+- Report validation results and unresolved assumptions or follow-up in the final response.
 
 ## Maintaining AGENTS.md
 
@@ -388,17 +484,26 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 
 - Store only durable project-wide engineering rules that govern future development.
 - Never record task, ticket, bug, feature, or prompt history, except historical context essential to understanding a technical contract or deliberate exception.
-- Keep feature-specific implementation detail outside this file unless it is a lasting project-wide constraint.
-- Move configuration guides, troubleshooting, implementation plans, examples, and concrete test scenarios to their [designated locations](#language-and-authority).
-- Keep exact technical names, values, and versions only when required by a contract, constraint, exception, compatibility requirement, or security requirement.
+- Convert task instructions, recurring review findings, production issues, security findings, test failures, tooling changes, and agent mistakes into rules only when the required behavior generalizes beyond one task.
+- Never copy a task instruction verbatim into this file merely because it requests a policy update.
+- Place feature-specific implementation detail, configuration guides, troubleshooting, implementation plans, examples, and concrete test scenarios in their [designated locations](#language-and-authority), unless they are lasting project-wide constraints.
+- Preserve exact technical names, values, and versions when required by a contract, constraint, exception, compatibility requirement, or security requirement.
+- Move technical detail without such a requirement to its [designated location](#language-and-authority).
+
+### Change Scope
+
+- Update this file when a repository-wide convention, architecture constraint, validation command, security requirement, non-Puppet engineering standard, or operational workflow changes.
+- Limit routine maintenance to the affected rules and directly impacted references.
+- Restructure the whole file only when explicitly requested or when documented contradictions across sections require it.
 
 ### Maintenance Decisions
 
-- Update this file when a repository-wide convention, architecture constraint, validation command, security requirement, non-Puppet engineering standard, or operational workflow changes.
-- Leave this file unchanged when existing policy already covers the requested behavior completely and unambiguously.
-- Convert recurring review findings, production issues, security findings, test failures, tooling changes, and agent mistakes into rules only when they generalize beyond one task.
-- Identify the underlying objective, required behavior, scope, and necessary exceptions before adding a rule.
-- Check whether an existing rule covers the behavior wholly or partly.
+- Identify the underlying objective, required behavior, scope, and necessary exceptions before proposing a policy change.
+- Find the existing authoritative rules that wholly or partly cover the required behavior.
+- Distinguish missing or unclear policy from failure to follow a clear rule before deciding to edit.
+- Leave this file unchanged when existing policy covers the requested behavior completely and unambiguously, even after repeated violations.
+- When a clear rule was violated, investigate which execution or verification step failed.
+- Correct that failed step without adding or rewording policy that already covers the behavior.
 - Update, broaden, or clarify the existing authoritative rule before creating a new one.
 - Add a new rule only when necessary durable behavior is not already covered.
 
@@ -428,6 +533,7 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 - Use mandatory wording for obligations and prohibitions, reserving `may`, `can`, `prefer`, and `optional` for genuine discretion.
 - State how compliance is verified when this is not apparent from the rule.
 - Prioritize scanability, scope, and traceability over reducing the number of lines, bullets, or headings.
+- Never compress independent requirements into a dense paragraph to reduce the document's length.
 
 ### Conflict Resolution
 
@@ -439,7 +545,8 @@ The workflow for code changes is `lint → autofix → lint → manual remainder
 
 ### Final Review
 
-- Compare the complete revision with the original to verify that obligations, prohibitions, exceptions, technical contracts, compatibility, and security safeguards are preserved or explicitly relocated.
+- Review the complete diff against the pre-change version to verify that obligations, prohibitions, exceptions, technical contracts, compatibility, and security safeguards are preserved or explicitly relocated.
 - Verify that generalization and restructuring neither make required behavior optional nor make optional behavior mandatory.
-- Preserve technically necessary specificity when its removal could change behavior or scope.
-- Verify that every changed rule is necessary, reusable, scannable, non-duplicative, unambiguous, and consistent with this document, its terminology, and its references.
+- Manually verify that every changed rule is necessary, reusable, scannable, non-duplicative, unambiguous, and consistent with this document, its terminology, and its references.
+- Run automated checks for bullet counts, literal duplicate rules, and local link targets, using repository tooling when available or isolated temporary checks otherwise.
+- Record the existing policy, reason for change, and preserved obligations and exceptions for each substantive rule change in the change review outside this file.

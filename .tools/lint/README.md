@@ -129,7 +129,7 @@ Stopt de linter voordat hij code kan controleren, herstel dan eerst de installat
 
 ### Automatisch corrigeren (autofix)
 
-Met de ingebouwde optie `--fix` laat je Puppet-lint meldingen automatisch herstellen waarvoor de betreffende check een correctie ondersteunt. Voer dit uit vanuit de hoofdmap van de repository:
+Met de ingebouwde optie `--fix` laat je Puppet-lint meldingen automatisch herstellen waarvoor de betreffende check een correctie ondersteunt. Beoordeel vooraf of de gekozen correcties veilig zijn en volg de [werkwijze voor autofix, review en afronding](../../AGENTS.md#linting-and-autofix). Voer dit uit vanuit de hoofdmap van de repository:
 
 ```sh
 bundle exec puppet-lint --fix .
@@ -521,7 +521,7 @@ De projectchecks voor documentatie en parametervolgorde vullen de standaardcheck
 
 Begin bij de gebruikte bundle: controleer `bundle exec puppet-lint --version` en bekijk de implementatie met `bundle show puppet-lint`. Volg de [afspraken voor hergebruik en autofixontwikkeling in `AGENTS.md`](../../AGENTS.md#linting-and-autofix).
 
-Een custom check krijgt alleen autofix als de uitkomst vaststaat, het Puppet-gedrag gelijk blijft en een tweede fixrun niets meer verandert. De correctie mag geen informatie verzinnen, ontwerpkeuze maken of commentaar verliezen. Controleer ook dat het resultaat geldige Puppet-code is en dat dezelfde regel na de correctie geen melding meer geeft. Bewijs dit voor de hele constructie die je wijzigt; alleen de gemelde regel bekijken is niet voldoende.
+De correctie mag geen informatie verzinnen, ontwerpkeuze maken of commentaar verliezen. Controleer ook dat het resultaat geldige Puppet-code is en dat dezelfde regel na de correctie geen melding meer geeft. Bewijs dit voor de hele constructie die je wijzigt; alleen de gemelde regel bekijken is niet voldoende.
 
 Implementeer `fix(problem)` binnen de betreffende `PuppetLint.new_check`. Bewaar tijdens `check` de betrokken tokenobjecten en de voorwaarden voor correctie. Geef de melding een index naar die context, zoals de bestaande projectchecks doen, zodat JSON-diagnostiek geen bronwaarden bevat. Controleer alle voorwaarden voordat je tokens wijzigt. Gebruik `PuppetLint::NoFix` wanneer die voorwaarden niet gelden; Puppet-lint behoudt dan de oorspronkelijke melding.
 
