@@ -1,6 +1,8 @@
-# Puppet-lint
+# Puppet-lint en RuboCop
 
 Met Puppet-lint controleer je de Puppet-code in dit project. Naast de standaardchecks gebruikt het project eigen checks voor onder meer parameters, documentatie, bestandsrechten en shellcommando's. Deze handleiding bevat de dagelijkse werkwijze, alle Puppet-codeafspraken en reviewcriteria, en de uitleg voor onderhoud en gebruik vanuit andere projecten. De [tooltests](../tests/README.md) controleren het gedrag van de linter.
+
+Met [RuboCop](#ruby-code-controleren) controleer je de eigen Ruby-code, waaronder de implementatie van de Puppet-linter en de tooltests.
 
 ## Leeswijzer
 
@@ -16,6 +18,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
 | Systemd-integratie aanpassen | [Gedeelde services en systemd](#gedeelde-services-en-systemd), inclusief de beoordeling per service. |
 | Een lintmelding oplossen | [Een melding oplossen](#een-melding-oplossen); zoek de checknaam in het [checkoverzicht](#beschikbare-projectchecks). |
 | Autofix uitvoeren | [Automatisch corrigeren](#automatisch-corrigeren-autofix) en de voorwaarden bij de betrokken check. |
+| Ruby-code controleren of veilig corrigeren | [RuboCop gebruiken](#ruby-code-controleren). |
 | Een bestaande lintcheck aanpassen | [Een check toevoegen of wijzigen](#een-check-toevoegen-of-wijzigen) en de bijbehorende [technische werking](#technische-werking-van-de-checks). |
 | Een nieuwe lintcheck of autofix ontwikkelen | [Linter ontwikkelen en onderhouden](#linter-ontwikkelen-en-onderhouden), inclusief [veilige autofixes](#veilige-autofixes-ontwikkelen). |
 | De centrale linter in een ander Puppet-project gebruiken | [Downstream-installatie, configuratie en CI](#de-linter-gebruiken-in-een-ander-puppet-project). |
@@ -27,6 +30,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
   - [Werking van de controles](#werking-van-de-controles)
   - [Een melding oplossen](#een-melding-oplossen)
   - [Automatisch corrigeren (autofix)](#automatisch-corrigeren-autofix)
+  - [Ruby-code controleren](#ruby-code-controleren)
   - [Aanvullende validatie](#aanvullende-validatie)
 - [Benodigde omgeving](#benodigde-omgeving)
 - [Installatie](#installatie)
@@ -110,6 +114,7 @@ Gebruik voor de eindcontroles:
 
 ```sh
 bundle exec puppet-lint --no-config --config .puppet-lint.rc .
+bundle exec rubocop --config .rubocop.yml
 bundle exec rake test
 git diff --check
 git diff --name-only
@@ -117,6 +122,8 @@ git diff
 ```
 
 `rake test` ontdekt de tooltests recursief en voert ze allemaal uit. `test:lint` beperkt zich tot de lintertests. Zolang alleen de linter een testsuite heeft, leveren beide taken dezelfde selectie op. `git diff --check` zoekt whitespacefouten; de laatste twee commando's tonen de gewijzigde bestanden en hun inhoud.
+
+Gebruik bij wijzigingen aan Ruby-code de [RuboCop-werkwijze](#ruby-code-controleren) voor de beginscan, correcties en hercontrole.
 
 ### Werking van de controles
 
@@ -171,6 +178,32 @@ Zonder `--only-checks` worden de beschikbare fixes van zowel standaardchecks als
 Geslaagde correcties verschijnen als `fixed`. Een resterende waarschuwing of fout geeft nog steeds een foutcode. Scan daarna zonder `--fix` opnieuw: Puppet-lint verzamelt alle meldingen vóór het corrigeren, waardoor bijvoorbeeld een lengtemelding nog over de oorspronkelijke regel kan gaan.
 
 Bij een syntaxfout schrijft de CLI het manifest niet weg. Genegeerde meldingen worden evenmin gecorrigeerd. Bekijk na de correctieronde de volledige diff en volg de [verdere afronding](#werkwijze-bij-een-wijziging). De gewone projectaanroep en CI controleren alleen; voor correctie gebruik je expliciet `--fix`. Er is geen aparte Rake-task of formatter voor nodig.
+
+### Ruby-code controleren
+
+RuboCop controleert de eigen Ruby-code op de [Ruby-stijlregels van RuboCop](https://docs.rubocop.org/rubocop/). De [projectconfiguratie](../../.rubocop.yml) neemt ook de verborgen map `.tools/` mee, naast onder meer de Gemfile, het Rakefile en Ruby-code in modules. Vendored submodules en geïnstalleerde gems vallen buiten de scan. Templates zijn eveneens uitgesloten: render die eerst en valideer de resulterende code afzonderlijk.
+
+RuboCop wordt met `bundle install` geïnstalleerd. Voer de scan uit vanuit de repositoryroot:
+
+```sh
+bundle exec rubocop --config .rubocop.yml
+```
+
+De configuratie gebruikt de standaardregels en schakelt nieuwe checks in. Er is geen gegenereerde uitzonderingenlijst voor bestaande meldingen. Daardoor geeft de scan een foutcode zolang er afwijkingen zijn. Herstel meldingen binnen de scope van je wijziging en vermeld de resterende meldingen in de review; een uitgevoerd commando betekent nog geen geslaagde controle.
+
+Begin met een gewone scan voordat je automatisch corrigeert. Kies daarna de bestanden die bij je wijziging horen. Bijvoorbeeld:
+
+```sh
+bundle exec rubocop --config .rubocop.yml --force-exclusion --autocorrect .tools/lint/lib/model.rb
+bundle exec rubocop --config .rubocop.yml
+bundle exec rake test
+git diff --check
+git diff
+```
+
+`--force-exclusion` respecteert de uitgesloten paden ook wanneer je een bestand expliciet opgeeft. [`--autocorrect`](https://docs.rubocop.org/rubocop/usage/autocorrect.html) gebruikt alleen correcties die RuboCop als veilig aanmerkt. Beoordeel de diff en voer de tests opnieuw uit. Controleer gewijzigde Ruby-code in modules ook met tijdelijke functionele controles buiten de repository; de tooltests dekken dat gedrag niet. `--autocorrect-all` bevat ook mogelijk gedragsveranderende correcties en hoort niet bij deze veilige correctiestap.
+
+RuboCop beoordeelt statische eigenschappen zoals opmaak, mogelijke fouten en complexiteit. De tooltests en inhoudelijke review blijven nodig om vast te stellen of de eigen lintchecks correct werken.
 
 ### Aanvullende validatie
 
@@ -241,7 +274,7 @@ De [Gemfile](../../Gemfile) bevat geen vaste gemversies. [`Gemfile.lock`](../../
 
 Krijg je een Bundler-fout met `/System/Library/Frameworks/Ruby.framework` of `/usr/bin/bundle` in de melding, dan gebruikt je terminal nog de macOS-installatie. Controleer eerst `ruby --version`, `command -v ruby` en `command -v bundle` en herstel de PATH-instelling hierboven. Bundler installeren met de oude systeem-Ruby of `sudo gem install` lost die versieverschillen niet op.
 
-Naast Puppet-lint worden twee bestaande lintplugins, OpenVox, `metadata-json-lint`, Minitest en Rake geïnstalleerd. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
+Naast Puppet-lint worden twee bestaande lintplugins, OpenVox, `metadata-json-lint`, RuboCop, Minitest en Rake geïnstalleerd. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
 
 ## Naslag
 
@@ -568,7 +601,7 @@ file { '/tmp/example-app.tar.gz':
 
 De check bekijkt strings die met `puppet://` beginnen, ook in bronarrays en tot aan de eerste interpolatie. Hij berekent het dynamische vervolgpad niet en controleert geen bestandsinhoud, beschikbaarheid of fileserverrechten. Valideer die bij het werkelijke gebruik. Als een module zulke bronnen accepteert, hoort zijn invoervalidatie ook `puppet:///` toe te staan.
 
-Er is geen autofix voor de bronkeuze. Een andere mount of template kan andere inhoud opleveren. Houd paden en titels voorspelbaar en controleer de gerenderde varianten bij de gebruiker die ze moet kunnen lezen. De aanvullende URL-check staat in [`resources.rb`](lib/puppet-lint/plugins/resources.rb); hiervoor worden geen geïnstalleerde gems aangepast.
+Er is geen autofix voor de bronkeuze. Een andere mount of template kan andere inhoud opleveren. Houd paden en titels voorspelbaar en controleer de gerenderde varianten bij de gebruiker die ze moet kunnen lezen. De aanvullende URL-check staat in [`puppet_urls.rb`](lib/checks/puppet_urls.rb); hiervoor worden geen geïnstalleerde gems aangepast.
 
 #### Pakketten en mappen
 
@@ -779,7 +812,9 @@ Dit gedeelte is bedoeld voor wijzigingen aan de linter, de configuratieroute of 
 
 Zoek eerst de bestaande codeafspraak en bepaal welk onderdeel automatisch vast te stellen is en welk onderdeel review blijft. Controleer of een standaardcheck, geïnstalleerde plugin of bestaande projectcheck het probleem al afhandelt. Breid die waar mogelijk uit; voeg geen tweede detectie- of correctiepad toe voor hetzelfde contract.
 
-De [configuratie](../../.puppet-lint.rc) bevat de pluginlijst en algemene opties. Projectchecks staan onder [`lib/puppet-lint/plugins/`](lib/puppet-lint/plugins/). Gebruik `PuppetLint.new_check` en de native diagnostiek. Meldingen moeten de oorzaak en een bruikbare bronpositie geven; neem geen willekeurige bronwaarden in diagnostiek of JSON op. Gebruik `[review]` als de analyse geen voldoende bewijs voor de gewenste eigenschap of correctie kan leveren.
+De [configuratie](../../.puppet-lint.rc) bevat de pluginlijst en algemene opties. De bestanden onder [`lib/puppet-lint/plugins/`](lib/puppet-lint/plugins/) registreren de checks met `PuppetLint.new_check`. De checkmodules staan onder [`lib/checks/`](lib/checks/); gedeelde analyse en correctiehelpers staan daarnaast onder `lib/`. Gebruik de native diagnostiek en correctiemechanismen.
+
+Meldingen moeten de oorzaak en een bruikbare bronpositie geven; neem geen willekeurige bronwaarden in diagnostiek of JSON op. Gebruik `[review]` als de analyse geen voldoende bewijs voor de gewenste eigenschap of correctie kan leveren.
 
 Werk bij een gewijzigde codeafspraak de relevante regel en het [checkoverzicht](#beschikbare-projectchecks) samen bij. Geef aan wat detectie en autofix daadwerkelijk dekken en wat handmatig blijft. Verander je een algemene conventie, neem dan de regressietests en alle geraakte first-party code in dezelfde wijziging mee. De [documentatie-indeling](../../AGENTS.md#lint-documentation-maintenance) bepaalt waar nieuwe kennis thuishoort.
 
@@ -789,7 +824,7 @@ Voer tijdens het werk `bundle exec rake test:lint` uit en sluit af met de [volle
 
 ### Technische werking van de checks
 
-De [CLI-tests](../tests/lint/cli_test.rb) controleren de configuratieroute met synthetische systeem- en persoonlijke optiebestanden. Ze bewaken ook de native opties, exitcodes en correcties. De vergelijking van de lintuitsluitingen met de Git-index bewaakt welke vendored modulemappen buiten de scan blijven.
+De [configuratietests](../tests/lint/cli_configuration_test.rb) controleren de configuratieroute met synthetische systeem- en persoonlijke optiebestanden. De overige `cli_*_test.rb`-bestanden bewaken onder meer diagnostiek, exitcodes en correcties. De [scopetests](../tests/lint/cli_scope_test.rb) vergelijken de lintuitsluitingen met de Git-index en bewaken welke vendored modulemappen buiten de scan blijven. De [testhandleiding](../tests/README.md#helpers-en-testgegevens) beschrijft de indeling van gedeelde assertions en testgegevens.
 
 [`model.rb`](lib/model.rb) gebruikt de Puppet-parser uit OpenVox voor de AST: declaraties, expressies, resources en hun omliggende structuur. De lexer van Puppet-lint levert commentaar en concrete witruimte. [`strings_documentation.rb`](lib/strings_documentation.rb) deelt de documentatiegrenzen en tekstverwerking; [`nullability.rb`](lib/nullability.rb) onderzoekt aantoonbare uitsluiting via `undef`, guards en lokale toekenningen. De analyse past geen catalogus toe en voert geen Puppet-functies uit.
 
@@ -845,6 +880,7 @@ Bij de eerste installatie gebruikt Bundler de versies uit de lockfile. Wil je di
 gem install bundler
 BUNDLE_VERSION=system bundle update --all
 bundle exec puppet-lint --no-config --config .puppet-lint.rc .
+bundle exec rubocop --config .rubocop.yml
 bundle exec rake test
 git diff -- Gemfile.lock
 ```
@@ -857,7 +893,7 @@ Werk op macOS Ruby bij met `brew update` en `brew upgrade ruby`. Open daarna een
 
 ### CI van deze repository
 
-[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, lintscan en tooltests uit. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren.
+[De CI-workflow](../../.github/workflows/lint.yml) kiest met `ruby-version: ruby` de nieuwste stabiele Ruby en voert dezelfde installatie, volledige Puppet-lintscan, RuboCop-scan en tooltests uit. Beide linters controleren alleen; een melding laat de bijbehorende CI-stap mislukken. `BUNDLE_FROZEN=true` voorkomt dat een afwijking tussen Gemfile en lockfile stilzwijgend wordt bijgewerkt. Met `BUNDLE_PATH` kun je gems lokaal bijvoorbeeld in `vendor/bundle` installeren.
 
 CI heeft alleen leesrechten, bewaart geen checkoutcredentials en maakt geen wijzigingen of commits.
 

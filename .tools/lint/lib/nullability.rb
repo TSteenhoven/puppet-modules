@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 require_relative 'model'
+require_relative 'null_condition'
 
 module ProjectLint
-  # Prove mutual exclusion only for explicit undef guards and local assignments; unknown expressions remain review findings.
+  # Prove exclusion only for explicit undef guards and reachable local assignments.
   class Nullability
     M = Model::M
 
@@ -20,66 +23,64 @@ module ProjectLint
       node.expr.value if node.is_a?(M::VariableExpression)
     end
 
-    # Conditions use three values: true, false, or nil when the guarded data cannot be proven statically.
     def condition(node, assumptions)
-      case node
-      when M::ParenthesizedExpression then condition(node.expr, assumptions)
-      when M::NotExpression
-        value = condition(node.expr, assumptions)
-        value.nil? ? nil : !value
-      when M::ComparisonExpression
-        if node.right_expr.is_a?(M::LiteralUndef) && assumptions.key?(variable(node.left_expr))
-          value = assumptions.fetch(variable(node.left_expr))
-          return node.operator == '==' ? value : !value if %w[== !=].include?(node.operator)
-        end
-        nil
-      when M::AndExpression
-        left = condition(node.left_expr, assumptions)
-        right = condition(node.right_expr, assumptions)
-        return false if left == false || right == false
-        left == true && right == true ? true : nil
-      when M::OrExpression
-        left = condition(node.left_expr, assumptions)
-        right = condition(node.right_expr, assumptions)
-        return true if left == true || right == true
-        left == false && right == false ? false : nil
-      else nil
-      end
+      NullCondition.new(assumptions).evaluate(node)
+    end
+
+    def unreachable_branch?(parent, child, assumptions)
+      return false unless parent.is_a?(M::IfExpression)
+
+      value = condition(parent.test, assumptions)
+      (child.equal?(parent.then_expr) && value == false) || (child.equal?(parent.else_expr) && value == true)
     end
 
     def reachable?(node, parents, assumptions)
       path = parents + [node]
-      parents.each_with_index do |parent, index|
-        next unless parent.is_a?(M::IfExpression)
-        value = condition(parent.test, assumptions)
-        child = path[index + 1]
-        return false if (child.equal?(parent.then_expr) && value == false) || (child.equal?(parent.else_expr) && value == true)
+      parents.each_with_index.none? do |parent, index|
+        unreachable_branch?(parent, path[index + 1], assumptions)
       end
-      true
+    end
+
+    def matching_assignment?(candidate, parents, name, assumptions)
+      variable(candidate.left_expr) == name && scope(parents).equal?(@scope) &&
+        candidate.offset < @resource.offset && reachable?(candidate, parents, assumptions)
+    end
+
+    def assignments(name, assumptions)
+      @model.each_node(M::AssignmentExpression).select do |candidate, parents|
+        matching_assignment?(candidate, parents, name, assumptions)
+      end
+    end
+
+    def null_assignments?(name, assumptions, seen)
+      candidates = assignments(name, assumptions)
+      !candidates.empty? && candidates.all? do |candidate, _parents|
+        always_null?(candidate.right_expr, assumptions, seen + [name])
+      end
     end
 
     def always_null?(node, assumptions, seen = [])
       return true if node.is_a?(M::LiteralUndef)
+
       name = variable(node)
       return false unless name
       return assumptions[name] if assumptions.key?(name)
       return false if seen.include?(name)
 
-      assignments = @model.nodes.select do |candidate, parents|
-        candidate.is_a?(M::AssignmentExpression) && variable(candidate.left_expr) == name && scope(parents).equal?(@scope) &&
-          candidate.offset < @resource.offset && reachable?(candidate, parents, assumptions)
-      end
-      !assignments.empty? && assignments.all? { |candidate, _| always_null?(candidate.right_expr, assumptions, seen + [name]) }
+      null_assignments?(name, assumptions, seen)
     end
 
     def exclusive?(source, content)
       names = [variable(source), variable(content)].compact
       nonnull = names.to_h { |name| [name, false] }
-      return true unless reachable?(@resource, @parents, nonnull)
-      return true if variable(source) && always_null?(content, { variable(source) => false })
-      return true if variable(content) && always_null?(source, { variable(content) => false })
+      !reachable?(@resource, @parents, nonnull) || excludes?(source, content) || excludes?(content, source)
+    end
 
-      false
+    def excludes?(source, content)
+      name = variable(source)
+      return false unless name
+
+      always_null?(content, { name => false })
     end
   end
 end

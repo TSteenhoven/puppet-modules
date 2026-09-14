@@ -1,0 +1,370 @@
+{
+  "test_only_approved_suppressions_are_allowed": {
+    "sample": "# lint:ignore:140chars\n$x = 'demo'\n# lint:endignore"
+  },
+  "test_puppet_sources_accept_module_and_fileserver_mounts": {
+    "sample": "$sources = ['puppet:///modules/example/app.tar.gz', 'puppet:///files/example/app.tar.gz']"
+  },
+  "test_puppet_sources_reject_unknown_missing_and_partial_mount_names": {
+    "problems": "$sources = ['puppet:///modules/example/app.tar.gz', 'puppet:///files/example/app.tar.gz', 'puppet:///invalid/example/app.tar.gz']",
+    "samples": [
+      "puppet:///invalid/example/app.tar.gz",
+      "puppet:///files_backup/example/app.tar.gz",
+      "puppet:///modules_extra/example/app.tar.gz",
+      "puppet:///files",
+      "puppet:///modules",
+      "puppet:///",
+      "puppet://puppet.example.org",
+      "puppet://puppet.example.org/invalid/app.tar.gz"
+    ]
+  },
+  "test_puppet_source_check_keeps_other_schemes_and_prose_outside_its_scope": {
+    "sample": "# puppet:///invalid/example/app.tar.gz\n",
+    "sample2": "$source = 'puppet:///invalid/example/app.tar.gz' # lint:ignore:project_puppet_urls"
+  },
+  "test_package_removal_and_non_apt_provider": {
+    "valid": "package { 'demo': install_options => ['--no-install-recommends', '--no-install-suggests'] }"
+  },
+  "test_resource_defaults_apply_to_files_and_packages": {
+    "sample": "File { owner => 'root', group => 'root', mode => '0600' } file { '/tmp/example': ensure => file }",
+    "sample2": "Package { install_options => ['--no-install-recommends', '--no-install-suggests'] } package { 'demo': ensure => installed }",
+    "sample3": "file { '/tmp/example': ensure => link, target => '/tmp/target', owner => 'root', group => 'root' }",
+    "sample4": "package { 'demo': install_options => concat($options, ['--no-install-recommends', '--no-install-suggests']) }",
+    "sample5": "package { 'demo': install_options => union($options, ['--no-install-recommends', '--no-install-suggests']) }",
+    "sample6": "package { 'demo': install_options => ['--no-install-recommends', '--no-install-suggests', '--install-recommends'] }"
+  },
+  "test_numeric_and_hash_addition_remain_valid": {
+    "sample": "class array_scope (Array $items) {} class number_scope (Integer $items) { $result = $items + 1 }"
+  },
+  "test_inheritance_and_overrides_require_catalog_review": {
+    "inherited": "class parent { File { owner => 'root', group => 'root', mode => '0600' } } class example inherits parent { file { '/tmp/example': } }",
+    "overridden": "file { '/tmp/example': } File['/tmp/example'] { owner => 'root', group => 'root', mode => '0600' }",
+    "nested": "if true { File { owner => 'root', group => 'root', mode => '0600' } } file { '/tmp/example': }"
+  },
+  "test_layout_handles_strings_comments_and_nested_types": {
+    "sample": "class example (\n  Enum['a', 'b'] $label = 'comma,inside',\n) {}",
+    "sample2": "class example (\n  Enum['a','b'] $label = 'comma,inside'\n) {}"
+  },
+  "test_layout_aligns_the_closing_array_bracket_with_the_opening_line": {
+    "code": "$values = join([\n  'first',\n    ], ' ')\n"
+  },
+  "test_layout_preserves_inline_arrays_types_accesses_and_brackets_in_text": {
+    "codes6": [
+      "$values = ['first', 'second']\n",
+      "$values = ['first',\n  'second']\n",
+      "$values = [\n  'first', 'second']\n",
+      "$values = [\n\n  'first',\n\n]\n",
+      "$values = [ # Explain this list.\r\n  'first',\r\n]\r\n",
+      "$values = [\n  'één',\n  'twee',\n]\n",
+      "$values = []\n# [\n        # ]\n",
+      "$text = '[\n        literal text\n    ]'\n",
+      "$type = Array[\n        String,\n    ]\n",
+      "$value = $lookup[\n        'key',\n    ]\n",
+      "File[\n        '/synthetic',\n    ] { mode => '0600' }\n"
+    ]
+  },
+  "test_layout_preserves_content_and_spacing_elsewhere_in_blocks": {
+    "sources6": [
+      "if $active {}\n",
+      "if $active {\n}\n",
+      "if $active { notice('Active')\n\n  notice('Ready')\n}\n",
+      "if $active {\n  notice('Active')\n\n  # Explain the next operation.\n  notice('Ready')\n\n}\n",
+      "if $active {\n  # Explain the operation.\n\n  notice('Ready')\n}\n",
+      "# A literal {\n\nnotice('Ready')\n",
+      "/* A literal {\n\n*/\nnotice('Ready')\n",
+      "$text = '{\n\n}'\n",
+      "$text = \"{\n\n${value}\"\n",
+      "$pattern = /{\n\n}/\n",
+      "if $active { /* Explain this block.\n\n  More explanation. */\n  notice('Active')\n}\n",
+      "if $active { notice('{\n\n}')\n}\n",
+      "$values = [\n\n  1,\n]\n",
+      "notice(\n\n  'Ready',\n)\n",
+      "$text = @(CONTENT)\n{\n\nliteral content\nCONTENT\n"
+    ]
+  },
+  "test_comment_spacing_preserves_opening_blocks_and_contiguous_comments": {
+    "sample": "$first = 1 # Explain the first value.\n# Explain the next value.\n$second = 2\n",
+    "code": "# File-level explanation.\n# The next line continues the same explanation.\nclass example (\n  # This value selects the synthetic instance.\n  String $name = 'demo',\n) {\n  # Keep this first section inside the class.\n  $items = [\n    # The first item needs no leading blank line.\n    'demo',\n  ]\n}\n"
+  },
+  "test_comment_spacing_handles_block_comments_and_lint_metadata": {
+    "code": "$value = 1\n/* Explain the next section.\n * Preserve this continuation. */\n$other = 2\n",
+    "sample": "$value = 1\n# lint:ignore:140chars\n$other = 2\n# lint:endignore\n",
+    "wrapped": "$value = 1\n# lint:ignore:140chars\n# Explain the next value.\n# lint:endignore\n$other = 2\n",
+    "closed": "# lint:ignore:140chars\n$value = 1\n# lint:endignore\n# Explain the next value.\n$other = 2\n"
+  },
+  "test_resource_sections_keep_line_numbers_after_blank_lines": {
+    "code": "notify { 'first': }\n\nnotify { 'second': }\n\n"
+  },
+  "test_resource_sections_after_conditions_need_their_own_explanation": {
+    "corrected": "\n\n# Report the selected state.\nnotify",
+    "unseparated": "\n# Report the selected state.\nnotify",
+    "code": "if $active {\n  $message = 'active'\n} else {\n  $message = 'inactive'\n}\nnotify { 'state': message => $message }\n"
+  },
+  "test_resource_sections_cover_defined_types_defaults_overrides_and_virtual_resources": {
+    "sample": "\n\n# Register the selected instance.\n",
+    "declarations": [
+      "basic_settings::monitoring_custom { 'example': }",
+      "Notify { message => 'default' }",
+      "Notify['example'] { message => 'override' }",
+      "@notify { 'example': }",
+      "@@notify { 'example': }",
+      "class { 'example': }"
+    ]
+  },
+  "test_resource_sections_do_not_split_relationship_chains_or_opening_blocks": {
+    "sample": "if $active {\n  notify { 'example': }\n}\n",
+    "sample2": "$message = '} # literal'\nnotify { 'example': }\n",
+    "sample3": "$options = [1, 2]\nnotify { 'example': }\n"
+  },
+  "test_section_positions_handle_crlf_and_multibyte_text": {
+    "code": "notify { 'café': } notify { 'next': }\r\n# Explain the next value.\r\n$value = 1\r\n"
+  },
+  "test_resource_sections_reject_empty_trailing_and_control_only_comments": {
+    "sample": "# lint:ignore:140chars\n# lint:endignore\n",
+    "code": "if $active { $value = 1 }\n\n# lint:ignore:140chars\n# Report the selected state.\n# lint:endignore\nnotify { 'example': }\n",
+    "sample2": "if $active { $value = 1 } # Explain this condition.\nnotify { 'example': }\n"
+  },
+  "test_variable_sections_split_the_name_group_before_independent_check_settings": {
+    "corrected": "\n\n# Escape the numeric check settings.\n$detail_limit_shell",
+    "code": "# Normalize names for the command and its label.\n$server_name_correct = regsubst($server_name ? { undef => '', default => $server_name }, '\\s+', ' ', 'G')\n$server_name_shell = stdlib::shell_escape($server_name_correct)\n$check_friendly = \"Nginx TLS ${server_name_correct}\"\n$detail_limit_shell = stdlib::shell_escape(String($detail_limit))\n$timeout_shell = stdlib::shell_escape(String($timeout))\n$validity_critical_shell = stdlib::shell_escape(String($validity_critical))\n$validity_warning_shell = stdlib::shell_escape(String($validity_warning))\n$command = \"${server_name_shell} ${detail_limit_shell} ${timeout_shell} ${validity_critical_shell} ${validity_warning_shell}\"\n"
+  },
+  "test_variable_sections_need_an_explanation_and_reuse_comment_spacing": {
+    "code": "# Prepare the value.\n$value = 'example'\n$label = $value\n$timeout = 30\n",
+    "sample": "\n# lint:ignore:140chars\n# lint:endignore\n"
+  },
+  "test_variable_sections_allow_batches_without_proven_internal_dependencies": {
+    "sample": "# Set independent defaults.\n$timeout = 30\n$owner = 'root'\n$enabled = true\n",
+    "code": "# Escape the independent settings for the command.\n$detail_shell = stdlib::shell_escape(String($detail))\n$timeout_shell = stdlib::shell_escape(String($timeout))\n$warning_shell = stdlib::shell_escape(String($warning))\n$critical_shell = stdlib::shell_escape(String($critical))\n",
+    "sample2": "# Read the existing input.\n$first = $input\n$second = $input\n$timeout = 30\n"
+  },
+  "test_variable_sections_limit_dependency_grouping_to_annotated_sequences": {
+    "sample": "$first = 'one'\n$second = $first\n$timeout = 30\n",
+    "code": "# Prepare the label.\n$first = 'one'\n$second = $first\nnotice('done')\n$timeout = 30\n",
+    "code3": "# Prepare the label.\n$first = 'one'\n$second = $first\nif $active { $timeout = 30; $limit = 60 }\n",
+    "sample4": "# Explain the condition.\nif $active { $first = 'one'; $second = $first; $timeout = 30 }\n"
+  },
+  "test_variable_sections_respect_lambda_parameters_and_local_assignments": {
+    "code": "# Prepare mapped values.\n$seed = 'outer'\n$result = [1].map |$item| { $seed }\n$timeout = 30\n",
+    "sample": "{\n# Keep this seed local to each iteration.\n$seed = 'inner'; $seed }"
+  },
+  "test_variable_sections_handle_block_comments_crlf_and_same_line_assignments": {
+    "code": "/* Prepare a café label. */\n$first = 'café'; $second = $first; $timeout = 30\n",
+    "wrapped": "# lint:ignore:140chars\n# Prepare a label.\n# lint:endignore\n$first = 'one'\n$second = $first\n$timeout = 30\n"
+  },
+  "test_variable_sections_explain_assignments_at_each_block_opening": {
+    "corrected": "  # Prepare the label for this state.\n  $value",
+    "code": "# Select the active state.\nif $active {\n  $value = 'active'\n} elsif $pending {\n  $value = 'pending'\n} else {\n  $value = 'inactive'\n}\n"
+  },
+  "test_variable_sections_require_real_internal_comments_without_a_leading_blank_line": {
+    "sample": "# lint:ignore:140chars\n# lint:endignore\n"
+  },
+  "test_variable_sections_do_not_suggest_moving_past_a_use_or_control_boundary": {
+    "code": "if $active {\n$config_shell = stdlib::shell_escape($config)\n} else {\n# Escape the timeout.\n$timeout_shell = stdlib::shell_escape(String($timeout))\n}\n",
+    "different": "if $active {\n$config_shell = stdlib::shell_escape($config)\n# Format the timeout.\n$timeout_label = String($timeout)\n}\n"
+  },
+  "test_if_sections_require_an_explanation_for_standalone_conditions": {
+    "code": "if (defined(Class['nginx'])) { notice('Available') }\n"
+  },
+  "test_if_sections_follow_multiple_condition_inputs_and_destructuring": {
+    "code": "[$minimum, $maximum] = [1, 10]\n$valid = $minimum < $maximum\nif $valid { notice('Valid') }\n",
+    "separate": "$minimum = 1\n$maximum = 10\nif $minimum < $maximum { notice('Valid') }\n"
+  },
+  "test_if_sections_do_not_reuse_comments_across_unrelated_work": {
+    "prefix": "# Derive the active state.\n$first = true\n$active = $first\n",
+    "sample": "# Perform the active operation.\nif $active"
+  },
+  "test_if_sections_do_not_reuse_a_parent_or_previous_condition_explanation": {
+    "sample": "# Explain the class.\nclass example { if $active { notice('Active') } }",
+    "code": "# Check the outer prerequisite.\nif $outer {\n  if $inner { notice('Nested') }\n} else {\n  if $fallback { notice('Fallback') }\n}\nif $other { notice('Other') }\n"
+  },
+  "test_if_sections_keep_elsif_in_the_same_chain_and_cover_unless": {
+    "code": "# Select the first applicable mode.\nif $first { notice('First') } elsif $second { notice('Second') } else { notice('Fallback') }\n",
+    "sample": "# Report disabled operation.\nunless $active { notice('Disabled') }",
+    "prepared": "# Select the first available owner.\n$first = true\n$second = false\nif $first { notice('First') } elsif $second { notice('Second') }\n"
+  },
+  "test_if_sections_require_real_comments_and_reuse_existing_spacing": {
+    "sample": "# lint:ignore:140chars\n# lint:endignore\n",
+    "sample2": "$label = 'label' # Trailing comment.\n"
+  },
+  "test_if_sections_respect_lambda_scope_in_condition_dependencies": {
+    "code": "# Prepare the outer value.\n$active = true\nif [true].any |$active| { $active } { notice('Active') }\n"
+  },
+  "test_if_sections_accept_an_explanation_above_an_assigned_if_expression": {
+    "code": "$label = if $active { 'active' } else { 'inactive' }\n"
+  },
+  "test_if_sections_handle_multiline_conditions_crlf_and_literal_if_text": {
+    "code": "# Check the café label.\n$label = 'café'\nif (\n  $label != ''\n) { notice($label) }\n"
+  },
+  "test_positive_flow_keeps_guards_without_else_and_equally_small_branches": {
+    "sample": "if defined(Class['example']) { file { '/tmp/example': } } else { fail('Missing parent') }"
+  },
+  "test_positive_flow_rejects_short_assignments_before_the_larger_else": {
+    "reversed": "if !$absent { $content = 'text'; $dependencies = []; $owner = 'root'; $mode = '0700' } else { $content = undef; $dependencies = undef }",
+    "code": "if $absent {\n  $content = undef\n  $dependencies = undef\n} else {\n  $content = template('example/check')\n  $dependencies = [Package['example']]\n  $owner = 'root'\n  $mode = '0700'\n}\n"
+  },
+  "test_positive_flow_handles_all_short_calls_through_the_same_structure_rule": {
+    "code": "if $missing { warning('First'); fail('Second') } else { $one = 1; $two = 2; $three = 3 }"
+  },
+  "test_positive_flow_counts_structured_values_without_counting_scalar_text": {
+    "sample": "if $active { $value = stdlib::shell_escape(join($items, ' ')) } else { $value = 'plain' }",
+    "code": "if $absent { $value = 'A very long literal message\nwith several lines\nand no additional work' } else { $one = 1; $two = 2 }"
+  },
+  "test_positive_flow_compares_individual_elsif_arms_and_retains_priority_requirements": {
+    "valid": "if $first { $one = 1; $two = 2 } elsif $second { $one = 3; $two = 4 } else { $one = 5; $two = 6 }",
+    "final_else": "if $first { $one = 1; $two = 2; $three = 3 } elsif $second { $one = 4 } else { $one = 5; $two = 6 }"
+  },
+  "test_positive_flow_treats_an_explicit_nested_if_as_nested_work": {
+    "code": "if $first { $one = 1; $two = 2 } else { if $second { $one = 3; $two = 4 } else { $one = 5; $two = 6 } }"
+  },
+  "test_nested_parameter_types_and_multiline_defaults": {
+    "code": "class example (\n  Array[Hash[String, Integer]] $items = [\n    { 'example' => 1 },\n  ],\n  Optional[String]             $label = undef,\n) {}\n"
+  },
+  "test_default_dependencies_and_explanatory_comment": {
+    "code": "class example (\n  String $user = 'example', # Must precede $listen_user because its default reads this value.\n  String $listen_user = $user,\n) {}\n"
+  },
+  "test_alignment_including_mandatory_parameters": {
+    "valid": "class example (\n  String           $required,\n  Optional[String] $optional = undef,\n) {}\n"
+  },
+  "test_documentation_matches_each_declaration": {
+    "valid": "# @summary Demonstrates a documented interface.\n# @example Use the interface\n#   include example\n# @param label\n#   Name used for the example; defaults to demo.\n# @api public\nclass example (String $label = 'demo') {}\n"
+  },
+  "test_line_length_control_comments_preserve_documentation_validation": {
+    "valid": "# lint:ignore:140chars\n# @summary Demonstrates a documented interface with a long explanation.\n# lint:endignore\n# @example Use the interface\n#   include example\n# @param label\n# lint:ignore:140chars\n#   Name used for the example; defaults to demo.\n# lint:endignore\n# @api public\nclass example (String $label = 'demo') {}\n"
+  },
+  "test_source_content_exclusion_requires_a_real_guard": {
+    "code": "class example (Optional[String] $content = undef, Optional[String] $source = undef) {\n  if $source == undef or $content == undef {\n    file { '/tmp/example': source => $source, content => $content, owner => 'root', group => 'root', mode => '0600' }\n  } else { fail('Choose one input') }\n}\n",
+    "derived": "class example (Optional[String] $content = undef, Optional[String] $source = undef) {\n  if $source == undef { $resolved = $content } else { $resolved = undef }\n  file { '/tmp/example': source => $source, content => $resolved, owner => 'root', group => 'root', mode => '0600' }\n}\n"
+  },
+  "test_heredoc_content_is_not_puppet_code": {
+    "code": "$text = @(END)\nepp('demo.epp')\n$a = [1] + [2]\n# lint:ignore:140chars\nEND\n"
+  },
+  "test_shell_values_need_real_escaping_provenance": {
+    "safe": "class example (String $argument) {\n  $argument_shell = stdlib::shell_escape($argument)\n  $script = \"/usr/bin/printf %s ${argument_shell}\"\n  exec { 'demo': command => $script }\n}\n"
+  },
+  "test_optional_shell_guard_accepts_undef_without_accepting_unescaped_input": {
+    "code": "define example::guard (String $argument, Boolean $enabled = true) {\n  if $enabled {\n    $argument_shell = stdlib::shell_escape($argument)\n    $guard = Sensitive.new(\"/bin/test -e ${argument_shell}\")\n  } else {\n    $guard = undef\n  }\n  exec { 'example': command => '/bin/true', unless => $guard }\n}\n"
+  },
+  "test_shell_scope_and_multiple_assignments": {
+    "code": "class example (String $argument) {\n  if $argument == 'example' {\n    $argument_shell = stdlib::shell_escape($argument)\n  } else {\n    $argument_shell = $argument\n  }\n  exec { 'demo': command => \"/bin/echo ${argument_shell}\" }\n}\n",
+    "mapped": "class example (Array[String] $arguments) {\n  $words_shell = $arguments.map |$argument| { stdlib::shell_escape($argument) }\n  $command = join(['/bin/echo', join($words_shell, ' ')], ' ')\n  exec { 'demo': command => $command }\n}\n"
+  },
+  "test_layout_requires_two_extra_spaces_for_array_elements_in_function_calls": {
+    "valid": "$token_reader = join([\n  'set -eu; umask 077; exec >/dev/null 2>&1;',\n  'CI_SERVER_TOKEN=$(cat); export CI_SERVER_TOKEN;',\n  'exec gitlab-runner register \"$@\"',\n], ' ')\n"
+  },
+  "test_layout_checks_arrays_in_defaults_resources_hashes_and_nested_calls": {
+    "code": "class example (\n  Array[String] $defaults = [\n    'default',\n  ],\n) {\n  $nested = wrap(join([\n    [\n      'nested',\n    ],\n    { 'key' => [\n      'value',\n    ] },\n  ], ' '))\n  notify { 'example':\n    message => join(\n      [\n        'message',\n      ],\n      ' ',\n    ),\n  }\n}\n"
+  },
+  "test_layout_checks_array_element_starts_without_reindenting_their_contents": {
+    "code": "$values = [\n  'first', 'second', # Several values may share a line.\n  -1,\n  (2 + 3),\n  {\n    'key' => 'value',\n  },\n  call(\n    'argument',\n  ),\n  'literal [\n        string content\n]',\n  \"${name} [\n      interpolated string content\n]\",\n  /[\n        pattern content\n]/,\n  @(TEXT),\n        heredoc content [\n]\nTEXT\n  # Keep this comment with the last element.\n  'last',\n]\n"
+  },
+  "test_layout_rejects_blank_lines_after_opening_braces_in_nested_blocks": {
+    "code": "# Check whether this service runs a Node.js application.\nif ('ExecStart' in $service and $service['ExecStart'] =~ String and $service['ExecStart'] =~ /^(?:node|\\.{1,2}\\/node|\\/(?:[^\\/\\s]+\\/)+node)\\s+/) { # lint:ignore:140chars\n\n  # Require a working directory for the dependency audit.\n  if ('WorkingDirectory' in $service and $service['WorkingDirectory'] =~ String) {\n\n    basic_settings::monitoring_npm_audit { 'synthetic':\n      dir => $service['WorkingDirectory'],\n    }\n  }\n}\n"
+  },
+  "test_comment_spacing_between_assignments": {
+    "code": "$config_file_shell = stdlib::shell_escape($config_file)\n# Normalize whitespace before constructing the registration command.\n$server_name_correct = regsubst($server_name, '\\s+', ' ', 'G')\n"
+  },
+  "test_comment_spacing_uses_lexer_comments_not_string_contents": {
+    "code": "$message = 'First line.\n# This is literal text.\nLast line.'\n$other = \"A # sign in a string\" # Trailing explanation.\n$payload = @(TEXT)\n  }\n  # This is heredoc content.\n  notify { 'literal': }\n  | TEXT\n"
+  },
+  "test_variable_sections_follow_transitive_reads_and_report_once_per_boundary": {
+    "code": "# Prepare the first group.\n$first = 'one'\n$second = $first\n$third = \"${second} label\"\n$timeout = 30\n$limit = 60\n$limit_shell = stdlib::shell_escape(String($limit))\n$owner = 'root'\n$group = 'root'\n"
+  },
+  "test_variable_sections_do_not_guess_from_names_comments_or_literal_text": {
+    "code": "# Literal $seed text does not create a dependency.\n$seed = 'example'\n$label = 'Literal ${seed} text'\n$seed_timeout = 30\n"
+  },
+  "test_variable_sections_check_nested_blocks_without_leaking_state": {
+    "code": "if $active {\n  # Prepare the label inside this branch.\n  $first = 'one'\n  $second = $first\n  $timeout = 30\n} else {\n  $timeout = 60\n}\n$result = $items.map |$item| {\n  # Prepare the label inside this lambda.\n  $first = $item\n  $second = $first\n  $limit = 100\n  $second\n}\n"
+  },
+  "test_variable_sections_support_destructuring_and_multiline_expressions": {
+    "code": "# Prepare the selected values.\n[$first, $second] = ['one', 'two']\n$label = join([\n  # This comment describes an array element, not a new assignment section.\n  $first,\n  $second,\n], ' ')\n$timeout = 30\n"
+  },
+  "test_variable_sections_hint_at_a_later_documented_group_with_the_same_function": {
+    "code": "if $active {\n  $config_shell = stdlib::shell_escape($config)\n\n  # Prepare a related name and label.\n  $name = regsubst($input, '\\s+', ' ', 'G')\n  $name_shell = stdlib::shell_escape($name)\n  $label = \"Check ${name}\"\n\n  # Escape the remaining check settings.\n  $timeout_shell = stdlib::shell_escape(String($timeout))\n  $command = \"${config_shell} ${name_shell} ${timeout_shell}\"\n}\n"
+  },
+  "test_if_sections_place_the_explanation_above_transitive_condition_inputs": {
+    "code": "$monitoring_enable = defined(Class['basic_settings::monitoring'])\n$active = $ensure == present and $monitoring_enable and $basic_settings::monitoring::package != 'none'\nif (!$active or ($validity_critical < $validity_warning and $config_file !~ /[\\r\\n\\t]/)) {\n  notice('Valid registration settings')\n}\n"
+  },
+  "test_positive_flow_ignores_comments_whitespace_and_physical_line_count": {
+    "code": "if $absent {\n  # This explanation does not add executable work.\n  # Nor does its continuation.\n\n  $value = undef\n} else { $one = 1; $two = 2 }\n"
+  },
+  "test_layout_checks_braces_in_declarations_collections_and_control_flow": {
+    "wrappers": [
+      [
+        "class example {",
+        "}"
+      ],
+      [
+        "define example {",
+        "}"
+      ],
+      [
+        "if $active {",
+        "}"
+      ],
+      [
+        "unless $active {",
+        "}"
+      ],
+      [
+        "if $active {} else {",
+        "}"
+      ],
+      [
+        "if $active {} elsif $fallback {",
+        "}"
+      ],
+      [
+        "case $state {",
+        "  default: {}\n}"
+      ],
+      [
+        "case $state { default: {",
+        "} }"
+      ],
+      [
+        "[1].each |$value| {",
+        "}"
+      ],
+      [
+        "$values = {",
+        "  'key' => 'value',\n}"
+      ],
+      [
+        "$value = $active ? {",
+        "  default => undef,\n}"
+      ],
+      [
+        "notify {",
+        "  'synthetic':\n}"
+      ]
+    ]
+  },
+  "test_positive_flow_counts_nested_work_inside_single_top_level_statements": {
+    "bodies": [
+      "if $nested { $one = 1; $two = 2 } else { $one = 0 }",
+      "case $kind { 'one': { $value = 1 } default: { $value = 2 } }",
+      "$values = ['one'].map |$value| { $first = $value; $second = $value; $second }",
+      "file { '/tmp/first': ensure => absent; '/tmp/second': ensure => absent }",
+      "File { owner => 'root', group => 'root', mode => '0600' }",
+      "File['/tmp/example'] { owner => 'root', group => 'root', mode => '0600' }"
+    ]
+  },
+  "test_resource_sections_recognize_closed_expressions_and_same_line_resources": {
+    "preceding": [
+      "notify { 'first': }",
+      "$options = { 'message' => 'example' }",
+      "$message = $active ? { true => 'yes', default => 'no' }",
+      "$items = ['one'].map |$item| { $item }",
+      "case $active { default: { $message = 'example' } }"
+    ]
+  },
+  "test_variable_sections_cover_classes_defines_case_arms_and_lambdas": {
+    "sources": [
+      "class example { $value = 'example' }",
+      "define example { $value = 'example' }",
+      "case $state { default: { $value = 'example' } }",
+      "$items.each |$item| { $value = $item }",
+      "unless $active { [$one, $two] = [1, 2] }"
+    ]
+  }
+}

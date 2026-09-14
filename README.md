@@ -846,4 +846,6 @@ Pull requests en meldingen zijn welkom. De [lintconfiguratie, plugins en reviewc
 
 Richt eerst de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Met `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` controleer je de projectcode met de expliciete projectconfiguratie; met `bundle exec rake test` test je het ontwikkelgereedschap. Volg de [dagelijkse werkwijze](.tools/lint/README.md#werkwijze-bij-een-wijziging) en kies via de [leeswijzer](.tools/lint/README.md#leeswijzer) de relevante codeafspraken en reviewcriteria. Voor het uitbreiden van tooltests gebruik je [de testhandleiding](.tools/tests/README.md).
 
+Met `bundle exec rubocop --config .rubocop.yml` controleer je de eigen Ruby-code, inclusief de Puppet-linter en zijn tests. De lint-README beschrijft hoe je [Ruby-meldingen beoordeelt en veilige correcties uitvoert](.tools/lint/README.md#ruby-code-controleren).
+
 Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. Valideer gewijzigd gedrag en documentatievoorbeelden afzonderlijk; de tooltests controleren het ontwikkelgereedschap. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces, de inhoudelijke review en de algemene beveiligingsverantwoordelijkheden.

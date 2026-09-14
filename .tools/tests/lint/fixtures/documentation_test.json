@@ -1,0 +1,61 @@
+{
+  "test_long_prose_wraps_at_words_and_reports_maximum": {
+    "expected": "# This class manages console packages and keyboard configuration, preserves explicit settings, and uses the host\n# defaults when no override is supplied.\n"
+  },
+  "test_wrapped_sentences_and_real_paragraphs_are_already_valid": {
+    "sample": "# This sentence continues\n# onto another comment line.\n#\n# Another paragraph starts here.\n"
+  },
+  "test_summary_requires_manual_shortening_without_deleting_text": {
+    "code": "# @summary Short summary.\n#   Additional explanation.\nclass example {}\n"
+  },
+  "test_summary_overview_and_tag_sections_get_comment_separators": {
+    "before": "# @summary Manages the example.\n# Description.\n# @example Include the class\n#   include example\n# @api public\nclass example {}\n"
+  },
+  "test_long_inline_parameter_moves_its_description_below_the_tag": {
+    "expected": "# @param label\n#   This class manages console packages and keyboard configuration, preserves explicit settings, and uses the host\n#   defaults when no override is supplied.\n"
+  },
+  "test_short_inline_parameters_are_allowed_and_parameter_order_is_preserved": {
+    "before": "# @param first Short description.\n# @param second\n#   Another description.\n"
+  },
+  "test_example_indentation_requires_manual_review": {
+    "code": "# @example Include the class\n# include example\n"
+  },
+  "test_example_title_body_and_initial_indentation_are_required": {
+    "sample": "# @example Include the class\n#     include example\n"
+  },
+  "test_whitespace_only_comment_is_normalized_without_adding_a_paragraph": {
+    "code": "# @summary Example.\n#   \n# @api public\nclass example {}\n"
+  },
+  "test_unnecessary_suppression_is_removed_and_long_prose_is_wrapped": {
+    "sample": "# lint:ignore:140chars\n# Short prose.\n# lint:endignore\n"
+  },
+  "test_multiple_declarations_and_nested_suppressions_preserve_their_scope": {
+    "code": "# lint:ignore:140chars\n# lint:ignore:puppet_url_without_modules\n# Short prose.\n# lint:endignore\n# lint:endignore\n"
+  },
+  "test_short_typed_parameter_descriptions_satisfy_interface_validation": {
+    "code": "# @summary Example.\n#\n# @example Include the class\n#   include example\n#\n# @param [String] label Description.\n#\n# @api public\nclass example (String $label = 'demo') {}\n"
+  },
+  "test_mixed_or_commented_suppressions_are_not_deleted": {
+    "sample": "# lint:ignore:140chars Preserve this reason.\n# Short description.\n# lint:endignore\n",
+    "sample2": "# lint:ignore:140chars lint:ignore:puppet_url_without_modules\n# Short description.\n# lint:endignore\n"
+  },
+  "test_mentioning_a_length_directive_in_another_suppression_reason_does_not_disable_it": {
+    "code": "# lint:ignore:puppet_url_without_modules This mentions lint:ignore:140chars in prose.\n# Short prose.\n# lint:endignore\n"
+  },
+  "test_interface_validation_still_checks_tag_order_with_blank_source_lines": {
+    "code": "# @summary Example.\n\n# @example Include the class\n#   include example\n#\n# @param label\n#   Description.\n#\n# @api public\nclass example (String $label = 'demo') {}\n"
+  },
+  "test_nested_example_code_and_blank_lines_remain_exact": {
+    "body": "# @example Configure the class\n#   class { 'example':\n#     settings => {\n#       'key' => 'a value with spaces',\n#     },\n#   }\n#\n#   include another\n"
+  },
+  "test_inline_code_paths_and_embedded_whitespace_are_preserved": {
+    "samples": [
+      "`Package['example']`",
+      "`/etc/default/keyboard`",
+      "``a `tick` and  spaces``",
+      "`true`",
+      "`false`",
+      "`undef`"
+    ]
+  }
+}

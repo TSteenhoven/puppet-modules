@@ -1,5 +1,8 @@
+# frozen_string_literal: true
+
 require 'puppet'
 require 'puppet/pops'
+require_relative 'parameter_order'
 
 module ProjectLint
   # Use OpenVox's Puppet AST for structure and the lint lexer for comments and concrete whitespace.
@@ -18,6 +21,29 @@ module ProjectLint
       @program = Puppet::Pops::Parser::EvaluatingParser.new.parse_string(code, path)
       @nodes = []
       program._pcore_all_contents([]) { |node, parents| @nodes << [node, parents.dup] if node.is_a?(M::Positioned) }
+    end
+
+    def each_node(type = M::Positioned, &block)
+      nodes.select { |node, _parents| node.is_a?(type) }.each(&block)
+    end
+
+    def resource_bodies(type)
+      each_node(M::ResourceExpression).flat_map do |resource, parents|
+        next [] unless resource.type_name.value == type
+
+        resource.bodies.map { |body| [resource, body, parents] }
+      end
+    end
+
+    def scope_of(parents)
+      parents.reverse.find { |parent| parent.is_a?(M::NamedDefinition) || parent.is_a?(M::LambdaExpression) }
+    end
+
+    def named_type?(node, name, parameterized: false)
+      return false if parameterized && !node.is_a?(M::AccessExpression)
+
+      node = node.left_expr if node.is_a?(M::AccessExpression)
+      node.is_a?(M::QualifiedReference) && node.cased_value == name
     end
 
     def declarations
@@ -42,36 +68,25 @@ module ProjectLint
 
     def optional?(parameter)
       type = parameter.type_expr
-      !parameter.value.nil? || (type.is_a?(M::AccessExpression) && type.left_expr.is_a?(M::QualifiedReference) && type.left_expr.cased_value == 'Optional')
+      !parameter.value.nil? || named_type?(type, 'Optional', parameterized: true)
     end
 
-    # Alphabetical order yields only to a real local default dependency; Optional without a default stays required at call time.
+    # Alphabetical order yields only to a real local default dependency.
+    # Optional without a default stays required at call time.
     def parameter_order(declaration)
-      parameters = declaration.parameters
-      by_name = parameters.to_h { |parameter| [parameter.name, parameter] }
-      ordered = []
-      visiting = []
-      visit = lambda do |parameter|
-        return if ordered.include?(parameter)
-        raise 'Cyclic parameter defaults' if visiting.include?(parameter)
-
-        visiting << parameter
-        references(parameter.value).select { |name| by_name.key?(name) }.sort.each { |name| visit.call(by_name.fetch(name)) }
-        visiting.pop
-        ordered << parameter
-      end
-      parameters.sort_by { |parameter| [optional?(parameter) ? 1 : 0, parameter.name] }.each { |parameter| visit.call(parameter) }
-      ordered
+      ParameterOrder.new(self, declaration.parameters).ordered
     end
   end
 
   # Share node-position reporting, without ever including arbitrary source values in diagnostics.
   module ModelCheck
-    # Native parser failures are ordinary plugin errors; the separate Puppet validator provides the full syntax diagnostic.
+    # Native parser failures are ordinary plugin errors.
+    # The separate Puppet validator provides the full syntax diagnostic.
     def run
       super
-    rescue Puppet::ParseError => error
-      notify(:error, message: 'Invalid Puppet syntax; run puppet parser validate', line: error.line || 1, column: error.pos || 1, check: :syntax)
+    rescue Puppet::ParseError => e
+      notify(:error, message: 'Invalid Puppet syntax; run puppet parser validate', line: e.line || 1,
+                     column: e.pos || 1, check: :syntax)
       @problems
     end
 

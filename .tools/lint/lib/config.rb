@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'puppet-lint'
 
 lint_root = File.expand_path('../../..', __dir__)

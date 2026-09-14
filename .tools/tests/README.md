@@ -4,6 +4,8 @@ Met de tests onder `.tools/tests/` controleer je het gedrag van de tools in deze
 
 Deze handleiding helpt je de tests uit te voeren, fouten te onderzoeken en tests toe te voegen. Wil je Puppet-code met de linter controleren, volg dan de [lint-README](../lint/README.md#code-controleren).
 
+De Ruby-code van de tools en tests controleer je daarnaast met [RuboCop](../lint/README.md#ruby-code-controleren). Die scan en de gedragstests vullen elkaar aan.
+
 ## Inhoudsopgave
 
 - [Benodigde omgeving](#benodigde-omgeving)
@@ -71,4 +73,8 @@ Laat de tests de echte toolimplementatie gebruiken. De lintertests controleren b
 
 Bewaar helpers en fixtures, de invoerbestanden voor je tests, bij de betreffende tool. Laad de benodigde afhankelijkheden via een lokale `test_helper.rb`. Voeg pas een gedeelde helper toe als meerdere tools die daadwerkelijk gebruiken. Een algemene helper mag niet vanzelf de linter laden voor tests van andere tools.
 
-De lintertests maken hun synthetische invoer nu in tijdelijke mappen aan en ruimen die na afloop op. Voeg je opgeslagen fixtures met bewust ongeldige Puppet-code toe, sluit dan alleen die fixturepaden uit van de gewone lintscan. Controleer daarbij dat de eigen projectcode meegenomen blijft.
+De lintertests zijn per contract verdeeld, bijvoorbeeld over `reference_*_test.rb`, `documentation_*_test.rb`, `cli_*_test.rb` en `external_*_test.rb`. De bijbehorende `*_test_case.rb`-bestanden delen de native lintaanroepen en assertions voor ongewijzigde invoer, exacte correcties en hercontroles. Houd de keuze van scenario’s en de verwachte uitkomsten in de tests zichtbaar.
+
+Grotere vaste invoer staat als synthetische tekst in JSON-bestanden onder [`lint/fixtures/`](lint/fixtures/). `FIXTURE_GROUP` kiest het bestand; `fixture(:code)` zoekt binnen de huidige testmethodenaam naar de sleutel `code`. Benoem nieuwe sleutels naar hun rol in het scenario en verwijder gegevens wanneer hun test vervalt. Dynamische invoer wordt in de test of een gedeelde helper opgebouwd. Puppet-lint ziet de tekst in JSON niet als manifests, zodat deze bewust geldige en ongeldige voorbeelden geen extra lintuitsluitingen vereisen.
+
+CLI-tests schrijven de invoer naar tijdelijke mappen en ruimen die na afloop op. De Ruby-fixtures voor persoonlijke configuratie worden alleen in de betreffende subprocessen geladen en vallen zelf onder de RuboCop-scan.

@@ -1,9 +1,14 @@
+# frozen_string_literal: true
+
 require 'minitest/autorun'
+require_relative 'fixture_support'
+require_relative 'finding_values'
 require 'open3'
 require 'tmpdir'
 require 'fileutils'
 require_relative '../../lint/lib/config'
 
+# Exercise the installed native linter and copy its implementation into isolated test projects.
 module LintTestSupport
   ROOT = File.expand_path('../../..', __dir__)
 
@@ -16,6 +21,14 @@ module LintTestSupport
     [problems, checks.manifest]
   ensure
     PuppetLint.configuration.fix = previous
+  end
+
+  def assert_clean_passes(code, rules)
+    [false, true].each do |fix|
+      problems, unchanged = lint_checks(code, rules, fix: fix)
+      assert_empty problems
+      assert_equal code, unchanged
+    end
   end
 
   # Integration tests copy the real implementation into an isolated project layout.

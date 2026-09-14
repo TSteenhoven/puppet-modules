@@ -290,6 +290,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Required Checks
 
 - Run the full lint scan from the repository root with `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` for every completed change. Use this explicit configuration route for targeted scans and autofix as documented in the [CLI instructions](.tools/lint/README.md#werking-van-de-controles).
+- Run `bundle exec rubocop --config .rubocop.yml` for changes to first-party Ruby code or Ruby tooling, following the [Ruby validation workflow](.tools/lint/README.md#ruby-code-controleren). Resolve findings within the task's scope and report remaining findings without suppressing them to make the scan pass.
 - Run all tool tests with `bundle exec rake test` after any corrections and before completing each change.
 - Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path.
 - Perform the additional validation relevant to the change, as documented in the [validation guide](.tools/lint/README.md#code-controleren).

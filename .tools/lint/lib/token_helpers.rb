@@ -1,7 +1,22 @@
+# frozen_string_literal: true
+
 module ProjectLint
   # Small helpers for native check fixes. Coordinates describe the original input;
   # widths and gaps must use the live tokens after earlier plugins have run.
   module TokenHelpers
+    def bracket_closings
+      openings = []
+      tokens.each_with_object({}) do |token, closings|
+        openings << token if token.type == :LBRACK
+        closings[openings.pop] = token if token.type == :RBRACK && openings.any?
+      end
+    end
+
+    def insert_tokens_after(anchor, replacements)
+      index = tokens.index(anchor) + 1
+      replacements.each_with_index { |token, offset| add_token(index + offset, token) }
+    end
+
     def token_span(first, last)
       start = tokens.index(first)
       finish = tokens.index(last)
@@ -29,7 +44,7 @@ module ProjectLint
     end
 
     def whitespace_gap?(left, right)
-      token_span(left, right)[1...-1].all? { |token| [:WHITESPACE, :INDENT].include?(token.type) }
+      token_span(left, right)[1...-1].all? { |token| %i[WHITESPACE INDENT].include?(token.type) }
     end
 
     def code_after(token)
@@ -43,12 +58,16 @@ module ProjectLint
       raise PuppetLint::NoFix if width.negative? || !whitespace_gap?(left, right)
 
       gap = token_span(left, right)[1...-1]
-      if gap.empty?
-        add_token(tokens.index(right), PuppetLint::Lexer::Token.new(type, ' ' * width, right.line, right.column)) if width.positive?
-      else
-        gap.first.value = ' ' * width
-        gap.drop(1).each { |token| remove_token(token) }
-      end
+      return insert_whitespace(right, width, type) if gap.empty?
+
+      gap.first.value = ' ' * width
+      gap.drop(1).each { |token| remove_token(token) }
+    end
+
+    def insert_whitespace(right, width, type)
+      return unless width.positive?
+
+      add_token(tokens.index(right), PuppetLint::Lexer::Token.new(type, ' ' * width, right.line, right.column))
     end
   end
 end

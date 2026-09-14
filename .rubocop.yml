@@ -1,0 +1,19 @@
+inherit_mode:
+  merge:
+    - Include
+    - Exclude
+
+AllCops:
+  NewCops: enable
+  Include:
+    - '.tools/**/*.rb'
+    - '.tools/**/*.rake'
+  Exclude:
+    - 'concat/**/*'
+    - 'debconf/**/*'
+    - 'reboot/**/*'
+    - 'stdlib/**/*'
+    - 'timezone/**/*'
+    - 'vendor/bundle/**/*'
+    # ERB source must be rendered before it becomes valid Ruby.
+    - '**/templates/**/*'

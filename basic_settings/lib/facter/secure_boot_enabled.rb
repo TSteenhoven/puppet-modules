@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 Facter.add('secure_boot_enabled') do
-  confine :kernel => 'Linux' # Only for Linux-systemen
+  confine kernel: 'Linux' # Only for Linux-systemen
   setcode do
     secure_boot_path = '/sys/firmware/efi/efivars/SecureBoot-*'
     if Dir.glob(secure_boot_path).any?

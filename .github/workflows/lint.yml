@@ -31,5 +31,7 @@ jobs:
         run: bundle install
       - name: Check the complete first-party scope
         run: bundle exec puppet-lint --no-config --config .puppet-lint.rc .
+      - name: Check first-party Ruby code
+        run: bundle exec rubocop --config .rubocop.yml
       - name: Tool tests
         run: bundle exec rake test
