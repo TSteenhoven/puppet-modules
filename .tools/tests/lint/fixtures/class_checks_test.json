@@ -1,9 +1,0 @@
-{
-  "test_class_names_are_canonicalized_without_grouping_different_queries": {
-    "sample": "define example { notice(defined(Class['nginx'])); notice(defined(Class['nginx'])) }",
-    "sample2": "class example { notice(defined(Class[$first])); notice(defined(Class[$second])) }"
-  },
-  "test_qualified_consumers_in_other_classes_count_as_reuse": {
-    "sample": "class consumer { notice('synthetic') } # $example::enabled\n"
-  }
-}

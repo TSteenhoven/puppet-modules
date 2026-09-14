@@ -1,13 +1,16 @@
+inherit_gem:
+  puppet-lint-project: config/rubocop.yml
+
 inherit_mode:
   merge:
     - Include
     - Exclude
 
 AllCops:
-  NewCops: enable
   Include:
     - '.tools/**/*.rb'
     - '.tools/**/*.rake'
+    - '.tools/**/*.gemspec'
   Exclude:
     - 'concat/**/*'
     - 'debconf/**/*'

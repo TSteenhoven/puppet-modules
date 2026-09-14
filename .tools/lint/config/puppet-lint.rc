@@ -1,0 +1,4 @@
+--relative
+--fail-on-warnings
+--class_inherits_from_params_class-check
+--log-format=%{path}:%{line}:%{column}: %{check}: %{kind}: %{message}

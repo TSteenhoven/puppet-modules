@@ -1,0 +1,4 @@
+/* A literal {
+
+*/
+notice('Ready')

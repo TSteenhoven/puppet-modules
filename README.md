@@ -842,10 +842,15 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 ## Contributie
 
-Pull requests en meldingen zijn welkom. De [lintconfiguratie, plugins en reviewcriteria](.tools/lint/README.md#naslag) bepalen de codestandaard voor alle eigen modules en uitvoerbare voorbeelden. Je kunt [dezelfde linter ook in je eigen Puppet-project gebruiken](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project).
+Pull requests en meldingen zijn welkom. Wil je een wijziging bijdragen, lees dan eerst [`AGENTS.md`](AGENTS.md) voor het werkproces, de inhoudelijke review en de beveiligingsverantwoordelijkheden. De [codeafspraken en reviewcriteria](.tools/lint/README.md#naslag) gelden voor alle eigen modules en uitvoerbare voorbeelden; de [leeswijzer](.tools/lint/README.md#leeswijzer) helpt je de relevante onderdelen te vinden.
 
-Richt eerst de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Met `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` controleer je de projectcode met de expliciete projectconfiguratie; met `bundle exec rake test` test je het ontwikkelgereedschap. Volg de [dagelijkse werkwijze](.tools/lint/README.md#werkwijze-bij-een-wijziging) en kies via de [leeswijzer](.tools/lint/README.md#leeswijzer) de relevante codeafspraken en reviewcriteria. Voor het uitbreiden van tooltests gebruik je [de testhandleiding](.tools/tests/README.md).
+Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Volg tijdens het aanpassen de [dagelijkse werkwijze](.tools/lint/README.md#werkwijze-bij-een-wijziging), van de eerste lintscan tot de eindcontrole. Gebruik daarbij de volgende controles vanuit de hoofdmap:
 
-Met `bundle exec rubocop --config .rubocop.yml` controleer je de eigen Ruby-code, inclusief de Puppet-linter en zijn tests. De lint-README beschrijft hoe je [Ruby-meldingen beoordeelt en veilige correcties uitvoert](.tools/lint/README.md#ruby-code-controleren).
+- Controleer de Puppet-code met `bundle exec puppet-lint --no-config --config .puppet-lint.rc .`.
+- Valideer ieder gewijzigd manifest afzonderlijk met `bundle exec puppet parser validate pad/naar/manifest.pp`; vervang het voorbeeldpad door het gewijzigde bestand.
+- Controleer bij Ruby-wijzigingen ook de eigen Ruby-code met `bundle exec rubocop --config .rubocop.yml`. Volg de [RuboCop-werkwijze](.tools/lint/README.md#ruby-code-controleren) voor het beoordelen van meldingen en veilig corrigeren.
+- Voer na alle correcties `bundle exec rake test` uit voor de tooltests. Pas je het ontwikkelgereedschap aan, gebruik dan ook de [uitleg over het uitbreiden van tooltests](.tools/lint/README.md#tests-uitvoeren-en-uitbreiden).
 
-Controleer gewijzigde manifests ook met `bundle exec puppet parser validate`. Valideer gewijzigd gedrag en documentatievoorbeelden afzonderlijk; de tooltests controleren het ontwikkelgereedschap. [`AGENTS.md`](AGENTS.md) beschrijft het werkproces, de inhoudelijke review en de algemene beveiligingsverantwoordelijkheden.
+De tooltests controleren het ontwikkelgereedschap. Valideer gewijzigd modulegedrag en documentatievoorbeelden daarom afzonderlijk volgens de [aanvullende validatie](.tools/lint/README.md#aanvullende-validatie).
+
+Je kunt de linter ook buiten deze repository gebruiken. Volg daarvoor de [installatie en werkwijze voor je eigen Puppet-project](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project).

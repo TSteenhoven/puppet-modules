@@ -10,7 +10,7 @@ This file governs project-wide development workflow, engineering responsibilitie
 
 ### Puppet Code Authority
 
-The [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/puppet-lint/plugins/) define the mandatory Puppet conventions, formatting rules, and permitted exceptions.
+The [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/project_lint/checks/) define the mandatory Puppet conventions, formatting rules, and permitted exceptions.
 
 - Before changing Puppet code or Puppet Strings, read the lint guide's [workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging) and use its [reading guide](.tools/lint/README.md#leeswijzer) to select the relevant conventions and review criteria.
 - Inspect the project configuration and relevant check implementations when determining automated coverage or resolving a lint finding.
@@ -232,6 +232,16 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Never pin Ruby or Bundler versions in setup commands or runtime configuration.
 - Use the root Gemfile, lockfile, standard CLI, and regression tests through the [documented bundle setup](.tools/lint/README.md#installatie).
 
+### Ruby Linter Architecture
+
+- Use Puppet-lint as the lint engine and prefer its registration, configuration, diagnostic, suppression, and autofix APIs over custom infrastructure.
+- Keep reusable runtime code and dependencies in the linter gem; keep development dependencies and orchestration in the root Gemfile and Rakefile.
+- Keep project Ruby helpers within `ProjectLint` and use conventional namespace-based require paths; do not introduce top-level helper constants or mutable configuration captured during loading.
+- Keep each check's native registration, detection, and fix together, following the [check development guide](.tools/lint/README.md#een-check-toevoegen-of-wijzigen).
+- Extract helpers only for existing shared complexity or a substantial standalone analysis; keep simple check-specific methods with their check and avoid speculative abstractions.
+- Treat the documented gem entrypoint, profiles, check names, and downstream settings as public contracts; version changes and validate packaged use from an independent project.
+- Keep local and CI execution on the same Bundler, Rake, and native CLI routes.
+
 ### Linting And Autofix
 
 #### Existing Tools
@@ -268,7 +278,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Tool Test Structure
 
-- Keep tests of repository tools under `.tools/tests/<tool-name>/`, separate from each tool's implementation directory; use `.tools/tests/lint/` for the linter.
+- Keep tests of repository tools beside their implementation under `.tools/<tool-name>/test/`; use `.tools/lint/test/` for the linter.
 - Never create first-party test directories or test files elsewhere in the repository. This includes root-level `test/`, `tests/`, and `spec/` directories, standalone root-level test files, and module-specific test suites.
 - Use fixtures and supporting functionality in tool tests only when they help verify a tool contract.
 - Keep tool-specific helpers and fixtures with that tool's tests.
@@ -276,8 +286,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Tool Test Tasks
 
-- Keep `test` and the default Rake task responsible for recursive discovery across all tool test subdirectories.
-- Keep `test:lint` limited to the linter tests under `.tools/tests/lint/`.
+- Keep `test` and the default root Rake task responsible for recursive discovery of `.tools/**/test/**/*_test.rb`.
+- Keep `test:lint` limited to the linter tests under `.tools/lint/test/`.
 
 ### Test Structure Maintenance
 
@@ -313,7 +323,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Language And Authority
 
 - Write technical documentation in English, including changelog entries and this file, except for the READMEs specified below.
-- Keep the root README, `.tools/lint/README.md`, and `.tools/tests/README.md` in Dutch unless the user explicitly requests another language.
+- Keep the root README and `.tools/lint/README.md` in Dutch unless the user explicitly requests another language.
 - Keep one authoritative location for each technical fact.
 - Use concise summaries with pointers when a fact must appear in more than one layer.
 - Place information according to the responsibilities below.
@@ -322,8 +332,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 | --- | --- |
 | `AGENTS.md` | Durable project-wide workflow, general review policy, and engineering responsibilities. |
 | Root `README.md` | Central user guide for module use and operational decisions. |
-| `.tools/lint/README.md` | One central lint guide with task-based navigation, daily validation workflow, authoritative Puppet conventions and review criteria, linter maintenance, and downstream integration. |
-| `.tools/tests/README.md` | Running and extending the central tool tests. |
+| `.tools/lint/README.md` | One central lint guide with task-based navigation, daily validation workflow, authoritative Puppet conventions and review criteria, linter maintenance, tool testing, and downstream integration. |
 | Puppet Strings | Concrete public interfaces, complete parameter descriptions, defaults, and fallback chains. |
 | Scripts and templates | Local, non-obvious technical reasons and constraints, internal behavior, and per-check output contracts. |
 | `examples/` | Expanded configuration scenarios. |
@@ -343,9 +352,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Tooling READMEs
 
 - Keep all lint documentation in `.tools/lint/README.md`, with a task-based reading guide and daily workflow before the code reference, maintenance guidance, and downstream integration.
-- Use the lint README as the style and organization reference for `.tools/tests/README.md`, adapted to tool testing.
-- Explain purpose and prerequisites before commands in `.tools/tests/README.md`, followed by troubleshooting and adding tests.
-- Link from `.tools/tests/README.md` to the lint guide for installation and lint rules.
+- Document linter testing in the lint README, explaining prerequisites before commands, troubleshooting, and adding tests.
+- Keep tool-specific test instructions in the owning tool's guide instead of separate test READMEs.
 - Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
 
 ### Lint Documentation Maintenance
@@ -434,7 +442,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 #### Scope And Reading Path
 
-- For every substantive change, review the complete affected documentation sections and surrounding reading path, including the relevant README section.
+- For every substantive change and every edit to a repository-owned Markdown file, read the complete affected documentation sections and surrounding reading path before editing and review them again afterward, including the relevant README section. This applies to all `.md` files, including `AGENTS.md` and small additions to existing text.
+- Integrate additions into the existing explanation, rewriting or reordering surrounding sentences and paragraphs wherever needed for a coherent whole.
 - Check relevance, repetition, contradictions, and placement of technical detail across that reading path.
 - Never move unnecessary considerations below the basic example.
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.
@@ -451,8 +460,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 #### Prose Review
 
-- Review explanatory passages as continuous prose, aloud if useful, to correct awkward phrasing and unexplained topic changes without changing technical meaning.
-- Compare changed prose in `.tools/lint/README.md` and `.tools/tests/README.md` with representative root README passages against the [README style guidance](#readme-style).
+- Read the resulting passage as a continuous whole, including unchanged surrounding text. Correct awkward phrasing, inconsistent terminology, abrupt transitions, and unexplained topic changes without changing technical meaning.
+- Compare changed prose in `.tools/lint/README.md` with representative root README passages against the [README style guidance](#readme-style).
 - Include a short representative passage in the review for owner feedback.
 - Use an owner-accepted passage as a concrete style reference.
 

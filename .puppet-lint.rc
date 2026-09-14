@@ -1,14 +1,3 @@
---load=.tools/lint/lib/puppet-lint/plugins/documentation.rb
---load=.tools/lint/lib/puppet-lint/plugins/interfaces.rb
---load=.tools/lint/lib/puppet-lint/plugins/layout.rb
---load=.tools/lint/lib/puppet-lint/plugins/class_checks.rb
---load=.tools/lint/lib/puppet-lint/plugins/monitoring.rb
---load=.tools/lint/lib/puppet-lint/plugins/parameters.rb
---load=.tools/lint/lib/puppet-lint/plugins/resources.rb
---load=.tools/lint/lib/puppet-lint/plugins/resource_references.rb
---load=.tools/lint/lib/puppet-lint/plugins/shell.rb
---relative
---fail-on-warnings
---class_inherits_from_params_class-check
---log-format=%{path}:%{line}:%{column}: %{check}: %{kind}: %{message}
+--load=.tools/lint/lib/project_lint.rb
+--config=.tools/lint/config/puppet-lint.rc
 --ignore-paths=./*/templates/*.yaml,*/templates/*.yaml,./*/templates/*.yml,*/templates/*.yml,./concat/*,concat/*,./debconf/*,debconf/*,./reboot/*,reboot/*,./stdlib/*,stdlib/*,./timezone/*,timezone/*,./vendor/bundle/*,vendor/bundle/*

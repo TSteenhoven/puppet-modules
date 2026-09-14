@@ -1,0 +1,3 @@
+$text = '[
+        literal text
+    ]'

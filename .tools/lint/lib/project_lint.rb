@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+# Load upstream plugins before checks that can remove their original fix anchors.
+require 'puppet-lint'
+
+require 'project_lint/checks/documentation'
+require 'project_lint/checks/documentation_layout'
+require 'project_lint/checks/suppressions'
+require 'project_lint/checks/interface_calls'
+require 'project_lint/checks/comment_spacing'
+require 'project_lint/checks/resource_sections'
+require 'project_lint/checks/variable_sections'
+require 'project_lint/checks/if_sections'
+require 'project_lint/checks/layout'
+require 'project_lint/checks/positive_flow'
+require 'project_lint/checks/class_check_reuse'
+require 'project_lint/checks/monitoring_backend'
+require 'project_lint/checks/parameter_order'
+require 'project_lint/checks/parameter_alignment'
+require 'project_lint/checks/packages'
+require 'project_lint/checks/puppet_urls'
+require 'project_lint/checks/files'
+require 'project_lint/checks/arrays'
+require 'project_lint/checks/templates'
+require 'project_lint/checks/resource_references'
+require 'project_lint/checks/shell'

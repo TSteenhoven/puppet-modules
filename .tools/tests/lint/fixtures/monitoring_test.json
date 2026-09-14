@@ -1,8 +1,0 @@
-{
-  "test_aliases_and_nonadjacent_preparation_preserve_the_original_decision_location": {
-    "shadowed": "define example (String $engine) { if $engine == 'nginx' { ['synthetic_backend'].each |$engine| { basic_settings::monitoring_custom { $engine: package => $engine } } } }"
-  },
-  "test_parameters_forwarded_as_the_backend_are_recognized_without_name_guessing": {
-    "code": "define example (String $engine) {\n  $alias = $engine\n  if $engine == 'synthetic_backend' {\n    basic_settings::monitoring_custom { $name: package => $alias }\n  }\n}\n"
-  }
-}
