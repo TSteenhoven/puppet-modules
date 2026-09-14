@@ -7,6 +7,17 @@ require_relative '../../lint/lib/config'
 module LintTestSupport
   ROOT = File.expand_path('../../..', __dir__)
 
+  def lint_checks(code, rules, fix: false)
+    previous = PuppetLint.configuration.fix
+    PuppetLint.configuration.fix = fix
+    checks = PuppetLint::Checks.new
+    checks.instance_variable_set(:@enabled_checks, rules) if rules
+    problems = checks.run('example.pp', code)
+    [problems, checks.manifest]
+  ensure
+    PuppetLint.configuration.fix = previous
+  end
+
   # Integration tests copy the real implementation into an isolated project layout.
   def copy_linter(root)
     FileUtils.mkdir_p(File.join(root, '.tools/lint'))

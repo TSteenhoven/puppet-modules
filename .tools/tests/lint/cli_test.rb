@@ -29,8 +29,9 @@ class CliTest < Minitest::Test
           refute status.success?, output + errors
           assert_equal 2, diagnostics(output, 'project_layout').length, output
           assert_equal 1, diagnostics(output, 'project_arrays').length, output
-          assert_equal github_action ? 3 : 0, output.lines.grep(/\A::warning /).length, output
-          assert_equal code, File.read(file)
+          expected_annotations = options.empty? ? 3 : 1
+          assert_equal github_action ? expected_annotations : 0, output.lines.grep(/\A::warning /).length, output
+          assert_equal options.empty? ? code : code.gsub('      ', '  '), File.read(file)
         end
       end
     end
@@ -115,14 +116,14 @@ class CliTest < Minitest::Test
   def test_resource_references_fix_works_with_standard_checks_and_is_idempotent
     Dir.mktmpdir('lint_references_') do |directory|
       file = File.join(directory, 'references.pp')
-      File.write(file, "$refs = [Package[\"zulu\"], Package[\"alpha\"], Service['nginx'], Service['apache2']]\n")
+      File.write(file, "Notify['target'] -> [Package[\"zulu\"], Package[\"alpha\"], Service['nginx'], Service['apache2']]\n")
       output, errors, status = cli(file)
       refute status.success?, output + errors
       assert_equal 2, diagnostics(output, 'project_resource_references').length
 
       output, errors, status = cli('--fix', file)
       assert status.success?, output + errors
-      expected = "$refs = [Package['alpha', 'zulu'], Service['apache2', 'nginx']]\n"
+      expected = "Notify['target'] -> [Package['alpha', 'zulu'], Service['apache2', 'nginx']]\n"
       assert_equal expected, File.read(file)
       output, errors, status = cli('--fix', file)
       assert status.success?, output + errors
@@ -146,6 +147,52 @@ class CliTest < Minitest::Test
       assert_equal 1, diagnostics(output, 'project_resource_references').length
       assert_includes output, '[review]'
       assert_equal code, File.read(file)
+    end
+  end
+
+  def test_single_reference_array_is_removed_with_standard_fixes
+    Dir.mktmpdir('lint_single_reference_') do |directory|
+      file = File.join(directory, 'example.pp')
+      code = "# Declare the example dependency.\nnotify { 'example':\n  require => [\n      Package[\"a\",\"b\"],\n  ],\n}\n"
+      expected = "# Declare the example dependency.\nnotify { 'example':\n  require => Package['a', 'b'],\n}\n"
+      File.write(file, code)
+      output, errors, status = cli(file)
+      refute status.success?, output + errors
+      assert_equal 1, diagnostics(output, 'project_resource_references').length
+      assert_equal code, File.read(file)
+      output, errors, status = cli('--fix', file)
+      assert status.success?, output + errors
+      assert_equal expected, File.read(file)
+      ProjectLint::Model.new(File.read(file))
+      [[], ['--fix']].each do |options|
+        output, errors, status = cli(*options, file)
+        assert status.success?, output + errors
+        assert_empty output
+        assert_equal expected, File.read(file)
+      end
+    end
+  end
+
+  def test_parameter_alignment_uses_explicit_native_cli_fixing
+    Dir.mktmpdir('lint_parameters_') do |directory|
+      file = File.join(directory, 'parameters.pp')
+      code = "class example (\n  String $a= 'value',\n  Optional[String] $label=undef,\n) {}\n"
+      expected = "class example (\n  String           $a     = 'value',\n  Optional[String] $label = undef,\n) {}\n"
+      File.write(file, code)
+      arguments = ['--only-checks', 'project_parameter_alignment', file]
+      output, errors, status = cli(*arguments)
+      refute status.success?, output + errors
+      assert_equal code, File.read(file)
+      output, errors, status = cli('--fix', *arguments)
+      assert status.success?, output + errors
+      assert_includes output, ': fixed:'
+      assert_equal expected, File.read(file)
+      [[], ['--fix']].each do |options|
+        output, errors, status = cli(*options, *arguments)
+        assert status.success?, output + errors
+        assert_empty output
+        assert_equal expected, File.read(file)
+      end
     end
   end
 
@@ -183,7 +230,7 @@ class CliTest < Minitest::Test
       refute status.success?, errors
       assert_includes output, 'project_comment_spacing'
       assert_includes output, 'project_resource_sections'
-      assert_equal code, File.read(file)
+      assert_equal code.sub("$enabled = true\n", "$enabled = true\n\n"), File.read(file)
     end
   end
 
@@ -203,10 +250,11 @@ class CliTest < Minitest::Test
       [[], ['--fix']].each do |options|
         File.write(file, code)
         output, errors, status = cli(*options, file)
-        refute status.success?, output + errors
+        assert_equal !options.empty?, status.success?, output + errors
         assert_equal 1, diagnostics(output, 'project_layout').length, output
-        assert_includes output, ':3:1: project_layout: warning: Remove blank lines immediately after an opening brace'
-        assert_equal code, File.read(file)
+        kind = options.empty? ? 'warning' : 'fixed'
+        assert_includes output, ":3:1: project_layout: #{kind}: Remove blank lines immediately after an opening brace"
+        assert_equal options.empty? ? code : code.sub("\n\n", "\n"), File.read(file)
       end
 
       File.write(file, code.sub("\n\n", "\n"))
@@ -215,7 +263,7 @@ class CliTest < Minitest::Test
     end
   end
 
-  def test_array_indentation_fails_with_and_without_fix_and_accepts_the_corrected_layout
+  def test_array_indentation_is_reported_and_fixed_explicitly
     Dir.mktmpdir('lint_array_indentation_') do |directory|
       file = File.join(directory, 'arrays.pp')
       code = <<~'PUPPET'
@@ -227,11 +275,12 @@ class CliTest < Minitest::Test
       [[], ['--fix']].each do |options|
         File.write(file, code)
         output, errors, status = cli(*options, file)
-        refute status.success?, output + errors
+        assert_equal !options.empty?, status.success?, output + errors
         assert_equal 3, diagnostics(output, 'project_layout').length, output
-        assert_includes output, ':2:7: project_layout: warning: Use 2 leading spaces for the array element'
-        assert_includes output, ':4:5: project_layout: warning: Use 0 leading spaces for the closing array bracket'
-        assert_equal code, File.read(file)
+        kind = options.empty? ? 'warning' : 'fixed'
+        assert_includes output, ":2:7: project_layout: #{kind}: Use 2 leading spaces for the array element"
+        assert_includes output, ":4:5: project_layout: #{kind}: Use 0 leading spaces for the closing array bracket"
+        assert_equal options.empty? ? code : code.gsub(/^      /, '  ').sub('    ]', ']'), File.read(file)
       end
 
       File.write(file, code.gsub(/^      /, '  ').sub('    ]', ']'))
@@ -487,10 +536,15 @@ class CliTest < Minitest::Test
   def test_invalid_puppet_is_an_error_without_a_custom_execution_layer
     Dir.mktmpdir('lint_syntax_') do |directory|
       file = File.join(directory, 'broken.pp')
-      File.write(file, 'class example (String $value = ) {}')
-      output, _, status = cli(file)
-      refute status.success?
-      assert_includes output, 'Invalid Puppet syntax'
+      code = "class example (String $value = ) { $other = \"value\" }\n"
+      [[], ['--fix']].each do |options|
+        File.write(file, code)
+        output, _, status = cli(*options, file)
+        refute status.success?
+        assert_includes output, 'Invalid Puppet syntax'
+        assert_includes output, ': syntax: error:'
+        assert_equal code, File.read(file)
+      end
     end
   end
 end

@@ -1,5 +1,6 @@
 require_relative '../../model'
 require_relative '../../strings_documentation'
+require_relative '../../token_helpers'
 
 PuppetLint.new_check(:project_documentation) do
   include ProjectLint::ModelCheck
@@ -26,6 +27,7 @@ end
 PuppetLint.new_check(:project_documentation_layout) do
   include ProjectLint::ModelCheck
   include ProjectLint::StringsDocumentation
+  include ProjectLint::TokenHelpers
 
   def report(row, message, replacement = nil)
     message += ' [review] Adjust manually; this construct cannot be safely rewritten' unless replacement
@@ -183,14 +185,18 @@ PuppetLint.new_check(:project_documentation_layout) do
   end
 
   def replace_line(token, replacement)
+    # Retain the anchor for other checks, and avoid insertion at index zero
+    # (Data.insert in puppet-lint 5.1.1 assumes a preceding token).
+    token.value = replacement.shift.value
     index = tokens.index(token)
-    replacement.each_with_index { |new_token, offset| add_token(index + offset, new_token) }
-    remove_token(token)
+    replacement.each_with_index { |new_token, offset| add_token(index + 1 + offset, new_token) }
   end
 
   def fix(problem)
     edit = @edits.fetch(problem[:edit])
     if edit[:remove]
+      raise PuppetLint::NoFix if ignored_span?(*edit[:remove])
+
       edit[:remove].each do |token|
         previous = token.prev_token
         following = token.next_token

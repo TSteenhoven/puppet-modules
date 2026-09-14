@@ -753,7 +753,7 @@ class basic_settings (
         command => "/usr/bin/printf %s ${backports_source_shell} > ${backports_file_shell}",
         unless  => "/usr/bin/test -e ${backports_file_shell}",
         notify  => Exec['basic_settings_source_reload'],
-        require => [Package['apt', 'coreutils']],
+        require => Package['apt', 'coreutils'],
       }
     } else {
       # Use normal package selection when backports are not enabled.
@@ -762,7 +762,7 @@ class basic_settings (
         command => "/usr/bin/rm ${backports_file_shell}",
         onlyif  => "/usr/bin/test -e ${backports_file_shell}",
         notify  => Exec['basic_settings_source_reload'],
-        require => [Package['apt', 'coreutils']],
+        require => Package['apt', 'coreutils'],
       }
     }
 

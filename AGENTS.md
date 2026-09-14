@@ -206,6 +206,11 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Keep `test` and the default Rake task responsible for recursive discovery across all tool test subdirectories.
 - Keep `test:lint` limited to the linter tests under `.tools/tests/lint/`.
 
+### Linter Autofix
+
+- Add autofix to a custom lint check only when the correction is deterministic, semantically safe, and idempotent. Use the native `puppet-lint` fix mechanism; never build a separate formatter or autofix engine.
+- Verify each fix through detection, exact correction, a clean rescan, and an unchanged second fix run, including interactions with enabled checks and lint suppressions. Follow the [autofix development guidance](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for implementation and review.
+
 ### Test Structure Maintenance
 
 - Update test discovery, path resolution, task definitions, CI, and affected documentation together when changing the test structure.

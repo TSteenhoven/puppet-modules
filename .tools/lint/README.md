@@ -26,6 +26,7 @@ Deze handleiding helpt je de controles te installeren, uit te voeren en meldinge
 - [Naslag](#naslag)
   - [Werking van de controles](#werking-van-de-controles)
   - [Beschikbare projectchecks](#beschikbare-projectchecks)
+  - [Veilige autofixes ontwikkelen](#veilige-autofixes-ontwikkelen)
   - [Inspringing](#inspringing)
   - [Lange regels](#lange-regels)
   - [Parameters en resources](#parameters-en-resources)
@@ -142,11 +143,15 @@ bundle exec puppet-lint --fix --only-checks project_resource_references path/to/
 
 Niet iedere lintmelding kan automatisch worden opgelost. Ontbrekende toelichtingen, inhoudelijke keuzes en onduidelijke constructies vragen handmatige aanpassing. Zonder `--fix` controleert de linter alleen, zolang je persoonlijke configuratie automatisch repareren niet inschakelt; zie [Werking van de controles](#werking-van-de-controles). Ook CI voert alleen de controles uit.
 
-De projectcheck `project_resource_references` voegt aangrenzende references samen en sorteert letterlijke titels wanneer dat veilig kan. De voorwaarden staan bij [Resource references](#resource-references).
+De projectchecks corrigeren ontbrekende of overtollige lege regels, array-inspringing, spaties na komma's en de opmaak van parameterlijsten wanneer de constructie daarvoor geschikt is. Staat er commentaar tussen de betrokken tokens of is de parameteropmaak onduidelijk, dan blijft de melding staan voor handmatige beoordeling. Het [overzicht van alle custom checks](AUTOFIX_REVIEW.md#assessment-of-every-custom-check) vermeldt per check of autofix beschikbaar is en waarom.
+
+De projectcheck `project_resource_references` voegt aangrenzende references samen en sorteert letterlijke titels bij expliciete resourceafhankelijkheden en relatieketens. Bevat de buitenste array daarna één reference, dan verwijdert de check die overbodige array. Bij een gewone variabele of functieaanroep kan samenvoegen of sorteren de arraystructuur of de betekenis van de volgorde veranderen; daarvoor blijft een melding staan. De voorwaarden staan bij [Resource references](#resource-references).
 
 Voor Puppet Strings breekt `project_documentation_layout` gewone tekst af zonder woorden of backtick-inhoud te splitsen, bewaart paragrafen en herstelt herkenbare tag-inspringing en sectiescheiding. De check verwijdert een `140chars`-blok alleen als het uitsluitend gewone documentatie bevat. Een toelichtende reden of een gecombineerde lintuitzondering blijft staan voor handmatige beoordeling. Lengte- of opmaakproblemen in summaries, voorbeeldcode, lijsten, tabellen, codeblokken en onduidelijke Markdown vragen eveneens handmatige aanpassing; daarvoor blijft een melding met `[review]` staan.
 
 Controleer na een autofix de inhoud en betekenis in de diff en voer de [volledige controles](#code-controleren) opnieuw uit, inclusief de parser voor ieder gewijzigd manifest. Meldingen van bijvoorbeeld de standaardcheck `140chars` kunnen nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
+
+Met `--fix` meldt Puppet-lint geslaagde correcties als `fixed`. Een resterende waarschuwing of fout laat het commando nog steeds mislukken. Bij een syntaxfout schrijft de CLI het manifest niet weg. Genegeerde meldingen worden niet gecorrigeerd; de projectafspraken over [toegestane uitzonderingen](#lange-regels) blijven gelden. Er is geen aparte Rake-task voor autofix: het native commando biedt al de benodigde bestandsselectie en checkselectie.
 
 ## Versies bijwerken
 
@@ -493,7 +498,7 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_layout` | Arrays over meerdere regels gebruiken de [afgesproken inspringing](#inspringing). Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
 | `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
-| `project_resource_references` | Direct aangrenzende references van hetzelfde resourcetype in een array worden samengevoegd; titels binnen een reference staan alfabetisch. `--fix` herstelt letterlijke titels zonder tussenliggend commentaar. Zie [resource references](#resource-references) voor de afbakening. |
+| `project_resource_references` | Voegt aangrenzende references van hetzelfde type samen, sorteert letterlijke titels en verwijdert de buitenste array als die één reference bevat. Autofix vereist een bewezen relatiecontext en laat commentaar en genegeerde code intact. Zie [resource references](#resource-references) voor de afbakening. |
 | `project_if_sections` | Iedere `if` of `unless` krijgt een toelichting boven de voorbereidende variabelen, of boven de voorwaarde als die voorbereiding ontbreekt. Een `elsif` hoort bij dezelfde keten; geneste voorwaarden krijgen hun eigen toelichting. |
 | `project_variable_sections` | Variabelen direct na een openende `{` krijgen binnen het blok een toelichting. Na een groep met onderlinge afhankelijkheden begint een losstaande toekenning een nieuwe toegelichte groep. Waar mogelijk noemt de melding een bestaande groep om samenvoegen te beoordelen. |
 | `project_class_check_reuse` | Herhaalde `defined(Class['...'])`-controles binnen een class of defined type delen één variabele. Bij één gebruik staat de controle rechtstreeks in de expressie. Aantoonbaar gebruik vanuit andere classes of ERB telt mee. |
@@ -512,13 +517,29 @@ Gebruik twee spaties voor inspringing, uitgelijnde pijlen en enkele aanhalingste
 
 De projectchecks voor documentatie en parametervolgorde vullen de standaardchecks aan. Puppet-lint laat de optionele checks voor 80 tekens, booleans tussen aanhalingstekens en code op hoofdniveau standaard uitgeschakeld. Dat past bij onze 140-tekengrens, daemonstrings zoals `'true'` en uitvoerbare profielen. Schakel geen correcte check uit om bestaande code niet te hoeven herstellen en maak geen uitzonderingslijst voor oude modules of stijlachterstand.
 
+### Veilige autofixes ontwikkelen
+
+Begin bij de gebruikte bundle: controleer `bundle exec puppet-lint --version` en bekijk de implementatie met `bundle show puppet-lint`. De [beoordeling van de bestaande checks](AUTOFIX_REVIEW.md) beschrijft de onderzochte API, de afbakening per check en de verschillen met upstream. Gebruik voor generieke correcties de bestaande upstream-check als die exact dezelfde regel afdekt.
+
+Een custom check krijgt alleen autofix als de uitkomst vaststaat, het Puppet-gedrag gelijk blijft en een tweede fixrun niets meer verandert. De correctie mag geen informatie verzinnen, ontwerpkeuze maken of commentaar verliezen. Controleer ook dat het resultaat geldige Puppet-code is en dat dezelfde regel na de correctie geen melding meer geeft. Bewijs dit voor de hele constructie die je wijzigt; alleen de gemelde regel bekijken is niet voldoende.
+
+Implementeer `fix(problem)` binnen de betreffende `PuppetLint.new_check`. Bewaar tijdens `check` de betrokken tokenobjecten en de voorwaarden voor correctie. Geef de melding een index naar die context, zoals de bestaande projectchecks doen, zodat JSON-diagnostiek geen bronwaarden bevat. Controleer alle voorwaarden voordat je tokens wijzigt. Gebruik `PuppetLint::NoFix` wanneer die voorwaarden niet gelden; Puppet-lint behoudt dan de oorspronkelijke melding.
+
+Gebruik `add_token`, `remove_token` en de eigenschappen van bestaande tokens voor de correctie. Hergebruik tokens die andere checks ook kunnen aanpassen en bepaal benodigde afstanden uit de actuele tokeninhoud. Regel- en kolomnummers blijven tijdens de fixfase bij de oorspronkelijke bron horen. De gedeelde helpers in [`token_helpers.rb`](lib/token_helpers.rb) ondersteunen tokengebieden en witruimte; zij parsen of herschrijven geen volledig bestand.
+
+Puppet-lint voert eerst alle checks uit en daarna de fixes. Houd daarom rekening met eerder gewijzigde of verwijderde tokens. De parameteruitlijning vernieuwt vlak vóór haar fixes de meldingen op de bewaarde tokens via de native `run`-methode: een eerdere komma- of tabcorrectie kan de breedte van een type veranderen. De native afhandeling van `lint:ignore` en `fix(problem)` blijft daarbij actief. Een correctie over meerdere regels moet ook controleren of zij een genegeerd deel zou veranderen.
+
+Voeg regressietests toe onder [`.tools/tests/lint/`](../tests/lint/) voor detectie zonder wijziging, exacte uitvoer, een schone hercontrole en een ongewijzigde tweede fixrun. Test ook ongeschikte invoer, genegeerde meldingen, comments, strings, meerdere problemen, geneste constructies en samenwerking met de actieve upstream-checks. Test de native CLI op tijdelijke bestanden om de schrijfhandeling en exitcodes te controleren. Parservalidatie van de geproduceerde uitvoer hoort bij het fixcontract; een algemene syntaxsuite voor modules hoort niet bij deze tooltests.
+
+De normale CLI-aanroep en CI blijven alleen controleren. Schakel `fix` uitsluitend in bij een expliciete correctiestap en voeg geen tweede formatter of automatische commitstap toe.
+
 ### Inspringing
 
 Staat een array over meerdere regels, laat de elementen dan twee spaties verder inspringen dan de regel waarop `[` staat. Dit geldt ook binnen functieaanroepen zoals `join([` en `Sensitive.new(join([`: extra haakjes op die regel voegen geen inspringing toe. Een afsluitende `]` aan het begin van een regel krijgt dezelfde inspringing als de regel met de bijbehorende `[`. Behoud daarbij de inspringing van het omliggende codeblok.
 
 Bij een resourcetitel die direct achter de openende accolade begint, zoals `file { [`, komt daar één niveau bij: de elementen staan vier spaties verder dan `file` en de afsluitende `]` twee spaties.
 
-`project_layout` controleert het begin van elementen die op een nieuwe regel staan en de afsluitende `]`. Meerdere elementen op dezelfde regel blijven toegestaan. De check laat de inhoud van strings, heredocs en commentaar ongemoeid en behandelt typeparameters en indexeringen niet als arrays. De check past de inspringing niet automatisch aan met `--fix`.
+`project_layout` controleert het begin van elementen die op een nieuwe regel staan en de afsluitende `]`. Meerdere elementen op dezelfde regel blijven toegestaan. Met `--fix` past de check de voorafgaande inspringing aan en neemt hij de afhankelijke inspringing van geneste arrays mee. De inhoud van strings, heredocs en commentaar blijft behouden; typeparameters en indexeringen worden niet als arrays behandeld.
 
 ### Lange regels
 
@@ -584,13 +605,17 @@ Voeg geen ongedocumenteerde gemaksparameters toe nadat een interface-uitbreiding
 
 #### Resource references
 
-Voeg direct aangrenzende references van hetzelfde resourcetype binnen een array samen tot één reference. Sorteer de titels binnen die reference alfabetisch. Dit geldt voor alle resourcetypen, inclusief classes en eigen defined types. Gebruik bijvoorbeeld `[Package['console-setup', 'keyboard-configuration']]` waar eerst `[Package['console-setup'], Package['keyboard-configuration']]` stond.
+Voeg direct aangrenzende references van hetzelfde resourcetype binnen een array samen tot één reference. Sorteer de titels binnen die reference alfabetisch. Dit geldt voor alle resourcetypen, inclusief classes en eigen defined types. Bevat een dependency-attribuut of een kant van een losse relatieketen daarna één reference, laat dan de buitenste array weg. Zo wordt `require => [Package['b'], Package['a']]` direct `require => Package['a', 'b']`. Ook `require => [Package['a', 'b']]` wordt `require => Package['a', 'b']`.
 
-Verschillende types blijven gescheiden. Een ander array-element onderbreekt de reeks: `[Package['zulu'], Service['nginx'], Package['alpha']]` blijft zo staan. De linter voegt geen afzonderlijke functieargumenten, geneste arrays of kanten van een relatiepijl samen, omdat daarmee de betekenis kan veranderen.
+Verschillende types blijven gescheiden. Een ander array-element onderbreekt de reeks: `[Package['zulu'], Service['nginx'], Package['alpha']]` blijft zo staan. De linter voegt geen afzonderlijke functieargumenten, geneste arrays of kanten van een relatiepijl samen, omdat daarmee de betekenis kan veranderen. Alleen de buitenste array rond één reference wordt verwijderd; arrays met meerdere elementen en geneste arraylagen blijven behouden.
 
-`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De check sorteert letterlijke titels op hun stringwaarde, hoofdlettergevoelig en zonder aanhalingstekens mee te tellen. Bestaande correcte references blijven ongemoeid; dubbele titels worden behouden. 
+`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De check sorteert letterlijke titels op hun stringwaarde, hoofdlettergevoelig en zonder aanhalingstekens mee te tellen. Bestaande correcte references blijven ongemoeid; dubbele titels worden behouden.
+
+Autofix is beperkt tot de metaparameters `require`, `before`, `notify` en `subscribe`, en losse relatieketens met `->`, `~>`, `<-` of `<~`. Daar bepalen de references de relaties tussen resources. Een [reference met meerdere titels levert een array op](https://help.puppet.com/core/current/Content/PuppetCore/lang_data_resource_reference.htm). Daardoor zijn `[Package['a'], Package['b']]` en `[Package['a', 'b']]` als gewone arraywaarden verschillend: de tweede bevat een geneste array. Bij een variabele, functieargument, indexering of gebruikt resultaat van een relatie-expressie moet je de gevolgen daarom zelf beoordelen; de linter herschrijft die gevallen niet.
 
 Bevat een samen te voegen reeks dynamische titels of commentaar tussen de references, dan blijft de melding staan en pas je de code zelf aan. Hetzelfde geldt voor verkeerd gesorteerde letterlijke titels met tussenliggend commentaar. Behoud de toelichting bij de juiste resource en beoordeel de volgorde van dynamische titels aan de hand van de waarden die ze kunnen krijgen; de linter berekent die waarden niet. Puppet-datatypen zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
+
+De buitenste array rond één reference kan ook bij dynamische titels weg: `require => [Package[$packages]]` wordt `require => Package[$packages]`, zonder de reference zelf te wijzigen. Bevat de betrokken array commentaar, een heredoc of genegeerde code, dan laat de autofix haar staan voor handmatige beoordeling.
 
 #### Volgorde en meldingen
 

@@ -236,12 +236,10 @@ class ssh (
       ensure    => undef,
       enable    => false,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => [
-        File[
-          '/etc/ssh/sshd_config',
-          '/etc/ssh/sshd_config.d',
-          '/etc/ssh/sshd_config.d/99-custom.conf',
-        ],
+      subscribe => File[
+        '/etc/ssh/sshd_config',
+        '/etc/ssh/sshd_config.d',
+        '/etc/ssh/sshd_config.d/99-custom.conf',
       ],
     }
 
@@ -260,12 +258,10 @@ class ssh (
       ensure    => running,
       enable    => true,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => [
-        File[
-          '/etc/ssh/sshd_config',
-          '/etc/ssh/sshd_config.d',
-          '/etc/ssh/sshd_config.d/99-custom.conf',
-        ],
+      subscribe => File[
+        '/etc/ssh/sshd_config',
+        '/etc/ssh/sshd_config.d',
+        '/etc/ssh/sshd_config.d/99-custom.conf',
       ],
     }
 

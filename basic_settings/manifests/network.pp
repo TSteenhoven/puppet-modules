@@ -306,7 +306,7 @@ class basic_settings::network (
     package { ['dhcpcd']:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
-      require         => [Package['dhcpcd-base', 'ifupdown']],
+      require         => Package['dhcpcd-base', 'ifupdown'],
     }
 
     # Enable dhcpcd service
@@ -576,7 +576,7 @@ class basic_settings::network (
       service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
         ensure  => running,
         enable  => true,
-        require => [Package['networkd-dispatcher', 'systemd', 'systemd-resolved']],
+        require => Package['networkd-dispatcher', 'systemd', 'systemd-resolved'],
       }
 
       # Create drop in for systemd resolved service
@@ -592,7 +592,7 @@ class basic_settings::network (
       service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
         ensure  => running,
         enable  => true,
-        require => [Package['networkd-dispatcher', 'systemd']],
+        require => Package['networkd-dispatcher', 'systemd'],
       }
 
       # Create drop in for systemd resolved service

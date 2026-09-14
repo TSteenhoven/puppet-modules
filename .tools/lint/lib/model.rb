@@ -71,7 +71,7 @@ module ProjectLint
     def run
       super
     rescue Puppet::ParseError => error
-      notify(:error, message: 'Invalid Puppet syntax; run puppet parser validate', line: error.line || 1, column: error.pos || 1)
+      notify(:error, message: 'Invalid Puppet syntax; run puppet parser validate', line: error.line || 1, column: error.pos || 1, check: :syntax)
       @problems
     end
 

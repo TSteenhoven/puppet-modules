@@ -344,7 +344,7 @@ class nginx (
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
-    require => [File['nginx_fastcgi_params', 'nginx_snippets']],
+    require => File['nginx_fastcgi_params', 'nginx_snippets'],
     notify  => Service['nginx'],
   }
 

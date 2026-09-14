@@ -1,4 +1,5 @@
 require_relative '../../model'
+require_relative '../../token_helpers'
 
 module ProjectLint
   # Use lexer comments for section boundaries; comment-like text inside strings is ordinary data.
@@ -46,8 +47,10 @@ end
 
 PuppetLint.new_check(:project_comment_spacing) do
   include ProjectLint::SectionLayout
+  include ProjectLint::TokenHelpers
 
   def check
+    @boundaries = []
     comment_sections.each do |section|
       first = section.first
       previous = adjacent_code(first, :prev_token)
@@ -55,8 +58,30 @@ PuppetLint.new_check(:project_comment_spacing) do
       next if [:LBRACE, :LBRACK, :LPAREN].include?(previous.type)
       next if PuppetLint::Data.manifest_lines[first.line - 2].strip.empty?
 
-      notify(:warning, message: 'Put a blank line before a standalone explanatory comment block', line: first.line, column: first.column)
+      @boundaries << section
+      notify(:warning, message: 'Put a blank line before a standalone explanatory comment block', line: first.line, column: first.column,
+             edit: @boundaries.length - 1)
     end
+  end
+
+  def fix(problem)
+    section = @boundaries.fetch(problem[:edit])
+    raise PuppetLint::NoFix if ignored_span?(section.first, section.last)
+
+    first = section.find { |token| tokens.include?(token) }
+    index = tokens.index(first)
+    raise PuppetLint::NoFix unless index
+
+    # Earlier documentation fixes can already have inserted the required separator.
+    preceding = tokens.take(index)
+    preceding.pop while preceding.last && [:INDENT, :WHITESPACE].include?(preceding.last.type)
+    newline = preceding.pop
+    raise PuppetLint::NoFix unless newline&.type == :NEWLINE
+
+    preceding.pop while preceding.last && [:INDENT, :WHITESPACE].include?(preceding.last.type)
+    return if preceding.last&.type == :NEWLINE
+
+    add_token(tokens.index(newline) + 1, PuppetLint::Lexer::Token.new(:NEWLINE, "\n", first.line, 1))
   end
 end
 
@@ -242,13 +267,19 @@ end
 
 PuppetLint.new_check(:project_layout) do
   include ProjectLint::ModelCheck
+  include ProjectLint::TokenHelpers
 
-  def check_array_line_indentation(line, column, expected, part)
+  def report_edit(message, line, column, edit)
+    @edits << edit
+    notify(:warning, message: message, line: line, column: column, edit: @edits.length - 1)
+  end
+
+  def check_array_line_indentation(line, column, expected, part, plan)
     prefix = PuppetLint::Data.manifest_lines[line - 1][0, column - 1]
     return unless prefix.match?(/\A[ \t]*\z/)
     return if prefix == ' ' * expected
 
-    notify(:warning, message: "Use #{expected} leading spaces for #{part}", line: line, column: column)
+    report_edit("Use #{expected} leading spaces for #{part}", line, column, arrays: plan)
   end
 
   def check_array_indentation
@@ -265,21 +296,32 @@ PuppetLint.new_check(:project_layout) do
 
     # Use the AST to distinguish literal arrays from type arguments and lookups.
     # Inspect only element starts and closing brackets to preserve multiline values.
-    model.nodes.each do |node, parents|
+    plans = model.nodes.filter_map do |node, parents|
       next unless node.is_a?(ProjectLint::Model::M::LiteralList)
 
       closing = closings[[node.line, node.pos]]
       next unless closing && closing.line > node.line
 
-      indent = PuppetLint::Data.manifest_lines[node.line - 1][/\A[ \t]*/].length
-      # An inline resource title starts one level inside the resource's opening brace.
-      if parents.last.is_a?(ProjectLint::Model::M::ResourceBody) && parents[-2].line == node.line
-        indent += 2
+      opening = @positions.fetch([node.line, node.pos])
+      extra = parents.last.is_a?(ProjectLint::Model::M::ResourceBody) && parents[-2].line == node.line ? 2 : 0
+      { node: node, opening: opening, closing: closing, extra: extra,
+        elements: node.values.map { |value| @positions.fetch([value.line, value.pos]) } }
+    end
+    plans.each do |plan|
+      node = plan[:node]
+      closing = plan[:closing]
+      indent = PuppetLint::Data.manifest_lines[node.line - 1][/\A[ \t]*/].gsub("\t", '  ').length + plan[:extra]
+      # Reindent nested arrays together: an outer element can be an inner opening
+      # bracket whose changed indentation also changes that inner array's baseline.
+      outer = plans.find { |candidate| candidate[:node].offset <= node.offset && candidate[:node].offset + candidate[:node].length >= node.offset + node.length }
+      group = plans.select do |candidate|
+        child = candidate[:node]
+        child.offset >= outer[:node].offset && child.offset + child.length <= outer[:node].offset + outer[:node].length
       end
       node.values.each do |value|
-        check_array_line_indentation(value.line, value.pos, indent + 2, 'the array element')
+        check_array_line_indentation(value.line, value.pos, indent + 2, 'the array element', group)
       end
-      check_array_line_indentation(closing.line, closing.column, indent, 'the closing array bracket')
+      check_array_line_indentation(closing.line, closing.column, indent, 'the closing array bracket', group)
     end
   end
 
@@ -294,11 +336,20 @@ PuppetLint.new_check(:project_layout) do
       next unless following && following.type == :NEWLINE && following.line == opening.line
       next unless PuppetLint::Data.manifest_lines[opening.line]&.strip == ''
 
-      notify(:warning, message: 'Remove blank lines immediately after an opening brace', line: opening.line + 1, column: 1)
+      blank = []
+      cursor = following.next_token
+      while cursor && [:INDENT, :WHITESPACE, :NEWLINE].include?(cursor.type)
+        blank << cursor
+        cursor = cursor.next_token
+      end
+      blank.pop while blank.last && blank.last.type != :NEWLINE
+      report_edit('Remove blank lines immediately after an opening brace', opening.line + 1, 1, remove: blank)
     end
   end
 
   def check
+    @edits = []
+    @positions = tokens.to_h { |token| [[token.line, token.column], token] }
     check_array_indentation
     check_opening_brace_spacing
     tokens.each do |token|
@@ -307,7 +358,7 @@ PuppetLint.new_check(:project_layout) do
       next if following.line != token.line || [:RBRACK, :RBRACE, :RPAREN].include?(following.type)
 
       if token.next_token.type != :WHITESPACE || token.next_token.value != ' '
-        notify(:warning, message: 'Use one space after a same-line comma', line: token.line, column: token.column)
+        report_edit('Use one space after a same-line comma', token.line, token.column, comma: token, following: following)
       end
     end
     (class_indexes + defined_type_indexes).each do |declaration|
@@ -318,7 +369,53 @@ PuppetLint.new_check(:project_layout) do
       next unless last && declaration[:name_token].line != last.line
       next if last.type == :COMMA
 
-      notify(:warning, message: 'End a multiline parameter block with a trailing comma', line: last.line, column: last.column)
+      report_edit('End a multiline parameter block with a trailing comma', last.line, last.column, closing: parameters.last.next_token)
+    end
+  end
+
+  def fix(problem)
+    edit = @edits.fetch(problem[:edit])
+    if edit[:arrays]
+      plans = edit[:arrays]
+      raise PuppetLint::NoFix if ignored_span?(plans.first[:opening], plans.first[:closing])
+
+      plans.each do |plan|
+        indent = line_prefix(plan[:opening])[/\A[ \t]*/].gsub("\t", '  ').length + plan[:extra]
+        (plan[:elements].map { |token| [token, indent + 2] } + [[plan[:closing], indent]]).each do |token, width|
+          # only_variable_string removes the quote token but retains its variable.
+          token = token.next_token while token && !tokens.include?(token)
+          raise PuppetLint::NoFix unless token
+          next unless line_prefix(token).match?(/\A[ \t]*\z/)
+
+          index = tokens.index(token) - 1
+          index -= 1 while index >= 0 && [:INDENT, :WHITESPACE].include?(tokens[index].type)
+          raise PuppetLint::NoFix unless index >= 0 && tokens[index].type == :NEWLINE
+
+          set_whitespace(tokens[index], token, width, :INDENT)
+        end
+      end
+    elsif edit[:remove]
+      blank = edit[:remove]
+      raise PuppetLint::NoFix if ignored_span?(blank.first, blank.last)
+
+      blank.each { |token| remove_token(token) if tokens.include?(token) }
+    elsif edit[:comma]
+      raise PuppetLint::NoFix if ignored_span?(edit[:comma], edit[:following])
+
+      set_whitespace(edit[:comma], code_after(edit[:comma]), 1)
+    else
+      closing = tokens.index(edit[:closing])
+      raise PuppetLint::NoFix unless closing
+
+      last = tokens.take(closing).reverse.find { |token| !PuppetLint::Data.formatting_tokens.include?(token.type) }
+      # Heredoc bodies are detached from their opening expression; a comma after
+      # the terminator is not a parameter separator.
+      raise PuppetLint::NoFix if last.type.to_s.start_with?('HEREDOC')
+
+      return if last.type == :COMMA
+
+      index = tokens.index(last)
+      add_token(index + 1, PuppetLint::Lexer::Token.new(:COMMA, ',', last.line, last.column))
     end
   end
 end

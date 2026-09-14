@@ -8,6 +8,7 @@ class ClassChecksTest < Minitest::Test
     lint.path = path
     lint.code = code
     lint.run
+    refute lint.problems.any? { |problem| problem[:check] == :syntax }, 'Class-check fixtures must parse before their findings are asserted'
     lint.problems.select { |problem| problem[:check] == :project_class_check_reuse }
   end
 
@@ -69,7 +70,7 @@ class ClassChecksTest < Minitest::Test
   def test_reads_are_real_references_including_interpolation_but_not_shadowed_names
     code = "class example { $enabled = #{CHECK}; notice($enabled)\n"
     assert_empty findings(code + 'notice("State: ${enabled}") }')
-    assert_equal 1, findings(code + "notice('enabled'); # $enabled\n}").length
+    assert_equal 1, findings(code + "notice('enabled') # $enabled\n}").length
     assert_equal 1, findings(code + "[true].each |$enabled| { notice($enabled) } }").length
     assert_equal 1, findings(code + "[true].each |$item| { $enabled = true; notice($enabled) } }").length
     assert_equal 1, findings(code + 'notice($::enabled) }').length

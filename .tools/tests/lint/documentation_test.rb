@@ -1,15 +1,12 @@
 require_relative 'test_helper'
 
 class DocumentationTest < Minitest::Test
+  include LintTestSupport
+
   PROSE = 'This class manages console packages and keyboard configuration, preserves explicit settings, and uses the host defaults when no override is supplied.'.freeze
 
   def lint(code, fix: false, rule: :project_documentation_layout)
-    checks = PuppetLint::Checks.new
-    checks.load_data('example.pp', code)
-    check = PuppetLint.configuration.check_object.fetch(rule).new
-    problems = check.run
-    check.fix_problems if fix
-    [problems, checks.manifest]
+    lint_checks(code, [rule], fix: fix)
   end
 
   def document(body, declaration = 'class example {}')
