@@ -12,6 +12,7 @@ Deze handleiding helpt je de controles te installeren, uit te voeren en meldinge
   - [Gems installeren](#gems-installeren)
 - [Code controleren](#code-controleren)
   - [Een melding oplossen](#een-melding-oplossen)
+  - [Automatisch corrigeren (autofix)](#automatisch-corrigeren-autofix)
 - [Versies bijwerken](#versies-bijwerken)
 - [De linter gebruiken in een ander Puppet-project](#de-linter-gebruiken-in-een-ander-puppet-project)
   - [Benodigdheden](#benodigdheden)
@@ -124,6 +125,28 @@ Een lintmelding noemt het bestand, de regel, de kolom, de checknaam en de oorzaa
 3. Voer de volledige lintscan en tests opnieuw uit. Controleer een gewijzigd manifest ook met de parser zoals hierboven beschreven.
 
 Stopt de linter voordat hij code kan controleren, herstel dan eerst de installatie. Controleer bij Ruby- of Bundler-fouten de actieve Ruby en de stappen onder [Gems installeren](#gems-installeren). Bij een ontbrekende plugin moeten de volledige checkout, de geïnstalleerde bundle en de werkmap kloppen. Onder [Werking van de controles](#werking-van-de-controles) lees je welke configuratiebestanden de CLI laadt en hoe je uitsluitend de projectconfiguratie gebruikt.
+
+### Automatisch corrigeren (autofix)
+
+Met de ingebouwde optie `--fix` laat je Puppet-lint meldingen automatisch herstellen waarvoor de betreffende check een correctie ondersteunt. Voer dit uit vanuit de hoofdmap van de repository:
+
+```sh
+bundle exec puppet-lint --fix .
+```
+
+Dit commando wijzigt bestanden rechtstreeks en gebruikt de autofixes van zowel de standaardchecks als de geladen projectchecks. Vervang `.` door het pad van een manifest om alleen dat bestand te corrigeren. Met `--only-checks` kun je de correcties beperken tot een check, bijvoorbeeld:
+
+```sh
+bundle exec puppet-lint --fix --only-checks project_resource_references path/to/manifest.pp
+```
+
+Niet iedere lintmelding kan automatisch worden opgelost. Ontbrekende toelichtingen, inhoudelijke keuzes en onduidelijke constructies vragen handmatige aanpassing. Zonder `--fix` controleert de linter alleen, zolang je persoonlijke configuratie automatisch repareren niet inschakelt; zie [Werking van de controles](#werking-van-de-controles). Ook CI voert alleen de controles uit.
+
+De projectcheck `project_resource_references` voegt aangrenzende references samen en sorteert letterlijke titels wanneer dat veilig kan. De voorwaarden staan bij [Resource references](#resource-references).
+
+Voor Puppet Strings breekt `project_documentation_layout` gewone tekst af zonder woorden of backtick-inhoud te splitsen, bewaart paragrafen en herstelt herkenbare tag-inspringing en sectiescheiding. De check verwijdert een `140chars`-blok alleen als het uitsluitend gewone documentatie bevat. Een toelichtende reden of een gecombineerde lintuitzondering blijft staan voor handmatige beoordeling. Lengte- of opmaakproblemen in summaries, voorbeeldcode, lijsten, tabellen, codeblokken en onduidelijke Markdown vragen eveneens handmatige aanpassing; daarvoor blijft een melding met `[review]` staan.
+
+Controleer na een autofix de inhoud en betekenis in de diff en voer de [volledige controles](#code-controleren) opnieuw uit, inclusief de parser voor ieder gewijzigd manifest. Meldingen van bijvoorbeeld de standaardcheck `140chars` kunnen nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
 
 ## Versies bijwerken
 
@@ -466,7 +489,7 @@ De Actions gebruiken de versietags [`actions/checkout@v7`](https://github.com/ac
 | `project_parameter_order` | Verplichte parameters eerst, optionele daarna, alfabetisch binnen elke groep. Een echte afhankelijkheid van een eerdere default mag de volgorde bepalen en moet worden toegelicht. |
 | `project_parameter_alignment` | Typen, namen, `=`-tekens en defaults staan over het volledige parameterblok uitgelijnd, ook bij geneste typen en waarden over meerdere regels. |
 | `project_documentation` | Classes en defined types hebben een samenvatting, voorbeeld, API-markering en parameterdocumentatie in dezelfde volgorde. |
-| `project_documentation_layout` | Puppet Strings gebruikt afgebroken tekst, ingesprongen tagvervolgregels en lege commentregels tussen secties. `--fix` herstelt veilige tekst en verwijdert overbodige lengte-uitzonderingen; zie [Puppet Strings](#puppet-strings). |
+| `project_documentation_layout` | Puppet Strings gebruikt afgebroken tekst, ingesprongen tagvervolgregels en lege commentregels tussen secties. |
 | `project_layout` | Arrays over meerdere regels gebruiken de [afgesproken inspringing](#inspringing). Direct na een openende `{` staan geen lege regels, ook als achter de accolade commentaar staat. Er staat één spatie na komma's op dezelfde regel en een afsluitende komma in parameterlijsten over meerdere regels. De bestaande trailing-comma-plugin controleert resources en verzamelingen. |
 | `project_comment_spacing` | Een zelfstandig toelichtingsblok na code begint na een lege regel. Direct na `{`, `[` of `(` vereist deze check geen lege regel; voor `{` geldt de controle van `project_layout`. |
 | `project_resource_sections` | Een resourcedeclaratie na een afgesloten blok krijgt een eigen toelichting; samen met `project_comment_spacing` wordt ook de lege regel vóór die toelichting gecontroleerd. |
@@ -565,13 +588,9 @@ Voeg direct aangrenzende references van hetzelfde resourcetype binnen een array 
 
 Verschillende types blijven gescheiden. Een ander array-element onderbreekt de reeks: `[Package['zulu'], Service['nginx'], Package['alpha']]` blijft zo staan. De linter voegt geen afzonderlijke functieargumenten, geneste arrays of kanten van een relatiepijl samen, omdat daarmee de betekenis kan veranderen.
 
-`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De check sorteert letterlijke titels op hun stringwaarde, hoofdlettergevoelig en zonder aanhalingstekens mee te tellen. Bestaande correcte references blijven ongemoeid; dubbele titels worden behouden. Met `--fix` laat je de check samenvoegen en sorteren:
+`project_resource_references` gebruikt de Puppet-AST om references en aangrenzende array-elementen te herkennen. De check sorteert letterlijke titels op hun stringwaarde, hoofdlettergevoelig en zonder aanhalingstekens mee te tellen. Bestaande correcte references blijven ongemoeid; dubbele titels worden behouden. 
 
-```sh
-bundle exec puppet-lint --fix --only-checks project_resource_references path/to/manifest.pp
-```
-
-Controleer daarna de diff en voer de [volledige controles](#code-controleren) uit. Bevat een samen te voegen reeks dynamische titels of commentaar tussen de references, dan blijft de melding staan en pas je de code zelf aan. Hetzelfde geldt voor verkeerd gesorteerde letterlijke titels met tussenliggend commentaar. Behoud de toelichting bij de juiste resource en beoordeel de volgorde van dynamische titels aan de hand van de waarden die ze kunnen krijgen; de linter berekent die waarden niet. Puppet-datatypen zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
+Bevat een samen te voegen reeks dynamische titels of commentaar tussen de references, dan blijft de melding staan en pas je de code zelf aan. Hetzelfde geldt voor verkeerd gesorteerde letterlijke titels met tussenliggend commentaar. Behoud de toelichting bij de juiste resource en beoordeel de volgorde van dynamische titels aan de hand van de waarden die ze kunnen krijgen; de linter berekent die waarden niet. Puppet-datatypen zoals `Enum[...]`, lokale typealiases en gewone indexeringen vallen buiten deze regel.
 
 #### Volgorde en meldingen
 
@@ -669,18 +688,6 @@ Houd `@summary` kort en op één regel; zet verdere uitleg als gewone beschrijvi
 ```
 
 `project_documentation_layout` controleert commentaar boven classes, defined types, Puppet-functies en type-declaraties. De check meldt afbreekbare tekst boven 120 tekens en documentatieregels boven 140 tekens, ook wanneer de standaardcheck een URL uitzondert. Een ondeelbaar element tussen 120 en 140 tekens mag blijven staan. Voor langere letterlijke waarden geldt uitsluitend de gerichte uitzondering onder [Lange regels](#lange-regels). Voorbeeldcode krijgt alleen een lengtemelding boven 140 tekens en wordt nooit als lopende tekst afgebroken.
-
-Laat veilige opmaakfouten herstellen met:
-
-```sh
-bundle exec puppet-lint --fix --only-checks project_documentation_layout path/to/manifest.pp
-```
-
-De autofix breekt gewone tekst af zonder woorden of backtick-inhoud te splitsen, bewaart paragrafen en herstelt herkenbare tag-inspringing en sectiescheiding. Hij verwijdert een `140chars`-blok alleen als het uitsluitend gewone documentatie bevat. Een toelichtende reden of een gecombineerde lintuitzondering blijft staan voor handmatige beoordeling.
-
-Lengte- of opmaakproblemen in summaries, voorbeeldcode, lijsten, tabellen, codeblokken en onduidelijke Markdown vragen handmatige aanpassing; daarvoor blijft een melding met `[review]` staan. Controleer ook bij een geslaagde autofix de inhoud en betekenis in de diff.
-
-Voer daarna de [volledige controles](#code-controleren) opnieuw uit. Bij een algemene `--fix` kunnen meldingen van de standaardcheck `140chars` nog op de oorspronkelijke regels slaan: Puppet-lint verzamelt alle meldingen voordat de fixes worden toegepast. Een nieuwe scan controleert de herschreven regels.
 
 #### Waar de uitleg hoort
 
