@@ -83,6 +83,13 @@ node 'container01.example.org' {
   }
 }
 
+# Enable keyboard package and configuration management on a virtual machine without an explicit console reload.
+node 'console01.example.org' {
+  class { 'basic_settings':
+    keyboard_enable => true,
+  }
+}
+
 node 'database01.example.org' {
   class { 'basic_settings':
     mysql_enable => true,

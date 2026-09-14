@@ -1,3 +1,4 @@
+# Managed by puppet
 CODESET="<%= @keyboard_codeset %>"
 FONTFACE="VGA"
 FONTSIZE="16x32"

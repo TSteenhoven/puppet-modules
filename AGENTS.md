@@ -70,6 +70,12 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change. Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
 - Inspect existing abstractions before adding a new one, and validate each migrated caller's behavior and dependencies. Preserve caller-specific security and lifecycle requirements.
 
+### Prerequisite Review
+
+- Identify which dependencies in changed code are operational prerequisites and which only affect execution order. Omitting a dependency reference must not be treated as disabling the dependent operation.
+- Verify that the documented contract supplies required prerequisites before use, skips the dependent optional operation when they are unavailable, or fails clearly for a required operation. Do not infer runtime availability solely from the presence or absence of a declaration.
+- Validate the dependent behavior with prerequisites present and absent, including relevant declaration or evaluation order. For Puppet-specific details, follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden).
+
 ### Shell Formatting
 
 - Use four spaces per indentation level when adding or changing first-party Bash or POSIX shell code, including shell code in templates.
