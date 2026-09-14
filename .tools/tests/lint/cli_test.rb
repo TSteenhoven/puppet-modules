@@ -1,10 +1,117 @@
 require_relative 'test_helper'
+require 'json'
 
 class CliTest < Minitest::Test
   include LintTestSupport
 
-  def cli(*arguments, directory: LintTestSupport::ROOT, env: {})
-    Open3.capture3(env, Gem.bin_path('puppet-lint', 'puppet-lint'), *arguments, chdir: directory)
+  def cli(*arguments, directory: LintTestSupport::ROOT, env: {}, project_config: true)
+    options = project_config ? ['--no-config', '--config', '.puppet-lint.rc'] : []
+    Open3.capture3(env, Gem.bin_path('puppet-lint', 'puppet-lint'), *options, *arguments, chdir: directory)
+  end
+
+  def test_project_configuration_isolates_system_and_personal_options_before_scanning_or_fixing
+    Dir.mktmpdir('lint_configuration_') do |directory|
+      copy_linter(directory)
+      file = File.join(directory, 'example.pp')
+      code = "$values = [\n      \"synthetic\",\n]\n"
+      fixed = "$values = [\n  'synthetic',\n]\n"
+      File.write(file, code)
+      system_config = File.join(directory, 'system.rc')
+      personal_config = File.join(directory, 'personal.rc')
+      File.write(system_config, "--no-double_quoted_strings-check\n")
+      File.write(personal_config, "--fix\n--no-140chars-check\n")
+      hook = File.join(directory, 'option_files.rb')
+      # Redirect default option-file reads in this subprocess only; no account or system settings are changed.
+      File.write(hook, <<~RUBY)
+        require 'optparse'
+        module SyntheticLintOptionFiles
+          def load(path)
+            return super(#{system_config.inspect}) if path == '/etc/puppet-lint.rc'
+
+            super
+          end
+        end
+        OptionParser.prepend(SyntheticLintOptionFiles)
+        def Dir.home(*) = #{directory.inspect}
+        module SyntheticLintHomePath
+          def expand_path(path, *arguments)
+            return #{personal_config.inspect} if path == '~/.puppet-lint.rc'
+
+            super
+          end
+        end
+        File.singleton_class.prepend(SyntheticLintHomePath)
+      RUBY
+      env = { 'RUBYOPT' => [ENV['RUBYOPT'], "-r#{hook}"].compact.join(' ') }
+
+      output, errors, status = cli('.', directory: directory, env: env, project_config: false)
+      assert status.success?, output + errors
+      assert_equal code.sub('      ', '  '), File.read(file)
+      assert_includes output, 'fixed'
+      refute_includes output, 'double_quoted_strings'
+
+      File.write(file, code)
+      output, errors, status = cli('.', directory: directory, env: env)
+      refute status.success?, output + errors
+      assert_equal code, File.read(file)
+      assert_includes output, 'project_layout'
+      assert_includes output, 'double_quoted_strings'
+      refute_includes output, ': fixed:'
+
+      output, errors, status = cli('--fix', '.', directory: directory, env: env)
+      assert status.success?, output + errors
+      assert_equal fixed, File.read(file)
+      [[], ['--fix']].each do |options|
+        output, errors, status = cli(*options, file, directory: directory, env: env)
+        assert status.success?, output + errors
+        assert_empty output
+        assert_equal fixed, File.read(file)
+      end
+
+      # Invalid defaults must also be skipped, while explicit project options remain mandatory.
+      [system_config, personal_config].each { |path| File.write(path, "--invalid-synthetic-option\n") }
+      output, errors, status = cli(file, directory: directory, env: env)
+      assert status.success?, output + errors
+      File.open(File.join(directory, '.puppet-lint.rc'), 'a') { |config| config.puts '--invalid-project-option' }
+      output, errors, status = cli(file, directory: directory, env: env)
+      refute status.success?, output + errors
+      assert_includes output, 'invalid-project-option'
+    end
+  end
+
+  def test_project_cli_options_select_checks_show_ignored_and_preserve_json_diagnostics
+    Dir.mktmpdir('lint_options_') do |directory|
+      file = File.join(directory, 'example.pp')
+      code = "$values = [1] + [2]\n$label = \"synthetic\"\n"
+      File.write(file, code)
+      output, errors, status = cli('--only-checks', 'project_arrays', '--json', file)
+      refute status.success?, output + errors
+      problems = JSON.parse(output).flatten
+      assert_equal ['project_arrays'], problems.map { |problem| problem.fetch('check') }
+      assert_equal code, File.read(file)
+
+      output, errors, status = cli('--only-checks', 'double_quoted_strings', '--fix', file)
+      assert status.success?, output + errors
+      assert_equal code.sub('"synthetic"', "'synthetic'"), File.read(file)
+      output, errors, status = cli(file)
+      refute status.success?, output + errors
+      assert_includes output, 'project_arrays'
+
+      File.write(file, "$label = '#{'x' * 150}' # lint:ignore:140chars\n")
+      output, errors, status = cli('--show-ignored', file)
+      assert status.success?, output + errors
+      assert_equal 1, diagnostics(output, '140chars').length
+      assert_includes output, ': ignored:'
+    end
+  end
+
+  def test_native_config_option_silently_skips_a_missing_file_without_loading_project_checks
+    Dir.mktmpdir('lint_missing_config_') do |directory|
+      output, errors, status = cli('--no-config', '--config', File.join(directory, 'missing.rc'), '--list-checks', project_config: false)
+      assert status.success?, output + errors
+      assert_includes output.lines.map(&:strip), 'double_quoted_strings'
+      refute output.lines.any? { |line| line.start_with?('project_') }, output
+    end
   end
 
   # Count the configured diagnostic lines; GitHub annotations repeat the same findings.
@@ -460,7 +567,7 @@ class CliTest < Minitest::Test
         }
       PUPPET
       File.write(template, '<%= @enabled %>')
-      command = [Gem.bin_path('puppet-lint', 'puppet-lint'), '--only-checks', 'project_class_check_reuse', file]
+      command = [Gem.bin_path('puppet-lint', 'puppet-lint'), '--no-config', '--config', '.puppet-lint.rc', '--only-checks', 'project_class_check_reuse', file]
       env = { 'PROJECT_LINT_MODULEPATH' => directory }
       output, errors, status = Open3.capture3(env, *command)
       assert status.success?, output + errors
@@ -490,7 +597,7 @@ class CliTest < Minitest::Test
         end
       RUBY
       File.write(file, "$values = concat([1], [2])\n")
-      output, errors, status = Open3.capture3(RbConfig.ruby, '-r', plugin, Gem.bin_path('puppet-lint', 'puppet-lint'), file)
+      output, errors, status = Open3.capture3(RbConfig.ruby, '-r', plugin, Gem.bin_path('puppet-lint', 'puppet-lint'), '--no-config', '--config', '.puppet-lint.rc', file)
       refute status.success?, errors
       assert_includes output, 'future_default_check'
     end

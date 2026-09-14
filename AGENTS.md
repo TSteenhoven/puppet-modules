@@ -12,8 +12,10 @@ This file governs project-wide development workflow, engineering responsibilitie
 
 The [lint instructions and review criteria](.tools/lint/README.md), [project puppet-lint configuration](.puppet-lint.rc), and [project checks](.tools/lint/lib/puppet-lint/plugins/) define the mandatory Puppet conventions, formatting rules, and permitted exceptions.
 
-- Agents must read these sources before adding or changing Puppet code or Puppet Strings documentation.
-- Agents must follow these sources for Puppet code and Puppet Strings documentation.
+- Before changing Puppet code or Puppet Strings, read the lint guide's [workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging) and use its [reading guide](.tools/lint/README.md#leeswijzer) to select the relevant conventions and review criteria.
+- Inspect the project configuration and relevant check implementations when determining automated coverage or resolving a lint finding.
+- Read additional relevant sections when the change affects Puppet Strings, dependencies, monitoring, systemd, security, or lint tooling. Unrelated specialized sections need not be read in advance.
+- Follow the authoritative conventions and review criteria for every affected area, extending the reading scope when new dependencies or integrations are found.
 - Agents must apply the documented review criteria even when the automated lint checks pass.
 - Root and local agent instructions must reference these sources instead of duplicating, adding, or overriding Puppet code standards.
 - Changes to Puppet conventions must include their tests and all affected first-party code in the same change.
@@ -239,7 +241,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 #### Correction Workflow
 
-- Run the relevant configured linter first to identify deviations before resolving individual lint findings.
+- Establish existing findings before editing and scan changed code before resolving individual findings, following the lint guide's [development workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging).
 - Apply available autofixes within the task's scope only when they are demonstrably safe and deterministic, preserving functional behavior, Puppet resource relationships, dependencies, and intended configuration.
 - Review corrections manually when their safety cannot be demonstrated.
 - Follow the [lint usage instructions](.tools/lint/README.md#automatisch-corrigeren-autofix) for commands and selection options.
@@ -287,7 +289,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Required Checks
 
-- Run the full lint scan with `bundle exec puppet-lint .` for every completed change.
+- Run the full lint scan from the repository root with `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` for every completed change. Use this explicit configuration route for targeted scans and autofix as documented in the [CLI instructions](.tools/lint/README.md#werking-van-de-controles).
 - Run all tool tests with `bundle exec rake test` after any corrections and before completing each change.
 - Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path.
 - Perform the additional validation relevant to the change, as documented in the [validation guide](.tools/lint/README.md#code-controleren).
@@ -319,7 +321,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 | --- | --- |
 | `AGENTS.md` | Durable project-wide workflow, general review policy, and engineering responsibilities. |
 | Root `README.md` | Central user guide for module use and operational decisions. |
-| `.tools/lint/README.md` | Validation tooling guide and separate authoritative reference for code conventions and Puppet review criteria. |
+| `.tools/lint/README.md` | One central lint guide with task-based navigation, daily validation workflow, authoritative Puppet conventions and review criteria, linter maintenance, and downstream integration. |
 | `.tools/tests/README.md` | Running and extending the central tool tests. |
 | Puppet Strings | Concrete public interfaces, complete parameter descriptions, defaults, and fallback chains. |
 | Scripts and templates | Local, non-obvious technical reasons and constraints, internal behavior, and per-check output contracts. |
@@ -339,11 +341,20 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Tooling READMEs
 
-- Keep the lint README focused on using validation tooling, with a clearly separated reference for the conventions and review criteria it owns.
+- Keep all lint documentation in `.tools/lint/README.md`, with a task-based reading guide and daily workflow before the code reference, maintenance guidance, and downstream integration.
 - Use the lint README as the style and organization reference for `.tools/tests/README.md`, adapted to tool testing.
 - Explain purpose and prerequisites before commands in `.tools/tests/README.md`, followed by troubleshooting and adding tests.
 - Link from `.tools/tests/README.md` to the lint guide for installation and lint rules.
 - Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
+
+### Lint Documentation Maintenance
+
+- Classify new lint knowledge before documenting it: clarification of an existing rule, a new Puppet convention, a manual review criterion, an autofix limitation, check implementation detail, downstream guidance, or a one-time finding.
+- Update the existing authoritative section when it covers the subject; add a durable rule only when required behavior is missing. Keep one-time findings in the change review unless they establish a reusable contract.
+- Place code expectations, examples, automated coverage, autofix conditions, and manual review limits with the relevant convention; keep parser, token, and fix implementation details in the maintainer section.
+- Keep the check overview concise and link to the complete rule instead of repeating its explanation.
+- Verify configuration behavior against the installed CLI, loader, and tests before changing commands. Update local scans, autofix, CI, downstream routes, and their references together, preserving documented configuration differences.
+- Maintain the reading guide, contents, and incoming links when moving sections; verify that obligations, exceptions, and warnings remain at their authoritative destination.
 
 ### README Navigation And Prerequisites
 

@@ -59,7 +59,7 @@ Stopt de taak voordat er tests worden uitgevoerd, controleer dan eerst de [insta
 
 Voeg in deze repository alleen tests toe voor het gedrag van tools, onder `.tools/tests/<tool-name>/`. Kijk daarbij naar het gedrag dat de assertions controleren. Een Puppet-fragment waarmee je een lintmelding uitlokt, hoort bij de lintertests. Een controle van de resources die een module aanmaakt, hoort bij de afzonderlijke functionele validatie. Dat geldt ook voor algemene syntaxiscontroles en controles van templates, scripts en monitoringgedrag.
 
-Gebruik voor die functionele validatie bestaande validators en tijdelijke controles buiten de repository. Leg de uitgevoerde commando's en resultaten vast in de review. Maak hiervoor geen testmap of losse testbestanden in de repositoryroot of bij een module, en neem de controles niet via helpers of taakafhankelijkheden op in de tooltests. De [testafspraken in `AGENTS.md`](../../AGENTS.md#test-scope) beschrijven deze afbakening. Met `bundle exec puppet-lint .` controleer je de projectcode op lintregels.
+Gebruik voor die functionele validatie bestaande validators en tijdelijke controles buiten de repository. Leg de uitgevoerde commando's en resultaten vast in de review. Maak hiervoor geen testmap of losse testbestanden in de repositoryroot of bij een module, en neem de controles niet via helpers of taakafhankelijkheden op in de tooltests. De [testafspraken in `AGENTS.md`](../../AGENTS.md#test-scope) beschrijven deze afbakening. Met `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` controleer je de projectcode volgens de [centrale configuratieroute](../lint/README.md#werking-van-de-controles).
 
 ### Een nieuwe tool toevoegen
 
