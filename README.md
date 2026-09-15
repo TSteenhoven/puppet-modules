@@ -262,6 +262,10 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 
 Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Voor het starten en beheren van de stacks als systemd-service is ook `basic_settings::systemd` nodig.
 
+`docker::compose` en `docker::compose_proxy` halen standaard ontbrekende images op (`pull => 'missing'`). Bestaande images worden hergebruikt, behalve bij de tag `latest`: Compose haalt die bij iedere start van de Compose-service opnieuw op. Met `pull => 'never'` moeten alle images vooraf lokaal aanwezig zijn. Zie de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp) voor alle opties.
+
+Twenty en GitLab Runner kiezen bij `image_tag => 'latest'` automatisch `pull => 'always'`. Een start of herstart van hun Compose-service, ook tijdens een serverstart, kan daardoor een nieuwe versie in gebruik nemen en vereist toegang tot de registry. Bij Twenty geldt dit voor de hele stack, inclusief PostgreSQL en Redis. Andere tags gebruiken `missing`.
+
 Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor gedownloade Compose-bestanden HTTPS met een checksum.
 
 `docker::compose_proxy` vereist `nginx` en gebruikt standaard HTTPS naar de achterliggende applicatie. Kies alleen HTTP als die applicatie geen TLS ondersteunt.

@@ -58,6 +58,9 @@
 # @param image_tag
 #   Runner manager and registration image tag as a String, default latest. Tag syntax and availability are checked by
 #   Docker.
+#   The exact tag latest selects `docker::compose` pull always on each Compose service start. Other tags select pull
+#   missing to download an uncached image. See `docker::compose` pull for failure and update behavior.
+#   This policy affects the manager image; the executor job image pull policy is unchanged.
 #   Line breaks are rejected because this value is written to a single .env entry.
 #   Replacing the manager preserves its mounted registration; it does not change existing executor settings or register
 #   again.
@@ -185,6 +188,12 @@ define docker::gitlab_runner (
           $project_directory = "/opt/docker/${name}"
           $token_file = "${project_directory}/runner-token"
 
+          # Always refresh the exact latest tag; otherwise download the manager image when missing.
+          $compose_pull = $image_tag ? {
+            /\Alatest\z/ => 'always',
+            default      => 'missing',
+          }
+
           # Delegate files, lifecycle, targets and monitoring to the existing Compose implementation.
           docker::compose { $name:
             ensure                     => $ensure,
@@ -199,6 +208,7 @@ define docker::gitlab_runner (
             monitoring_starting_grace  => $monitoring_starting_grace,
             monitoring_timeout         => $monitoring_timeout,
             project_directories        => { 'config' => { 'owner' => 'root', 'group' => 'root', 'mode' => '0700' } },
+            pull                       => $compose_pull,
             target                     => $target,
           }
 

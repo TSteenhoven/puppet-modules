@@ -58,7 +58,9 @@
 #   The default is `127.0.0.1`.
 #
 # @param image_tag
-#   Docker image tag written as `TAG`.
+#   Docker image tag written as `TAG`, default latest. The exact tag latest selects `docker::compose` pull always for
+#   the entire stack, including PostgreSQL and Redis, on each Compose service start. Other tags select pull missing
+#   to download uncached images. See `docker::compose` pull for latest-tag exceptions, failure and update behavior.
 #
 # @param monitoring_detail_limit
 #   Maximum number of diagnostic characters emitted before the Compose monitoring `Interpretation:` section.
@@ -197,6 +199,12 @@ define docker::twenty (
       # Generate .env content for the Compose stack based on the provided parameters.
       $env_content = Sensitive.new(template('docker/twenty.env'))
 
+      # Select stack-wide refresh for the exact latest tag and the missing-image policy for other tags.
+      $compose_pull = $image_tag ? {
+        /\Alatest\z/ => 'always',
+        default      => 'missing',
+      }
+
       # Use the proxy wrapper only when a public Nginx vhost is requested.
       if ($server_name_correct != undef) {
         docker::compose_proxy { $name:
@@ -214,6 +222,7 @@ define docker::twenty (
           proxy_host                 => $host,
           proxy_port                 => $port,
           proxy_scheme               => 'http', # lint:ignore:140chars The proxy scheme is always `http` because the Compose stack listens on HTTP, even when the public URL is HTTPS.
+          pull                       => $compose_pull,
           server_name                => $server_name_correct,
           ssl_certificate            => $ssl_certificate,
           ssl_certificate_key        => $ssl_certificate_key,
@@ -234,6 +243,7 @@ define docker::twenty (
           monitoring_profiles        => $monitoring_profiles,
           monitoring_starting_grace  => $monitoring_starting_grace,
           monitoring_timeout         => $monitoring_timeout,
+          pull                       => $compose_pull,
           target                     => $target,
           require                    => Class['docker'],
         }

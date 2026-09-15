@@ -73,6 +73,13 @@
 #   Optional single-segment directories created below the Compose project directory before the systemd service starts.
 #   Values may override owner, group, and mode. Only the directory entry is managed; contents remain unmanaged.
 #
+# @param pull
+#   Image pull policy passed to `docker compose up --pull` for every service in the stack. Defaults to `missing`:
+#   downloads images absent from the local cache and also refreshes latest tags. `always` pulls the configured image
+#   tags on each Compose service start. With `never`, images must be available locally or startup fails.
+#   The CLI policy overrides pull_policy in the Compose file. Pull failures fail startup; there is no periodic update.
+#   Changing this parameter reloads the systemd unit; an already active stack uses it on its next service start.
+#
 # @param target
 #   `basic_settings::systemd` target suffix that should bind to the generated Compose service. The default is
 #   `services`.
@@ -98,6 +105,7 @@ define docker::compose (
         Optional[group] => String[1],
         Optional[mode]  => Pattern[/\A[0-7]{4}\z/],
   }]]                                          $project_directories        = {},
+  Enum['always', 'missing', 'never']           $pull                       = 'missing',
   String                                       $target                     = 'services',
 ) {
   # Validate the compose name to avoid issues with file paths and systemd unit names.
@@ -230,7 +238,7 @@ define docker::compose (
 
             # Keep Compose commands local; other defined types consume the managed File aliases above.
             $compose_config_command = "/usr/bin/docker compose --project-directory ${project_directory}${compose_env_command} --file % config --quiet" # lint:ignore:140chars
-            $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans" # lint:ignore:140chars
+            $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans --pull ${pull}" # lint:ignore:140chars
             $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
 
             # Validate sourced or rendered Compose content before it is promoted into the project directory.
@@ -251,15 +259,15 @@ define docker::compose (
 
             # Create the Compose unit only when the shared systemd class is available.
             if (defined(Class['basic_settings::systemd'])) {
-              # Determine the service subscription based
-              if ($env_source != undef or $env_content != undef) {
+              # Subscribe to the managed project files using the array required by the shared service wrapper.
+              if ($env_source == undef and $env_content == undef) {
+                # Start and refresh the stack using only the Compose file when no environment file is configured.
+                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$compose_file]]
+                $service_subscribe = [File[$compose_file]]
+              } else {
                 # Start and refresh the stack only after both Compose and environment files are managed.
                 $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$env_file, $compose_file]]
                 $service_subscribe = File[$env_file, $compose_file]
-              } else {
-                # Start and refresh the stack using only the Compose file when no environment file is configured.
-                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$compose_file]]
-                $service_subscribe = File[$compose_file]
               }
               $service_require = concat($service_require_base, $project_directory_resources)
 

@@ -108,6 +108,10 @@
 # @param proxy_websocket
 #   Adds common websocket upgrade directives when `true`.
 #
+# @param pull
+#   Stack-wide image pull policy passed unchanged to `docker::compose`, default missing. Accepts always, missing and
+#   never; see `docker::compose` for startup prerequisites and update behavior.
+#
 # @param referrer_policy
 #   Referrer-Policy header value passed to `nginx::server`.
 #
@@ -167,6 +171,7 @@ define docker::compose_proxy (
   Optional[String]                             $proxy_ssl_trusted_certificate = undef,
   Boolean                                      $proxy_ssl_verify              = false,
   Boolean                                      $proxy_websocket               = true,
+  Enum['always', 'missing', 'never']           $pull                          = 'missing',
   Variant[Boolean, String]                     $referrer_policy               = true,
   Optional[String]                             $ssl_certificate               = undef,
   Optional[String]                             $ssl_certificate_key           = undef,
@@ -255,6 +260,7 @@ define docker::compose_proxy (
       monitoring_starting_grace  => $monitoring_starting_grace,
       monitoring_timeout         => $monitoring_timeout,
       project_directories        => $project_directories,
+      pull                       => $pull,
       target                     => $target,
       require                    => Class['docker'],
     }
