@@ -7,6 +7,10 @@
 # When `server_name` is set, declare `nginx` as well so `docker::compose_proxy` can add the reverse proxy; otherwise the
 # defined type declares `docker::compose` directly.
 # The generated `SERVER_URL` uses `scheme` with the first `server_name`, or `host` when `server_name` is unset.
+# The proxy supplies a fallback CSP allowing same-origin resources, inline scripts and styles, and HTTPS, data and
+# blob images. Objects are blocked; base URIs, framing ancestors and form actions remain same-origin.
+# Inline scripts are needed for Twenty's generated frontend config and reduce protection against script injection.
+# A CSP sent by Twenty itself is preserved by `nginx::server`.
 #
 # @example Deploy Twenty with generated `.env` content
 #   class { 'docker': }
@@ -207,10 +211,24 @@ define docker::twenty (
 
       # Use the proxy wrapper only when a public Nginx vhost is requested.
       if ($server_name_correct != undef) {
+        # Twenty generates inline frontend configuration and styles, and renders remote images and local image previews.
+        $content_security_policy = join([
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' https: data: blob:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "frame-ancestors 'self'",
+          "form-action 'self'",
+        ], '; ')
+
+        # Apply the application policy through the shared proxy's existing header handling.
         docker::compose_proxy { $name:
           ensure                     => $ensure,
           env_content                => $env_content,
           compose_source             => 'puppet:///modules/docker/twenty.yaml',
+          content_security_policy    => $content_security_policy,
           monitoring_detail_limit    => $monitoring_detail_limit,
           monitoring_expected_exited => $monitoring_expected_exited,
           monitoring_health_required => $monitoring_health_required,
