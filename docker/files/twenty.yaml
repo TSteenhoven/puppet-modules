@@ -33,6 +33,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 180s
     restart: always
 
   worker:
