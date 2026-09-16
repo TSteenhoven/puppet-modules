@@ -162,6 +162,8 @@ Voer de volgende stappen uit vanuit de hoofdmap van je Puppet-project.
    puppet module list --environment development
    ```
 
+De [toolinghandleiding voor je eigen project](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project) beschrijft hoe je Puppet en Ruby controleert, eigen tooltests uitvoert en de rapporten per controle als afzonderlijke artifacts bewaart.
+
 ## Quick start
 
 Dit voorbeeld richt een geharde basis in, activeert OpenITCOCKPIT-monitoring en beheert SSH. De host blijft klein genoeg om eerst veilig te testen; een gecombineerde web-, container- en databaseconfiguratie staat in [`examples/site.pp`](examples/site.pp).
@@ -856,5 +858,7 @@ Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving
 - Voer na alle correcties `bundle exec rake test` uit voor de tooltests. Pas je het ontwikkelgereedschap aan, gebruik dan ook de [uitleg over het uitbreiden van tooltests](.tools/lint/README.md#tests-uitvoeren-en-uitbreiden).
 
 De tooltests controleren het ontwikkelgereedschap. Valideer gewijzigd modulegedrag en documentatievoorbeelden daarom afzonderlijk volgens de [aanvullende validatie](.tools/lint/README.md#aanvullende-validatie).
+
+In CI draaien Puppet-lint, RuboCop en de tooltests in afzonderlijke jobs met elk een eigen JUnit-artifact. De [uitleg over CI en rapporten](.tools/lint/README.md#ci-van-deze-repository) beschrijft waar je de uitslagen en downloadbare rapporten vindt.
 
 Je kunt de linter ook buiten deze repository gebruiken. Begin bij de [aanbevolen projectstructuur](.tools/lint/README.md#aanbevolen-projectstructuur) voor de koppeling met `global-modules` en de plaats van eigen tools en configuratie. Volg daarna de [installatie en werkwijze voor je eigen Puppet-project](.tools/lint/README.md#installatie-in-je-project).

@@ -290,6 +290,13 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Keep `test` and the default root Rake task responsible for recursive discovery of `.tools/**/test/**/*_test.rb`.
 - Keep `test:lint` limited to the linter tests under `.tools/lint/test/`.
 
+### CI Jobs And Reports
+
+- Run Puppet linting, Ruby linting, and tool tests in independent CI jobs.
+- Generate all published lint and test reports as JUnit XML during their respective check execution. Publish each job's reports as separate artifacts after success or an ordinary check failure, preserving the check's exit status.
+- End each job's successful validation path with `git diff --exit-code HEAD --` to detect changes to tracked files. Never restore files to make this check pass.
+- Keep generated reports in an ignored results directory under `.tools/` and document their commands and locations in the [lint guide](.tools/lint/README.md#ci-van-deze-repository).
+
 ### Test Structure Maintenance
 
 - Update test discovery, path resolution, task definitions, CI, and affected documentation together when changing the test structure.
@@ -325,6 +332,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 - Write technical documentation in English, including changelog entries and this file, except for the READMEs specified below.
 - Keep the root README and `.tools/lint/README.md` in Dutch unless the user explicitly requests another language.
+- Describe current behavior and instructions in the present tense. Do not explain current usage through historical comparisons or superseded workflows.
 - Keep one authoritative location for each technical fact.
 - Use concise summaries with pointers when a fact must appear in more than one layer.
 - Place information according to the responsibilities below.
@@ -363,7 +371,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Update the existing authoritative section when it covers the subject; add a durable rule only when required behavior is missing. Keep one-time findings in the change review unless they establish a reusable contract.
 - Place code expectations, examples, automated coverage, autofix conditions, and manual review limits with the relevant convention; keep parser, token, and fix implementation details in the maintainer section.
 - Keep the check overview concise and link to the complete rule instead of repeating its explanation.
-- Verify configuration behavior against the installed CLI, loader, and tests before changing commands. Update local scans, autofix, CI, downstream routes, and their references together, preserving documented configuration differences.
+- Verify configuration behavior against the installed CLI, loader, and tests before changing commands.
+- Update local and consumer instructions in the same change when shared tooling affects installation, linting, autofix, tests, reports, artifacts, or CI. Validate consumer examples in a separate project with its own bundle and configuration, preserving supported configuration differences.
 - Maintain the reading guide, contents, and incoming links when moving sections; verify that obligations, exceptions, and warnings remain at their authoritative destination.
 
 ### README Navigation And Prerequisites

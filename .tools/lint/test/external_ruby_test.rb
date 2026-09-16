@@ -13,11 +13,28 @@ class ExternalRubyTest < Minitest::Test
         lint-project: config/rubocop.yml
     YAML
     write('example.rb', "# frozen_string_literal: true\n\nvalue = 1\nputs value\n")
-    run_success('bundle', 'exec', 'rubocop', '--config', '.rubocop.yml', '--cache', 'false', 'example.rb')
+    rubocop_report
+    assert_clean_ruby_report
     write('example.rb', "# frozen_string_literal: true\n\nvalue=1\nputs value\n")
-    command('bundle', 'exec', 'rubocop', '--config', '.rubocop.yml', '--cache', 'false', 'example.rb')
+    rubocop_report
+    assert_failed_ruby_report
+  end
+
+  def assert_clean_ruby_report
+    assert @status.success?, @output + @errors
+    assert_includes read('rubocop.xml'), '<testsuites>'
+    refute_includes read('rubocop.xml'), '<failure '
+  end
+
+  def assert_failed_ruby_report
     refute @status.success?
     assert_includes @output, 'Layout/SpaceAroundOperators'
+    assert_includes read('rubocop.xml'), "<failure type='Layout/SpaceAroundOperators'"
+  end
+
+  def rubocop_report
+    command('bundle', 'exec', 'rubocop', '--config', '.rubocop.yml', '--cache', 'false',
+            '--format', 'progress', '--format', 'junit', '--out', 'rubocop.xml', 'example.rb')
   end
 
   def test_puppet_lint_loads_without_development_dependencies_or_loading_rubocop

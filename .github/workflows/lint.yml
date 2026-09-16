@@ -7,21 +7,28 @@ on:
 permissions:
   contents: read
 
+env:
+  BUNDLE_IGNORE_CONFIG: '1'
+  BUNDLE_VERSION: system
+  BUNDLE_FROZEN: 'true'
+  BUNDLE_PATH: vendor/bundle
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  check:
-    name: Puppet lint and tool tests
+  puppet_lint:
+    name: Puppet lint
     runs-on: ubuntu-24.04
-    env:
-      BUNDLE_IGNORE_CONFIG: '1'
-      BUNDLE_VERSION: system
-      BUNDLE_FROZEN: 'true'
-      BUNDLE_PATH: vendor/bundle
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           persist-credentials: false
-      - uses: ruby/setup-ruby@v1
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ruby
           bundler: none
@@ -30,8 +37,82 @@ jobs:
       - name: Install the locked development bundle
         run: bundle install
       - name: Check the complete first-party scope
-        run: bundle exec puppet-lint --no-config --config .puppet-lint.rc .
+        run: |
+          mkdir -p .tools/lint/results
+          bundle exec puppet-lint --no-config --config .puppet-lint.rc --json . | bundle exec puppet-lint-junit .tools/lint/results/puppet-lint-report.xml
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload Puppet lint report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Puppet-lint-report
+          include-hidden-files: true
+          path: .tools/lint/results/puppet-lint-report.xml
+
+  ruby_lint:
+    name: Ruby lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the locked development bundle
+        run: bundle install
       - name: Check first-party Ruby code
-        run: bundle exec rubocop --config .rubocop.yml
-      - name: Tool tests
+        run: |
+          mkdir -p .tools/lint/results
+          bundle exec rubocop --config .rubocop.yml --format progress --format junit --out .tools/lint/results/rubocop-report.xml
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload Ruby lint report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Ruby-lint-report
+          include-hidden-files: true
+          path: .tools/lint/results/rubocop-report.xml
+
+  tool_tests:
+    name: Tool tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the locked development bundle
+        run: bundle install
+      - name: Run tool tests
         run: bundle exec rake test
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Test-results
+          include-hidden-files: true
+          path: .tools/lint/results/TEST-*.xml
+      - name: Publish test summary
+        if: ${{ !cancelled() }}
+        uses: test-summary/action@v2
+        with:
+          paths: .tools/lint/results/TEST-*.xml

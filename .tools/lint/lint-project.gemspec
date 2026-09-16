@@ -2,15 +2,18 @@
 
 Gem::Specification.new do |spec|
   spec.name = 'lint-project'
-  spec.version = '0.1.1'
+  spec.version = '0.1.2'
   spec.summary = 'Project Puppet-lint checks, RuboCop, and shared lint configuration'
   spec.authors = ['Puppet modules maintainers']
   spec.license = 'Apache-2.0'
   spec.homepage = 'https://github.com/DevSysEngineer/puppet-modules'
   spec.required_ruby_version = '>= 3.2'
-  spec.files = Dir.chdir(__dir__) { Dir['lib/**/*.rb', 'config/*', 'README.md', 'LICENSE'] }
+  spec.files = Dir.chdir(__dir__) { Dir['lib/**/*.rb', 'bin/*', 'config/*', 'README.md', 'LICENSE'] }
+  spec.bindir = 'bin'
+  spec.executables = ['puppet-lint-junit']
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'builder', '~> 3.3'
   spec.add_dependency 'openvox', '~> 8.29'
   spec.add_dependency 'puppet-lint', '~> 5.1'
   spec.add_dependency 'puppet-lint-param-types', '~> 3.0'

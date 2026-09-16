@@ -7,3 +7,6 @@ Thumbs.db
 # Local development dependencies.
 /.bundle/
 /vendor/bundle/
+
+# Generated lint and test reports.
+/.tools/lint/results/

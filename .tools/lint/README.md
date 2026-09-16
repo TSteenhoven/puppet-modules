@@ -19,9 +19,11 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
 | Een lintmelding oplossen | [Een melding oplossen](#een-melding-oplossen); zoek de checknaam in het [checkoverzicht](#beschikbare-projectchecks). |
 | Autofix uitvoeren | [Automatisch corrigeren](#automatisch-corrigeren-autofix) en de voorwaarden bij de betrokken check. |
 | Ruby-code controleren of veilig corrigeren | [RuboCop gebruiken](#ruby-code-controleren). |
+| Rapporten maken of een CI-uitslag onderzoeken | [Lintrapporten maken](#lintrapporten-maken), [tooltests uitvoeren](#tests-uitvoeren-en-uitbreiden) en [CI van deze repository](#ci-van-deze-repository). |
 | Een bestaande lintcheck aanpassen | [Een check toevoegen of wijzigen](#een-check-toevoegen-of-wijzigen) en de bijbehorende [technische werking](#technische-werking-van-de-checks). |
 | Een nieuwe lintcheck of autofix ontwikkelen | [Linter ontwikkelen en onderhouden](#linter-ontwikkelen-en-onderhouden), inclusief [veilige autofixes](#veilige-autofixes-ontwikkelen). |
 | De centrale linter in een ander Puppet-project gebruiken | [Aanbevolen projectstructuur](#aanbevolen-projectstructuur), gevolgd door [installatie, configuratie en CI](#installatie-in-je-project). |
+| Linting, tests en artifacts in een project met `global-modules` inrichten | [Eigen code controleren](#eigen-code-controleren), [eigen tooltests](#eigen-tooltests), [rapporten en artifacts](#rapporten-en-artifacts-in-je-project) en het [CI-voorbeeld](#controle-in-ci). |
 
 ## Inhoudsopgave
 
@@ -31,6 +33,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
   - [Een melding oplossen](#een-melding-oplossen)
   - [Automatisch corrigeren (autofix)](#automatisch-corrigeren-autofix)
   - [Ruby-code controleren](#ruby-code-controleren)
+  - [Lintrapporten maken](#lintrapporten-maken)
   - [Aanvullende validatie](#aanvullende-validatie)
 - [Benodigde omgeving](#benodigde-omgeving)
 - [Installatie](#installatie)
@@ -89,8 +92,12 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
   - [Aanroepen van modules controleren](#aanroepen-van-modules-controleren)
   - [Ruby controleren in een ander project](#ruby-controleren-in-een-ander-project)
   - [Eigen tooltests](#eigen-tooltests)
+    - [Testselectie en uitvoeropties](#testselectie-en-uitvoeropties)
+    - [JUnit-rapportage instellen](#junit-rapportage-instellen)
   - [Aanvullende tests](#aanvullende-tests)
+  - [Rapporten en artifacts in je project](#rapporten-en-artifacts-in-je-project)
   - [Controle in CI](#controle-in-ci)
+    - [Rapporten tonen in GitLab](#rapporten-tonen-in-gitlab)
   - [Problemen oplossen](#problemen-oplossen)
 
 ## Code controleren
@@ -210,6 +217,31 @@ git diff
 
 RuboCop beoordeelt statische eigenschappen zoals opmaak, mogelijke fouten en complexiteit. De tooltests en inhoudelijke review blijven nodig om vast te stellen of de eigen lintchecks correct werken.
 
+### Lintrapporten maken
+
+Alle gepubliceerde lint- en testrapporten gebruiken JUnit XML en staan onder `.tools/lint/results/`. Deze gegenereerde map is uitgesloten van versiebeheer. De onderstaande aanroepen gebruiken dezelfde configuratie, bestandsselectie en foutstatus als de gewone scans. Voer ze afzonderlijk uit vanuit de repositoryroot, met de [ontwikkelbundle](#gems-installeren) geïnstalleerd.
+
+Puppet-lint levert zijn native JSON-uitvoer via een pipe aan `puppet-lint-junit`, de rapportomzetter uit `lint-project`. Die schrijft JUnit XML en toont de actieve meldingen met bronpositie in de console. Gebruik Bash met `pipefail`:
+
+```bash
+set -o pipefail
+mkdir -p .tools/lint/results
+bundle exec puppet-lint --no-config --config .puppet-lint.rc --json . | bundle exec puppet-lint-junit .tools/lint/results/puppet-lint-report.xml
+```
+
+`pipefail` bewaart de foutstatus van Puppet-lint en laat ook een mislukte omzetting falen. De omzetter controleert geen Puppet-code en voert de linter niet opnieuw uit. De JSON-invoer blijft intern in de pipe; het opgeslagen artifact bevat XML. Gebruik het gedeelde profiel met `--fail-on-warnings`, zodat actieve waarschuwingen zowel de job als het rapport laten falen.
+
+Het Puppet-rapport groepeert actieve meldingen per bestand en check in één JUnit-testcase. De fouttekst bevat alle bijbehorende regels, kolommen en meldingen. Genegeerde en gecorrigeerde meldingen tellen niet als fout. Een scan zonder actieve bevindingen krijgt één geslaagde testcase voor de gehele scan; dat is geen telling van gecontroleerde manifests of functionele tests. Ontbrekende of ongeldige JSON-invoer en een scan zonder gerapporteerde bestanden leveren een rapport met `ReportError` en een foutcode op. Het opgegeven rapportbestand wordt bij iedere uitvoering vervangen; een eventuele bovenliggende map moet bestaan.
+
+RuboCop maakt in één uitvoering normale console-uitvoer en JUnit XML met zijn [ingebouwde formatter](https://docs.rubocop.org/rubocop/latest/formatters.html#junit-style-formatter):
+
+```sh
+mkdir -p .tools/lint/results
+bundle exec rubocop --config .rubocop.yml --format progress --format junit --out .tools/lint/results/rubocop-report.xml
+```
+
+De rapportvarianten voeren iedere linter eenmaal uit en corrigeren geen bronbestanden. RuboCop maakt testcases per bestand en actieve cop. Deze JUnit-testcases beschrijven lintcontroles; de [tooltests](#tests-uitvoeren-en-uitbreiden) behouden hun eigen rapporten en tellingen. De testreporter vervangt alleen `TEST-*.xml` in dezelfde uitvoermap en behoudt de twee lintrapporten. CI bewaart de drie soorten rapporten als [afzonderlijke artifacts](#ci-van-deze-repository).
+
 ### Aanvullende validatie
 
 Controleer ieder gewijzigd Puppet-manifest afzonderlijk met de parser. Vervang het voorbeeldpad door het gewijzigde bestand:
@@ -279,7 +311,7 @@ De [Gemfile](../../Gemfile) bevat geen vaste gemversies. [`Gemfile.lock`](../../
 
 Krijg je een Bundler-fout met `/System/Library/Frameworks/Ruby.framework` of `/usr/bin/bundle` in de melding, dan gebruikt je terminal nog de macOS-installatie. Controleer eerst `ruby --version`, `command -v ruby` en `command -v bundle` en herstel de PATH-instelling hierboven. Bundler installeren met de oude systeem-Ruby of `sudo gem install` lost die versieverschillen niet op.
 
-De root-Gemfile laadt de lokale gemspec onder `.tools/lint/`. Die beschrijft de runtime-afhankelijkheden: Puppet-lint, de twee externe lintplugins, RuboCop, OpenVox en `syslog`. De root-Gemfile voegt alleen het ontwikkelgereedschap toe: `metadata-json-lint`, Minitest en Rake. Er is één lockfile voor lokaal ontwikkelen en CI. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
+De root-Gemfile laadt de lokale gemspec onder `.tools/lint/`. Die beschrijft de runtime-afhankelijkheden: Puppet-lint, de twee externe lintplugins, RuboCop, OpenVox, `syslog` en de XML-library `builder`. De root-Gemfile voegt alleen het ontwikkelgereedschap toe: `metadata-json-lint`, Minitest, `minitest-reporters` en Rake. Er is één lockfile voor lokaal ontwikkelen en CI. OpenVox levert de Puppet-parser voor structurele checks en rechtstreekse manifestvalidatie. Het installeert geen Puppet-agent op je beheerde servers. Alleen `gem install puppet-lint` is daarom niet genoeg voor de volledige projectcontrole.
 
 ## Naslag
 
@@ -834,6 +866,7 @@ De interne gem maakt de runtime-afhankelijkheden, laadpaden en gedeelde profiele
 ```text
 .tools/lint/
 ├── lint-project.gemspec
+├── bin/puppet-lint-junit     # Omzetting van native lintuitvoer naar JUnit XML.
 ├── lib/
 │   ├── project_lint.rb
 │   └── project_lint/
@@ -844,7 +877,9 @@ De interne gem maakt de runtime-afhankelijkheden, laadpaden en gedeelde profiele
 └── README.md
 ```
 
-Puppet-lint blijft de lintengine. De checks gebruiken zijn tokens, `notify`, suppressions, `PuppetLint::NoFix`, `add_token` en `remove_token`. Er is geen eigen CLI, optieparser, formatter of uitvoeringsframework. Eenvoudige tokenchecks, zoals de controle van Puppet-URLs, hebben geen AST nodig.
+Puppet-lint blijft de lintengine. De checks gebruiken zijn tokens, `notify`, suppressions, `PuppetLint::NoFix`, `add_token` en `remove_token`. De native CLI bepaalt opties, bestandsselectie, detectie en correcties. Eenvoudige tokenchecks, zoals de controle van Puppet-URLs, hebben geen AST nodig.
+
+[`PuppetJunit`](lib/project_lint/puppet_junit.rb) verwerkt uitsluitend de native JSON-uitvoer voor de [JUnit-rapportage](#lintrapporten-maken). Het uitvoerbare commando `puppet-lint-junit` komt uit dezelfde gem. De omzetter gebruikt `builder` voor XML-escaping, neemt alleen diagnostische velden op en wijzigt geen lintconfiguratie. De [reportertests](test/puppet_junit_test.rb) controleren geldige en ongeldige invoer, unieke testcases en foutdetails; de [pakkettest](test/external_junit_test.rb) controleert de volledige pipe vanuit een onafhankelijk geïnstalleerde gem.
 
 [`Ast`](lib/project_lint/ast.rb) voegt alleen de structurele informatie van de OpenVox-parser toe: declaraties, expressies, resources en hun omliggende scopes. De tokenindexen van Puppet-lint leveren die volledige structuur niet. Alle structurele checks delen één AST voor de huidige lintinvoer; een nieuwe scan vervangt die analyse, ook bij gelijke tekst in een ander bestand. De analyse voert geen Puppet-functies of catalogi uit. Alleen echte `Puppet::ParseError`-meldingen worden omgezet naar een syntaxfout; programmeerfouten blijven fouten. Een onbekende constructie krijgt waar nodig een reviewmelding.
 
@@ -907,6 +942,10 @@ bundle exec rake test:lint
 
 `test` en de standaardtaak ontdekken `.tools/**/test/**/*_test.rb` recursief. `test:lint` selecteert alleen `.tools/lint/test/**/*_test.rb`. De tests staan bij de tool die ze controleren; de roottaak blijft het gezamenlijke startpunt voor CI. Controleer het gerapporteerde aantal tests en eventuele skips. Een geslaagde taak zonder uitgevoerde tests is onvoldoende.
 
+De bestaande testhelper gebruikt `minitest-reporters` voor console-uitvoer en JUnit XML uit dezelfde uitvoering. De rapporten staan per testklasse onder `.tools/lint/results/TEST-*.xml`, ook bij een gewone testfout. De helper bepaalt dit pad vanuit zijn eigen locatie en maakt de uitvoermap aan als die ontbreekt. Een mislukte assertion of onverwachte fout in een test blijft een foutcode opleveren.
+
+De reporter vervangt bij iedere uitvoering alleen de `TEST-*.xml`-bestanden in die map, zodat de rapporten de laatste testselectie weergeven en de lintrapporten behouden blijven. Met `MINITEST_REPORTERS_REPORTS_DIR` kun je via de reporter een andere uitvoermap kiezen, bijvoorbeeld voor een tijdelijke controle. De rapporten worden niet gecommit.
+
 Een gewone checktest erft rechtstreeks van `Minitest::Test` en gebruikt [`test_helper.rb`](test/test_helper.rb) voor de native lintaanroep. Zet korte Puppet-invoer en verwachte meldingen in de test zelf. De gedeelde `findings`-helper selecteert één regel via de publieke configuratie en herstelt die configuratie na de aanroep. Er zijn geen gespecialiseerde testbasisklassen of fixtures die op de naam van de testmethode worden opgezocht.
 
 ```ruby
@@ -953,9 +992,25 @@ Werk op macOS Ruby bij met `brew update` en `brew upgrade ruby`. Open daarna een
 
 ### CI van deze repository
 
-[GitHub Actions](../../.github/workflows/lint.yml) voert dezelfde rootcommando’s uit als lokaal: `bundle install`, de volledige Puppet-lintscan, RuboCop en `bundle exec rake test`. De testtaak bevat ook pluginloading, autofixinteracties en installatie vanuit een extern project. Beide linters controleren alleen. Een fout laat de job mislukken.
+[GitHub Actions](../../.github/workflows/lint.yml) voert drie onafhankelijke jobs uit. Iedere job haalt de repository met submodules op, installeert de ontwikkelbundle en voert zijn eigen controle uit. Een lintfout houdt de tooltests of de andere linter niet tegen.
 
-De workflow gebruikt de nieuwste stabiele Ruby en installeert Bundler zonder versiepin. `BUNDLE_FROZEN=true` bewaakt de lockfile; `BUNDLE_IGNORE_CONFIG=1` voorkomt afhankelijkheid van persoonlijke Bundler-instellingen. Gems worden binnen de checkout geïnstalleerd via `BUNDLE_PATH=vendor/bundle`. De workflow maakt geen commits en publiceert geen gem. Voor afnemende projecten staat hieronder een [voorbeeld met dezelfde CLI](#controle-in-ci).
+| Job | Controle | Downloadbaar artifact | Inhoud |
+| --- | --- | --- | --- |
+| `Puppet lint` | De volledige Puppet-lintscan met JUnit-omzetting | `Puppet-lint-report` | `.tools/lint/results/puppet-lint-report.xml` |
+| `Ruby lint` | RuboCop met console- en JUnit-uitvoer | `Ruby-lint-report` | `.tools/lint/results/rubocop-report.xml` |
+| `Tool tests` | `bundle exec rake test` met console- en JUnit-uitvoer | `Test-results` | `.tools/lint/results/TEST-*.xml` |
+
+De lintjobs gebruiken de [rapportaanroepen](#lintrapporten-maken); de testjob gebruikt de gewone [roottaak](#tests-uitvoeren-en-uitbreiden). Iedere controle draait eenmaal en behoudt zijn eigen foutstatus. De tests omvatten pluginloading, autofixinteracties en het bouwen en installeren van de gem in een tijdelijk afnemend project. Dat controleert het ontwikkelgereedschap; het bewijst geen correct modulegedrag of ondersteuning van alle platforms.
+
+Open de workflowrun onder **Actions** om de drie uitslagen en de artifacts te bekijken. De testjob publiceert de JUnit-resultaten ook in het samenvattende overzicht van die run. De upload- en samenvattingsstappen gebruiken `!cancelled()`, zodat al gemaakte rapporten na een gewone lint- of testfout beschikbaar blijven. Wanneer de installatie of het laden van de tests al mislukt, is er mogelijk nog geen bruikbaar rapport. Een geannuleerde run hoeft evenmin rapporten op te leveren.
+
+Iedere lintjob maakt `.tools/lint/results/` aan vóór het schrijven. De uploads gebruiken `include-hidden-files: true`, omdat `.tools` een verborgen map is. Iedere artifactselectie wijst uitsluitend naar het eigen lintrapport of naar `TEST-*.xml`; de testsamenvatting leest dezelfde testselectie.
+
+Iedere job voert na zijn geslaagde controle rechtstreeks `git diff --exit-code HEAD --` uit. Dit vindt wijzigingen die installatie of controles in gevolgde bestanden hebben achtergelaten ten opzichte van de uitgecheckte commit. Nieuwe, niet-gevolgde bestanden vallen erbuiten. De opdracht vergelijkt geen twee commits en vervangt de lokale whitespacecontrole met `git diff --check` niet. Voer deze CI-controle uit vanuit een schone checkout; lokale ontwikkelwijzigingen geven eveneens een verschil.
+
+De workflow gebruikt de nieuwste stabiele Ruby en installeert Bundler zonder versiepin. `BUNDLE_FROZEN=true` bewaakt de lockfile; `BUNDLE_IGNORE_CONFIG=1` voorkomt afhankelijkheid van persoonlijke Bundler-instellingen. Gems worden binnen de checkout geïnstalleerd via `BUNDLE_PATH=vendor/bundle`. De jobs gebruiken Bash met `pipefail`, zodat ook de Puppet-lintaanroep met JUnit-omzetting zijn foutstatus behoudt. Beide linters controleren alleen; de workflow maakt geen commits en publiceert geen gem.
+
+De artifacts en het testoverzicht vereisen geen extra schrijfrechten op de repository; `contents: read` blijft voldoende. De samenvatting schrijft geen pull-requestcomments of afzonderlijke check runs. Gebruikt de repository verplichte statuschecks, selecteer dan alle drie de jobnamen uit de tabel. Voor afnemende projecten staat hieronder een [voorbeeld met dezelfde CLI](#controle-in-ci).
 
 ### Een gem bouwen en versie uitbrengen
 
@@ -966,13 +1021,15 @@ cd .tools/lint
 gem build lint-project.gemspec --output /tmp/lint-project.gem
 ```
 
-Het pakket bevat alleen `lib/`, `config/`, de README en de licentie. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
+Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie. Versie `0.1.2` levert `puppet-lint-junit` en zijn XML-dependency mee. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
 
-Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint en de gedeelde configuratiepaden als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
+Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en het rapportcommando als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 
 ## De linter gebruiken in een ander Puppet-project
 
 Voeg `lint-project` toe aan de eigen ontwikkelbundle van je project. Je gebruikt de gedeelde checks en profielen uit één gemversie; jouw project bepaalt de te controleren bestanden en het Puppet-modulepad. Een checkout van alle Puppet-modules is alleen nodig als je die modules gebruikt, niet om de linter te kunnen laden.
+
+Voor een project met `global-modules` richt je eerst de [eigen bundle](#installatie-in-je-project) en de configuratie voor [Puppet-lint](#eigen-lintconfiguratie) en [RuboCop](#ruby-controleren-in-een-ander-project) in. Heeft je project eigen gereedschap met tests, voeg dan de [testtaak en JUnit-rapportage](#eigen-tooltests) toe. De [rapportafspraken](#rapporten-en-artifacts-in-je-project) en het [CI-voorbeeld](#controle-in-ci) laten zien hoe je de resultaten per controle afzonderlijk bewaart en publiceert.
 
 ### Benodigdheden
 
@@ -991,7 +1048,8 @@ Puppet/
 ├── AGENTS.md
 ├── README.md
 ├── Rakefile                         # Alleen nodig voor eigen taken of tooltests.
-├── .tools/                          # Alleen nodig voor eigen gereedschap.
+├── .tools/                          # Eigen gereedschap en gegenereerde rapporten.
+│   ├── lint/results/                # Gegenereerd en uitgesloten van versiebeheer.
 │   └── <tool-name>/
 │       ├── bin/                     # Uitvoerbare ingangen, indien nodig.
 │       ├── lib/                     # Ruby-code van deze tool, indien nodig.
@@ -1011,13 +1069,14 @@ Puppet/
         └── manifests/site.pp
 ```
 
-De namen `profile` en `production` zijn voorbeelden. Voeg de modules en environments toe die jouw project gebruikt. Maak `.tools/`, toolmappen en een Rakefile pas aan wanneer je eigen gereedschap of taken nodig hebt. Voor het gebruiken van `lint-project` volstaan de dependency en de configuratiebestanden in de projectroot.
+De namen `profile` en `production` zijn voorbeelden. Voeg de modules en environments toe die jouw project gebruikt. Maak mappen voor eigen gereedschap en een Rakefile pas aan wanneer je zulke tools of taken nodig hebt. Voor het gebruiken van `lint-project` volstaan de dependency en de configuratiebestanden in de projectroot; de [rapportcommando's](#rapporten-en-artifacts-in-je-project) maken de genegeerde uitvoermap `.tools/lint/results/` aan.
 
 | Onderdeel | Afspraak |
 | --- | --- |
 | `Gemfile` en `Gemfile.lock` | Eén ontwikkelbundle in de projectroot voor lokaal werk en CI. Laad `lint-project` als dependency en voeg alleen extra gereedschap toe dat het eigen project gebruikt. |
 | `.puppet-lint.rc` en `.rubocop.yml` | Bewaar hier de eigen bestandsselectie en laad de gedeelde profielen uit de gem volgens de voorbeelden hieronder. |
 | `global-modules/` | Beheer deze dependency via de Git-submodule en de gekozen revisie. Gebruik de gem uit die checkout; voer de controles vanuit de eigen projectroot uit. |
+| `.tools/lint/results/` | Gegenereerde lint- en testrapporten van het eigen project. Bewaar deze map buiten versiebeheer en schrijf niet naar de submodule. |
 | `.tools/<tool-name>/` | Eén map per eigen tool, met een concrete naam. Gebruik `bin/` voor uitvoerbare ingangen en `lib/` voor Ruby-librarycode wanneer die nodig zijn; een klein zelfstandig script mag rechtstreeks in de toolmap staan. |
 | `.tools/<tool-name>/test/` | Houd gedragstests, helpers en fixtures bij de tool die ze controleren. De [testindeling en uitvoering](#eigen-tooltests) beschrijven ook bestaande testmappen. |
 | `Rakefile` | Houd eigen taken in de projectroot. Ontdek tooltests recursief onder `.tools/**/test/**/*_test.rb` en voeg alleen bestaande tools toe als `test:<tool-name>`. |
@@ -1054,7 +1113,7 @@ Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:
 ```ruby
 source 'https://rubygems.org'
 
-gem 'lint-project', '~> 0.1.1', require: false
+gem 'lint-project', '~> 0.1.2', require: false
 ```
 
 Voer daarna ook `bundle install` uit. Een interne gemserver kan hetzelfde pakket aanbieden via de gebruikelijke Bundler-sourceconfiguratie. Er is geen gedeelde `BUNDLE_GEMFILE` of apart installatieprogramma nodig.
@@ -1087,7 +1146,16 @@ Vervang de modulemappen en manifestpaden door bestaande paden in jouw project. D
 
 Geef één directory op om die recursief te scannen, of geef één of meer concrete manifestbestanden mee. De native CLI ondersteunt geen combinatie van meerdere directoryscans in één aanroep. Controleer iedere eigen manifestmap wanneer je project meerdere mappen gebruikt en laat CI bij een ontbrekende of lege selectie falen. De keuze van te controleren bestanden is een verantwoordelijkheid van je project; de linter kan niet vaststellen of je alle productiecode hebt geselecteerd.
 
-Voeg `--fix` toe vóór de manifestpaden om beschikbare veilige correcties uit te voeren en scan daarna opnieuw zonder `--fix`. Dezelfde aanroep ondersteunt `--only-checks project_arrays`, `--json`, `--show-ignored` en `--list-checks`. Gebruik een checkselectie voor onderzoek; de eindcontrole bevat alle gedeelde regels.
+Plaats aanvullende lintopties na beide `--config`-opties en vóór de manifestpaden. Dezelfde CLI biedt de volgende mogelijkheden:
+
+| Doel | Optie | Gebruik |
+| --- | --- | --- |
+| Gewone controle | Geen extra optie | Alle actieve regels uit het gedeelde profiel, met je eigen bestandsselectie. |
+| Automatisch corrigeren | `--fix` | Alleen lokaal, na beoordeling van de [autofixvoorwaarden](#automatisch-corrigeren-autofix); controleer de diff en scan opnieuw zonder `--fix`. |
+| Een check onderzoeken | `--only-checks project_arrays` | Een gerichte selectie tijdens het onderzoeken; de eindcontrole bevat alle gedeelde regels. |
+| Onderdrukte meldingen bekijken | `--show-ignored` | Zicht op toegestane lokale suppressions. |
+| Een lintrapport maken | `--json` | Native invoer voor de [JUnit-omzetter](#rapporten-en-artifacts-in-je-project), met dezelfde controles en foutstatus. |
+| Beschikbare checks bekijken | `--list-checks` | Laat hierbij de manifestpaden weg; de lijst bevat ook uitgeschakelde checks en bewijst geen volledige scan. |
 
 ### Aanroepen van modules controleren
 
@@ -1132,13 +1200,13 @@ Het gedeelde profiel gebruikt de standaardregels van RuboCop en schakelt nieuwe 
 bundle exec rubocop --config .rubocop.yml
 ```
 
-Voer de Ruby-scan ook in je eigen CI uit. Puppet-lint en RuboCop hebben afzonderlijke commando's: een Puppet-lintscan voert geen Ruby-scan uit.
+Voor veilige lokale correcties volg je de [RuboCop-werkwijze](#ruby-code-controleren), met de `.rubocop.yml` van je eigen project. Voor console-uitvoer en JUnit XML uit één uitvoering gebruik je de [rapportaanroep](#rapporten-en-artifacts-in-je-project). Voer de Ruby-scan ook in je eigen CI uit. Puppet-lint en RuboCop hebben afzonderlijke commando's: een Puppet-lintscan voert geen Ruby-scan uit.
 
 ### Eigen tooltests
 
 Test eigen gereedschap onder `.tools/<tool-name>/test/`, met bestandsnamen die eindigen op `_test.rb`. Zet gedeelde voorbereiding in `test_helper.rb` wanneer meerdere tests die nodig hebben en bewaar grotere synthetische invoer onder `test/fixtures/`. Fixtures mogen zo nodig per gedrag worden gegroepeerd. Gebruik korte invoer direct in de test en los paden op vanaf het testbestand, zodat de uitvoering niet afhangt van de huidige werkmap.
 
-Maak geen afzonderlijke centrale `.tools/test/` of `.tools/tests/`. Staan eigen tooltests nu in een rootmap `test/`, `tests/` of `spec/`, verplaats dan alleen die tooltests naar de bijbehorende tool. Behoud de dekking en werk require-paden, fixtures, taken, CI en documentatie samen bij. Verwijder de oude map pas als die leeg is. Bestaande module- of catalogustests blijven bij de eigen validatie van het afnemende project en horen niet onder `.tools/`.
+De tests staan bij de tool die ze controleren; er is geen afzonderlijke centrale `.tools/test/` of `.tools/tests/`. Houd require-paden, fixtures, taken, CI en documentatie in overeenstemming met die indeling en behoud de testdekking. Module- en catalogustests horen bij de eigen validatie van het afnemende project en staan buiten `.tools/`.
 
 Gebruik voor Ruby-tooltests Minitest en Rake uit de eigen ontwikkelbundle. Voeg deze dependencies alleen toe als je zulke tests hebt:
 
@@ -1166,6 +1234,47 @@ Voer vanuit de projectroot `bundle exec rake test` uit, lokaal en in CI. Control
 
 Laat de selectie alleen de eigen tools doorlopen. De tests onder `global-modules/.tools/lint/test/` horen bij de ontwikkeling van de gedeelde gem en draaien in de CI van die repository. Het afnemende project hoeft die suite niet te kopiëren of via zijn eigen Rakefile te laden. Wie alleen de linters gebruikt, heeft daarvoor geen eigen testmap of testtaak nodig.
 
+#### Testselectie en uitvoeropties
+
+De roottaak hierboven ondersteunt de standaardopties van Rake en Minitest. In deze voorbeelden is `inventory` een eigen tool; vervang de paden en testnamen door die van jouw project.
+
+| Doel | Commando |
+| --- | --- |
+| Alle eigen tooltests uitvoeren | `bundle exec rake test` |
+| Eén testbestand uitvoeren | `bundle exec rake test TEST=.tools/inventory/test/inventory_test.rb` |
+| Testnamen tonen | `bundle exec rake test TESTOPTS='--verbose'` |
+| Eén testnaam of patroon selecteren | `bundle exec rake test TESTOPTS='--name=/inventory/'` |
+| De testvolgorde reproduceerbaar maken | `bundle exec rake test TESTOPTS='--seed=12345'` |
+
+Geef optiewaarden binnen `TESTOPTS` mee met `=`, zoals `--name=/inventory/`; de testloader van Rake behandelt een losse waarde als bestandsnaam. Gebruik een gerichte selectie tijdens het onderzoeken van een fout. CI voert de volledige bedoelde testtaak uit.
+
+Testmethoden behouden hun gebruikelijke `test_...`-namen; namen, aantallen en skips blijven herkenbaar in de console en de rapporten.
+
+#### JUnit-rapportage instellen
+
+De voorkeur is console-uitvoer en JUnit XML uit dezelfde testuitvoering. Voeg voor de Minitest-suite `gem 'minitest-reporters'` toe aan de eigen root-Gemfile naast Minitest en Rake, voer `bundle install` uit en neem de lockfile op in versiebeheer. De reporter is een dependency van je eigen ontwikkelbundle; `lint-project` installeert hem niet voor afnemers.
+
+Configureer de reporters in de eigen `.tools/<tool-name>/test/test_helper.rb`. Het onderstaande voorbeeld gaat uit van die mapdiepte en plaatst alle testrapporten onder `.tools/lint/results/` van je eigen project, naast de lintrapporten:
+
+```ruby
+# frozen_string_literal: true
+
+require 'minitest/autorun'
+require 'minitest/reporters'
+
+reporters = [
+  Minitest::Reporters::DefaultReporter.new,
+  Minitest::Reporters::JUnitReporter.new(File.expand_path('../../lint/results', __dir__))
+]
+Minitest::Reporters.use!(reporters)
+```
+
+Laat de testbestanden deze helper laden met `require_relative 'test_helper'` en behoud de voorbereiding en assertions die de eigen tests nodig hebben. Eén uitvoering configureert de reporters eenmaal. Gebruikt de roottaak tests van meerdere eigen tools, laat hun helpers dezelfde reporterinitialisatie laden uit de gedeelde testhulp die dat project daarvoor gebruikt; herinitialiseer de reporters niet per tool.
+
+`bundle exec rake test` toont de testuitslag, maakt de uitvoermap zo nodig aan en schrijft per testklasse een `TEST-*.xml`-bestand. De reporter vervangt alleen die testbestanden, zodat een gerichte testselectie een beperkt rapport oplevert en de lintrapporten behouden blijven. `MINITEST_REPORTERS_REPORTS_DIR` kiest een andere uitvoermap voor bijvoorbeeld een tijdelijke controle. Mislukte tests behouden hun foutcode; een JUnit-bestand maakt een mislukte uitvoering niet succesvol.
+
+Gebruikt je project een ander testframework, behoud dan de eigen testtaak en gebruik de JUnit-reporter van dat framework. Pas het rapportpad in de [CI-configuratie](#controle-in-ci) daarop aan.
+
 ### Aanvullende tests
 
 Voer naast de lintscan de parser- en gedragstests van je eigen project uit, met de Puppet- of OpenVox-versie, facts en Hiera die je daarvoor gebruikt. De ontwikkelbundle van de moduleverzameling is geen vereiste. De parser uit de linterdependency is ook rechtstreeks beschikbaar:
@@ -1176,12 +1285,60 @@ bundle exec puppet parser validate modules/profile/manifests/init.pp
 
 De gemtests controleren het lintgereedschap. Ze vervangen geen catalogus-, template-, script- of monitoringvalidatie van afnemende projecten.
 
+### Rapporten en artifacts in je project
+
+Gebruik JUnit XML voor alle gepubliceerde lint- en testrapporten en bewaar ze onder `.tools/lint/results/` van je eigen project. De projectroot blijft vrij van rapportbestanden. De uitvoermap bevat alleen gegenereerde resultaten; de lintercode en gedeelde profielen komen uit de gem in `global-modules` of je andere gembron. Schrijf rapporten niet naar de submodule of de geïnstalleerde gem.
+
+Bewaar bij voorkeur de resultaten van iedere controle in een afzonderlijk artifact van de job die de controle uitvoert. Daardoor vind je een lintbevinding of testfout direct bij de bijbehorende uitslag. De JUnit-bestanden van één testuitvoering vormen samen één testartifact.
+
+| Job | Rapportpad vanaf de projectroot | Artifactnaam | Voorwaarde |
+| --- | --- | --- | --- |
+| `Puppet lint` | `.tools/lint/results/puppet-lint-report.xml` | `Puppet-lint-report` | De eigen Puppet-manifests en lintconfiguratie zijn aanwezig. |
+| `Ruby lint` | `.tools/lint/results/rubocop-report.xml` | `Ruby-lint-report` | De eigen Ruby-code en RuboCop-configuratie zijn aanwezig. |
+| `Tool tests` | `.tools/lint/results/TEST-*.xml` | `Test-results` | Het project heeft een eigen testsuite en [JUnit-rapportage](#junit-rapportage-instellen). |
+
+De Puppet-rapportage vereist `lint-project` vanaf versie `0.1.2`. Kies voor `global-modules` een revisie met die gemversie, voer vanuit je eigen projectroot `bundle update lint-project` uit en neem de lockfile en submodulerevisie op in versiebeheer. Het rapportcommando is onderdeel van de gem; je kopieert geen converter naar je eigen project.
+
+Maak het Puppet-rapport vanuit de projectroot met dezelfde configuratie en bronselectie als de [gewone controle](#eigen-code-controleren):
+
+```bash
+set -eo pipefail
+mkdir -p .tools/lint/results
+lint_gem="$(bundle info --path lint-project)"
+export PROJECT_LINT_MODULEPATH="$PWD/global-modules:$PWD/modules"
+test -f .puppet-lint.rc
+bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc --json environments/production/manifests/site.pp modules/profile/manifests/init.pp | bundle exec puppet-lint-junit .tools/lint/results/puppet-lint-report.xml
+```
+
+Pas modulemappen en manifestpaden aan je project aan. Bash `pipefail` behoudt de foutstatus van Puppet-lint tijdens de omzetting en laat de opdracht ook bij een conversiefout falen. De configuratie, bestandsselectie en controle op waarschuwingen blijven gelijk aan de gewone scan. De [uitleg over de rapportinhoud](#lintrapporten-maken) beschrijft hoe lintmeldingen in JUnit worden weergegeven.
+
+Voor Ruby gebruik je afzonderlijk de volgende aanroep. De [eigen `.rubocop.yml`](#ruby-controleren-in-een-ander-project) bepaalt welke bestanden worden gecontroleerd:
+
+```sh
+mkdir -p .tools/lint/results
+bundle exec rubocop --config .rubocop.yml --format progress --format junit --out .tools/lint/results/rubocop-report.xml
+```
+
+De testtaak uit [JUnit-rapportage instellen](#junit-rapportage-instellen) maakt het derde rapport tijdens `bundle exec rake test`. Iedere controle draait eenmaal. Alle artifacts bevatten JUnit XML; houd lintresultaten en functionele tooltests als afzonderlijke suites en artifacts herkenbaar.
+
+Neem de hele uitvoermap op in de eigen `.gitignore`:
+
+```gitignore
+/.tools/lint/results/
+```
+
+Het [GitHub Actions-voorbeeld](#controle-in-ci) bewaart elk rapport als downloadbaar artifact en toont de tooltests ook in het workflowoverzicht. Voor het testoverzicht van GitLab voeg je de [JUnit-registratie](#rapporten-tonen-in-gitlab) toe aan iedere producerende job. Downloaden en weergeven gebruiken dezelfde rapportbestanden.
+
+Gebruik voor het testartifact en de testsamenvatting uitsluitend `.tools/lint/results/TEST-*.xml`. Een selectie van de hele map of `*.xml` neemt ook de lintrapporten mee. GitHub Actions vereist daarnaast [`include-hidden-files: true`](https://github.com/actions/upload-artifact#uploading-hidden-files) om bestanden onder `.tools` te uploaden; de onderstaande voorbeelden beperken de upload tot de bedoelde rapportbestanden.
+
 ### Controle in CI
 
-Gebruik dezelfde Gemfile, lockfile, configuratie en CLI-aanroepen als lokaal. Onderstaande GitHub Actions-workflow volgt de aanbevolen indeling en haalt `global-modules` met zijn submodules op. Gebruik je een andere gembron of aanvullende Puppet-modules, voeg dan vóór de lintstap de bestaande installatiestappen van je project toe.
+Gebruik dezelfde Gemfile, lockfile, configuratie en CLI-aanroepen als lokaal. Het onderstaande GitHub Actions-voorbeeld hoort bij een project met `global-modules`, eigen Ruby-code en een Minitest-suite met de [reporterconfiguratie hierboven](#junit-rapportage-instellen). Bewaar het als `.github/workflows/checks.yml` in je eigen project. Gebruik de jobs die bij je project horen: zonder eigen testsuite laat je `tool_tests` weg.
+
+Iedere job haalt `global-modules` met zijn submodules op en installeert de eigen ontwikkelbundle. De jobs draaien onafhankelijk, zonder `needs` tussen linting en tests, en bewaren ieder hun [eigen artifact](#rapporten-en-artifacts-in-je-project). Gebruik je een andere gembron of aanvullende Puppet-modules, voeg dan in iedere betrokken job de benodigde installatiestappen toe vóór de controle. De bronselectie en het modulepad volgen de inrichting van je eigen Puppet environment.
 
 ```yaml
-name: Puppet lint
+name: Puppet checks
 
 on:
   pull_request:
@@ -1190,20 +1347,28 @@ on:
 permissions:
   contents: read
 
+env:
+  BUNDLE_IGNORE_CONFIG: '1'
+  BUNDLE_VERSION: system
+  BUNDLE_FROZEN: 'true'
+  BUNDLE_PATH: vendor/bundle
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  lint:
+  puppet_lint:
+    name: Puppet lint
     runs-on: ubuntu-24.04
-    env:
-      BUNDLE_IGNORE_CONFIG: '1'
-      BUNDLE_VERSION: system
-      BUNDLE_FROZEN: 'true'
-      BUNDLE_PATH: vendor/bundle
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           persist-credentials: false
-      - uses: ruby/setup-ruby@v1
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ruby
           bundler: none
@@ -1213,15 +1378,134 @@ jobs:
         run: bundle install
       - name: Check own Puppet manifests
         run: |
+          mkdir -p .tools/lint/results
           test -f .puppet-lint.rc
           lint_gem="$(bundle info --path lint-project)"
           export PROJECT_LINT_MODULEPATH="$GITHUB_WORKSPACE/global-modules:$GITHUB_WORKSPACE/modules"
-          bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc environments/production/manifests/site.pp modules/profile/manifests/init.pp
+          bundle exec puppet-lint --no-config --load "$lint_gem/lib/project_lint.rb" --config "$lint_gem/config/puppet-lint.rc" --config .puppet-lint.rc --json environments/production/manifests/site.pp modules/profile/manifests/init.pp | bundle exec puppet-lint-junit .tools/lint/results/puppet-lint-report.xml
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload Puppet lint report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Puppet-lint-report
+          include-hidden-files: true
+          path: .tools/lint/results/puppet-lint-report.xml
+
+  ruby_lint:
+    name: Ruby lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the project bundle
+        run: bundle install
       - name: Check own Ruby code
-        run: bundle exec rubocop --config .rubocop.yml
+        run: |
+          mkdir -p .tools/lint/results
+          bundle exec rubocop --config .rubocop.yml --format progress --format junit --out .tools/lint/results/rubocop-report.xml
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload Ruby lint report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Ruby-lint-report
+          include-hidden-files: true
+          path: .tools/lint/results/rubocop-report.xml
+
+  # Include this job when the project has its own tool tests and JUnit reporter.
+  tool_tests:
+    name: Tool tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the project bundle
+        run: bundle install
+      - name: Run own tool tests
+        run: bundle exec rake test
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Test-results
+          include-hidden-files: true
+          path: .tools/lint/results/TEST-*.xml
+      - name: Publish test summary
+        if: ${{ !cancelled() }}
+        uses: test-summary/action@v2
+        with:
+          paths: .tools/lint/results/TEST-*.xml
 ```
 
-Pas de bronselectie en modulemappen aan je project aan. De Ruby-stap gebruikt de hierboven beschreven `.rubocop.yml`; de gem levert het bijbehorende commando. Bewaar credentials voor een interne gembron in de daarvoor bedoelde CI-instellingen; zet ze niet in deze configuratie. De [repositoryworkflow](#ci-van-deze-repository) toont de volledige validatie van de tooling zelf, inclusief de gemtests.
+De publicatiestappen gebruiken `!cancelled()`: ook na een gewone lint- of testfout bewaren ze de gemaakte rapporten, terwijl de producerende job zijn foutstatus behoudt. Na een installatie- of opstartfout is er mogelijk nog geen rapport. Een geannuleerde uitvoering hoeft geen artifacts op te leveren. Laat fouten zichtbaar; gebruik geen autofix of foutonderdrukking in CI.
+
+Iedere job controleert na zijn geslaagde lint- of testopdracht met `git diff --exit-code HEAD --` of installatie of uitvoering gevolgde bestanden verandert. Hiervoor is een schone checkout nodig. Nieuwe, niet-gevolgde bestanden vallen buiten deze controle; herstel bestanden niet om de stap te laten slagen. `git diff --check` blijft de afzonderlijke lokale whitespacecontrole.
+
+Open in GitHub **Actions** en kies de workflowrun. Daar download je `Puppet-lint-report`, `Ruby-lint-report` en, wanneer de testjob aanwezig is, `Test-results`. Het workflowoverzicht toont daarnaast de JUnit-samenvatting. De configuratie gebruikt alleen `contents: read`; de samenvatting schrijft geen pull-requestcomments en vraagt geen extra repositoryschrijfrechten. Stel bij branchbeveiliging de gebruikte jobs als verplichte statuschecks in.
+
+De Ruby-job gebruikt de [.rubocop.yml van je project](#ruby-controleren-in-een-ander-project); de gem levert het bijbehorende commando. Houd rapportpaden, de eigen `.gitignore` en artifactinstellingen gelijk aan de [rapportafspraken](#rapporten-en-artifacts-in-je-project). Bewaar credentials voor een interne gembron in de daarvoor bedoelde CI-instellingen; zet ze niet in deze configuratie. De tests van `global-modules` draaien in de [CI van deze repository](#ci-van-deze-repository); de testjob van het afnemende project voert uitsluitend zijn eigen tests uit.
+
+#### Rapporten tonen in GitLab
+
+De [GitLab-testweergave](https://docs.gitlab.com/ci/testing/unit_test_reports/) leest JUnit XML via `artifacts:reports:junit`. Een bestand onder alleen `artifacts:paths` is downloadbaar, maar verschijnt daarmee niet in het testoverzicht. Gebruik in je bestaande GitLab-jobs dezelfde installatie, configuratie en rapportcommando's als hierboven; de Puppet-pipe vereist Bash met `set -eo pipefail`.
+
+Voeg de onderstaande artifactinstellingen toe aan de bijbehorende jobs in `.gitlab-ci.yml`. Dit fragment bevat alleen de publicatie-instellingen; de jobs houden hun eigen `script` en setup. Laat `tool_tests` weg wanneer je project geen eigen testsuite heeft.
+
+```yaml
+puppet_lint:
+  artifacts:
+    name: Puppet-lint-report
+    when: always
+    paths:
+      - .tools/lint/results/puppet-lint-report.xml
+    reports:
+      junit: .tools/lint/results/puppet-lint-report.xml
+
+ruby_lint:
+  artifacts:
+    name: Ruby-lint-report
+    when: always
+    paths:
+      - .tools/lint/results/rubocop-report.xml
+    reports:
+      junit: .tools/lint/results/rubocop-report.xml
+
+tool_tests:
+  artifacts:
+    name: Test-results
+    when: always
+    paths:
+      - .tools/lint/results/TEST-*.xml
+    reports:
+      junit: .tools/lint/results/TEST-*.xml
+```
+
+`when: always` bewaart beschikbare rapporten ook na een gewone lint- of testfout. De CLI-foutcode bepaalt of de job faalt; JUnit-publicatie verandert die status niet. Bekijk de resultaten onder **Tests** in de pipeline en in de testsamenvatting van de merge request. De lintchecks blijven herkenbaar aan hun eigen suite en artifact. De repository zelf gebruikt de [GitHub Actions-workflow](#ci-van-deze-repository).
 
 ### Problemen oplossen
 
