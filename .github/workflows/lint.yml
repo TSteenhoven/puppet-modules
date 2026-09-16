@@ -18,6 +18,36 @@ defaults:
     shell: bash
 
 jobs:
+  puppet_validate:
+    name: Puppet validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler: none
+      - name: Install the latest stable Bundler
+        run: gem install bundler
+      - name: Install the locked development bundle
+        run: bundle install
+      - name: Validate first-party Puppet manifests
+        run: bundle exec rake validate:puppet
+      - name: Check for changes
+        run: git diff --exit-code HEAD --
+      - name: Upload Puppet validation report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: Puppet-validate-report
+          include-hidden-files: true
+          path: .tools/lint/results/puppet-validate-report.xml
+
   puppet_lint:
     name: Puppet lint
     runs-on: ubuntu-24.04

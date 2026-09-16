@@ -859,6 +859,6 @@ Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving
 
 De tooltests controleren het ontwikkelgereedschap. Valideer gewijzigd modulegedrag en documentatievoorbeelden daarom afzonderlijk volgens de [aanvullende validatie](.tools/lint/README.md#aanvullende-validatie).
 
-In CI draaien Puppet-lint, RuboCop en de tooltests in afzonderlijke jobs met elk een eigen JUnit-artifact. De [uitleg over CI en rapporten](.tools/lint/README.md#ci-van-deze-repository) beschrijft waar je de uitslagen en downloadbare rapporten vindt.
+In CI draaien Puppet-parservalidatie, Puppet-lint, RuboCop en de tooltests in afzonderlijke jobs met elk een eigen JUnit-artifact. Met `bundle exec rake validate:puppet` valideer je ook lokaal alle eigen manifests en maak je het bijbehorende rapport. De [uitleg over CI en rapporten](.tools/lint/README.md#ci-van-deze-repository) beschrijft waar je de uitslagen en downloadbare rapporten vindt.
 
-Je kunt de linter ook buiten deze repository gebruiken. Begin bij de [aanbevolen projectstructuur](.tools/lint/README.md#aanbevolen-projectstructuur) voor de koppeling met `global-modules` en de plaats van eigen tools en configuratie. Volg daarna de [installatie en werkwijze voor je eigen Puppet-project](.tools/lint/README.md#installatie-in-je-project).
+Je kunt de gedeelde lintchecks, parservalidatie en JUnit-rapportage ook vanuit je eigen project gebruiken. De uitleg over [gedeelde tooling hergebruiken](.tools/lint/README.md#gedeelde-tooling-hergebruiken) beschrijft wat de gem levert en welke configuratie je zelf instelt. Volg de [installatie voor je eigen Puppet-project](.tools/lint/README.md#installatie-in-je-project) en kies een [rapportmap die bij je project past](.tools/lint/README.md#rapportmap-kiezen).

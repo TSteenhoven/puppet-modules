@@ -35,7 +35,7 @@ module InstalledGemSupport
   def prepare_bundle
     write('Gemfile', <<~RUBY)
       source 'https://rubygems.org'
-      gem 'lint-project', '= 0.1.2', require: false
+      gem 'lint-project', '= 0.1.3', require: false
     RUBY
     # Seed the consumer resolution with the tested dependency versions, then let Bundler resolve the installed gem.
     FileUtils.cp(File.join(LintTestSupport::ROOT, 'Gemfile.lock'), File.join(@project, 'Gemfile.lock'))

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'builder'
 require 'json'
+require 'project_lint/junit_report'
 
 module ProjectLint
   # Converts native Puppet-lint JSON; detection, selection and exit status remain with the native CLI.
@@ -37,7 +37,8 @@ module ProjectLint
 
     def write_findings(output, active)
       groups = active.group_by { |problem| [problem.fetch('path'), problem.fetch('check')] }
-      self.class.document(output, tests: [groups.length, 1].max, failures: groups.length, errors: 0) do |xml|
+      JunitReport.write(output, name: 'puppet-lint', tests: [groups.length, 1].max, failures: groups.length,
+                                errors: 0) do |xml|
         xml.testcase(classname: 'puppet-lint', name: 'Puppet lint scan') if groups.empty?
         groups.each { |(path, check), problems| write_case(xml, path, check, problems) }
       end
@@ -77,18 +78,9 @@ module ProjectLint
     end
 
     def self.write_error(output, message)
-      document(output, tests: 1, failures: 0, errors: 1) do |xml|
+      JunitReport.write(output, name: 'puppet-lint', tests: 1, failures: 0, errors: 1) do |xml|
         xml.testcase(classname: 'puppet-lint', name: 'Puppet lint report') { xml.error(message, type: 'ReportError') }
       end
-    end
-
-    def self.document(output, **counts)
-      xml = Builder::XmlMarkup.new(indent: 2)
-      xml.instruct!
-      xml.testsuites do
-        xml.testsuite(name: 'puppet-lint', **counts) { yield xml }
-      end
-      output.write(xml.target!)
     end
   end
 end

@@ -9,6 +9,7 @@ inherit_mode:
 AllCops:
   Include:
     - '.tools/lint/bin/puppet-lint-junit'
+    - '.tools/lint/bin/puppet-validate-junit'
     - '.tools/**/*.rb'
     - '.tools/**/*.rake'
     - '.tools/**/*.gemspec'

@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'project_lint/puppet_validate'
+
+exit ProjectLint::PuppetValidate.run(ARGV)

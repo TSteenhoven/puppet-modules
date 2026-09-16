@@ -274,7 +274,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 - Add or maintain repository-owned automated tests only for repository tools.
 - Classify tests by the behavior their assertions verify, not by filenames, input formats, or implementation technologies.
-- Never add general module, catalog, repository syntax, template, script, or monitoring behavior tests to the repository, including indirect execution through tool tests, helpers, hooks, or task dependencies.
+- Run repository-wide Puppet syntax validation as a separate task using the native `puppet parser validate` command; keep it outside tool tests and their task dependencies.
+- Never add general module, catalog, template, script, or monitoring behavior tests to the repository, including indirect execution through tool tests, helpers, hooks, or task dependencies.
 - Perform required functional validation with existing validators and isolated temporary checks outside the repository.
 
 ### Tool Test Structure
@@ -292,8 +293,8 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### CI Jobs And Reports
 
-- Run Puppet linting, Ruby linting, and tool tests in independent CI jobs.
-- Generate all published lint and test reports as JUnit XML during their respective check execution. Publish each job's reports as separate artifacts after success or an ordinary check failure, preserving the check's exit status.
+- Run Puppet parser validation, Puppet linting, Ruby linting, and tool tests in independent CI jobs.
+- Generate all published validation, lint, and test reports as JUnit XML during their respective check execution. Publish each job's reports as separate artifacts after success or an ordinary check failure, preserving the check's exit status.
 - End each job's successful validation path with `git diff --exit-code HEAD --` to detect changes to tracked files. Never restore files to make this check pass.
 - Keep generated reports in an ignored results directory under `.tools/` and document their commands and locations in the [lint guide](.tools/lint/README.md#ci-van-deze-repository).
 
@@ -310,7 +311,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Run the full lint scan from the repository root with `bundle exec puppet-lint --no-config --config .puppet-lint.rc .` for every completed change. Use this explicit configuration route for targeted scans and autofix as documented in the [CLI instructions](.tools/lint/README.md#werking-van-de-controles).
 - Run `bundle exec rubocop --config .rubocop.yml` for changes to first-party Ruby code or Ruby tooling, following the [Ruby validation workflow](.tools/lint/README.md#ruby-code-controleren). Resolve findings within the task's scope and report remaining findings without suppressing them to make the scan pass.
 - Run all tool tests with `bundle exec rake test` after any corrections and before completing each change.
-- Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path.
+- Validate each changed Puppet manifest separately with `bundle exec puppet parser validate` followed by its path. Run `bundle exec rake validate:puppet` for the complete first-party manifest selection and its JUnit report before completion.
 - Perform the additional validation relevant to the change, as documented in the [validation guide](.tools/lint/README.md#code-controleren).
 - Complete applicable CI checks before marking the change complete.
 - Inspect the final change scope with `git diff --name-only`.
