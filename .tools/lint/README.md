@@ -192,7 +192,7 @@ bundle exec puppet-lint --no-config --config .puppet-lint.rc --fix path/to/manif
 bundle exec puppet-lint --no-config --config .puppet-lint.rc --fix --only-checks project_resource_references path/to/manifest.pp
 ```
 
-Zonder `--only-checks` worden de beschikbare fixes van zowel standaardchecks als projectchecks gebruikt. Een check kan een melding laten staan wanneer de code niet veilig te herschrijven is. De concrete grenzen staan bij [inspringing](#inspringing), [komma's](#kommas), [parameteruitlijning](#parameters-en-instellingen), [commentaarscheiding](#toelichtingen-bij-code), [resource references](#resource-references) en [Puppet Strings](#puppet-strings).
+Zonder `--only-checks` worden de beschikbare fixes van zowel standaardchecks als projectchecks gebruikt. Een check kan een melding laten staan wanneer de code niet veilig te herschrijven is. De concrete grenzen staan bij [inspringing](#inspringing), [komma's](#kommas), [parameteruitlijning](#parameters-en-instellingen), [commentaarscheiding](#toelichtingen-bij-code), [resource references](#resource-references), [packagegroepen](#pakketten-en-mappen) en [Puppet Strings](#puppet-strings).
 
 Geslaagde correcties verschijnen als `fixed`. Een resterende waarschuwing of fout geeft nog steeds een foutcode. Scan daarna zonder `--fix` opnieuw: Puppet-lint verzamelt alle meldingen vóór het corrigeren, waardoor bijvoorbeeld een lengtemelding nog over de oorspronkelijke regel kan gaan.
 
@@ -364,6 +364,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | [`project_variable_sections`](#variabelen-groeperen) | Toelichting aan het begin van een blok en na een aantoonbaar afhankelijke groep. | Nee | Groepsindeling en hints voor samenvoegen. |
 | [`project_class_check_reuse`](#classcontroles-hergebruiken) | Herhaalde classcontroles, vindbare afnemers en hergebruik van classvariabelen binnen een positieve classcontrole. | Nee | Beschikbaarheid, evaluatievolgorde en indirect gebruik. |
 | [`project_packages`](#pakketten-en-mappen) | APT-opties, met lokale defaults, providers en verwijderresources. | Nee | Effectieve of overgeërfde opties en concrete pakketuitzonderingen. |
+| [`project_guarded_packages`](#pakketten-en-mappen) | Herhaalde `if !defined(Package[...])`-declaraties met dezelfde expliciete attributen binnen één class of defined type en hetzelfde blok. | Voorwaardelijk | Bestaande packages, evaluatievolgorde, defaults, relaties, commentaar en beschikbaarheid van stdlib. |
 | [`project_files`](#eigenaars-en-rechten) | Expliciete eigenaar/groep/modus, recursieve uitvoerrechten en aantoonbare uitsluiting van `source`/`content`. | Nee | Effectieve cataloguswaarden, uitvoeringsidentiteit, toegang en inhoud van bomen. |
 | [`project_puppet_urls`](#templates-en-bestandsbronnen) | Toegestane mountprefixen, ook naast een ignore van `puppet_url_without_modules`. | Nee | Dynamische delen, beschikbaarheid en fileserverrechten. |
 | [`project_arrays`](#resources-en-afhankelijkheden) | `+` met herkenbare arrays; getal- en hashoptelling blijven toegestaan. | Nee | Dynamische typen en behoud van elementvolgorde. |
@@ -698,6 +699,30 @@ Voorkom dat een APT-installatie onbedoeld aanbevolen of voorgestelde pakketten m
 
 `project_packages` controleert de opties met inbegrip van zichtbare lokale resourcedefaults. Verwijderresources en expliciet niet-APT-providers vallen buiten die controle. Bij een onopgeloste provider, overerving, overrides of samengestelde opties kan een `[review]`-melding volgen. Beoordeel dan de effectieve opties en de reden voor een eventuele pakketuitzondering. De check heeft geen autofix.
 
+Voeg herhaalde package-declaraties met dezelfde instellingen samen met behoud van hun evaluatievolgorde, attributen en relaties. `project_guarded_packages` zoekt binnen iedere class en ieder defined type naar twee of meer `if !defined(Package['naam'])`-blokken met een gelijknamige package-resource. De expliciete attributen en waarden moeten overeenkomen; hun schrijfvolgorde telt niet mee. Iedere groep krijgt één melding bij de eerste guard, met de packagenamen in declaratievolgorde. Verschillende instellingen vormen afzonderlijke groepen. Afzonderlijke takken, lambda's, dynamische titels en enkele declaraties worden niet samengevoegd.
+
+De autofix vervangt de guards door een rechtstreekse `ensure_packages()`-aanroep. Die functie controleert bestaande packages ook op de opgegeven attributen. Bij conflicterende instellingen is een duplicate-resource-fout gewenst: zo wordt een inconsistente declaratie zichtbaar. Filter bestaande packages daarom niet vooraf uit de lijst.
+
+```puppet
+# Install system tools with consistent package settings.
+ensure_packages(
+  [
+    'coreutils',
+    'findutils',
+  ],
+  {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  },
+)
+```
+
+Deze aanroep vereist `puppetlabs-stdlib` in de Puppet environment; de Ruby-gem installeert geen Puppet-modules. Controleer die dependency vóór het toepassen van de fix, ook in een afnemend project. De APT-opties in het voorbeeld blijven expliciet; `project_packages` controleert resource-declaraties en bepaalt niet de effectieve opties van functieaanroepen.
+
+Autofix geldt alleen voor opeenvolgende, gewone declaraties met verschillende letterlijke packagenamen, expliciet `ensure => installed` en gelijke letterlijke attributen. Namen bestaan daarbij uit letters, cijfers, `+`, `_`, `.`, `:` of `-` en beginnen met een letter of cijfer. Een guard bevat uitsluitend de package-resource en heeft geen `else`. De omzetting behoudt de volgorde en de plaats van de eerste guard. Een gebruikt expressieresultaat, `require`, `before`, `notify`, `subscribe`, `alias`, `name`, overerving, zichtbare defaults, overrides of collectors verhindert autofix. Dat geldt ook voor tussenliggende opdrachten, commentaar in het te vervangen gedeelte, lintmarkeringen, heredocs, meerregelige attribuutwaarden en uitvoer die niet binnen de bestaande regelbreedte past. Bij twijfel blijft de hele groep staan met een `[review]`-melding; er wordt geen deel van de groep gecorrigeerd.
+
+De check vergelijkt expliciete instellingen. Identieke dynamische expressies en groepen met aanvullende logica kunnen een reviewmelding opleveren, maar krijgen geen autofix. Beoordeel daarbij de effectieve waarden, defaults buiten het bestand, bestaande resource-aliases en het evaluatiemoment. Controleer een handmatige samenvoeging met tijdelijke catalogi: ontbrekende packages worden toegevoegd, passende bestaande declaraties worden hergebruikt en conflicterende attributen veroorzaken een fout. Behoud bij niet-opeenvolgende groepen de evaluatievolgorde; meerdere aanroepen kunnen nodig zijn. Een lintmelding bewijst op zichzelf niet dat alle overige voorwaarden voor samenvoegen zijn vervuld.
+
 Recursieve bestandsbewerkingen vragen een andere afweging: welke inhoud is volledig eigendom van de module? Gebruik purge, force en recurse alleen voor zulke mappen. Houd `replace => false` op bestanden waarvan een installer of eenmalige initialisatie de inhoud bepaalt.
 
 Bij een gemengde boom beheer je mappen en gewone bestanden apart, zodat bestanden geen onnodige uitvoerrechten krijgen. Voor geëxporteerde applicatiebomen zijn `0750` voor mappen en `0640` voor bestanden het uitgangspunt, tenzij de applicatie aantoonbaar andere rechten nodig heeft. Een private boom zonder uitvoerbare bestanden mag recursief `0600` gebruiken; Puppet voegt dan de zoekrechten voor mappen toe. De inhoud van de boom en de gevolgen van opschonen blijven onderdeel van de handmatige review.
@@ -954,6 +979,8 @@ Begin bij de gebruikte bundle: controleer `bundle exec puppet-lint --no-config -
 
 De correctie mag geen informatie verzinnen, ontwerpkeuze maken of commentaar verliezen. Controleer ook dat het resultaat geldige Puppet-code is en dat dezelfde regel na de correctie geen melding meer geeft. Bewijs dit voor de hele constructie die je wijzigt; alleen de gemelde regel bekijken is niet voldoende.
 
+`project_guarded_packages` gebruikt de gedeelde AST voor guards, scopes en attribuutvergelijking. De tokenanalyse bepaalt alleen de te vervangen gebieden en de concrete opmaak. De fix draait na die van de bestaande checks en leest de actuele attribuuttokens, zodat eerdere quote- en kommafixes behouden blijven. De [voorwaarden voor packagegroepen](#pakketten-en-mappen) beschrijven wanneer het vervangingsplan wordt geweigerd. De diagnose noemt de packagenamen en geeft controltekens met escapes weer; attribuutwaarden en AST-objecten worden niet aan de melding toegevoegd.
+
 Implementeer `fix(problem)` naast `check` in de betreffende `ProjectLint::Checks`-module. Registreer die module in hetzelfde bestand met `PuppetLint.new_check(:project_...) { include CheckModule }`, zoals de bestaande checks doen. Bewaar tijdens `check` de betrokken tokenobjecten en de voorwaarden voor correctie. Geef de melding een index naar die context, zoals de bestaande projectchecks doen, zodat JSON-diagnostiek geen bronwaarden bevat. Controleer alle voorwaarden voordat je tokens wijzigt. Gebruik `PuppetLint::NoFix` wanneer die voorwaarden niet gelden; Puppet-lint behoudt dan de oorspronkelijke melding.
 
 Gebruik `add_token`, `remove_token` en de eigenschappen van bestaande tokens voor de correctie. Hergebruik tokens die andere checks ook kunnen aanpassen en bepaal benodigde afstanden uit de actuele tokeninhoud. Regel- en kolomnummers blijven tijdens de fixfase bij de oorspronkelijke bron horen. De gedeelde helpers in [`TokenHelpers`](lib/project_lint/token_helpers.rb) ondersteunen tokengebieden en witruimte; zij parsen of herschrijven geen volledig bestand.
@@ -1055,7 +1082,7 @@ cd .tools/lint
 gem build lint-project.gemspec --output /tmp/lint-project.gem
 ```
 
-Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. In versie `0.1.7` vergelijkt `project_parameter_passthrough` per gefilterde key de vindbare bronwaarde of brondefault met de ontvangende default. De melding wijst de betreffende key aan; nuttige filters voor andere keys blijven toegestaan. De check gebruikt voor ontvangers hetzelfde modulepad als de interfacecontrole. Het pakket bevat ook de reviewmeldingen van `project_class_check_reuse` voor hergebruik uit een gecontroleerde class. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
+Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. Versie `0.1.8` bevat de standaard actieve check `project_guarded_packages` voor [herhaalde package-declaraties](#pakketten-en-mappen), inclusief een voorwaardelijke autofix naar `ensure_packages()`. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen; na autofix worden conflicterende package-attributen zichtbaar als catalogusfout. De gegenereerde Puppet-code vereist stdlib; de linter levert die module niet mee. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
 
 Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en de rapportcommando's als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 

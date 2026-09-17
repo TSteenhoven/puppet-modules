@@ -125,37 +125,19 @@ class basic_settings::packages (
   $unattended_upgrades_block_packages_all = flatten($unattended_upgrades_block_packages_extra, $unattended_upgrades_block_packages_correct)
   $unattended_upgrades_reboot_str = bool2str($unattended_upgrades_reboot)
 
-  # Install apt package
-  if (!defined(Package['apt'])) {
-    package { 'apt':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install dpkg package
-  if (!defined(Package['dpkg'])) {
-    package { 'dpkg':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install curk package
-  if (!defined(Package['curl'])) {
-    package { 'curl':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install gnupg package
-  if (!defined(Package['gnupg'])) {
-    package { 'gnupg':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
+  # Install missing package-management tools before their dependent packages.
+  ensure_packages(
+    [
+      'apt',
+      'dpkg',
+      'curl',
+      'gnupg',
+    ],
+    {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    },
+  )
 
   # Install package
   package { [

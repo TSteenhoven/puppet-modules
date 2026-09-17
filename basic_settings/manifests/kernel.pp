@@ -441,77 +441,24 @@ class basic_settings::kernel (
     ensure => purged,
   }
 
-  # Install system package
-  if (!defined(Package['coreutils'])) {
-    package { 'coreutils':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['findutils'])) {
-    package { 'findutils':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['grep'])) {
-    package { 'grep':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['lsb-release'])) {
-    package { 'lsb-release':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['lsof'])) {
-    package { 'lsof':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['kmod'])) {
-    package { 'kmod':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['sed'])) {
-    package { 'sed':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['usbutils'])) {
-    package { 'usbutils':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
-
-  # Install system package
-  if (!defined(Package['util-linux'])) {
-    package { 'util-linux':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
+  # Install system tools with consistent package settings.
+  ensure_packages(
+    [
+      'coreutils',
+      'findutils',
+      'grep',
+      'lsb-release',
+      'lsof',
+      'kmod',
+      'sed',
+      'usbutils',
+      'util-linux',
+    ],
+    {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    },
+  )
 
   # Create sysctl config
   file { '/etc/sysctl.conf':
