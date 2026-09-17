@@ -83,7 +83,7 @@ define nginx::monitoring_cert (
   # Require the Nginx parent that owns the shared certificate-check executable.
   if (defined(Class['nginx'])) {
     # Validate settings only for active registrations; retirement does not consume the path or thresholds.
-    $active = $ensure == present and defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none'
+    $active = $ensure == present and $nginx::monitoring_enable and $basic_settings::monitoring::package != 'none'
     $settings_valid = $active ? {
       true    => (($validity_critical == undef or $validity_warning == undef or $validity_critical < $validity_warning)
         and $config_file !~ /[\r\n\t]/),

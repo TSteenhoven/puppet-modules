@@ -26,6 +26,18 @@
 # @param server_name
 #   Public Nginx `server_name` value for the generated vhost.
 #
+# @param backup_database_on_calendar
+#   Optional schedule override. Undef inherits the daily 05:00 schedule from docker::compose.
+#
+# @param backup_database_retention_days
+#   Optional retention override. Undef inherits seven days from docker::compose.
+#
+# @param backup_database_type
+#   Optional database action passed to docker::compose; undef disables database backups.
+#
+# @param backup_service
+#   Compose service name passed to docker::compose. Defaults to undef; required for enabled database backups.
+#
 # @param client_max_body_size
 #   Optional `client_max_body_size` value for the generated Nginx vhost.
 #
@@ -141,133 +153,145 @@ define docker::compose_proxy (
   String                                       $compose_source,
   Integer[1, 65535]                            $proxy_port,
   String                                       $server_name,
-  Optional[String]                             $client_max_body_size          = undef,
-  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum              = undef,
-  Variant[Boolean, String]                     $content_security_policy       = true,
-  Enum['present', 'absent']                    $ensure                        = present,
-  Optional[Variant[String, Sensitive[String]]] $env_content                   = undef,
-  Optional[String]                             $env_source                    = undef,
-  Boolean                                      $http2_enable                  = true,
-  Boolean                                      $http3_enable                  = true,
-  Boolean                                      $http_enable                   = true,
-  Boolean                                      $https_force                   = true,
-  Integer                                      $monitoring_detail_limit       = 6000,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited    = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required    = [],
-  Integer                                      $monitoring_interval           = 300,
-  Boolean                                      $monitoring_orphan_critical    = false,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles           = [],
-  Integer                                      $monitoring_starting_grace     = 300,
-  Integer                                      $monitoring_timeout            = 60,
+  Optional[Pattern[/\A[^\r\n]+\z/]]            $backup_database_on_calendar    = undef,
+  Optional[Integer[1]]                         $backup_database_retention_days = undef,
+  Optional[Enum['postgresql']]                 $backup_database_type           = undef,
+  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]     $backup_service                 = undef,
+  Optional[String]                             $client_max_body_size           = undef,
+  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum               = undef,
+  Variant[Boolean, String]                     $content_security_policy        = true,
+  Enum['present', 'absent']                    $ensure                         = present,
+  Optional[Variant[String, Sensitive[String]]] $env_content                    = undef,
+  Optional[String]                             $env_source                     = undef,
+  Boolean                                      $http2_enable                   = true,
+  Boolean                                      $http3_enable                   = true,
+  Boolean                                      $http_enable                    = true,
+  Boolean                                      $https_force                    = true,
+  Integer                                      $monitoring_detail_limit        = 6000,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited     = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required     = [],
+  Integer                                      $monitoring_interval            = 300,
+  Boolean                                      $monitoring_orphan_critical     = false,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles            = [],
+  Integer                                      $monitoring_starting_grace      = 300,
+  Integer                                      $monitoring_timeout             = 60,
   Hash[Pattern[/\A[A-Za-z0-9_.-]+\z/], Struct[{
         Optional[owner] => String[1],
         Optional[group] => String[1],
         Optional[mode]  => Pattern[/\A[0-7]{4}\z/],
-  }]]                                          $project_directories           = {},
-  Array[String]                                $proxy_extra_directives        = [],
-  Pattern[/\A[^\r\n]+\z/]                      $proxy_host                    = '127.0.0.1',
-  Pattern[/\A[^\r\n]+\z/]                      $proxy_read_timeout            = '86400',
-  Enum['http', 'https']                        $proxy_scheme                  = 'https',
-  Optional[String]                             $proxy_ssl_trusted_certificate = undef,
-  Boolean                                      $proxy_ssl_verify              = false,
-  Boolean                                      $proxy_websocket               = true,
-  Enum['always', 'missing', 'never']           $pull                          = 'missing',
-  Variant[Boolean, String]                     $referrer_policy               = true,
-  Optional[String]                             $ssl_certificate               = undef,
-  Optional[String]                             $ssl_certificate_key           = undef,
-  Optional[String]                             $ssl_certificate_trusted       = undef,
-  Variant[Boolean, String]                     $strict_transport_security     = true,
-  String                                       $target                        = 'services',
-  Variant[Boolean, String]                     $x_content_type_options        = true,
-  Variant[Boolean, String]                     $x_frame_options               = true,
+  }]]                                          $project_directories            = {},
+  Array[String]                                $proxy_extra_directives         = [],
+  Pattern[/\A[^\r\n]+\z/]                      $proxy_host                     = '127.0.0.1',
+  Pattern[/\A[^\r\n]+\z/]                      $proxy_read_timeout             = '86400',
+  Enum['http', 'https']                        $proxy_scheme                   = 'https',
+  Optional[String]                             $proxy_ssl_trusted_certificate  = undef,
+  Boolean                                      $proxy_ssl_verify               = false,
+  Boolean                                      $proxy_websocket                = true,
+  Enum['always', 'missing', 'never']           $pull                           = 'missing',
+  Variant[Boolean, String]                     $referrer_policy                = true,
+  Optional[String]                             $ssl_certificate                = undef,
+  Optional[String]                             $ssl_certificate_key            = undef,
+  Optional[String]                             $ssl_certificate_trusted        = undef,
+  Variant[Boolean, String]                     $strict_transport_security      = true,
+  String                                       $target                         = 'services',
+  Variant[Boolean, String]                     $x_content_type_options         = true,
+  Variant[Boolean, String]                     $x_frame_options                = true,
 ) {
   # The proxy composes resources owned by both parent classes and orders the stack after Docker.
   if (defined(Class['nginx']) and defined(Class['docker'])) {
-    # Construct the proxy upstream URL for use in the generated Nginx configuration.
-    $proxy_upstream = "${proxy_scheme}://${proxy_host}:${proxy_port}"
-
-    # Determine correct https_force value based on whether SSL is configured for the public vhost.
-    $ssl_enable = ($ssl_certificate != undef and $ssl_certificate_key != undef)
-    $https_force_correct = $ssl_enable ? {
-      true    => $https_force,
-      default => false,
-    }
-
-    # Determine the correct proxy_ssl_verify directive value based on the boolean parameter.
-    $proxy_ssl_verify_value = $proxy_ssl_verify ? {
-      true    => 'on',
-      default => 'off',
-    }
-    $proxy_ssl_verify_directives = $proxy_scheme ? {
-      'https' => ["proxy_ssl_verify ${proxy_ssl_verify_value};"],
-      default => [],
-    }
-
-    # Determine the correct proxy_ssl_trusted_certificate directive based on the presence of the parameter and the upstream scheme.
-    if ($proxy_scheme == 'https' and $proxy_ssl_trusted_certificate != undef) {
-      # Pass the supplied trust store to Nginx for HTTPS upstream verification.
-      $proxy_ssl_trusted_directives = [
-        "proxy_ssl_trusted_certificate ${proxy_ssl_trusted_certificate};",
-      ]
-    } else {
-      # Omit upstream trust-store directives when no HTTPS trust store is selected.
-      $proxy_ssl_trusted_directives = []
-    }
-
-    # Determine websocket directives based on the boolean parameter.
-    $proxy_websocket_directives = $proxy_websocket ? {
-      true    => [
-        'proxy_http_version 1.1;',
-        'proxy_set_header Upgrade $http_upgrade;',
-        'proxy_set_header Connection "Upgrade";',
-      ],
-      default => [],
-    }
-
-    # Base proxy directives are always included; SSL and websocket directives are conditional.
-    $location_directives_base = [
-      "proxy_pass ${proxy_upstream};",
-      'proxy_set_header Host $host;',
-      'proxy_set_header X-Real-IP $remote_addr;',
-      'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
-      'proxy_set_header X-Forwarded-Host $host;',
-      'proxy_set_header X-Forwarded-Proto $scheme;',
-      "proxy_read_timeout ${proxy_read_timeout};",
-    ]
-
-    # Combine location directives in order with stdlib's concat helper instead of array operators.
-    $location_directives_ssl = concat($location_directives_base, $proxy_ssl_verify_directives, $proxy_ssl_trusted_directives)
-    $location_directives_websocket = concat($location_directives_ssl, $proxy_websocket_directives)
-    $location_directives = concat($location_directives_websocket, $proxy_extra_directives)
-
-    # Keep access and error diagnostics in separate logs for this proxy.
-    $proxy_access_log = "/var/log/nginx/docker_compose_${name}_access.log combined buffer=32k flush=1m"
-    $proxy_error_log = "/var/log/nginx/docker_compose_${name}_error.log"
-
     # Create the Compose stack
     docker::compose { $name:
-      ensure                     => $ensure,
-      compose_source             => $compose_source,
-      compose_checksum           => $compose_checksum,
-      env_content                => $env_content,
-      env_source                 => $env_source,
-      monitoring_detail_limit    => $monitoring_detail_limit,
-      monitoring_expected_exited => $monitoring_expected_exited,
-      monitoring_health_required => $monitoring_health_required,
-      monitoring_interval        => $monitoring_interval,
-      monitoring_orphan_critical => $monitoring_orphan_critical,
-      monitoring_profiles        => $monitoring_profiles,
-      monitoring_starting_grace  => $monitoring_starting_grace,
-      monitoring_timeout         => $monitoring_timeout,
-      project_directories        => $project_directories,
-      pull                       => $pull,
-      target                     => $target,
-      require                    => Class['docker'],
+      ensure                         => $ensure,
+      backup_database_on_calendar    => $backup_database_on_calendar,
+      backup_database_retention_days => $backup_database_retention_days,
+      backup_database_type           => $backup_database_type,
+      backup_service                 => $backup_service,
+      compose_source                 => $compose_source,
+      compose_checksum               => $compose_checksum,
+      env_content                    => $env_content,
+      env_source                     => $env_source,
+      monitoring_detail_limit        => $monitoring_detail_limit,
+      monitoring_expected_exited     => $monitoring_expected_exited,
+      monitoring_health_required     => $monitoring_health_required,
+      monitoring_interval            => $monitoring_interval,
+      monitoring_orphan_critical     => $monitoring_orphan_critical,
+      monitoring_profiles            => $monitoring_profiles,
+      monitoring_starting_grace      => $monitoring_starting_grace,
+      monitoring_timeout             => $monitoring_timeout,
+      project_directories            => $project_directories,
+      pull                           => $pull,
+      target                         => $target,
+      require                        => Class['docker'],
     }
 
-    # Create the public proxy for deployed stacks and retire its vhost when the stack is absent.
+    # Create the public proxy only for deployed stacks.
     if ($ensure == present) {
-      # Create nginx server for the proxy
+      # Construct the proxy upstream URL for use in the generated Nginx configuration.
+      $proxy_upstream = "${proxy_scheme}://${proxy_host}:${proxy_port}"
+
+      # Determine correct https_force value based on whether SSL is configured for the public vhost.
+      $ssl_enable = ($ssl_certificate != undef and $ssl_certificate_key != undef)
+      $https_force_correct = $ssl_enable ? {
+        true    => $https_force,
+        default => false,
+      }
+
+      # Determine the correct proxy_ssl_verify directive value based on the boolean parameter.
+      $proxy_ssl_verify_value = $proxy_ssl_verify ? {
+        true    => 'on',
+        default => 'off',
+      }
+      $proxy_ssl_verify_directives = $proxy_scheme ? {
+        'https' => ["proxy_ssl_verify ${proxy_ssl_verify_value};"],
+        default => [],
+      }
+
+      # Determine the correct proxy_ssl_trusted_certificate directive based on the presence of the parameter and the upstream scheme.
+      if ($proxy_scheme == 'https' and $proxy_ssl_trusted_certificate != undef) {
+        # Pass the supplied trust store to Nginx for HTTPS upstream verification.
+        $proxy_ssl_trusted_directives = [
+          "proxy_ssl_trusted_certificate ${proxy_ssl_trusted_certificate};",
+        ]
+      } else {
+        # Omit upstream trust-store directives when no HTTPS trust store is selected.
+        $proxy_ssl_trusted_directives = []
+      }
+
+      # Determine websocket directives based on the boolean parameter.
+      $proxy_websocket_directives = $proxy_websocket ? {
+        true    => [
+          'proxy_http_version 1.1;',
+          'proxy_set_header Upgrade $http_upgrade;',
+          'proxy_set_header Connection "Upgrade";',
+        ],
+        default => [],
+      }
+
+      # Base proxy directives are always included; SSL and websocket directives are conditional.
+      $location_directives_base = [
+        "proxy_pass ${proxy_upstream};",
+        'proxy_set_header Host $host;',
+        'proxy_set_header X-Real-IP $remote_addr;',
+        'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
+        'proxy_set_header X-Forwarded-Host $host;',
+        'proxy_set_header X-Forwarded-Proto $scheme;',
+        "proxy_read_timeout ${proxy_read_timeout};",
+      ]
+
+      # Append optional proxy directives in their effective Nginx order.
+      $location_directives = concat(
+        $location_directives_base,
+        $proxy_ssl_verify_directives,
+        $proxy_ssl_trusted_directives,
+        $proxy_websocket_directives,
+        $proxy_extra_directives,
+      )
+
+      # Keep access and error diagnostics in separate logs for this proxy.
+      $proxy_access_log = "/var/log/nginx/docker_compose_${name}_access.log combined buffer=32k flush=1m"
+      $proxy_error_log = "/var/log/nginx/docker_compose_${name}_error.log"
+
+      # Publish the Compose stack with the prepared proxy settings.
       nginx::server { "docker_compose_${name}":
         access_log                => $proxy_access_log,
         client_max_body_size      => $client_max_body_size,

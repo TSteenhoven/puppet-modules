@@ -1,6 +1,6 @@
 # @summary Runs a guarded command in one running service container of a managed Compose project.
 #
-# Declare the corresponding `docker::compose` stack, directly or through an application wrapper.
+# Declare `docker` and the corresponding `docker::compose` stack, directly or through an application wrapper.
 # This resource waits for that stack; it does not manage its files, start containers or allocate a terminal.
 # Container discovery excludes one-off `docker compose run` containers and must find exactly one running service
 # container.
@@ -58,24 +58,14 @@ define docker::compose_exec (
   Optional[Array[String, 1]]                       $unless       = undef,
 ) {
   # Validate environment keys before forming Docker options; values are escaped independently below.
-  if ($environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
-    # Exclude temporary compose run containers, which share the project's service labels.
+  if (defined(Class['docker']) and $environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
+    # Share container discovery with scheduled backups, including exclusion of temporary compose run containers.
     $compose_name_shell = stdlib::shell_escape($compose_name)
     $service_shell = stdlib::shell_escape($service)
     $container_lookup_command = join([
-      'container_id=$(/usr/bin/docker ps',
-      "--filter label=com.docker.compose.project=${compose_name_shell}",
-      "--filter label=com.docker.compose.service=${service_shell}",
-      '--filter label=com.docker.compose.oneoff=False',
-      "--format '{{.ID}}') || exit 1",
+      'container_id=$(/usr/local/lib/puppet/docker-compose-container',
+      "${compose_name_shell} ${service_shell}) || exit 1",
     ], ' ')
-
-    # Refuse ambiguous or missing discovery results before invoking Docker exec.
-    $container_check_command = join([
-      'case "$container_id" in',
-      '    ""|*[!a-fA-F0-9]*) echo "Expected exactly one running Compose service container" >&2; exit 1 ;;',
-      'esac',
-    ], "\n")
 
     # Preserve argument boundaries, including quotes, whitespace and shell metacharacters.
     $environment_args_shell = $environment.map |$key, $value| {
@@ -108,7 +98,6 @@ define docker::compose_exec (
       $unless_args_shell = $unless.map |$argument| { stdlib::shell_escape($argument) }
       $unless_command = Sensitive.new(join([
         $container_lookup_command,
-        $container_check_command,
         join(concat([$docker_exec_command, '"$container_id"'], $unless_args_shell, ['< /dev/null']), ' '),
       ], "\n"))
     } else {
@@ -120,17 +109,16 @@ define docker::compose_exec (
     exec { $name:
       command   => Sensitive.new(join([
         $container_lookup_command,
-        $container_check_command,
         join(concat([$docker_exec_command, $interactive_arg, '"$container_id"'], $command_args_shell, [$stdin_redirect]), ' '),
       ], "\n")),
       creates   => $creates,
       logoutput => false,
       provider  => shell,
-      require   => Docker::Compose[$compose_name],
+      require   => [Docker::Compose[$compose_name], File['/usr/local/lib/puppet/docker-compose-container']],
       timeout   => $timeout,
       unless    => $unless_command,
     }
   } else {
-    fail('docker::compose_exec environment keys must be valid shell variable names.')
+    fail('docker::compose_exec requires the docker class and valid shell variable names for environment keys.')
   }
 }

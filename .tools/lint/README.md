@@ -16,7 +16,8 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
 | Puppet Strings aanpassen | [Puppet Strings](#puppet-strings), [lange regels](#lange-regels) en [waar de uitleg hoort](#waar-de-uitleg-hoort). |
 | Resources of dependencies aanpassen | [Resources en afhankelijkheden](#resources-en-afhankelijkheden), [resource references](#resource-references) en [volgorde en meldingen](#volgorde-en-meldingen). |
 | Bestanden, privileges of shellcommando's aanpassen | [Bestanden en beveiliging](#bestanden-en-beveiliging) en de [algemene beveiligingsreview](../../AGENTS.md#security-and-privacy). |
-| Een monitoringcheck of registratie aanpassen | [Shellscripts en monitoring](#shellscripts-en-monitoring), [targets en monitoring](#targets-en-monitoring) en de [monitoringcontracten](../../AGENTS.md#monitoring-checks). |
+| Een shellscript, Bash-script of shelltemplate aanpassen | [Shellscripts](#shellscripts) en de [algemene shellconventies](../../AGENTS.md#shell-scripts). |
+| Een monitoringcheck of registratie aanpassen | [Monitoringchecks](#monitoringchecks), [targets en monitoring](#targets-en-monitoring) en de [monitoringcontracten](../../AGENTS.md#monitoring-checks). |
 | Systemd-integratie aanpassen | [Gedeelde services en systemd](#gedeelde-services-en-systemd), inclusief de beoordeling per service. |
 | Een lintmelding oplossen | [Een melding oplossen](#een-melding-oplossen); zoek de checknaam in het [checkoverzicht](#beschikbare-projectchecks). |
 | Autofix uitvoeren | [Automatisch corrigeren](#automatisch-corrigeren-autofix) en de voorwaarden bij de betrokken check. |
@@ -71,10 +72,9 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
   - [Gedeelde services en systemd](#gedeelde-services-en-systemd)
     - [Targets en monitoring](#targets-en-monitoring)
     - [Servicebeveiliging](#servicebeveiliging)
-  - [Shellscripts en monitoring](#shellscripts-en-monitoring)
-    - [Opbouw van een check](#opbouw-van-een-check)
+  - [Shellscripts](#shellscripts)
+  - [Monitoringchecks](#monitoringchecks)
     - [Invoer en configuratie](#invoer-en-configuratie)
-    - [Waarden en helpers](#waarden-en-helpers)
     - [Uitvoer voor beheerders](#uitvoer-voor-beheerders)
     - [Veilige en begrensde uitvoer](#veilige-en-begrensde-uitvoer)
     - [Perfdata en compatibiliteit](#perfdata-en-compatibiliteit)
@@ -362,7 +362,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | [`project_resource_references`](#resource-references) | References van hetzelfde type binnen een array, alfabetische letterlijke titels en overbodige buitenste dependency-array. | Voorwaardelijk | Relatiecontext, arraystructuur, dynamische expressies, volgorde en commentaar. |
 | [`project_if_sections`](#voorwaarden-toelichten) | Toelichting boven `if`/`unless` en aaneengesloten voorbereiding. | Nee | Inhoudelijke samenhang en evaluatievolgorde. |
 | [`project_variable_sections`](#variabelen-groeperen) | Toelichting aan het begin van een blok en na een aantoonbaar afhankelijke groep. | Nee | Groepsindeling en hints voor samenvoegen. |
-| [`project_class_check_reuse`](#classcontroles-hergebruiken) | Herhaalde letterlijke classcontroles en gebruik van hun resultaat, inclusief vindbare afnemers. | Nee | Evaluatievolgorde en indirect gebruik dat de analyse niet vindt. |
+| [`project_class_check_reuse`](#classcontroles-hergebruiken) | Herhaalde classcontroles, vindbare afnemers en hergebruik van classvariabelen binnen een positieve classcontrole. | Nee | Beschikbaarheid, evaluatievolgorde en indirect gebruik. |
 | [`project_packages`](#pakketten-en-mappen) | APT-opties, met lokale defaults, providers en verwijderresources. | Nee | Effectieve of overgeërfde opties en concrete pakketuitzonderingen. |
 | [`project_files`](#eigenaars-en-rechten) | Expliciete eigenaar/groep/modus, recursieve uitvoerrechten en aantoonbare uitsluiting van `source`/`content`. | Nee | Effectieve cataloguswaarden, uitvoeringsidentiteit, toegang en inhoud van bomen. |
 | [`project_puppet_urls`](#templates-en-bestandsbronnen) | Toegestane mountprefixen, ook naast een ignore van `puppet_url_without_modules`. | Nee | Dynamische delen, beschikbaarheid en fileserverrechten. |
@@ -371,6 +371,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | [`project_positive_flow`](#voorwaarden-en-validatie) | Omvang van codetakken en afsluitende structuur van `warning()`/`fail()` in classes en defined types. | Nee | Waarheidsvoorwaarden, `elsif`-prioriteit, geldige en ongeldige uitvoerpaden. |
 | [`project_shell`](#shellcommandos-in-puppet) | Aantoonbare escapingherkomst van dynamische exec-commando's en guards. | Nee | Quoting per parserlaag en de plaats van elk argument. |
 | [`project_interface_calls`](#aanroepen-en-publieke-interfaces) | Ontbrekende verplichte argumenten bij statisch gevonden declaraties zonder splat. | Nee | Argumenttypen, onbekende parameters, Hiera, defaults, overerving en containment. |
+| [`project_parameter_passthrough`](#aanroepen-en-publieke-interfaces) | Eenvoudige parameterdoorgifte via `* =>`; per gefilterde key de bronwaarde of brondefault vergelijken met de ontvangende default. | Nee | Effectieve waarden, aanvullende filtervoorwaarden en indirect samengestelde hashes. |
 | [`project_monitoring_backend`](#targets-en-monitoring) | Backendselectie bij aanroepers en vindbare wrappers van `monitoring_custom`. | Nee | Dynamische routes, actief/`none` en verwijderen van registraties. |
 | [`project_suppressions`](#lange-regels) | Alleen control comments voor `140chars` en `puppet_url_without_modules`, eventueel samen. | Nee | Noodzaak, plaats en kleinste geldige scope van de uitzondering. |
 
@@ -471,9 +472,11 @@ De check heeft geen autofix: het omkeren van een voorwaarde of verplaatsen van c
 
 Een defined type dat zijn parentclass nodig heeft, controleert eerst `defined(Class['...'])`. Plaats alle code die van die class afhangt in de geldige tak en geef een duidelijke fout als de class ontbreekt.
 
+Levert die class al het resultaat van een classcontrole, gebruik dan binnen de geldige tak die variabele. Zo verwijst een Docker-define naar `$docker::monitoring_enable` in plaats van opnieuw `defined(Class['basic_settings::monitoring'])` te berekenen. Controleer dat de class de variabele op dat uitvoerpad invult en dat de afnemer dezelfde betekenis en evaluatievolgorde nodig heeft.
+
 Gebruik binnen een class of defined type één gedeelde variabele als dezelfde classcontrole vaker nodig is. Dat geldt ook bij gebruik in verschillende geneste blokken. Wordt de uitkomst maar één keer gebruikt, neem de controle dan rechtstreeks in de expressie op. Een samengestelde voorwaarde mag wel een eigen naam hebben, zoals `$active = $ensure == present and defined(Class['basic_settings::monitoring'])`: die naam beschrijft wanneer het onderdeel actief is.
 
-`project_class_check_reuse` telt letterlijke classcontroles en vindbaar gebruik van hun resultaat, ook vanuit andere manifests en templates. De [technische naslag](#classcontroles-en-vindbare-afnemers) beschrijft welke afnemers de analyse kan vinden. Dynamische classnamen, parameterdefaults en indirecte lookups beoordeel je zelf.
+`project_class_check_reuse` telt letterlijke classcontroles en vindbaar gebruik van hun resultaat, ook vanuit andere manifests en templates. Binnen een positieve classcontrole meldt hij ook beschikbare classvariabelen voor hergebruik. De [technische naslag](#classcontroles-en-vindbare-afnemers) beschrijft de grenzen van deze analyse. Dynamische classnamen, parameterdefaults en indirecte lookups beoordeel je zelf.
 
 Er is geen autofix voor samenvoegen of inlinen. `defined(...)` kijkt naar wat tijdens evaluatie al bekend is; een classdeclaratie tussen twee controles kan de uitkomst veranderen. Controleer daarom de [declaratievolgorde](#resources-en-afhankelijkheden) en behoud afnemers die de statische analyse niet vindt.
 
@@ -494,6 +497,20 @@ Combineer arrays met `concat($base, $extra)` en behoud de elementvolgorde. `proj
 #### Aanroepen en publieke interfaces
 
 Geef bij een class- of defined-type-aanroep alle verplichte parameters mee. Ook een `Optional[...]` zonder default blijft een verplicht argument: het type staat `undef` toe, maar vult geen ontbrekende waarde in.
+
+Geef waarden rechtstreeks als benoemde attributen mee wanneer een hash alleen gelijknamige variabelen doorgeeft, zonder verdere verwerking. Schrijf bijvoorbeeld `retention_days => $retention_days` in de resource, in plaats van een hash met die combinatie te maken en die via `* => $settings` uit te pakken.
+
+Beoordeel een filter per hashkey. Zoek de bronwaarde of parameterdefault op en vergelijk die met de default van de ontvangende parameter. Geef die key rechtstreeks door wanneer het filter voor die key niets verandert aan de ontvangen waarde. Behoud het filter voor andere keys waarvoor het wel betekenis heeft. Gelijke parameternamen of gelijke parameterdefaults aan beide kanten zijn op zichzelf geen bewijs: een default kan worden overschreven en het filter kan die afwijkende invoer bewust uitsluiten. Dit geldt voor tekst, getallen, booleans, `undef`, arrays en hashes.
+
+Bij een vaste lokale toekenning `$bron = 2` en ontvangende default `2` leveren zowel `$value != 2` als `$value == 2` dezelfde eindwaarde als rechtstreekse doorgifte. Heeft de bronparameter alleen default `2`, dan blijft afwijkende invoer mogelijk. `$value != 2` laat die afwijkende invoer door; `$value == 2` sluit haar juist uit. Ook `$value != 0` kan dan nuttig zijn: invoer `0` leidt door het filter tot de ontvangende default `2`.
+
+`project_parameter_passthrough` meldt eenvoudige, ongefilterde doorgifte wanneer alle hashkeys overeenkomen met rechtstreeks gebruikte variabelenamen. Bij een filter controleert hij iedere key afzonderlijk. Hij volgt de bronvariabele via eerdere, eenduidige lokale toekenningen en verwijzingen naar andere variabelen, of leest de parameterdefault van de omringende class of het defined type. Vervolgens vergelijkt hij die waarde met de default van de parameter die de hashkey aanwijst. De namen van bronvariabele en ontvangende parameter mogen verschillen. Een melding staat op de betreffende hashkey; een nuttig filter voor een andere key houdt die melding niet tegen.
+
+De filteranalyse herkent `.filter` met twee ongetypeerde lambdaparameters zonder defaults en uitsluitend `$value != <letterlijke waarde>` of `$value == <letterlijke waarde>`, ook met omgekeerde operanden of haakjes. Bij gelijke vaste bron- en doelwaarden zijn beide vergelijkingen overbodig voor die key. Bij gelijke parameterdefaults meldt de check alleen `!=` met diezelfde default, zodat filters voor afwijkende invoer behouden blijven. Tekst, getallen, booleans, `undef` en letterlijke arrays en hashes worden exact vergeleken, inclusief hun typen. Bij meerdere filters moet elke voorwaarde aan deze criteria voldoen; een aanvullende voorwaarde wordt niet genegeerd.
+
+De check herkent een hash bij `* =>` en een eerdere, eenduidige hashtoekenning binnen dezelfde scope. Hij zoekt de bron in die scope en het ontvangende defined type in de huidige bron of via het [modulepad](#aanroepen-van-modules-controleren). Onbekende bronwaarden, ontvangers of defaults krijgen geen filtermelding. Verplichte parameters zonder default, dynamische berekeningen, gekwalificeerde bronvariabelen en niet-eenduidige toekenningen blijven buiten de analyse; Puppet-functies en Hiera worden niet uitgevoerd. Ontvangende classes blijven buiten de filteranalyse vanwege automatische parameterlookup. Zichtbare resourcedefaults, resource-overrides en overerving vereisen ook handmatige review. Gewone configuratiehashes vallen buiten deze regel.
+
+Er is geen autofix. Controleer de effectieve waarden en evaluatievolgorde met catalogusvalidatie voordat je een gemelde key rechtstreeks doorgeeft. Beoordeel ook andere afnemers van dezelfde hash voordat je die key eruit verwijdert. Houd rekening met configuratie buiten het geanalyseerde bestand en met Puppet-vergelijkingen: een tekstvergelijking kan ook andere hoofdletters accepteren, terwijl die schrijfwijze voor de ontvanger verschil maakt.
 
 `project_interface_calls` meldt ontbrekende argumenten bij declaraties die de check statisch kan vinden. Binnen deze repository is de eigen moduleverzameling het standaardzoekpad. De [modulepadregels](#aanroepen-van-modules-controleren) beschrijven hoe de declaratie wordt gekozen en welke aanroepen buiten de analyse vallen.
 
@@ -524,11 +541,17 @@ Een buitenste array rond één reference kan ook bij een dynamische titel worden
 
 #### Volgorde en meldingen
 
+Groepeer resources en aanroepen van defined types bij het onderdeel dat ze beheren. Sluit nieuwe aanroepen aan op de bestaande indeling van het manifest. Aanvullende voorzieningen, zoals back-ups, monitoring en audit, volgen bij elkaar na de configuratie en service waarop ze betrekking hebben, binnen het geldige uitvoerpad en met behoud van hun eigen inschakelvoorwaarden.
+
+Gedeelde voorbereiding en vereiste classes mogen eerder staan wanneer afnemers die nodig hebben. Een vroeg berekende instelvariabele is op zichzelf geen reden om ook de bijbehorende resourcedeclaratie naar het begin te halen. Vereist de evaluatievolgorde een andere plaats voor een gerelateerde aanroep, licht dan bij die aanroep de concrete afhankelijkheid toe en valideer die volgorde.
+
 Behoud de expliciete `require`-, `notify`- en `subscribe`-relaties tussen resources. Ontstaat een afhankelijkheidscyclus, zoek dan welke relatie of containment die veroorzaakt. Herstel de relatie daar, zodat Puppet de volgorde en herstarts kan blijven regelen. Een los `systemctl`-, `service`- of reloadcommando omzeilt die samenhang en is geen vervanging.
 
 Soms is de afhankelijkheid van een volledige class te breed. Koppel de ordering dan waar nodig aan een kleinere, stabiele resource en behoud meldingen zoals `notify => Service['nginx']`.
 
-Plaats monitoring en audit bij de resource waarop ze betrekking hebben. Configuratie die alleen voor monitoring nodig is hoort bij de monitoringsectie van het manifest. Een bestand dat de daemon zelf configureert blijft bij de daemonconfiguratie staan.
+Houd instellingen die alleen voor een aanvullende voorziening nodig zijn bij die voorziening. Een bestand dat de daemon zelf configureert blijft bij de daemonconfiguratie staan.
+
+Beoordeel deze indeling bij de review van het hele omliggende blok. De [sectiechecks](#toelichtingen-bij-code) controleren opmaak en toelichtingen; een geslaagde lintscan bewijst niet dat aanroepen inhoudelijk op de juiste plek staan. Verplaats ze niet automatisch op basis van hun naam, type of afstand tot een variabele: hun functie, voorwaarden en evaluatievolgorde bepalen welke plek klopt.
 
 ### Commentaar en documentatie
 
@@ -791,52 +814,25 @@ Voor private uitvoer zet je `UMask=0077` expliciet in de servicespecifieke hash 
 
 Beveiligingsdefaults in een generieke wrapper raken alle services die die wrapper gebruiken. Verberg daar daarom geen umask of andere beveiligingskeuze. Beoordeel bij een wijziging iedere bekende gebruiker en valideer het gedrag, of bied per service een gedocumenteerde mogelijkheid om de betreffende beperking uit te schakelen.
 
-### Shellscripts en monitoring
+### Shellscripts
 
-De shellcode van monitoringchecks valt buiten Puppet-lint. De onderstaande afspraken vragen daarom afzonderlijke review en synthetische validatie. Gebruik daarbij de [monitoringcontracten](../../AGENTS.md#monitoring-checks): één gedeeld executable per check, instellingen per target en behoud van de andere registraties wanneer één target wordt verwijderd. Voor shellcode geldt [vier spaties inspringing](../../AGENTS.md#shell-formatting), ook na het renderen van een template.
+De [shellconventies in `AGENTS.md`](../../AGENTS.md#shell-scripts) bepalen de opbouw, naamgeving, opmaak, commandodetectie, argumentverwerking en gegevensverwerking voor alle eigen shellcode. Gebruik ze voor POSIX shell en Bash, ook in bestanden zonder extensie, templates en inline fragmenten. De [shellvalidatie](../../AGENTS.md#shell-validation) beschrijft hoe je de bron en gegenereerde uitvoer controleert; een geslaagde Puppet-lintscan vervangt die controle niet.
 
-#### Opbouw van een check
+Voor waarden die Puppet in een shelltemplate invoegt, gebruik je ERB met directe shelltoekenningen. Beperk ERB tot het invoegen van waarden; de voorbereiding in Puppet bestaat uit defaults voor beheerde configuratie, serialisatie en shellveilige argumenten. Volg daarbij de afspraken voor [templates](#templates-en-bestandsbronnen) en [shellcommando's in Puppet](#shellcommandos-in-puppet). Voeg alleen een afzonderlijk configuratiebestand of een parser toe wanneer dat is gevraagd of al gebruikelijk is.
 
-Monitoringchecks gebruiken POSIX `#!/bin/sh` en Nagios-exitcodes. Gebruik daarin geen Bash-constructies zoals arrays, `[[ ... ]]`, `(( ... ))`, `function`, process substitution, here-strings, `pipefail`, `read -d` en Bash-specifieke expansies. Ook andere nieuwe scripts en templates gebruiken POSIX shell, tenzij de benodigde functionaliteit Bash vereist.
+Behoud volgens de [invoerafspraken](../../AGENTS.md#arguments-and-runtime-settings) de bestaande invoerroute voor daemonconfiguratie en inloggegevens. Lees waar mogelijk de effectieve daemonconfiguratie, bijvoorbeeld met `vnstat --showconfig`, zodat je geen tweede instellingen of sysfs-terugvalroutes hoeft te onderhouden.
 
-`mysql/files/automysqlbackup` is een bestaande Bash-uitzondering vanwege arrays, indirecte expansie en rekenkundige lussen. Licht bij wijzigingen aan een Bash-script toe waarom Bash nodig blijft.
+### Monitoringchecks
 
-Bekijk vóór een nieuwe of gewijzigde check de meest verwante bestaande checks. Sluit aan op hun opbouw en hun verwerking van status, parsing, ernst, buffering, afkappen en perfdata. Als dat patroon niet bij de check past, leg dan uit waarom je ervan afwijkt.
-
-Een check is in deze volgorde opgebouwd:
-
-1. Een fouthelper voor fouten die ook tijdens de voorbereiding kunnen optreden.
-2. Het zoeken van de benodigde binaries.
-3. De initialisatie van standaardwaarden en omgevingsvariabelen volgens het [configuratiecontract](../../AGENTS.md#monitoring-check-configuration).
-4. Eén POSIX `while getopts ... opt; do`-blok voor de CLI-opties.
-5. Helpers en validatie van de effectieve instellingen, voordat die worden gebruikt.
-6. De hoofdlogica.
-
-Zoek een binary rechtstreeks met `COMMAND=$(command -v command 2>/dev/null) || die ...`. Op de commandopositie wordt `$COMMAND` zonder aanhalingstekens aangeroepen. Quote wel de data-argumenten, tests en toekenningen. Gebruik shellbuiltins rechtstreeks en gebruik `printf` voor uitvoer.
-
-Geef iedere CLI-optie een eigen case-tak met een toekenning. Sluit de verwerking af met één usage-/fouttak voor ongeldige opties en hulp, inclusief `-h` wanneer die optie is gedeclareerd. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
+Checks volgen de algemene [shellconventies](../../AGENTS.md#shell-scripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. De aanvullende [monitoringcontracten](../../AGENTS.md#monitoring-checks) regelen gedeelde executables, instellingen per target en de levenscyclus van registraties. Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
 
 #### Invoer en configuratie
 
 Een monitoringcheck heeft zijn optionele runtime-defaults in het executable. Puppet geeft alleen instellingen door die expliciet zijn ingevuld. Gebruik voor zulke Puppet-parameters een passend `Optional[...]` met `undef` als default. Bij `undef` laat de registratie zowel de CLI-optie als het argument weg. Zo ontstaan er geen tweede defaults in manifests, wrappers of ERB-expressies. Pas dit toe op nieuwe instellingen en bij wijzigingen aan bestaande defaultverwerking.
 
-De check verwerkt commandline-opties, omgevingsvariabelen en defaults volgens het [configuratiecontract in `AGENTS.md`](../../AGENTS.md#monitoring-check-configuration). Valideer de effectieve waarden met tijdelijke synthetische invoer, ongeacht de bron van die waarden. Daarbij horen syntaxis, eenheden, bereik, onderlinge drempelvolgorde en runtimebetekenis. Puppet mag twee expliciet opgegeven drempels alvast vergelijken, maar neemt daarvoor geen ontbrekende scriptdefault over.
-
-Als de check Puppet-data nodig heeft, gebruik je een ERB-template met directe shelltoekenningen. Beperk ERB tot het invoegen van variabelen. De voorbereiding in Puppet blijft beperkt tot defaults voor beheerde configuratie, serialisatie en shellveilige waarden. Voeg alleen een afzonderlijk checkconfiguratiebestand of een parser toe wanneer dat is gevraagd of al gebruikelijk is.
-
-Behoud voor daemonconfiguratie en inloggegevens de bestaande invoerroute. Kopieer die gegevens niet naar nieuwe CLI-opties of omgevingsvariabelen. Lees waar mogelijk de effectieve daemonconfiguratie, bijvoorbeeld met `vnstat --showconfig`, zodat je geen tweede instellingen of sysfs-terugvalroutes hoeft te onderhouden.
+De check verwerkt commandline-opties, omgevingsvariabelen en defaults volgens het [configuratiecontract in `AGENTS.md`](../../AGENTS.md#monitoring-check-configuration), dat de algemene invoer- en validatieregels aanvult. Puppet mag twee expliciet opgegeven drempels alvast vergelijken, maar neemt daarvoor geen ontbrekende scriptdefault over.
 
 Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie. Een scriptoptie of omgevingsvariabele verandert die agentinstellingen niet. Controleer hun samenhang volgens de [afspraken voor de executor](../../AGENTS.md#executor-scheduling).
-
-#### Waarden en helpers
-
-Groepeer instellingen en afgeleide waarden naar hun doel en geef iedere groep een korte toelichting. Dat maakt reeksen defaults, drempels, statuswaarden, tellers, samenvattingen, perfdata, paden, rechten, commando's en relaties herkenbaar.
-
-Een helper is nuttig als hij een taak benoemt, gedeelde validatie of opmaak afhandelt of wezenlijke duplicatie wegneemt. Een losse append, toekenning of `printf` heeft zonder zo'n reden geen eigen helper nodig. Houd eenmalige verwerking bij elkaar als dat duidelijker leest en zet de inhoudelijke verwerking vóór een kleine terugvaltak.
-
-Voor begrensde tellers, perfdata, sorteerbuffers en diagnoses volstaan shellvariabelen en `printf`. Gebruik `mktemp` en tijdelijke bestanden wanneer een commando een bestand vereist of de data te groot of onveilig is voor variabelen. Ruim die bestanden na gebruik op.
-
-Maak regeleinden expliciet met `printf`-formaten en ge-escapete regeleinden; zet geen letterlijke lege regels in gequote toekenningen. Serialiseer lijsten bewust als CSV. Geef metadata uit commandosubstitutie expliciete markeertokens, zodat de verwerking niet afhankelijk is van kunstmatig toegevoegde regeleinden.
 
 #### Uitvoer voor beheerders
 
@@ -931,6 +927,8 @@ De validatiecontrole herkent rechtstreekse Puppet-aanroepen van `warning()` en `
 #### Classcontroles en vindbare afnemers
 
 `project_class_check_reuse` controleert letterlijke classnamen in de body van iedere class en ieder defined type afzonderlijk. De check telt echte variabelereferenties, inclusief interpolatie en gekwalificeerde verwijzingen vanuit vindbare manifests in het modulepad. Rechtstreeks gebruik via `@variabele` in statisch benoemde ERB-templates en `inline_template` telt ook mee. Commentaar, gewone stringtekst en gelijknamige lokale lambdavariabelen tellen niet als hergebruik. Dynamische classnamen, parameterdefaults, andere resourcetypen en indirecte template- of functielookups vallen buiten deze analyse; beoordeel die bij de review.
+
+Voor hergebruik uit een gecontroleerde class onderzoekt de check de geldige tak van een omvattende `if`, inclusief haakjes en `and` in de voorwaarde. Hij zoekt de class eerst in de huidige bron en daarna via het modulepad. Eén rechtstreekse toekenning van dezelfde classcontrole aan een classvariabele levert een `[review]`-melding op. Toekenningen in lambda's of geneste declaraties, meervoudige toekenningen en samengestelde of omgekeerde resultaten tellen niet mee. Een `or`, negatieve controle, `else` of controle in een andere declaratie bewijst geen beschikbaarheid. Ook deze melding heeft geen autofix: voorwaardelijke toekenningen en verschillen in evaluatiemoment vragen beoordeling van de effectieve catalogus.
 
 #### References en relatiecontext
 
@@ -1055,7 +1053,7 @@ cd .tools/lint
 gem build lint-project.gemspec --output /tmp/lint-project.gem
 ```
 
-Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie. Versie `0.1.3` levert `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency mee. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
+Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. In versie `0.1.7` vergelijkt `project_parameter_passthrough` per gefilterde key de vindbare bronwaarde of brondefault met de ontvangende default. De melding wijst de betreffende key aan; nuttige filters voor andere keys blijven toegestaan. De check gebruikt voor ontvangers hetzelfde modulepad als de interfacecontrole. Het pakket bevat ook de reviewmeldingen van `project_class_check_reuse` voor hergebruik uit een gecontroleerde class. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
 
 Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en de rapportcommando's als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 
@@ -1259,6 +1257,8 @@ Controleer environments met verschillende modulepaden apart. Eén samengevoegde 
 > Een niet-vindbare declaratie kan geen melding over ontbrekende parameters opleveren. Een geslaagde scan bewijst daarom niet dat Puppet de catalogus kan compileren. Controleer aanroepen ook met de eigen catalogusvalidatie.
 
 Bij vindbare declaraties controleert `project_interface_calls` verplichte parameters, inclusief `Optional[...]` zonder default. Argumenttypen, onbekende parameters, functies, dynamische classnamen, `include`/`contain`, Hiera, overerving en splats worden daarmee niet volledig gevalideerd.
+
+`project_parameter_passthrough` gebruikt dezelfde vindbare defined types om per gefilterde key de bronwaarde of brondefault met de ontvangende parameterdefault te vergelijken. De bron wordt in de actuele lintinvoer opgezocht. Een onbekende bron, ontvanger of default geeft geen filtermelding; de [regel voor parameterdoorgifte](#aanroepen-en-publieke-interfaces) beschrijft de verdere grenzen en reviewcriteria.
 
 ### Ruby controleren in een ander project
 

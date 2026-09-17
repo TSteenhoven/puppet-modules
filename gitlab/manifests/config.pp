@@ -92,7 +92,7 @@ class gitlab::config (
     # Try to get smtp server
     if ($smtp_server == undef) {
       # Use the central SMTP relay when available, otherwise use the local relay.
-      if (defined(Class['basic_settings'])) {
+      if ($gitlab::basic_settings_enable) {
         # Inherit the central SMTP relay.
         $smtp_server_correct = $basic_settings::smtp_server
       } else {

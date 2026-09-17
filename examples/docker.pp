@@ -14,8 +14,11 @@ node 'container-basic.example.org' {
     require => Class['basic_settings'],
   }
 
-  # Deploy the stack with health requirements for long-running services and an expected migration exit.
+  # Back up the db service; credentials stay in the existing container environment.
+  # Deploy the stack with database backups and health requirements for long-running services.
   docker::compose { 'example':
+    backup_database_type       => 'postgresql',
+    backup_service             => 'db',
     compose_checksum           => '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     compose_source             => 'https://downloads.example.org/example/docker-compose.yml',
     env_source                 => 'puppet:///modules/profile/example.env',
@@ -44,7 +47,8 @@ node 'container-cleanup.example.org' {
   class { 'docker': }
 
   # Back up required data, detach the systemd target binding, reload systemd and stop the stack before applying this removal.
-  # This deletes the project directory and local bind-mount data; retire the service configuration separately.
+  # Stop the backup timer and service; central directory management removes undeclared unit files.
+  # This deletes the entire project directory, including backups; copy required data elsewhere first.
   docker::compose { 'old-example':
     ensure  => absent,
     require => Class['docker'],

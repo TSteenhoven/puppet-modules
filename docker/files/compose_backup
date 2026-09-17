@@ -1,0 +1,122 @@
+#!/bin/sh
+# Managed by puppet
+
+# Scheduled by Puppet; monitoring reads the resulting files independently.
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+# Report failures to the existing systemd logging and notification path.
+fail() {
+    printf 'Compose backup: %s\n' "$*" >&2
+    exit 1
+}
+
+# Binary checks
+DATE=$(command -v date 2>/dev/null) || fail "date not available"
+DOCKER=$(command -v docker 2>/dev/null) || fail "docker not available"
+FLOCK=$(command -v flock 2>/dev/null) || fail "flock not available"
+GZIP=$(command -v gzip 2>/dev/null) || fail "gzip not available"
+JQ=$(command -v jq 2>/dev/null) || fail "jq not available"
+MKTEMP=$(command -v mktemp 2>/dev/null) || fail "mktemp not available"
+MV=$(command -v mv 2>/dev/null) || fail "mv not available"
+RM=$(command -v rm 2>/dev/null) || fail "rm not available"
+TIMEOUT=$(command -v timeout 2>/dev/null) || fail "timeout not available"
+
+# Project settings are supplied by the managed systemd unit.
+[ "$#" -eq 4 ] || fail 'usage: docker-compose-backup PROJECT PROJECT_DIRECTORY SERVICE RETENTION_DAYS'
+PROJECT_NAME=$1
+PROJECT_DIRECTORY=$2
+SERVICE_NAME=$3
+RETENTION_DAYS=$4
+case "$RETENTION_DAYS" in
+    ''|0|0*|*[!0-9]*)
+        fail 'retention must be a positive integer'
+        ;;
+esac
+[ "${#RETENTION_DAYS}" -le 9 ] || fail 'retention is too large'
+
+# Puppet owns directory permissions and supplies the project path; reject a replaced output directory.
+BACKUP_DIR="$PROJECT_DIRECTORY/backup"
+[ -d "$BACKUP_DIR" ] && [ ! -L "$BACKUP_DIR" ] || fail 'backup directory is missing or a symlink'
+
+# Prevent overlapping runs and keep incomplete output private.
+[ ! -L "$BACKUP_DIR/.lock" ] || fail 'unsafe lock file'
+exec 9>"$BACKUP_DIR/.lock"
+$FLOCK -n 9 || fail 'another backup is running'
+WORK_DIR=$($MKTEMP -d "$BACKUP_DIR/.partial.XXXXXXXXXX")
+trap '$RM -rf -- "$WORK_DIR"' EXIT
+trap 'exit 1' HUP INT TERM
+
+# The caller supplies the database service; use the shared Compose container selector.
+CONTAINER_ID=$($TIMEOUT -k 2 30 /usr/local/lib/puppet/docker-compose-container "$PROJECT_NAME" "$SERVICE_NAME") || fail 'container selection failed'
+
+# A container-side lock and deadline also protect against a disconnected or killed Docker client.
+$DOCKER exec -i --user 0 "$CONTAINER_ID" sh -s >"$WORK_DIR/backup.sql" 2>/dev/null <<'CONTAINER' &
+set -eu
+umask 077
+
+# Resolve tools inside the container; host command paths do not apply here.
+CAT=$(command -v cat) || exit 1
+DATE=$(command -v date) || exit 1
+MKDIR=$(command -v mkdir) || exit 1
+PG_DUMP=$(command -v pg_dump) || exit 1
+PG_DUMPALL=$(command -v pg_dumpall) || exit 1
+RMDIR=$(command -v rmdir) || exit 1
+TIMEOUT=$(command -v timeout) || exit 1
+
+# Keep the export locked until the database commands have finished.
+LOCK_DIR=/tmp/puppet-compose-backup
+$MKDIR "$LOCK_DIR" || exit 1
+trap '$RMDIR "$LOCK_DIR"' EXIT
+
+# Read the database identity and credentials from the existing container environment.
+DB_USER=${POSTGRES_USER:-postgres}
+DB_NAME=${POSTGRES_DB:-$DB_USER}
+[ -z "${POSTGRES_USER_FILE:-}${POSTGRES_DB_FILE:-}" ] || exit 1
+[ "${POSTGRES_HOST_AUTH_METHOD:-}" != trust ] || exit 1
+
+# Reuse the container's protected credentials in the child environment, never in process arguments.
+PGPASSWORD=${POSTGRES_PASSWORD:-}
+if [ -n "${POSTGRES_PASSWORD_FILE:-}" ]; then
+    [ -z "$PGPASSWORD" ] || exit 1
+    PGPASSWORD=$($CAT "$POSTGRES_PASSWORD_FILE")
+fi
+[ -n "$PGPASSWORD" ] || exit 1
+unset PGSERVICE PGSERVICEFILE PGOPTIONS PGHOSTADDR
+export PGPASSWORD PGCONNECT_TIMEOUT=10
+
+# Each timeout wraps PostgreSQL directly, including on Alpine where timeout does not kill a process tree.
+DEADLINE=$(($($DATE +%s) + 3500))
+$TIMEOUT -k 5 3500 $PG_DUMPALL -w -h 127.0.0.1 -p 5432 -U "$DB_USER" --database="$DB_NAME" --globals-only
+REMAINING=$((DEADLINE - $($DATE +%s)))
+[ "$REMAINING" -gt 0 ] || exit 1
+$TIMEOUT -k 5 "$REMAINING" $PG_DUMP -w -h 127.0.0.1 -p 5432 -U "$DB_USER" -d "$DB_NAME" --format=plain --create
+CONTAINER
+
+# Publish the compressed export only after all database commands succeed.
+wait "$!" || fail 'PostgreSQL export failed (credentials, tools, lock, timeout or storage)'
+[ -s "$WORK_DIR/backup.sql" ] || fail 'empty PostgreSQL export'
+$GZIP -c "$WORK_DIR/backup.sql" >"$WORK_DIR/backup.sql.gz" || fail 'compression failed'
+$GZIP -t "$WORK_DIR/backup.sql.gz" || fail 'gzip integrity check failed'
+COMPLETED=$($DATE +%s)
+RUN_ID=${WORK_DIR##*.partial.}
+BACKUP_FILE="$BACKUP_DIR/postgresql-${COMPLETED}-${RUN_ID}.sql.gz"
+$MV -- "$WORK_DIR/backup.sql.gz" "$BACKUP_FILE" || fail 'cannot publish backup'
+
+# Only this runner's completed files are eligible; unknown files, symlinks and partial work remain untouched.
+CUTOFF=$((COMPLETED - RETENTION_DAYS * 86400))
+REMOVED=0
+for OLD_FILE in "$BACKUP_DIR"/postgresql-*.sql.gz; do
+    [ "$OLD_FILE" != "$BACKUP_FILE" ] && [ ! -L "$OLD_FILE" ] && [ -f "$OLD_FILE" ] || continue
+    FILENAME=${OLD_FILE##*/}
+    printf '%s\n' "$FILENAME" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+    EPOCH=${FILENAME#postgresql-}
+    EPOCH=${EPOCH%%-*}
+    if [ "$EPOCH" -lt "$CUTOFF" ]; then
+        $RM -- "$OLD_FILE" || fail 'new backup saved, but retention cleanup failed'
+        REMOVED=$((REMOVED + 1))
+    fi
+done
+printf 'Compose %s: PostgreSQL database and globals saved; %s expired backups removed\n' "$PROJECT_NAME" "$REMOVED"

@@ -10,7 +10,8 @@ class CliConfigurationTest < Minitest::Test
                        single_quote_string_with_variables class_inherits_from_params_class project_arrays
                        project_class_check_reuse project_comment_spacing project_documentation project_files
                        project_if_sections project_interface_calls project_layout project_monitoring_backend
-                       project_packages project_parameter_alignment project_parameter_order project_positive_flow
+                       project_packages project_parameter_alignment project_parameter_order
+                       project_parameter_passthrough project_positive_flow
                        project_puppet_urls project_resource_sections project_shell project_suppressions
                        project_templates project_variable_sections].freeze
 

@@ -358,9 +358,6 @@ define nginx::server (
 ) {
   # Require the Nginx parent before using its paths and defaults to manage the vhost.
   if (defined(Class['nginx'])) {
-    # Share monitoring availability between security.txt contacts and TLS check registration.
-    $monitoring_active = defined(Class['basic_settings::monitoring'])
-
     # Share the owning resource path with the check instead of rebuilding it in a monitoring helper.
     $config_file = "${nginx::config}/${name}.conf"
 
@@ -382,7 +379,7 @@ define nginx::server (
       # Use monitoring or hostname fallbacks only when no Nginx-wide contacts were supplied.
       if ($nginx::securitytxt_contacts == undef) {
         # Use the monitoring contact when available, otherwise derive the domain-local fallback.
-        if ($monitoring_active) {
+        if ($nginx::monitoring_enable) {
           # basic_settings::monitoring::mail_to is an address, so add mailto: when needed.
           $securitytxt_contacts_correct = $basic_settings::monitoring::mail_to ? {
             /^(mailto:|https:\/\/|tel:)/ => [$basic_settings::monitoring::mail_to],
@@ -764,7 +761,7 @@ define nginx::server (
       $ensure == present and $monitoring_cert and $https_enable
       and $ssl_certificate != undef and $ssl_certificate != ''
       and $ssl_certificate_key != undef and $ssl_certificate_key != ''
-      and $monitoring_active and $basic_settings::monitoring::package != 'none'
+      and $nginx::monitoring_enable and $basic_settings::monitoring::package != 'none'
     )
     $monitoring_cert_ensure = $monitoring_cert_active ? { true => present, default => absent }
     $monitoring_redirect_ensure = (

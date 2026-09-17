@@ -2,6 +2,7 @@
 
 require 'project_lint/variable_dependencies'
 require 'project_lint/class_check_reads'
+require 'project_lint/parent_class_checks'
 
 # Project-owned Puppet lint rules.
 module ProjectLint
@@ -42,20 +43,31 @@ module ProjectLint
 
       def check
         @resolver = ModuleResolver.new
+        @parent_checks = ParentClassChecks.new(self, @resolver)
         @declarations = ast.declarations
         @declarations.each { |declaration| check_declaration(declaration) if declaration.body }
       end
 
       def check_declaration(declaration)
         nodes = declaration_nodes(declaration)
-        calls = nodes.select { |node, _parents| class_check(node) }.group_by { |node, _parents| class_check(node) }
-        calls.each_value do |occurrences|
+        calls = nodes.select { |node, _parents| class_check(node) }
+        calls = calls.reject { |node, parents| report_parent_check?(node, parents, declaration) }
+        calls.group_by { |node, _parents| class_check(node) }.each_value do |occurrences|
           if occurrences.length > 1
             report_repeated(occurrences)
           else
             check_assignment(declaration, nodes, occurrences.first.last)
           end
         end
+      end
+
+      def report_parent_check?(node, parents, declaration)
+        replacement = @parent_checks.replacement(node, parents, declaration)
+        return false unless replacement
+
+        issue(node, "[review] Reuse #{replacement} from the guarded class instead of repeating defined(Class[...]); " \
+                    'verify variable availability and evaluation order')
+        true
       end
 
       def report_repeated(occurrences)

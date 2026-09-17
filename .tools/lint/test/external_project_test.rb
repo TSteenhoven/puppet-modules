@@ -90,6 +90,18 @@ class ExternalProjectTest < Minitest::Test
     end
   end
 
+  def test_installed_check_finds_parent_results_in_the_consumer_modulepath
+    write('modules/owner/manifests/init.pp', "class owner { $enabled = defined(Class['optional']) }")
+    code = "define consumer { if defined(Class['owner']) { notice(defined(Class['optional'])) } }\n"
+    write('manifests/site.pp', code)
+    lint('--only-checks=project_class_check_reuse', 'manifests')
+    refute @status.success?, @output + @errors
+    assert_includes @output, 'Reuse $owner::enabled'
+    write('manifests/site.pp', code.sub("notice(defined(Class['optional']))", 'notice($owner::enabled)'))
+    lint('--only-checks=project_class_check_reuse', 'manifests')
+    assert @status.success?, @output + @errors
+  end
+
   def test_invalid_syntax_is_reported_and_fix_does_not_write
     code = 'class broken (String $value = ) {}'
     write('manifests/site.pp', code)

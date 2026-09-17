@@ -12,7 +12,13 @@
 # Inline scripts are needed for Twenty's generated frontend config and reduce protection against script injection.
 # A CSP sent by Twenty itself is preserved by `nginx::server`.
 #
+# Present stacks always back up the db service and require basic_settings::systemd.
+# The generic Compose layer supplies the schedule and retention; this wrapper has no backup opt-out.
+#
 # @example Deploy Twenty with generated `.env` content
+#   include basic_settings
+#
+#   # Install the runtime after declaring the shared host integration.
 #   class { 'docker': }
 #
 #   # Deploy the CRM application with its generated environment settings.
@@ -23,6 +29,9 @@
 #   }
 #
 # @example Deploy Twenty behind Nginx
+#   include basic_settings
+#
+#   # Install the runtime after declaring the shared host integration.
 #   class { 'docker': }
 #
 #   # Provide the webserver used by the public CRM endpoint.
@@ -226,6 +235,8 @@ define docker::twenty (
         # Apply the application policy through the shared proxy's existing header handling.
         docker::compose_proxy { $name:
           ensure                     => $ensure,
+          backup_database_type       => 'postgresql',
+          backup_service             => 'db',
           env_content                => $env_content,
           compose_source             => 'puppet:///modules/docker/twenty.yaml',
           content_security_policy    => $content_security_policy,
@@ -251,6 +262,8 @@ define docker::twenty (
       } else {
         docker::compose { $name:
           ensure                     => $ensure,
+          backup_database_type       => 'postgresql',
+          backup_service             => 'db',
           compose_source             => 'puppet:///modules/docker/twenty.yaml',
           env_content                => $env_content,
           monitoring_detail_limit    => $monitoring_detail_limit,

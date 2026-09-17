@@ -60,6 +60,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 ### Impact Review
 
 - Review effects on repository conventions, Puppet abstractions, and reusable wrappers.
+- Review each added or moved declaration in the complete surrounding implementation against the [resource placement and ordering criteria](.tools/lint/README.md#volgorde-en-meldingen). Record any necessary placement exception and its technical reason in the change review.
 - Review effects on monitoring, logging, alerting, audit rules, and operational diagnostics.
 - Review effects on documentation, examples, supported platforms, compatibility, and operational commands.
 
@@ -68,6 +69,8 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 ### Reuse And Shared Abstractions
 
 - Inspect existing abstractions before adding a new one.
+- Review parent-class interfaces before computing local settings in dependent defines, following the [class-check reuse criteria](.tools/lint/README.md#classcontroles-hergebruiken).
+- Identify the existing owner of cleanup before adding removal logic. When a centrally managed directory removes undeclared files, rely on that mechanism instead of adding cleanup to each consumer. Keep file removal separate from any required runtime stop or reload.
 - When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change.
 - Use reusable defined types for repeated Puppet resource orchestration, with caller-specific settings passed as parameters.
 - Preserve caller-specific security and lifecycle requirements during migration.
@@ -82,11 +85,50 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Validate dependent behavior with prerequisites present and absent, including relevant declaration or evaluation order.
 - Follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden) for Puppet-specific details.
 
-### Shell Formatting
+### Shell Scripts
 
-- Use four spaces per indentation level when adding or changing first-party Bash or POSIX shell code, including shell code in templates.
-- Preserve literal whitespace in heredocs and multiline quoted data when reindenting code.
-- Review shell indentation in both the source and rendered template output. Puppet-lint does not validate shell formatting.
+These conventions govern all first-party POSIX shell and Bash code, regardless of purpose or filename extension. Apply them when creating or changing shell code, including `.sh` files, extensionless executables, templates and inline fragments.
+
+#### Interpreter And Structure
+
+- Use POSIX `#!/bin/sh` unless required functionality needs Bash. For Bash scripts, declare the interpreter explicitly and document the required Bash features beside the implementation.
+- Keep code compatible with its declared interpreter, including generated code and inline fragments. Do not use Bash-only constructs, such as arrays, `[[ ... ]]` or `pipefail`, in POSIX shell code.
+- Place the shebang and required headers first, following [managed file identification](#managed-file-identification).
+- Order the applicable sections as follows: error helper, binary discovery, settings and state initialization, argument parsing, helper functions and input validation, then main logic. Define any helper before it is called.
+- Omit sections the script does not need. Do not add options, environment settings or helper layers solely to fill out this structure.
+- Resolve external commands directly with `COMMAND=$(command -v command 2>/dev/null) || die ...`, using the script's error helper. Invoke the resolved `$COMMAND` in command position without quotes; keep command arguments separate.
+- Use shell builtins directly and use `printf` for output.
+
+#### Formatting And Naming
+
+- Use four spaces per indentation level in both source and generated shell code.
+- Use descriptive `UPPER_SNAKE_CASE` names for settings, resolved commands and main-program state. Use `lower_snake_case` for helper functions and their internal working variables.
+- Group settings and derived values by purpose, with a short comment introducing each logical block. Keep the main flow readable from preparation through execution to result handling.
+- Write `if`, `case` and loop bodies with multiple actions across separate, indented lines. Keep one-time processing together when extracting it would obscure the flow, and put substantive processing before a small fallback branch.
+- Quote data expansions in arguments, tests and assignments. Preserve literal whitespace in heredocs and multiline quoted data when formatting code.
+
+#### Arguments And Runtime Settings
+
+- Preserve existing argument names, input formats, configuration sources and exit behavior. Document any deliberately changed public contract with its callers.
+- Retain existing daemon configuration and credential interfaces. Do not copy those values into additional command-line options or environment variables.
+- Parse short options in one POSIX `while getopts ... opt; do` block, with a separate `case` branch for each option. Finish with one usage/error branch for invalid options and help, including `-h` when declared; retain positional arguments for interfaces that use them.
+- Resolve configurable settings in this order when those sources are supported: explicit command-line input, non-empty environment variable, script default.
+- Initialize environment-backed settings with `${VARIABLE:-default}` before parsing arguments, so unset and empty variables use the default. Apply explicit arguments afterward and never reset the result to environment values or defaults.
+- Validate effective settings after parsing and before use, regardless of their source. Check syntax, units, ranges, related value ordering, booleans and runtime meaning. Preserve documented optional empty values and report invalid input through the script's error interface.
+- Document arguments, options, associated environment variables and defaults in usage or help text. Include repeated options and boolean reset options where supported.
+
+#### Helpers And Data Handling
+
+- Add a helper when it names a distinct task, shares validation or formatting, or removes substantial duplication. Do not wrap a single assignment, append or `printf` without such a reason.
+- Use shell variables and `printf` for bounded counters, buffers and text. Use `mktemp` when a command requires a file or the data is too large or unsafe for variables, and remove temporary files after use.
+- Build text buffers with explicit `printf` formats and escaped newlines instead of literal blank lines in quoted assignments. Choose list separators to match the input or output contract; keep meaningful whitespace in literal data intact.
+- Use explicit markers when passing structured metadata through command substitution. Do not depend on artificially appended newlines surviving shell processing.
+
+#### Shell Validation
+
+- Review the source and rendered output against these conventions, and run syntax validation with the intended interpreter. Puppet-lint does not validate shell syntax or the complete shell style.
+- Validate changed scripts with isolated synthetic cases for every supported input source: defaults, environment-only values, combined environment and CLI values, empty and invalid inputs, and partial overrides. Include related value ordering, repeated options, boolean resets and timeout behavior where applicable.
+- Keep functional validation outside the repository according to the [test scope](#test-scope), including checks of failure paths and temporary-file cleanup when affected.
 
 ### Managed File Identification
 
@@ -95,6 +137,11 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Place the header at the start of the file, immediately after any required shebang or format header.
 - Document any format constraint requiring omission beside the resource or content source, including binary content, formats without comments, or cryptographic material.
 - Verify the header in the resulting file content when adding or changing a managed file. A comment in the Puppet manifest alone does not satisfy this requirement.
+
+### Management Helpers
+
+- Install internal management scripts and their supporting files under `/usr/local/lib/puppet/`, following the existing MySQL helper layout. Apply this location when adding or changing a helper; keep service-native configuration, data and monitoring plugins in their established locations.
+- Update all invocations and dependencies together when moving a helper, and reuse the existing shared directory resource.
 
 ## Monitoring Checks
 
@@ -105,24 +152,18 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Pass target identity and settings that differ between registrations as runtime arguments or through an existing configuration interface.
 - Limit executable templating to values shared by all registrations on the host.
 - Manage the shared executable independently of individual registrations so removing or disabling one target preserves checks for other targets.
+- Keep monitoring independent of the task it observes: inspect results or status without invoking, sourcing, or depending on the task runner.
 
 ### Monitoring Check Configuration
 
 #### Runtime Settings
 
-- All monitoring checks must resolve runtime settings in this order: explicit command-line option, non-empty environment variable, script default.
-- Initialize each setting with `${VARIABLE:-default}` before `getopts`, so unset and empty environment variables use the default.
-- Provide command-line options for every configurable runtime setting.
-- Preserve existing option names.
+- Apply the shared [argument and runtime-setting conventions](#arguments-and-runtime-settings) to every check.
+- Provide command-line options and environment variables for every configurable runtime setting.
 - Follow the check's established conventions for new options.
-- Apply explicit options to the initialized values.
-- Never reset settings to environment values or defaults after parsing.
-- Document options and their environment variables in each check's help text, including repeated options and boolean reset options when applicable.
 
 #### Effective Value Validation
 
-- Validate effective settings after `getopts`, regardless of source, for syntax, ranges, related threshold ordering, and boolean values.
-- Preserve documented empty values for optional filters or overrides.
 - Reject invalid required values with Nagios UNKNOWN.
 
 #### Registration And Configuration Interfaces
@@ -130,7 +171,6 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Keep optional runtime defaults in the check executable.
 - Apply only explicitly supplied overrides from registrations.
 - Follow the [input and configuration contract](.tools/lint/README.md#invoer-en-configuratie) for Puppet parameters that default to `undef`.
-- Retain existing managed daemon configuration and credential interfaces.
 
 #### Executor Scheduling
 
@@ -139,8 +179,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 
 ### Monitoring Validation
 
-- Validate each changed check with isolated synthetic checks covering defaults, environment-only settings, combined environment and CLI settings, empty and invalid values, and partial overrides.
-- Include effective threshold ordering, repeated options, boolean resets, and timeout behavior where applicable.
+- Apply [shell validation](#shell-validation) to changed check implementations.
 - For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
 - For each changed check, validate that retiring one target preserves the shared executable and the other registrations.
 

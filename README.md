@@ -23,6 +23,7 @@ De modules kiezen veilige standaardinstellingen en zijn zo opgebouwd dat Puppet 
 - [Modules](#modules)
   - [`basic_settings`](#basic_settings)
   - [`docker`](#docker)
+    - [Databaseback-ups](#databaseback-ups)
     - [GitLab Runner](#gitlab-runner)
   - [`gitlab`](#gitlab)
   - [`letsencrypt`](#letsencrypt)
@@ -103,7 +104,7 @@ Voor kernel-lockdown kiest `kernel_security_lockdown => true` de waarde `integri
 
 ## Monitoring
 
-OpenITCOCKPIT is het monitoringsysteem dat dit project automatisch kan instellen. Gebruik in `basic_settings` `monitoring_package => 'openitcockpit'`. Zet ook `monitoring_package_install => true` wanneer Puppet het agentpakket moet installeren. Andere modules voegen hun checks automatisch toe zodra OpenITCOCKPIT-monitoring is ingeschakeld.
+OpenITCOCKPIT is het monitoringsysteem dat dit project automatisch kan instellen. Gebruik in `basic_settings` `monitoring_package => 'openitcockpit'`. Zet ook `monitoring_package_install => true` wanneer Puppet het agentpakket moet installeren. Declareer `basic_settings` of `basic_settings::monitoring` vóór de serviceclasses waarvoor je monitoring wilt gebruiken. Die classes bepalen bij hun evaluatie of ze checks toevoegen; hun defined types nemen die keuze over.
 
 De checks volgen het Nagios-pluginmodel en kunnen daardoor ook vanuit Naemon, Nagios of Icinga worden uitgevoerd. Ze gebruiken Nagios-exitcodes, noemen de belangrijkste oorzaak in de korte uitvoer, leveren perfdata voor grafieken en tonen extra uitleg in de long output. Controleer bij los gebruik welke commando's, argumenten en door Puppet ingevulde waarden de check nodig heeft.
 
@@ -255,14 +256,14 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 - Installeert Docker CE; de officiële APT-bron kan via `basic_settings` worden beheerd.
 - Accepteert Compose-bronnen via `puppet:///`, `file:///` of HTTPS en ondersteunt SHA256-controle voor downloads.
 - Beheert per Compose-stack een eigen projectmap, `.env`, extra mappen voor bind mounts en een systemd-service.
-- Kan containerstatus, healthchecks, toegestane eenmalige containers en orphans monitoren.
+- Kan containerstatus, healthchecks, toegestane eenmalige containers, orphans en databaseback-ups monitoren.
 - Kan een Compose-stack via een Nginx reverse proxy publiceren en gebruikt standaard HTTPS naar de containerapplicatie.
-- Levert Authentik- en Twenty-configuratie met `Sensitive` geheimen en een optionele Nginx-proxy.
+- Levert Authentik- en Twenty-configuratie met `Sensitive` geheimen, vaste PostgreSQL-back-ups en een optionele Nginx-proxy.
 - Levert GitLab Runner met optionele eenmalige registratie en behoud van de actieve runnerconfiguratie.
 
 #### Belangrijke aandachtspunten
 
-Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Voor het starten en beheren van de stacks als systemd-service is ook `basic_settings::systemd` nodig.
+Declareer `docker` vóór Compose-resources en zorg dat de Docker-pakketbron beschikbaar is. Voor het starten en beheren van de stacks als systemd-service is ook `basic_settings::systemd` nodig. Bij ingeschakelde databaseback-ups, waaronder Authentik en Twenty, is deze class verplicht.
 
 `docker::compose` en `docker::compose_proxy` halen standaard ontbrekende images op (`pull => 'missing'`). Bestaande images worden hergebruikt, behalve bij de tag `latest`: Compose haalt die bij iedere start van de Compose-service opnieuw op. Met `pull => 'never'` moeten alle images vooraf lokaal aanwezig zijn. Zie de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp) voor alle opties.
 
@@ -274,7 +275,7 @@ Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor
 
 `docker::authentik` verwijdert standaard de eerste beheerder `akadmin`; zet `akadmin_remove => false` als deze gebruiker moet blijven bestaan. Het [Authentik-voorbeeld](examples/docker.pp) laat zien hoe je een eigen beheerder aanmaakt.
 
-`docker::compose` verwijdert met `ensure => absent` alleen de projectmap, inclusief lokale bind-mountgegevens. De containers worden niet gestopt en de systemd-configuratie blijft staan. Ontkoppel en stop de stack daarom zelf voordat je Puppet de map laat verwijderen, en maak een back-up van gegevens die je wilt bewaren. Zie ook de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp).
+`docker::compose` verwijdert bij `ensure => absent` de volledige projectmap, inclusief back-ups en lokale bind-mountgegevens. Bewaar benodigde gegevens dus vooraf op een andere locatie en stop de applicatiestack en back-uptaak. Laat vervallen systemd-bestanden door het centrale mapbeheer van je host opruimen; deze define voegt daar geen eigen opruimroute aan toe. Het stoppen van actieve units en herladen van systemd blijven onderdeel van het buiten gebruik stellen van de stack. Zie ook de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp).
 
 #### Basisvoorbeeld
 
@@ -297,6 +298,37 @@ docker::compose { 'example':
 ```
 
 Compose-, proxy-, Authentik- en Twenty-varianten staan in [`examples/docker.pp`](examples/docker.pp), met een voorbeeld van een eenmalig commando via `docker::compose_exec`. Zie de Puppet Strings bij [`docker::compose_exec`](docker/manifests/compose_exec.pp) voor commando's en uitvoeringsvoorwaarden en bij [`docker::authentik`](docker/manifests/authentik.pp) voor de applicatie-instellingen en eigen templates.
+
+#### Databaseback-ups
+
+Authentik en Twenty krijgen automatisch een dagelijkse PostgreSQL-back-up om 05:00 uur in de lokale servertijd, met zeven dagen retentie. Voor een ander Compose-project geef je `backup_database_type => 'postgresql'` en `backup_service => 'db'` mee, waarbij je `db` vervangt door de databaseservicenaam uit je Compose-bestand. Deze parameters werken ook via `docker::compose_proxy`; Authentik en Twenty vullen ze zelf in. Met `backup_database_type => undef` declareert Puppet geen back-uptaak; centrale opschoning van unitbestanden laat de bestaande back-ups in de projectmap ongemoeid. Stop bij uitschakelen ook de actieve timer en service. Planning en retentie zijn op de generieke Compose-laag instelbaar; zie de [Puppet Strings](docker/manifests/compose.pp).
+
+De gekozen service moet precies één draaiende PostgreSQL-container hebben. De runner vindt die via de Compose-project- en servicelabels en exporteert de database uit `POSTGRES_DB`, met `POSTGRES_USER` als terugval en uiteindelijk `postgres`. Het wachtwoord komt uit `POSTGRES_PASSWORD` of `POSTGRES_PASSWORD_FILE`. De container moet `pg_dump`, `pg_dumpall` en `timeout` bevatten en PostgreSQL op TCP-poort 5432 met wachtwoordauthenticatie aanbieden; externe databases en `POSTGRES_USER_FILE` of `POSTGRES_DB_FILE` worden niet ondersteund. Zorg zelf dat de applicatie deze database gebruikt: de runner vergelijkt geen applicatieverbindingsgegevens. Bestaande initialisatievariabelen veranderen een reeds gevulde PostgreSQL-volume niet; voer databasewijzigingen en wachtwoordrotaties ook daadwerkelijk door.
+
+Iedere geslaagde run schrijft één bestand `postgresql-<voltooiingstijd>-<run-id>.sql.gz` in `/opt/docker/<project>/backup`, met de voltooiingstijd in Unix-seconden. Het bevat eerst clusterbrede globals, waaronder rollen en tablespaces, en daarna de volledige applicatiedatabase met alle schemas en `CREATE DATABASE`. Zorg voor voldoende vrije ruimte voor een tijdelijke ongecomprimeerde export naast de gecomprimeerde back-ups. De map is alleen toegankelijk voor root en krijgt ook die rechten wanneer je haar via `project_directories` opgeeft. Dezelfde rootrechten gebruikt de bestaande monitoringexecutor.
+
+Start na de eerste inrichting zelf een back-up en controleer het resultaat:
+
+```sh
+sudo systemctl start docker-compose-example-backup.service
+sudo systemctl status docker-compose-example-backup.timer
+sudo journalctl -u docker-compose-example-backup.service
+```
+
+De bestaande systemd-monitoring meldt uitvoeringsfouten. `check_compose` controleert of een afgerond, niet-leeg back-upbestand maximaal 86.400 seconden oud is en of er na die run nog verlopen bestanden staan. De controle leest de voltooiingstijd uit de bestandsnaam en controleert geen SQL-inhoud of herstelbaarheid. Een mislukte nieuwe poging maakt een nog recente vorige back-up niet ongeldig. Dagelijkse planning garandeert niet voortdurend een back-up binnen 24 uur: langere runs, timervertraging en de wintertijdwisseling kunnen tijdelijk een ouderdomsalarm geven. Een gemiste timerstart wordt ingehaald, zonder historische snapshots te reconstrueren.
+
+Een export heeft in de container een eigen tijdslimiet van maximaal 3.500 seconden. Bij het stoppen van de hosttaak kan die export nog doorlopen tot deze limiet. Een achtergebleven `/tmp/puppet-compose-backup` in de databasecontainer blokkeert nieuwe runs; verwijder die alleen nadat je hebt vastgesteld dat er geen export meer draait.
+
+Herstel eerst in een afzonderlijke testdatabase met dezelfde PostgreSQL-hoofdversie en de benodigde extensies. Gebruik een lege testcluster met een beheerrol die niet in de globals voorkomt, bijvoorbeeld `restore_admin`, en verbind met diens onderhoudsdatabase. Het SQL-bestand maakt de oorspronkelijke applicatiedatabase aan; een reeds bestaande database of rol met dezelfde naam veroorzaakt een fout. Gebruik de bestaande beveiligde authenticatieroute van de testcontainer en een root-shell met beperkte bestandsrechten. Vervang hieronder het bestandspad en de naam van de testcontainer:
+
+```sh
+sudo -i
+umask 077
+gzip -dc '/opt/docker/example/backup/postgresql-<voltooiingstijd>-<run-id>.sql.gz' > /root/restore.sql
+docker exec -i restore-test psql -X -v ON_ERROR_STOP=1 -U restore_admin -d restore_admin < /root/restore.sql
+```
+
+Controleer na herstel schemas, data, rollen, eigenaarschap en extensies voordat je op de back-up vertrouwt. Dit zijn lokale databaseback-ups: applicatiebestanden, secrets, externe kopieën en PITR vallen erbuiten.
 
 #### GitLab Runner
 

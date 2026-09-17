@@ -4,6 +4,8 @@
 # Fail helper used for missing dependencies and unreadable Docker output.
 die() {
     printf 'Compose check cannot run: %s\n' "$*"
+    # Preserve a known critical backup finding if the Docker runtime cannot be inspected afterward.
+    [ -z "${CRITICAL_REASONS:-}" ] || { printf '%s\n' "$CRITICAL_REASONS"; exit 2; }
     exit 3
 }
 
@@ -30,6 +32,11 @@ PROJECT_DIRECTORY=${PROJECT_DIRECTORY:-""}
 PROJECT_NAME=${PROJECT_NAME:-""}
 
 # Runtime policy knobs control tolerated startup, expected exits, health requirements, orphan severity, and total diagnostic size.
+BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE:-""}
+BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-""}
+BACKUP_PERFDATA=""
+BACKUP_REASON=""
+UNKNOWN_REASONS=""
 DETAIL_LIMIT=${DETAIL_LIMIT:-6000}
 EXPECTED_EXITED=${EXPECTED_EXITED:-""}
 EXPECTED_LIST=""
@@ -74,13 +81,15 @@ HEALTH_REQUIRED_MISSING=0
 PRESENT_SERVICES=""
 
 # CLI options define the Compose identity, expected exceptions, and diagnostic limits.
-USAGE_TEXT="Usage: $0 -d project_directory [-p project_name] [-f compose_file] [-e env_file] [-n name] [-g seconds] [-l chars] [-x services] [-H services] [-P profiles] [-O] [-S state_directory] [-o]
-Environment: PROJECT_DIRECTORY (-d); PROJECT_NAME (-p); COMPOSE_FILES (-f); ENV_FILE (-e); CHECK_NAME (-n); STARTING_GRACE (-g); DETAIL_LIMIT (-l); EXPECTED_EXITED (-x); HEALTH_REQUIRED (-H); PROFILE_LIST (-P); ORPHAN_CRITICAL (-O); STATE_DIR (-S); ORPHAN_CRITICAL (-o).
+USAGE_TEXT="Usage: $0 -d project_directory [-p project_name] [-f compose_file] [-e env_file] [-n name] [-g seconds] [-l chars] [-x services] [-H services] [-P profiles] [-O] [-S state_directory] [-o] [-b postgresql] [-r retention_days]
+Environment: BACKUP_DATABASE_TYPE (-b, empty disables and resets); BACKUP_RETENTION_DAYS (-r, required with -b); PROJECT_DIRECTORY (-d); PROJECT_NAME (-p); COMPOSE_FILES (-f); ENV_FILE (-e); CHECK_NAME (-n); STARTING_GRACE (-g); DETAIL_LIMIT (-l); EXPECTED_EXITED (-x); HEALTH_REQUIRED (-H); PROFILE_LIST (-P); ORPHAN_CRITICAL (-O); STATE_DIR (-S); ORPHAN_CRITICAL (-o).
 Command-line options override non-empty environment values; unset or empty environment values use defaults.
 The first -f replaces COMPOSE_FILES from the environment; repeated -f options append files. -O enables orphan critical status; -o disables it."
 OPTERR=0
-while getopts ':d:p:f:e:n:g:l:x:H:P:OS:oh' opt; do
+while getopts ':d:p:f:e:n:g:l:x:H:P:OS:ob:r:h' opt; do
     case "$opt" in
+        b) BACKUP_DATABASE_TYPE=$OPTARG ;;
+        r) BACKUP_RETENTION_DAYS=$OPTARG ;;
         d) PROJECT_DIRECTORY="$OPTARG" ;;
         p) PROJECT_NAME="$OPTARG" ;;
         f)
@@ -403,6 +412,52 @@ docker_inspect_containers() {
     $DOCKER "$@"
 }
 
+# Inspect completed files without querying the database or reading systemd state.
+check_database_backup() (
+    backup="$PROJECT_DIRECTORY/backup"
+    retention=$BACKUP_RETENTION_DAYS
+    [ ! -L "$backup" ] || { printf 'database backup directory is a symlink\n'; exit 3; }
+    [ -d "$backup" ] || { printf 'database backup directory is missing\n'; exit 2; }
+    [ -r "$backup" ] && [ -x "$backup" ] || { printf 'database backup directory is inaccessible\n'; exit 3; }
+    latest=0
+    invalid=0
+    now=$($DATE +%s)
+    for file in "$backup"/postgresql-*.sql.gz; do
+        [ -e "$file" ] || [ -L "$file" ] || continue
+        name=${file##*/}
+        printf '%s\n' "$name" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+        epoch=${name#postgresql-}
+        epoch=${epoch%%-*}
+        if [ -L "$file" ] || [ ! -f "$file" ] || [ ! -r "$file" ] || [ ! -s "$file" ] || [ "$epoch" -gt "$now" ]; then
+            invalid=$((invalid + 1))
+        elif [ "$epoch" -gt "$latest" ]; then
+            latest=$epoch
+        fi
+    done
+    age=$((now - latest))
+    if [ "$latest" -eq 0 ] || [ "$age" -gt 86400 ]; then
+        printf 'no completed database backup within 24 hours; start the backup service | backup_age=%ss;;86400\n' "$age"
+        exit 2
+    fi
+    expired=0
+    cutoff=$((latest - retention * 86400))
+    for file in "$backup"/postgresql-*.sql.gz; do
+        [ -f "$file" ] && [ ! -L "$file" ] || continue
+        name=${file##*/}
+        printf '%s\n' "$name" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+        epoch=${name#postgresql-}
+        epoch=${epoch%%-*}
+        [ "$epoch" -ge "$cutoff" ] || expired=$((expired + 1))
+    done
+    reason="database backup is ${age}s old and retention is current"
+    [ "$expired" -eq 0 ] || reason="database backup is current; ${expired} expired files remain after cleanup"
+    [ "$invalid" -eq 0 ] || reason="database backup is current; ${invalid} files are invalid or future-dated"
+    printf '%s | backup_age=%ss;;86400 backup_expired=%s backup_invalid=%s\n' "$reason" "$age" "$expired" "$invalid"
+    [ "$invalid" -eq 0 ] || exit 3
+    [ "$expired" -eq 0 ] || exit 1
+    exit 0
+)
+
 # Validate options before Docker is contacted.
 [ -n "$PROJECT_DIRECTORY" ] || die "$USAGE_TEXT"
 [ -d "$PROJECT_DIRECTORY" ] || die "compose project directory '$PROJECT_DIRECTORY' does not exist"
@@ -436,6 +491,26 @@ if [ -z "$CHECK_NAME" ]; then
         CHECK_NAME=$($BASENAME "$PROJECT_DIRECTORY")
     fi
 fi
+
+# Database checks read only completed backup files; execution failures remain with the existing timer monitoring.
+case "$BACKUP_DATABASE_TYPE" in
+    '') : ;;
+    postgresql)
+        case "$BACKUP_RETENTION_DAYS" in ''|0*|*[!0-9]*) die 'backup retention must be a positive integer' ;; esac
+        [ "${#BACKUP_RETENTION_DAYS}" -le 9 ] || die 'backup retention is too large'
+        BACKUP_OUTPUT=$(check_database_backup)
+        BACKUP_RC=$?
+        BACKUP_REASON=${BACKUP_OUTPUT%% | *}
+        case "$BACKUP_OUTPUT" in *' | '*) BACKUP_PERFDATA=${BACKUP_OUTPUT#* | } ;; esac
+        case "$BACKUP_RC" in
+            0) : ;;
+            1) add_warning "$BACKUP_REASON" ;;
+            2) add_critical "$BACKUP_REASON" ;;
+            *) UNKNOWN_REASONS=${BACKUP_REASON:-database backup check could not run}; append_issue_detail "$UNKNOWN_REASONS" ;;
+        esac
+        ;;
+    *) die 'backup database type must be empty or postgresql' ;;
+esac
 
 # Prepare the private state file used to detect restart-count increases.
 PROJECT_KEY=$(sanitize_label "$CHECK_NAME")
@@ -673,6 +748,8 @@ COMPOSE_SERVICES_PRESENT=$(count_csv "$PRESENT_SERVICES")
 # Compose a compact Nagios summary and put the primary alert cause before aggregate counters.
 if [ -n "$CRITICAL_REASONS" ]; then
     STATE_CODE=2
+elif [ -n "$UNKNOWN_REASONS" ]; then
+    STATE_CODE=3
 elif [ -n "$WARNING_REASONS" ]; then
     STATE_CODE=1
 else
@@ -682,6 +759,8 @@ fi
 if [ -n "$CRITICAL_REASONS" ]; then
     PRIMARY_REASON=$(first_reason "$CRITICAL_REASONS")
     SUMMARY="Compose ${CHECK_NAME}: ${PRIMARY_REASON}; ${CONTAINERS_RUNNING}/${CONTAINERS_TOTAL} running, ${HEALTH_HEALTHY} healthy"
+elif [ -n "$UNKNOWN_REASONS" ]; then
+    SUMMARY="Compose ${CHECK_NAME}: ${UNKNOWN_REASONS}"
 elif [ -n "$WARNING_REASONS" ]; then
     PRIMARY_REASON=$(first_reason "$WARNING_REASONS")
     SUMMARY="Compose ${CHECK_NAME}: ${PRIMARY_REASON}; ${CONTAINERS_RUNNING}/${CONTAINERS_TOTAL} running, ${HEALTH_HEALTHY} healthy"
@@ -705,10 +784,13 @@ PERFDATA="${PERFDATA} containers_health_required_missing=${HEALTH_REQUIRED_MISSI
 PERFDATA="${PERFDATA} compose_services_present=${COMPOSE_SERVICES_PRESENT} compose_services_missing=${COMPOSE_SERVICES_MISSING}"
 PERFDATA="${PERFDATA} compose_orphans=${COMPOSE_ORPHANS} container_restarts_total=${CONTAINER_RESTARTS_TOTAL}c container_restarts_increased=${CONTAINER_RESTARTS_INCREASED}"
 
+PERFDATA="${PERFDATA}${BACKUP_PERFDATA:+ $BACKUP_PERFDATA}"
+
 append_long "Project: ${CHECK_NAME}"
 append_long "Project directory: ${PROJECT_DIRECTORY}"
 [ -n "$PROJECT_NAME" ] && append_long "Compose project name: ${PROJECT_NAME}"
 append_long "Expected services: ${EXPECTED_LIST}"
+[ -z "$BACKUP_REASON" ] || append_long "Database: ${BACKUP_REASON}"
 
 if [ -n "$ISSUE_DETAILS" ]; then
     append_long "Issues:"
@@ -726,6 +808,7 @@ append_long ""
 append_long "Interpretation:"
 append_long "Issues are the direct causes that affected the exit code; container lines show the bounded runtime inventory used to diagnose those causes."
 append_long "Restart increases, missing rendered services, unhealthy or unexpected container states, missing required healthchecks, and orphan policy can affect the exit code; image names and normal running inventory are context."
+[ -z "$BACKUP_DATABASE_TYPE" ] || append_long "Database backup checks use completed files and actual retention leftovers; timer monitoring reports execution failures. Known critical findings take precedence over unknown results, followed by warnings."
 append_long "Inspect the named Compose service or container first, then use docker compose ps/logs in the project directory when the summary names a missing, unhealthy, exited, restarting, or orphaned item."
 
 emit_check "$SUMMARY" "$PERFDATA"

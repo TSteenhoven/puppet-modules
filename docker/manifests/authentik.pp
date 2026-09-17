@@ -8,7 +8,13 @@
 #
 # The `custom-templates` directory is created for the stack; supply and maintain its contents separately.
 #
+# Present stacks always back up the postgresql service and require basic_settings::systemd.
+# The generic Compose layer supplies the schedule and retention; this wrapper has no backup opt-out.
+#
 # @example Deploy Authentik with generated `.env` content
+#   include basic_settings
+#
+#   # Install the runtime after declaring the shared host integration.
 #   class { 'docker': }
 #
 #   # Deploy the identity service with generated environment credentials.
@@ -18,6 +24,9 @@
 #   }
 #
 # @example Deploy Authentik behind Nginx
+#   include basic_settings
+#
+#   # Install the runtime after declaring the shared host integration.
 #   class { 'docker': }
 #
 #   # Provide the webserver used by the public identity endpoint.
@@ -357,6 +366,8 @@ define docker::authentik (
           # Setup compose proxy
           docker::compose_proxy { $name:
             ensure                     => $ensure,
+            backup_database_type       => 'postgresql',
+            backup_service             => 'postgresql',
             env_content                => $env_content,
             compose_source             => 'puppet:///modules/docker/authentik.yaml',
             content_security_policy    => "default-src 'self'; img-src ${content_security_policy_img_src}: data:; object-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';", # lint:ignore:140chars
@@ -386,6 +397,8 @@ define docker::authentik (
         } else {
           docker::compose { $name:
             ensure                     => $ensure,
+            backup_database_type       => 'postgresql',
+            backup_service             => 'postgresql',
             compose_source             => 'puppet:///modules/docker/authentik.yaml',
             env_content                => $env_content,
             monitoring_detail_limit    => $monitoring_detail_limit,

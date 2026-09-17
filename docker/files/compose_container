@@ -1,0 +1,35 @@
+#!/bin/sh
+# Managed by puppet
+
+# Shared by Puppet's guarded Compose exec and the scheduled backup runner.
+set -eu
+
+# Report selection errors without mixing them into the container ID on stdout.
+fail() {
+    printf 'Compose container: %s\n' "$*" >&2
+    exit 1
+}
+
+# Binary checks
+DOCKER=$(command -v docker 2>/dev/null) || fail "docker not available"
+
+# Select one service within the requested project.
+[ "$#" -eq 2 ] || fail 'usage: docker-compose-container PROJECT SERVICE'
+PROJECT_NAME=$1
+SERVICE_NAME=$2
+case "$PROJECT_NAME:$SERVICE_NAME" in
+    *[!A-Za-z0-9_.:-]*|:*|*:)
+        fail 'invalid project or service name'
+        ;;
+esac
+
+# Never choose the first match: scaled services must fail instead of targeting an arbitrary container.
+CONTAINER_ID=$($DOCKER ps --filter "label=com.docker.compose.project=$PROJECT_NAME" \
+    --filter "label=com.docker.compose.service=$SERVICE_NAME" \
+    --filter 'label=com.docker.compose.oneoff=False' --format '{{.ID}}') || fail 'cannot list containers'
+case "$CONTAINER_ID" in
+    ''|*[!a-fA-F0-9]*)
+        fail 'expected exactly one running Compose service container'
+        ;;
+esac
+printf '%s\n' "$CONTAINER_ID"

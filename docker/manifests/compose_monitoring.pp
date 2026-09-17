@@ -2,9 +2,11 @@
 #
 # This helper builds the command line for the shared `check_compose` plugin and registers it through
 # `basic_settings::monitoring_custom`. It is normally called by `docker::compose`, but can be used directly for
-# externally managed Compose projects that still need the repository's monitoring behavior.
+# externally managed Compose projects after declaring docker, which owns the shared executable and dependencies.
 #
 # @example Monitor an existing Compose project
+#   include docker
+#
 #   docker::compose_monitoring { 'example':
 #     project_directory => '/opt/docker/example',
 #     compose_files     => ['/opt/docker/example/docker-compose.yml'],
@@ -12,6 +14,12 @@
 #
 # @param project_directory
 #   Absolute Compose project directory passed to the monitoring plugin.
+#
+# @param backup_database_retention_days
+#   Effective backup retention. Required alongside backup_database_type; no independent default is introduced here.
+#
+# @param backup_database_type
+#   Optional PostgreSQL backup check. Undef omits the database check; active projects supply their effective type.
 #
 # @param compose_files
 #   Compose file paths passed to the monitoring plugin.
@@ -55,22 +63,24 @@
 # @api public
 define docker::compose_monitoring (
   Pattern[/\A\/[A-Za-z0-9._\/-]+\z/]       $project_directory,
-  Array[String]                            $compose_files     = [],
-  Optional[Integer[1]]                     $detail_limit      = undef,
-  Enum['present', 'absent']                $ensure            = present,
-  Optional[String]                         $env_file          = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $expected_exited   = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $health_required   = [],
-  Integer                                  $interval          = 300,
-  Optional[Boolean]                        $orphan_critical   = undef,
-  Optional[String]                         $package           = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $profiles          = [],
-  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $project_name      = undef,
-  Optional[Integer[0]]                     $starting_grace    = undef,
-  Integer                                  $timeout           = 60,
+  Optional[Integer[1]]                     $backup_database_retention_days = undef,
+  Optional[Enum['postgresql']]             $backup_database_type           = undef,
+  Array[String]                            $compose_files                  = [],
+  Optional[Integer[1]]                     $detail_limit                   = undef,
+  Enum['present', 'absent']                $ensure                         = present,
+  Optional[String]                         $env_file                       = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $expected_exited                = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $health_required                = [],
+  Integer                                  $interval                       = 300,
+  Optional[Boolean]                        $orphan_critical                = undef,
+  Optional[String]                         $package                        = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]    $profiles                       = [],
+  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]] $project_name                   = undef,
+  Optional[Integer[0]]                     $starting_grace                 = undef,
+  Integer                                  $timeout                        = 60,
 ) {
   # Validate the stack identifier before constructing monitoring arguments and resource names.
-  if ($name =~ /\A[a-zA-Z0-9_.-]+\z/) {
+  if (defined(Class['docker']) and $name =~ /\A[a-zA-Z0-9_.-]+\z/) {
     # Set command arguments for the stack-specific service check.
     $project_name_arg = $project_name ? {
       undef   => '',
@@ -104,6 +114,7 @@ define docker::compose_monitoring (
 
     # Omit unset runtime options so the executable resolves environment values and defaults.
     $runtime_args = {
+      '-r' => $backup_database_retention_days,
       '-g' => $starting_grace,
       '-l' => $detail_limit,
     }.filter |$option, $value| { $value != undef }.map |$option, $value| {
@@ -112,9 +123,13 @@ define docker::compose_monitoring (
       " ${option} ${value_shell}"
     }
 
+    # Database action is managed project configuration; an explicit empty option also resets executor environment values.
+    $backup_type_arg = $backup_database_type ? { undef => " -b ''", default => " -b ${backup_database_type}" }
+
     # Join the command arguments together.
     $cmd = join([
       "-d ${project_directory}",
+      $backup_type_arg,
       $project_name_arg,
       $compose_files_arg,
       $env_file_arg,
@@ -125,24 +140,6 @@ define docker::compose_monitoring (
       $profiles_arg,
       $orphan_critical_arg,
     ], '')
-
-    # The stack check parses Docker's JSON output with jq.
-    if (!defined(Package['jq'])) {
-      package { 'jq':
-        ensure          => installed,
-        install_options => ['--no-install-recommends', '--no-install-suggests'],
-      }
-    }
-
-    # Own one shared executable independently of individual stack registrations.
-    if (!defined(Basic_settings::Monitoring_custom['docker_compose'])) {
-      basic_settings::monitoring_custom { 'docker_compose':
-        source   => 'puppet:///modules/docker/check_compose',
-        register => false,
-        package  => $package,
-        require  => Package['jq'],
-      }
-    }
 
     # Retire the executable copies deployed by older per-stack registrations.
     file { "/etc/openitcockpit-agent/plugins/check_docker_compose_${name}":
@@ -161,6 +158,6 @@ define docker::compose_monitoring (
       require  => Package['jq'],
     }
   } else {
-    fail('docker::compose_monitoring titles may only contain letters, numbers, dots, underscores, and hyphens.')
+    fail('docker::compose_monitoring requires the docker class and a title containing only letters, digits, dots, underscores and hyphens.')
   }
 }

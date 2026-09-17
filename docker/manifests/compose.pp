@@ -5,7 +5,7 @@
 # file-server source, and creates a `docker-compose-<title>.service` when the shared systemd wrapper is available.
 # It also registers a stack-level monitoring check so container health can be evaluated separately from the
 # orchestration unit.
-# Declare `docker` before deploying a present stack; removal of a project directory does not require that class.
+# Declare `docker` before managing a project, including removal; the class owns all shared Compose tools.
 #
 # @example Deploy a Compose stack from a Puppet file source
 #   docker::compose { 'example':
@@ -17,6 +17,21 @@
 #     compose_source => 'file:///srv/puppet/example/docker-compose.yml',
 #     env_content    => Sensitive("COMPOSE_PROJECT_NAME=example\n"),
 #   }
+#
+# @param backup_database_on_calendar
+#   Local-time systemd schedule, default daily at 05:00. Used only when backup_database_type is set.
+#
+# @param backup_database_retention_days
+#   Positive retention in days, default 7. Cleanup follows a successful export and always retains that new backup.
+#
+# @param backup_database_type
+#   Optional database action: undef disables it; postgresql exports the selected PostgreSQL database and globals.
+#   Requires basic_settings::systemd and backup_service. Credentials and database identity come from the running
+#   container.
+#
+# @param backup_service
+#   Compose service name to back up, not a container name. Defaults to undef; required for a present stack with
+#   backup_database_type set. The service must have exactly one running container. Unused when backups are disabled.
 #
 # @param compose_checksum
 #   Optional SHA256 checksum for compose_source, unavailable with compose_content. This is most useful for HTTPS sources
@@ -31,10 +46,10 @@
 #   compose_content.
 #
 # @param ensure
-#   Defaults to present. Absent removes only the project directory, including project-local bind-mount data.
-#   It does not stop containers or remove systemd units and target bindings. Docker named volumes are not removed.
-#   Back up required data, detach the target binding, reload systemd and stop the stack before removal; retire its
-#   service separately.
+#   Defaults to present. Absent deletes the entire project directory, including database backups and project-local
+#   bind-mount data. Copy required data elsewhere and stop and disable the backup timer and service before removal.
+#   It does not stop application containers. Central directory management owns undeclared systemd files;
+#   Docker named volumes remain. Back up required data, stop the stack and reload systemd when retiring its units.
 #
 # @param env_content
 #   Optional `.env` file content. Strings are wrapped in `Sensitive`; explicit `Sensitive[String]` values are passed
@@ -86,51 +101,84 @@
 #
 # @api public
 define docker::compose (
-  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum           = undef,
-  Optional[String]                             $compose_content            = undef,
-  Optional[String]                             $compose_source             = undef,
-  Enum['present', 'absent']                    $ensure                     = present,
-  Optional[Variant[String, Sensitive[String]]] $env_content                = undef,
-  Optional[String]                             $env_source                 = undef,
-  Optional[Integer[1]]                         $monitoring_detail_limit    = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited = [],
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required = [],
-  Integer                                      $monitoring_interval        = 300,
-  Optional[Boolean]                            $monitoring_orphan_critical = undef,
-  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles        = [],
-  Optional[Integer[0]]                         $monitoring_starting_grace  = undef,
-  Integer                                      $monitoring_timeout         = 60,
+  Pattern[/\A[^\r\n]+\z/]                      $backup_database_on_calendar    = '*-*-* 05:00:00',
+  Integer[1]                                   $backup_database_retention_days = 7,
+  Optional[Enum['postgresql']]                 $backup_database_type           = undef,
+  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]     $backup_service                 = undef,
+  Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum               = undef,
+  Optional[String]                             $compose_content                = undef,
+  Optional[String]                             $compose_source                 = undef,
+  Enum['present', 'absent']                    $ensure                         = present,
+  Optional[Variant[String, Sensitive[String]]] $env_content                    = undef,
+  Optional[String]                             $env_source                     = undef,
+  Optional[Integer[1]]                         $monitoring_detail_limit        = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_expected_exited     = [],
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_health_required     = [],
+  Integer                                      $monitoring_interval            = 300,
+  Optional[Boolean]                            $monitoring_orphan_critical     = undef,
+  Array[Pattern[/\A[A-Za-z0-9_.-]+\z/]]        $monitoring_profiles            = [],
+  Optional[Integer[0]]                         $monitoring_starting_grace      = undef,
+  Integer                                      $monitoring_timeout             = 60,
   Hash[Pattern[/\A[A-Za-z0-9_.-]+\z/], Struct[{
         Optional[owner] => String[1],
         Optional[group] => String[1],
         Optional[mode]  => Pattern[/\A[0-7]{4}\z/],
-  }]]                                          $project_directories        = {},
-  Enum['always', 'missing', 'never']           $pull                       = 'missing',
-  String                                       $target                     = 'services',
+  }]]                                          $project_directories            = {},
+  Enum['always', 'missing', 'never']           $pull                           = 'missing',
+  String                                       $target                         = 'services',
 ) {
   # Validate the compose name to avoid issues with file paths and systemd unit names.
-  if ($name =~ /\A[a-zA-Z0-9_.-]+\z/) {
+  if ($name =~ /\A[a-zA-Z0-9][a-zA-Z0-9_.-]*\z/ and defined(Class['docker'])) {
     # Keep the Compose and environment files inside this project's directory.
     $project_directory = "/opt/docker/${name}"
     $compose_file = "${project_directory}/docker-compose.yml"
     $env_file = "${project_directory}/.env"
 
-    # Give callers stable resource aliases and service names for this project.
+    # Give callers stable resource aliases for this project's files.
     $project_directory_alias = "docker_compose_${name}_project_directory"
     $compose_file_alias = "docker_compose_${name}_compose_file"
     $env_file_alias = "docker_compose_${name}_env_file"
-    $service_name = "docker-compose-${name}"
-    $daemon_reload = "docker_compose_systemd_daemon_reload_${name}"
 
     # Check if ensure is present to determine if the compose stack should be deployed or removed.
     if ($ensure == present) {
-      # Deployment consumes Docker's package resources; cleanup below can run without the parent class.
-      if (($compose_source != undef or $compose_content != undef) and defined(Class['docker'])) {
+      # Deployment needs one Compose source or rendered document.
+      if ($compose_source != undef or $compose_content != undef) {
         # Accept either rendered content or a trusted source; downloaded checksums apply only to sources.
         if (($compose_source == undef and $compose_content != undef and $compose_checksum == undef)
           or ($compose_content == undef and $compose_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/)) {
           # Validate an optional environment source before creating any part of the Compose project.
           if ($env_source == undef or $env_source =~ /(?i:\A(?:https:\/\/|file:\/\/\/|puppet:\/\/\/))/) {
+            # Create a directory for docker-compose
+            file { $project_directory:
+              ensure => directory,
+              alias  => $project_directory_alias,
+              path   => $project_directory,
+              owner  => 'root',
+              group  => 'root',
+              mode   => '0700',
+            }
+
+            # Reserve backup with private permissions and merge it once with caller-supplied project directories.
+            $backup_enabled = $backup_database_type != undef
+            $project_directories_correct = $backup_enabled ? {
+              true    => stdlib::merge($project_directories, { 'backup' => { 'owner' => 'root', 'group' => 'root', 'mode' => '0700' } }),
+              default => $project_directories,
+            }
+
+            # Create requested bind-mount source directories while leaving their contents unmanaged.
+            $project_directory_resources = $project_directories_correct.map |$directory_name, $directory_settings| {
+              # Resolve each managed subdirectory beneath the Compose project directory.
+              $managed_directory = "${project_directory}/${directory_name}"
+              file { $managed_directory:
+                ensure  => directory,
+                owner   => pick($directory_settings['owner'], 'root'),
+                group   => pick($directory_settings['group'], 'root'),
+                mode    => pick($directory_settings['mode'], '0700'),
+                require => File[$project_directory],
+              }
+              File[$managed_directory]
+            }
+
             # Determine the content of the environment file based on the provided parameters.
             if ($env_source == undef) {
               case $env_content {
@@ -146,71 +194,6 @@ define docker::compose (
             } else {
               # Use the validated external environment source without inline file content.
               $env_file_content = undef
-            }
-
-            # Normalize the compose checksum to lowercase if provided, otherwise leave it as undef.
-            $compose_checksum_value = $compose_checksum ? {
-              undef   => undef,
-              default => $compose_checksum.downcase(),
-            }
-
-            # lint:ignore:140chars
-            # Check if monitoring is enabled to determine if the compose service should be configured with failure monitoring for integration with the monitoring stack.
-            # lint:endignore
-            $monitoring_enable = defined(Class['basic_settings::monitoring'])
-            if ($monitoring_enable) {
-              # Inherit the monitoring backend and attach its unit-failure notification hook.
-              $monitoring_package = $basic_settings::monitoring::package
-              $unit_failure = {
-                'OnFailure' => 'notify-failed@%i.service',
-              }
-            } else {
-              # Disable monitoring registration and failure hooks without a monitoring class.
-              $monitoring_package = 'none'
-              $unit_failure = {}
-            }
-
-            # Check if docker-compose-plugin package is not defined
-            if (!defined(Package['docker-compose-plugin'])) {
-              package { 'docker-compose-plugin':
-                ensure          => installed,
-                install_options => ['--no-install-recommends', '--no-install-suggests'],
-                require         => Package['docker'],
-              }
-            }
-
-            # Check if docker directory is not defined
-            if (!defined(File['/opt/docker'])) {
-              file { '/opt/docker':
-                ensure => directory,
-                owner  => 'root',
-                group  => 'root',
-                mode   => '0700',
-              }
-            }
-
-            # Create a directory for docker-compose
-            file { $project_directory:
-              ensure => directory,
-              alias  => $project_directory_alias,
-              path   => $project_directory,
-              owner  => 'root',
-              group  => 'root',
-              mode   => '0700',
-            }
-
-            # Create requested bind-mount source directories while leaving their contents unmanaged.
-            $project_directory_resources = $project_directories.map |$directory_name, $directory_settings| {
-              # Resolve each managed subdirectory beneath the Compose project directory.
-              $managed_directory = "${project_directory}/${directory_name}"
-              file { $managed_directory:
-                ensure  => directory,
-                owner   => pick($directory_settings['owner'], 'root'),
-                group   => pick($directory_settings['group'], 'root'),
-                mode    => pick($directory_settings['mode'], '0700'),
-                require => File[$project_directory],
-              }
-              File[$managed_directory]
             }
 
             # Manage the environment file for the compose stack if either a source or content is provided.
@@ -236,10 +219,14 @@ define docker::compose (
               $env_monitoring = undef
             }
 
-            # Keep Compose commands local; other defined types consume the managed File aliases above.
+            # Normalize the compose checksum to lowercase if provided, otherwise leave it as undef.
+            $compose_checksum_value = $compose_checksum ? {
+              undef   => undef,
+              default => $compose_checksum.downcase(),
+            }
+
+            # Validate Compose content with the project's effective environment before publishing the file.
             $compose_config_command = "/usr/bin/docker compose --project-directory ${project_directory}${compose_env_command} --file % config --quiet" # lint:ignore:140chars
-            $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans --pull ${pull}" # lint:ignore:140chars
-            $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
 
             # Validate sourced or rendered Compose content before it is promoted into the project directory.
             file { $compose_file:
@@ -257,8 +244,29 @@ define docker::compose (
               require        => [$compose_require, Package['docker-compose-plugin']],
             }
 
+            # The Compose service and backup timer share this project's daemon-reload exec.
+            $daemon_reload = "docker_compose_systemd_daemon_reload_${name}"
+
+            # Use the parent class's monitoring decision for service checks and failure notifications.
+            if ($docker::monitoring_enable) {
+              # Inherit the monitoring backend and attach its unit-failure notification hook.
+              $monitoring_package = $basic_settings::monitoring::package
+              $unit_failure = {
+                'OnFailure' => 'notify-failed@%i.service',
+              }
+            } else {
+              # Disable monitoring registration and failure hooks without a monitoring class.
+              $monitoring_package = 'none'
+              $unit_failure = {}
+            }
+
             # Create the Compose unit only when the shared systemd class is available.
             if (defined(Class['basic_settings::systemd'])) {
+              # Keep the orchestration commands with the service that starts and stops the stack.
+              $service_name = "docker-compose-${name}"
+              $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans --pull ${pull}" # lint:ignore:140chars
+              $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
+
               # Subscribe to the managed project files using the array required by the shared service wrapper.
               if ($env_source == undef and $env_content == undef) {
                 # Start and refresh the stack using only the Compose file when no environment file is configured.
@@ -281,7 +289,7 @@ define docker::compose (
               # Manage the compose stack as a root-run orchestration service for the Docker daemon.
               basic_settings::systemd_service { $service_name:
                 description        => "Docker Compose stack ${name}",
-                monitoring_enable  => $monitoring_enable,
+                monitoring_enable  => $docker::monitoring_enable,
                 monitoring_package => $monitoring_package,
                 service_subscribe  => $service_subscribe,
                 service            => {
@@ -319,9 +327,7 @@ define docker::compose (
                 require            => $service_require,
               }
 
-              # lint:ignore:140chars
-              # If the target is not 'services', create a dependency on the specified target to allow for flexible ordering of the compose stack in relation to other systemd services and targets.
-              # lint:endignore
+              # Bind the stack to the requested host target.
               basic_settings::systemd_drop_in { "${service_name}_dependency":
                 target_unit   => "${basic_settings::systemd::cluster_id}-${target}.target",
                 unit          => {
@@ -339,22 +345,38 @@ define docker::compose (
               }
             }
 
-            # Monitor the rendered Compose stack separately from the orchestration service unit.
-            docker::compose_monitoring { $name:
-              project_directory => $project_directory,
-              compose_files     => [$compose_file],
-              detail_limit      => $monitoring_detail_limit,
-              env_file          => $env_monitoring,
-              expected_exited   => $monitoring_expected_exited,
-              health_required   => $monitoring_health_required,
-              interval          => $monitoring_interval,
-              orphan_critical   => $monitoring_orphan_critical,
-              package           => $monitoring_package,
-              profiles          => $monitoring_profiles,
-              project_name      => $name,
-              starting_grace    => $monitoring_starting_grace,
-              timeout           => $monitoring_timeout,
-              require           => File[$compose_file],
+            # Schedule enabled database backups for the validated Compose project.
+            if ($backup_enabled) {
+              docker::compose_backup { $name:
+                backup_service    => $backup_service,
+                daemon_reload     => $daemon_reload,
+                on_calendar       => $backup_database_on_calendar,
+                project_directory => $project_directory,
+                retention_days    => $backup_database_retention_days,
+              }
+            }
+
+            # Register a monitoring check for the Compose stack if the monitoring class is available.
+            if ($docker::monitoring_enable) {
+              # Register stack health independently of the orchestration service's enablement.
+              docker::compose_monitoring { $name:
+                project_directory              => $project_directory,
+                backup_database_type           => $backup_database_type,
+                backup_database_retention_days => $backup_database_retention_days,
+                compose_files                  => [$compose_file],
+                detail_limit                   => $monitoring_detail_limit,
+                env_file                       => $env_monitoring,
+                expected_exited                => $monitoring_expected_exited,
+                health_required                => $monitoring_health_required,
+                interval                       => $monitoring_interval,
+                orphan_critical                => $monitoring_orphan_critical,
+                package                        => $monitoring_package,
+                profiles                       => $monitoring_profiles,
+                project_name                   => $name,
+                starting_grace                 => $monitoring_starting_grace,
+                timeout                        => $monitoring_timeout,
+                require                        => File[$compose_file],
+              }
             }
           } else {
             fail('docker::compose env_source must start with https://, file:///, or puppet:///')
@@ -363,16 +385,16 @@ define docker::compose (
           fail('docker::compose requires either compose_content without a checksum, or compose_source starting with https://, file:///, or puppet:///') # lint:ignore:140chars
         }
       } else {
-        fail('docker::compose requires the docker class and compose_source or compose_content when ensure is present.')
+        fail('docker::compose requires compose_source or compose_content when ensure is present.')
       }
     } else {
-      # Remove the directory for docker-compose
+      # The operator stops containers and backup units before removing all project-local data.
       file { $project_directory:
         ensure => absent,
         force  => true,
       }
     }
   } else {
-    fail('docker::compose titles may only contain letters, numbers, dots, underscores, and hyphens.')
+    fail('docker::compose requires the docker class and a title starting with a letter or digit, using letters, digits, dots, underscores or hyphens.') # lint:ignore:140chars
   }
 }
