@@ -18,7 +18,6 @@ DATE=$(command -v date 2>/dev/null) || fail "date not available"
 DOCKER=$(command -v docker 2>/dev/null) || fail "docker not available"
 FLOCK=$(command -v flock 2>/dev/null) || fail "flock not available"
 GZIP=$(command -v gzip 2>/dev/null) || fail "gzip not available"
-JQ=$(command -v jq 2>/dev/null) || fail "jq not available"
 MKTEMP=$(command -v mktemp 2>/dev/null) || fail "mktemp not available"
 MV=$(command -v mv 2>/dev/null) || fail "mv not available"
 RM=$(command -v rm 2>/dev/null) || fail "rm not available"
@@ -111,7 +110,15 @@ REMOVED=0
 for OLD_FILE in "$BACKUP_DIR"/postgresql-*.sql.gz; do
     [ "$OLD_FILE" != "$BACKUP_FILE" ] && [ ! -L "$OLD_FILE" ] && [ -f "$OLD_FILE" ] || continue
     FILENAME=${OLD_FILE##*/}
-    printf '%s\n' "$FILENAME" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+    case "$FILENAME" in
+        postgresql-[0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789]-??????????.sql.gz) ;;
+        *) continue ;;
+    esac
+    OLD_RUN_ID=${FILENAME#postgresql-??????????-}
+    OLD_RUN_ID=${OLD_RUN_ID%.sql.gz}
+    case "$OLD_RUN_ID" in
+        *[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789]*) continue ;;
+    esac
     EPOCH=${FILENAME#postgresql-}
     EPOCH=${EPOCH%%-*}
     if [ "$EPOCH" -lt "$CUTOFF" ]; then

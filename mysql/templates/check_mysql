@@ -56,11 +56,14 @@ done
 shift $((OPTIND - 1))
 [ "$#" -eq 0 ] || die "$USAGE_TEXT"
 for threshold_value in "$WARN_CONN_CURR_PCT" "$CRIT_CONN_CURR_PCT" "$WARN_CONN_PEAK_PCT" "$CRIT_CONN_PEAK_PCT" "$WARN_HIT_PCT" "$CRIT_HIT_PCT"; do
-    $AWK -v value="$threshold_value" 'BEGIN { exit !(value ~ /^(0|[1-9][0-9]*)$/ && value >= 0 && value <= 100) }' || die "thresholds must be integer percentages between 0 and 100 without leading zeroes"
+    case "$threshold_value" in
+        [0123456789]|[123456789][0123456789]|100) ;;
+        *) die "thresholds must be integer percentages between 0 and 100 without leading zeroes" ;;
+    esac
 done
-$AWK -v warn="$WARN_CONN_CURR_PCT" -v crit="$CRIT_CONN_CURR_PCT" 'BEGIN { exit !(warn <= crit) }' || die "critical current connection threshold must be at least warning"
-$AWK -v warn="$WARN_CONN_PEAK_PCT" -v crit="$CRIT_CONN_PEAK_PCT" 'BEGIN { exit !(warn <= crit) }' || die "critical peak connection threshold must be at least warning"
-$AWK -v warn="$WARN_HIT_PCT" -v crit="$CRIT_HIT_PCT" 'BEGIN { exit !(crit <= warn) }' || die "critical cache hit threshold must not exceed warning"
+[ "$WARN_CONN_CURR_PCT" -le "$CRIT_CONN_CURR_PCT" ] || die "critical current connection threshold must be at least warning"
+[ "$WARN_CONN_PEAK_PCT" -le "$CRIT_CONN_PEAK_PCT" ] || die "critical peak connection threshold must be at least warning"
+[ "$CRIT_HIT_PCT" -le "$WARN_HIT_PCT" ] || die "critical cache hit threshold must not exceed warning"
 case "$DETAIL_LIMIT" in
     ''|*[!0-9]*) die "long-output detail character limit must be numeric" ;;
 esac

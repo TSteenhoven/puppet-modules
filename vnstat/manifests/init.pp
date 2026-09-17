@@ -169,12 +169,19 @@ class vnstat (
 
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      # Traffic history and percentile records require vnStat's structured JSON output.
+      ensure_packages('jq', {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Register the check after its configuration and JSON parser are available.
       basic_settings::monitoring_custom { 'vnstat_interfaces':
         ensure   => present,
         source   => 'puppet:///modules/vnstat/check_vnstat_interfaces',
         friendly => 'vnStat interfaces',
         timeout  => 60,
-        require  => Concat['/etc/vnstat-monitoring.conf'],
+        require  => [Concat['/etc/vnstat-monitoring.conf'], Package['jq']],
       }
     }
   } else {

@@ -155,7 +155,6 @@ define docker::compose_monitoring (
       interval => $interval,
       package  => $package,
       timeout  => $timeout,
-      require  => Package['jq'],
     }
   } else {
     fail('docker::compose_monitoring requires the docker class and a title containing only letters, digits, dots, underscores and hyphens.')

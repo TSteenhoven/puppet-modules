@@ -2,7 +2,13 @@
 # Replace URLs, API keys, and contact addresses with environment data.
 
 node 'monitored-host.example.org' {
+  # Add optional deployment expectations to the default firewall checks.
+  # Match these input and forwarding base-chains to the rules installed by the consuming deployment.
   class { 'basic_settings':
+    firewall_check_args        => [
+      '-b', 'inet/filter/input/filter/input/drop',
+      '-b', 'inet/filter/forward/filter/forward/drop',
+    ],
     monitoring_package         => 'openitcockpit',
     monitoring_package_install => true,
     server_fdqn                => 'monitored-host.example.org',

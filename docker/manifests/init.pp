@@ -30,7 +30,7 @@ class docker (
     }
 
     # Compose deployment, backups and monitoring share these dependencies.
-    ensure_packages(['coreutils', 'docker-compose-plugin', 'gzip', 'jq', 'util-linux'], {
+    ensure_packages(['coreutils', 'docker-compose-plugin', 'gzip', 'util-linux'], {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -75,6 +75,12 @@ class docker (
 
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      # Only the monitoring check parses Docker's nested inspection JSON.
+      ensure_packages('jq', {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
       # The parent owns one shared check; project definitions only register their arguments.
       basic_settings::monitoring_custom { 'docker_compose':
         source   => 'puppet:///modules/docker/check_compose',

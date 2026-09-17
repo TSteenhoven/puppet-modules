@@ -9,7 +9,6 @@ die() {
 
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
-CUT=$(command -v cut 2>/dev/null) || die "cut not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 JOURNALCTL=$(command -v journalctl 2>/dev/null) || die "journalctl not available"
@@ -281,8 +280,13 @@ fi
 
 # Helper: extract property from a cached `systemctl show` blob
 get_prop() {
-    # $1 = key
-    printf '%s\n' "$SHOW" | $GREP "^$1=" | $CUT -d= -f2-
+    while IFS= read -r property_line; do
+        case "$property_line" in
+            "$1="*) printf '%s\n' "${property_line#*=}" ;;
+        esac
+    done <<EOF
+$SHOW
+EOF
 }
 
 # Helper: parse a systemd timestamp (text) to epoch, or empty

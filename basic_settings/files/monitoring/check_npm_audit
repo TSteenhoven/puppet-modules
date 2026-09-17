@@ -9,7 +9,6 @@ die() {
 
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
-BASENAME=$(command -v basename 2>/dev/null) || die "basename not available"
 JQ=$(command -v jq 2>/dev/null) || die "jq not available"
 NPM=$(command -v npm 2>/dev/null) || die "npm not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
@@ -170,7 +169,14 @@ run_jq() {
 
 # Default the check name to the project directory basename for stable summaries.
 if [ -z "$CHECK_NAME" ]; then
-    CHECK_NAME=$($BASENAME "$CHECK_DIR")
+    CHECK_NAME=$(
+        DIRECTORY_NAME=$CHECK_DIR
+        while [ "${DIRECTORY_NAME%/}" != "$DIRECTORY_NAME" ]; do
+            DIRECTORY_NAME=${DIRECTORY_NAME%/}
+        done
+        DIRECTORY_NAME=${DIRECTORY_NAME##*/}
+        printf '%s\n' "${DIRECTORY_NAME:-/}"
+    )
 fi
 
 # package.json is the authoritative marker for a Node.js project audit.

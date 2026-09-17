@@ -16,7 +16,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
 | Puppet Strings aanpassen | [Puppet Strings](#puppet-strings), [lange regels](#lange-regels) en [waar de uitleg hoort](#waar-de-uitleg-hoort). |
 | Resources of dependencies aanpassen | [Resources en afhankelijkheden](#resources-en-afhankelijkheden), [resource references](#resource-references) en [volgorde en meldingen](#volgorde-en-meldingen). |
 | Bestanden, privileges of shellcommando's aanpassen | [Bestanden en beveiliging](#bestanden-en-beveiliging) en de [algemene beveiligingsreview](../../AGENTS.md#security-and-privacy). |
-| Een shellscript, Bash-script of shelltemplate aanpassen | [Shellscripts](#shellscripts) en de [algemene shellconventies](../../AGENTS.md#shell-scripts). |
+| Een shellscript, Bash-script, shelltemplate of bijbehorende runtime-dependency aanpassen | [Shellscripts](#shellscripts) en de [algemene shellconventies](../../AGENTS.md#shell-scripts), inclusief [native tools en dependencies](../../AGENTS.md#native-tools-and-dependencies). |
 | Een monitoringcheck of registratie aanpassen | [Monitoringchecks](#monitoringchecks), [targets en monitoring](#targets-en-monitoring) en de [monitoringcontracten](../../AGENTS.md#monitoring-checks). |
 | Systemd-integratie aanpassen | [Gedeelde services en systemd](#gedeelde-services-en-systemd), inclusief de beoordeling per service. |
 | Een lintmelding oplossen | [Een melding oplossen](#een-melding-oplossen); zoek de checknaam in het [checkoverzicht](#beschikbare-projectchecks). |
@@ -817,6 +817,8 @@ Beveiligingsdefaults in een generieke wrapper raken alle services die die wrappe
 ### Shellscripts
 
 De [shellconventies in `AGENTS.md`](../../AGENTS.md#shell-scripts) bepalen de opbouw, naamgeving, opmaak, commandodetectie, argumentverwerking en gegevensverwerking voor alle eigen shellcode. Gebruik ze voor POSIX shell en Bash, ook in bestanden zonder extensie, templates en inline fragmenten. De [shellvalidatie](../../AGENTS.md#shell-validation) beschrijft hoe je de bron en gegenereerde uitvoer controleert; een geslaagde Puppet-lintscan vervangt die controle niet.
+
+Beoordeel externe tools volgens de [afspraken over native tools en dependencies](../../AGENTS.md#native-tools-and-dependencies). Gebruik voor eenvoudige controles bij voorkeur shellfunctionaliteit of de uitvoer en exitcode van het oorspronkelijke commando. Een parser zoals `jq` blijft geschikt voor complexe gestructureerde gegevens. Neem bij het verwijderen van een tool ook de pakketinstallatie en andere afnemers mee, en toets volgens de shellvalidatie of het gedrag gelijk blijft. Deze afweging vraagt handmatige review; Puppet-lint bepaalt niet of een runtime-tool functioneel nodig is.
 
 Voor waarden die Puppet in een shelltemplate invoegt, gebruik je ERB met directe shelltoekenningen. Beperk ERB tot het invoegen van waarden; de voorbereiding in Puppet bestaat uit defaults voor beheerde configuratie, serialisatie en shellveilige argumenten. Volg daarbij de afspraken voor [templates](#templates-en-bestandsbronnen) en [shellcommando's in Puppet](#shellcommandos-in-puppet). Voeg alleen een afzonderlijk configuratiebestand of een parser toe wanneer dat is gevraagd of al gebruikelijk is.
 

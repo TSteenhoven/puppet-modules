@@ -76,6 +76,13 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Preserve caller-specific security and lifecycle requirements during migration.
 - Validate each migrated caller's behavior and dependencies.
 
+### Deployment-Owned Firewall Configuration
+
+- Consuming projects own their nftables rules, including their contents, names, policies, interfaces, IP families, and delivery mechanism. They may use templates, file sources, or another configuration system.
+- Shared modules must not generate or manage deployment firewall profiles, introduce firewall expectation files or their Puppet datatypes and validation functions, or add specialized monitoring classes to take over that responsibility.
+- Keep firewall monitoring in the existing network integration. Pass deployment-owned structural expectations as runtime arguments to the shared executable and compare them with loaded state; never infer required components solely from that state.
+- Never treat general rule counts or empty tables/chains as proof of protection or failure. Document the scope of a successful structural check and validate packet reachability separately when required.
+
 ### Prerequisite Review
 
 - Identify which dependencies in changed code are operational prerequisites and which only affect execution order.
@@ -98,6 +105,13 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 - Omit sections the script does not need. Do not add options, environment settings or helper layers solely to fill out this structure.
 - Resolve external commands directly with `COMMAND=$(command -v command 2>/dev/null) || die ...`, using the script's error helper. Invoke the resolved `$COMMAND` in command position without quotes; keep command arguments separate.
 - Use shell builtins directly and use `printf` for output.
+
+#### Native Tools And Dependencies
+
+- Review the purpose of each external tool used in changed shell code. Prefer the original command's native output, filters and exit status; do not convert output to JSON or another format solely to extract a simple value or determine success.
+- Use shell comparisons, `case` patterns, parameter expansion and builtins for simple validation and string operations when they reliably preserve the required behavior. Do not install additional packages solely for operations the declared shell or original command already handles simply.
+- Use a dedicated parser such as `jq` when native structured output requires reliable processing of multiple fields or complex structures. Do not replace a necessary structured parser with fragile shell parsing merely to remove a dependency.
+- Manage runtime packages with the feature or shared executable that needs them. Before removing obsolete command discovery, package declarations or dependency references, review all consumers and retain dependencies still required elsewhere.
 
 #### Formatting And Naming
 
@@ -128,6 +142,7 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 
 - Review the source and rendered output against these conventions, and run syntax validation with the intended interpreter. Puppet-lint does not validate shell syntax or the complete shell style.
 - Validate changed scripts with isolated synthetic cases for every supported input source: defaults, environment-only values, combined environment and CLI values, empty and invalid inputs, and partial overrides. Include related value ordering, repeated options, boolean resets and timeout behavior where applicable.
+- When replacing external tools, verify equivalent behavior, validation, error handling, monitoring statuses, exit codes and externally consumed output unless a behavior change is explicitly requested. Include relevant whitespace, escaping, locale and boundary cases in the comparison, and apply the [prerequisite review](#prerequisite-review) to removed or relocated dependencies.
 - Keep functional validation outside the repository according to the [test scope](#test-scope), including checks of failure paths and temporary-file cleanup when affected.
 
 ### Managed File Identification
@@ -165,6 +180,12 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 #### Effective Value Validation
 
 - Reject invalid required values with Nagios UNKNOWN.
+
+#### Inspection Results
+
+- Report a verified missing required component, policy mismatch, or inactive required service as CRITICAL; report unavailable permissions, tools, or unreadable output that prevents assessment as UNKNOWN.
+- Never convert a failed inspection into an empty collection or a healthy result. Preserve verified deviations alongside incomplete observations and document their status precedence.
+- Keep diagnostics deterministic and bounded, identifying the affected object and the expected and observed state; supplementary counters must not establish health.
 
 #### Registration And Configuration Interfaces
 

@@ -11,7 +11,6 @@ die() {
 
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
-BASENAME=$(command -v basename 2>/dev/null) || die "basename not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 DOCKER=$(command -v docker 2>/dev/null) || die "docker not available"
 JQ=$(command -v jq 2>/dev/null) || die "jq not available"
@@ -174,7 +173,9 @@ add_warning() {
 
 # Return the first semicolon-separated reason for the short output.
 first_reason() {
-    printf '%s\n' "$1" | $AWK -F'; ' '{ print $1; exit }'
+    first_line_text=${1%%'
+'*}
+    printf '%s\n' "${first_line_text%%; *}"
 }
 
 # Append one comma-separated item if it is not already present.
@@ -353,8 +354,9 @@ previous_restart_count() {
     $AWK -F'|' -v name="$1" '$1 == name { print $2; exit }' "$STATE_FILE"
 }
 
-# Run `docker compose config --services` with the configured identity.
-compose_config_services() {
+# Use the same Compose identity and file/profile order for configuration and runtime discovery.
+compose_command() {
+    compose_action=$1
     set -- compose
     [ -n "$PROJECT_NAME" ] && set -- "$@" --project-name "$PROJECT_NAME"
     set -- "$@" --project-directory "$PROJECT_DIRECTORY"
@@ -374,32 +376,10 @@ compose_config_services() {
     done
     IFS=$old_ifs
 
-    set -- "$@" config --services
-    $DOCKER "$@"
-}
-
-# Run `docker compose ps` and include non-running and orphan containers.
-compose_ps_json() {
-    set -- compose
-    [ -n "$PROJECT_NAME" ] && set -- "$@" --project-name "$PROJECT_NAME"
-    set -- "$@" --project-directory "$PROJECT_DIRECTORY"
-    [ -n "$ENV_FILE" ] && set -- "$@" --env-file "$ENV_FILE"
-
-    old_ifs=$IFS
-    IFS=','
-    for compose_file in $COMPOSE_FILES; do
-        [ -n "$compose_file" ] && set -- "$@" --file "$compose_file"
-    done
-    IFS=$old_ifs
-
-    old_ifs=$IFS
-    IFS=','
-    for profile_name in $PROFILE_LIST; do
-        [ -n "$profile_name" ] && set -- "$@" --profile "$profile_name"
-    done
-    IFS=$old_ifs
-
-    set -- "$@" ps --all --format json --orphans
+    case "$compose_action" in
+        config) set -- "$@" config --services ;;
+        ps) set -- "$@" ps --all --quiet --orphans ;;
+    esac
     $DOCKER "$@"
 }
 
@@ -410,6 +390,19 @@ docker_inspect_containers() {
         set -- "$@" "$container_id"
     done
     $DOCKER "$@"
+}
+
+# Validate the completed filename before its timestamp can affect backup health or retention.
+is_backup_filename() {
+    case "$1" in
+        postgresql-[0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789][0123456789]-??????????.sql.gz) ;;
+        *) return 1 ;;
+    esac
+    backup_run_id=${1#postgresql-??????????-}
+    backup_run_id=${backup_run_id%.sql.gz}
+    case "$backup_run_id" in
+        *[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789]*) return 1 ;;
+    esac
 }
 
 # Inspect completed files without querying the database or reading systemd state.
@@ -425,7 +418,7 @@ check_database_backup() (
     for file in "$backup"/postgresql-*.sql.gz; do
         [ -e "$file" ] || [ -L "$file" ] || continue
         name=${file##*/}
-        printf '%s\n' "$name" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+        is_backup_filename "$name" || continue
         epoch=${name#postgresql-}
         epoch=${epoch%%-*}
         if [ -L "$file" ] || [ ! -f "$file" ] || [ ! -r "$file" ] || [ ! -s "$file" ] || [ "$epoch" -gt "$now" ]; then
@@ -444,7 +437,7 @@ check_database_backup() (
     for file in "$backup"/postgresql-*.sql.gz; do
         [ -f "$file" ] && [ ! -L "$file" ] || continue
         name=${file##*/}
-        printf '%s\n' "$name" | $JQ -Re 'test("^postgresql-[0-9]{10}-[A-Za-z0-9]{10}[.]sql[.]gz$")' >/dev/null || continue
+        is_backup_filename "$name" || continue
         epoch=${name#postgresql-}
         epoch=${epoch%%-*}
         [ "$epoch" -ge "$cutoff" ] || expired=$((expired + 1))
@@ -488,7 +481,14 @@ if [ -z "$CHECK_NAME" ]; then
     if [ -n "$PROJECT_NAME" ]; then
         CHECK_NAME=$PROJECT_NAME
     else
-        CHECK_NAME=$($BASENAME "$PROJECT_DIRECTORY")
+        CHECK_NAME=$(
+            DIRECTORY_NAME=$PROJECT_DIRECTORY
+            while [ "${DIRECTORY_NAME%/}" != "$DIRECTORY_NAME" ]; do
+                DIRECTORY_NAME=${DIRECTORY_NAME%/}
+            done
+            DIRECTORY_NAME=${DIRECTORY_NAME##*/}
+            printf '%s\n' "${DIRECTORY_NAME:-/}"
+        )
     fi
 fi
 
@@ -529,56 +529,40 @@ umask "$OLD_UMASK"
 trap '$RM -f "$STATE_TMP"' EXIT HUP INT QUIT TERM
 
 # Resolve expected services from the rendered Compose model.
-CONFIG_OUTPUT=$(compose_config_services 2>&1)
+CONFIG_OUTPUT=$(compose_command config 2>&1)
 CONFIG_RC=$?
 [ "$CONFIG_RC" -eq 0 ] || die "$CHECK_NAME: compose config failed: $(first_line "$CONFIG_OUTPUT")"
 
-EXPECTED_SERVICES=$(printf '%s\n' "$CONFIG_OUTPUT" | $SED '/^[[:space:]]*$/d')
 while IFS= read -r service_name; do
-    [ -n "$service_name" ] || continue
+    case "$service_name" in
+        *[![:space:]]*) ;;
+        *) continue ;;
+    esac
     EXPECTED_LIST=$(append_csv_unique "$EXPECTED_LIST" "$service_name")
     COMPOSE_SERVICES_EXPECTED=$((COMPOSE_SERVICES_EXPECTED + 1))
 done <<EOF
-$EXPECTED_SERVICES
+$CONFIG_OUTPUT
 EOF
 
 [ "$COMPOSE_SERVICES_EXPECTED" -gt 0 ] || die "$CHECK_NAME: compose config does not contain services"
 
-# Read the current Compose runtime view and parse its JSON.
-PS_JSON=$(compose_ps_json 2>&1)
+# Compose supplies IDs directly; other runtime fields come from the detailed inspect below.
+PS_OUTPUT=$(compose_command ps 2>&1)
 PS_RC=$?
-[ "$PS_RC" -eq 0 ] || die "$CHECK_NAME: compose ps failed: $(first_line "$PS_JSON")"
-
-PS_TSV=$(printf '%s' "$PS_JSON" | $JQ -r '
-    def rows:
-        if type == "array" then .[]
-        elif type == "object" then .
-        else empty
-        end;
-    rows
-    | [
-        (.ID // .Id // ""),
-        (.Name // ""),
-        (.Project // ""),
-        (.Service // ""),
-        (.State // ""),
-        (.Health // ""),
-        ((.ExitCode // "") | tostring)
-    ]
-    | @tsv
-' 2>&1)
-PS_JQ_RC=$?
-[ "$PS_JQ_RC" -eq 0 ] || die "$CHECK_NAME: compose ps JSON parse failed: $(first_line "$PS_TSV")"
+[ "$PS_RC" -eq 0 ] || die "$CHECK_NAME: compose ps failed: $(first_line "$PS_OUTPUT")"
 
 CONTAINER_IDS=""
-while IFS='	' read -r container_id _container_name _project_name _service_name _state _health _exit_code; do
-    [ -n "$container_id" ] || continue
+while IFS= read -r container_id; do
+    case "$container_id" in
+        '') continue ;;
+        *[!a-fA-F0-9]*) die "$CHECK_NAME: compose ps returned an invalid container ID" ;;
+    esac
     CONTAINER_IDS="${CONTAINER_IDS:+$CONTAINER_IDS }$container_id"
 done <<EOF
-$PS_TSV
+$PS_OUTPUT
 EOF
 
-# Inspect every known container for health, restart and timestamp details.
+# Keep JSON for nested optional health data, the latest log entry and escaped diagnostic text.
 if [ -n "$CONTAINER_IDS" ]; then
     INSPECT_JSON=$(docker_inspect_containers 2>&1)
     INSPECT_RC=$?

@@ -12,7 +12,6 @@ SYSTEMD_ENABLE='<%= @systemd_enable %>'
 
 # Binary checks
 AWK=$(command -v awk 2>/dev/null) || die "awk not available"
-CUT=$(command -v cut 2>/dev/null) || die "cut not available"
 DATE=$(command -v date 2>/dev/null) || die "date not available"
 GREP=$(command -v grep 2>/dev/null) || die "grep not available"
 SED=$(command -v sed 2>/dev/null) || die "sed not available"
@@ -317,7 +316,7 @@ DETECTIONS_TOTAL=$($LSLOG -d -c 2>/dev/null | $TAIL -n +2 | $WC -l | $AWK '{prin
 # Update age is computed from the latest successful detection-engine update log line.
 LAST_OK=$(printf '%s\n' "$LOG_CSV" | $GREP -F "Detection Engine was successfully updated" | $TAIL -n 1)
 if [ -n "$LAST_OK" ]; then
-    LAST_OK_TS=$($DATE -d "$(printf '%s' "$LAST_OK" | $CUT -d ',' -f1)" +%s 2>/dev/null || printf '')
+    LAST_OK_TS=$($DATE -d "${LAST_OK%%,*}" +%s 2>/dev/null || printf '')
     case "$LAST_OK_TS" in
         ''|*[!0-9]*)
             UPDATE_AGE_MIN=U
