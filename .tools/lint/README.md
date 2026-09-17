@@ -74,6 +74,7 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
     - [Servicebeveiliging](#servicebeveiliging)
   - [Shellscripts](#shellscripts)
   - [Monitoringchecks](#monitoringchecks)
+    - [Packages voor externe commando’s](#packages-voor-externe-commandos)
     - [Invoer en configuratie](#invoer-en-configuratie)
     - [Uitvoer voor beheerders](#uitvoer-voor-beheerders)
     - [Veilige en begrensde uitvoer](#veilige-en-begrensde-uitvoer)
@@ -852,6 +853,22 @@ Behoud volgens de [invoerafspraken](../../AGENTS.md#arguments-and-runtime-settin
 ### Monitoringchecks
 
 Checks volgen de algemene [shellconventies](../../AGENTS.md#shell-scripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. De aanvullende [monitoringcontracten](../../AGENTS.md#monitoring-checks) regelen gedeelde executables, instellingen per target en de levenscyclus van registraties. Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
+
+#### Packages voor externe commando's
+
+Borg bij iedere monitoringcheck expliciet de packages die zijn externe commando's leveren. Ga er niet van uit dat `basic_settings`, een andere class of de basisinstallatie die packages meeneemt. De check moet bruikbaar zijn met alleen de benodigde module en `basic_settings::monitoring`.
+
+De enige uitzondering voor een benodigd executable is de Puppet/OpenVox-agent zelf: die is al geïnstalleerd om de catalogus toe te passen. De Puppet-agentcheck hergebruikt diens `puppet`-commando; voeg hiervoor geen agentpackage, packagekeuzeparameter of package-`require` toe. Alle overige hulppackages van deze check blijven expliciet geborgd.
+
+Inventariseer het hele script, inclusief de interpreter, pipelines, command substitutions, vaste executablepaden en conditionele uitvoerpaden. Maak onderscheid tussen shell-builtins, lokale functies en externe executables. Controleer de leverancier van ieder benodigd executable voor de ondersteunde Debian/Ubuntu-versies; `awk` heeft bijvoorbeeld meerdere providers en `cmp` komt uit `diffutils`. Een bewust optionele tool met een werkende terugvalroute hoeft geen verplichte package te worden. Leg die terugvalroute vast in de review.
+
+Beheer ontbrekende packages bij de eigenaar van het gedeelde executable met `ensure_packages`, en groepeer packages met gelijke instellingen volgens [pakketten en mappen](#pakketten-en-mappen). Gebruik alleen daadwerkelijk benodigde packages. Een bestaande installatie in dezelfde module of een verplichte parentclass mag de garantie leveren als die op ieder relevant uitvoerpad actief is. Ook een verplichte package-afhankelijkheid kan volstaan, mits je de dependencyketen voor de ondersteunde pakketbronnen controleert. Een aanbeveling, toevallige classdeclaratie of aanwezig executable op de testserver is geen garantie.
+
+Laat de monitoringresource via `require` wachten op de packages die de check gebruikt. Bij gedeelde bestanden moeten ook de registraties via het executable op die packages wachten. Gebruik voor een bewust afzonderlijk beheerde applicatie-installatie de bestaande installatieresource en behoud de bijbehorende voorwaarden. Controleer providers en installatievolgorde: bijvoorbeeld NodeSource levert npm in `nodejs`, terwijl Debian en Ubuntu een afzonderlijk `npm`-package leveren.
+
+Dit is een verplicht reviewpunt. Leg per check de commando's, providers, installatiegaranties en relaties vast. Valideer catalogi zonder de hoofdclass `basic_settings`, met benodigde packages vooraf wel en niet gedeclareerd, met monitoring uitgeschakeld en met meerdere registraties waarvan er één wordt verwijderd. Controleer conditionele providers ook met de relevante declaratievolgorde.
+
+De bestaande checks `project_packages`, `project_guarded_packages` en `project_resource_references` helpen met package-opties, groepering en references. Ze bewijzen niet dat een shellscript alle runtimepackages krijgt: `project_packages` inspecteert package-resources, geen effectieve `ensure_packages`-aanroepen; `project_shell` controleert escaping in Puppet-execs. Een betrouwbare volledigheidscontrole zou scripts, templates, providers en conditionele installatiepaden moeten koppelen. Die package-analyse blijft daarom handmatige review; de linter raadt geen Debian-packages bij willekeurige commandonamen.
 
 #### Invoer en configuratie
 

@@ -91,8 +91,16 @@ class basic_settings::timezone (
 
     # Create service check
     if (defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none') {
+      # Install the external commands used by this check.
+      ensure_packages(['dash', 'grep', 'mawk', 'sed'], {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'systemd_timesyncd':
-        source => 'puppet:///modules/basic_settings/monitoring/check_systemd_timesyncd',
+        source  => 'puppet:///modules/basic_settings/monitoring/check_systemd_timesyncd',
+        require => Package['dash', 'grep', 'mawk', 'sed', 'systemd'],
       }
     }
 

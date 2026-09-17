@@ -22,12 +22,34 @@ class openitcockpit::agent_mirth_connect (
   if (defined(Class['openitcockpit::agent'])) {
     # Detect systemd before registering the Mirth Connect agent integration.
     $systemd_enable = defined(Package['systemd'])
+
+    # Install runtime packages only while this registration deploys the check.
+    $monitoring_package = pick($package, $openitcockpit::agent::monitoring_package)
+    $monitoring_active = $ensure == present and $openitcockpit::agent::monitoring_enable and $monitoring_package != 'none'
+    if ($monitoring_active) {
+      # Select the tools used alongside the externally supplied mccommand executable.
+      $monitoring_packages = concat(['coreutils', 'dash', 'mawk', 'sed'], $systemd_enable ? {
+        true    => ['systemd'],
+        default => ['procps'],
+      })
+      ensure_packages($monitoring_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+      $monitoring_require = Package[$monitoring_packages]
+    } else {
+      # Retirement does not install packages for the removed executable.
+      $monitoring_require = undef
+    }
+
+    # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'mirth_connect':
       ensure   => $ensure,
       package  => $package,
       friendly => 'Mirth Connect',
       content  => template('openitcockpit/agent/check_mirth_connect'),
       timeout  => 60,
+      require  => $monitoring_require,
     }
   } else {
     fail('The openitcockpit::agent class must be included before using the openitcockpit::agent_mirth_connect defined type.')

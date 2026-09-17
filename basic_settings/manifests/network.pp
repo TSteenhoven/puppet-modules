@@ -396,13 +396,25 @@ class basic_settings::network (
       # Create service check
       if ($basic_settings::monitoring::package != 'none') {
         # Use a service check for firewalld and the configuration-aware check for nftables.
-        if ($firewall_package != 'nftables') {
-          basic_settings::monitoring_service { 'firewall':
-            services => [$firewall_package],
-          }
-        } else {
+        if ($firewall_package == 'nftables') {
+          # Install the check tools, including systemd only for the selected inspection path.
+          $firewall_monitoring_packages = concat(['coreutils', 'dash', 'mawk'], $systemd_enable ? {
+            true    => ['systemd'],
+            default => [],
+          })
+          ensure_packages($firewall_monitoring_packages, {
+            'ensure'          => 'installed',
+            'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+          })
+
+          # Register the check after its runtime packages.
           basic_settings::monitoring_custom { 'firewall':
             content => template("basic_settings/monitoring/check_${firewall_package}"),
+            require => Package[concat(['nftables'], $firewall_monitoring_packages)],
+          }
+        } else {
+          basic_settings::monitoring_service { 'firewall':
+            services => [$firewall_package],
           }
         }
       }
@@ -650,6 +662,16 @@ class basic_settings::network (
 
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Select the process inspector used by the rendered check.
+    $network_monitoring_packages = concat(['coreutils', 'dash', 'grep', 'mawk', 'sed'], $systemd_enable ? {
+      true    => ['systemd'],
+      default => ['procps'],
+    })
+    ensure_packages($network_monitoring_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
     # Escape the selected service list as one argument for the network check.
     $service_str = join($services, ' ')
 
@@ -658,7 +680,8 @@ class basic_settings::network (
     $interfaces_str_shell = stdlib::shell_escape($interfaces_str)
     basic_settings::monitoring_custom { 'network':
       content  => template('basic_settings/monitoring/check_network'),
-      interval => 600 # 10 minutes
+      interval => 600, # 10 minutes
+      require  => Package[concat(['dnsutils', 'iproute2'], $network_monitoring_packages)],
     }
   }
 

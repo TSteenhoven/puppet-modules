@@ -869,16 +869,24 @@ class basic_settings::kernel (
 
   # Setup monitoring
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Both checks use awk; coreutils and sed are installed with the kernel tools above.
+    ensure_packages(['dash', 'mawk'], {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
     # Register memory pressure monitoring next to kernel memory tuning.
     basic_settings::monitoring_custom { 'memory_pressure':
       friendly => 'Memory pressure',
       content  => template('basic_settings/monitoring/check_memory_pressure'),
+      require  => Package['coreutils', 'dash', 'mawk', 'sed'],
     }
 
     # Reegister USB monitoring
     basic_settings::monitoring_custom { 'usb':
       friendly => 'USB',
       content  => template('basic_settings/monitoring/check_usb'),
+      require  => Package['coreutils', 'dash', 'mawk', 'sed'],
     }
   }
 

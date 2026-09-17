@@ -227,8 +227,20 @@ class mysql (
 
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      # Install the check tools, including systemd only for the selected inspection path.
+      $monitoring_packages = concat(['dash', 'mawk', 'mysql-client'], $systemd_enable ? {
+        true    => ['systemd'],
+        default => [],
+      })
+      ensure_packages($monitoring_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'mysql':
         content => template('mysql/check_mysql'),
+        require => Package[$monitoring_packages],
       }
     }
 

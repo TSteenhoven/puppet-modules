@@ -89,6 +89,7 @@ define basic_settings::monitoring_npm_audit (
           target  => '/etc/openitcockpit-agent/customchecks.ini',
           content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} -d ${dir} -n ${name}\ninterval = 300\ntimeout = 10\nenabled = true\n", # lint:ignore:140chars
           order   => '10',
+          require => File[$script_path],
         }
       }
     }
@@ -103,8 +104,18 @@ define basic_settings::monitoring_npm_audit (
 
   # Check if script path is not defined
   if (!$script_exists) {
-    # npm audit returns nested vulnerability data; the shared executable needs a JSON parser.
-    ensure_packages('jq', {
+    # NodeSource bundles npm; the distribution supplies it in a separate package.
+    if (defined(Class['basic_settings::package_node']) and $basic_settings::package_node::enable) {
+      # Reuse the explicit NodeSource installation contract.
+      $npm_package_correct = 'nodejs'
+    } else {
+      # A standalone check uses the distribution's npm package.
+      $npm_package_correct = 'npm'
+    }
+
+    # Install the shared check's interpreter, parsers and npm provider.
+    $monitoring_packages = ['dash', 'jq', 'mawk', 'sed', $npm_package_correct]
+    ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -116,7 +127,7 @@ define basic_settings::monitoring_npm_audit (
       owner   => $uid,
       group   => $gid,
       mode    => '0700',
-      require => Package['jq'],
+      require => Package[$monitoring_packages],
     }
 
     # Create sudo

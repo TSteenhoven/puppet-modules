@@ -102,11 +102,11 @@ class gitlab (
     }
 
     # Set requirements
-    $requirements = [File['/opt/gitlab'], Package['dpkg', 'grep']]
+    $requirements = [File['/opt/gitlab'], Package['apt', 'dpkg', 'grep']]
   } else {
     # Set requirements
     $install_dir_correct = '/opt/gitlab'
-    $requirements = [Package['dpkg', 'grep']]
+    $requirements = [Package['apt', 'dpkg', 'grep']]
   }
 
   # Escape install environment values before they are embedded in the shell command.
@@ -117,6 +117,12 @@ class gitlab (
 
   # Escape the complete install script before passing it to sh -c.
   $gitlab_install_script_shell = stdlib::shell_escape($gitlab_install_script)
+
+  # The installer supplies the commands used by the GitLab check.
+  ensure_packages(['apt', 'dpkg', 'grep'], {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
 
   # Check if gitlab is installed exists
   exec { 'gitlab_install':
@@ -190,11 +196,19 @@ class gitlab (
 
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Install the external commands used by this check.
+    ensure_packages(['coreutils', 'dash', 'mawk', 'sed'], {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
+    # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'gitlab':
       source   => 'puppet:///modules/gitlab/check_gitlab',
       friendly => 'GitLab',
       timeout  => 300,
       interval => 600,
+      require  => [Exec['gitlab_install'], Package['coreutils', 'dash', 'mawk', 'sed']],
     }
   }
 

@@ -3,7 +3,7 @@
 # Requires the nginx class and the File resource supplied by config_file. The normal caller is nginx::server, which
 # registers separate main and redirect checks and supplies its own configuration path. This helper never includes
 # monitoring classes or creates executable copies. The nginx class owns one shared root-owned 0700 check_nginx_cert
-# script and its OpenSSL, CA certificate and coreutils dependencies through basic_settings::monitoring_custom. This
+# script and its runtime package dependencies through basic_settings::monitoring_custom. This
 # helper passes safely escaped server names, the configuration file and check settings as arguments.
 # The script uses nginx -T with nginx::config_file and the binary default prefix, discovers paths at runtime and
 # validates against self-issued roots from the Debian/Ubuntu system trust bundle. Custom service command-line overrides

@@ -119,6 +119,7 @@ define basic_settings::monitoring_service (
         friendly       => $friendly_correct,
         active_windows => $active_windows,
         active_days    => $active_days,
+        require        => File[$script_path],
       }
     }
     default: {
@@ -132,13 +133,20 @@ define basic_settings::monitoring_service (
 
   # Check if script path is not defined
   if (!$script_exists) {
+    # Install the tools used by the shared systemd check.
+    ensure_packages(['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'], {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
     # Preserve the shared executable when an individual registration is retired.
     file { $script_path:
-      ensure => file,
-      source => 'puppet:///modules/basic_settings/monitoring/check_systemd_service',
-      owner  => $uid,
-      group  => $gid,
-      mode   => '0700',
+      ensure  => file,
+      source  => 'puppet:///modules/basic_settings/monitoring/check_systemd_service',
+      owner   => $uid,
+      group   => $gid,
+      mode    => '0700',
+      require => Package['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'],
     }
 
     # Create sudo

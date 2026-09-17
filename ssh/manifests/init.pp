@@ -271,10 +271,22 @@ class ssh (
 
   # Create service check
   if (defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none') {
+    # Install the check tools, including systemd only for the selected inspection path.
+    $monitoring_packages = concat(['coreutils', 'dash', 'mawk', 'procps', 'sed'], $systemd_enable ? {
+      true    => ['systemd'],
+      default => [],
+    })
+    ensure_packages($monitoring_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
+    # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'ssh':
       content  => template('ssh/check_ssh'),
       friendly => 'SSH',
       timeout  => 60,
+      require  => Package[$monitoring_packages],
     }
   }
 

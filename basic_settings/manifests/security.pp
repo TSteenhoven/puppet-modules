@@ -63,10 +63,22 @@ class basic_settings::security (
 
   # Setup monitoring
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Audit and ESET share these shell tools; systemd applies only to the selected inspection path.
+    $monitoring_packages = concat(['coreutils', 'dash', 'grep', 'mawk', 'procps', 'sed'], $systemd_enable ? {
+      true    => ['systemd'],
+      default => [],
+    })
+    ensure_packages($monitoring_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
+    # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'audit':
       content  => template('basic_settings/monitoring/check_audit'),
       timeout  => 300,
       interval => 600,
+      require  => Package[concat(['auditd'], $monitoring_packages)],
     }
   }
 
@@ -85,10 +97,12 @@ class basic_settings::security (
 
       # Setup monitoring
       if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+        # Register the check after its runtime packages.
         basic_settings::monitoring_custom { 'antivirus':
           friendly => 'ESET Server Security',
           content  => template('basic_settings/monitoring/check_eset'),
           timeout  => 60,
+          require  => Package[$monitoring_packages],
         }
       }
     }

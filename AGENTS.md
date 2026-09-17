@@ -200,6 +200,7 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 
 ### Monitoring Validation
 
+- Verify each check's explicit package guarantees through the [package dependency review and its documented exception](.tools/lint/README.md#packages-voor-externe-commandos). Never assume that `basic_settings`, another class, or the base system installs the required packages.
 - Apply [shell validation](#shell-validation) to changed check implementations.
 - For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
 - For each changed check, validate that retiring one target preserves the shared executable and the other registrations.

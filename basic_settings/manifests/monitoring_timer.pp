@@ -83,6 +83,7 @@ define basic_settings::monitoring_timer (
           target  => '/etc/openitcockpit-agent/customchecks.ini',
           content => "\n[${script_name}] # ${friendly_correct}\ncommand = ${script_path} ${name}.timer\ninterval = 300\ntimeout = 10\nenabled = true\n", # lint:ignore:140chars
           order   => '10',
+          require => File[$script_path],
         }
       }
     }
@@ -97,13 +98,20 @@ define basic_settings::monitoring_timer (
 
   # Check if script path is not defined
   if (!$script_exists) {
+    # Install the tools used by the shared systemd check.
+    ensure_packages(['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'], {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
     # Preserve the shared executable when an individual registration is retired.
     file { $script_path:
-      ensure => file,
-      source => 'puppet:///modules/basic_settings/monitoring/check_systemd_timer',
-      owner  => $uid,
-      group  => $gid,
-      mode   => '0700',
+      ensure  => file,
+      source  => 'puppet:///modules/basic_settings/monitoring/check_systemd_timer',
+      owner   => $uid,
+      group   => $gid,
+      mode    => '0700',
+      require => Package['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'],
     }
 
     # Create sudo

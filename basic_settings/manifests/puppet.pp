@@ -180,11 +180,23 @@ class basic_settings::puppet (
 
     # Create service check
     if ($monitoring_package != 'none') {
+      # Install the check tools, including systemd only for the selected inspection path.
+      $monitoring_packages = concat(['coreutils', 'dash', 'mawk', 'procps', 'sed'], $systemd_enable ? {
+        true    => ['systemd'],
+        default => [],
+      })
+      ensure_packages($monitoring_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'puppet_agent':
         content  => template('basic_settings/monitoring/puppet/check_agent'),
         friendly => 'Puppet Agent',
         timeout  => 60,
         interval => 600,
+        require  => Package[$monitoring_packages],
       }
     }
   } else {

@@ -75,8 +75,8 @@ class docker (
 
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
-      # Only the monitoring check parses Docker's nested inspection JSON.
-      ensure_packages('jq', {
+      # Install the check's shell, text tools, JSON parser and Docker CLI.
+      ensure_packages(['dash', 'docker-ce-cli', 'jq', 'mawk', 'sed'], {
         'ensure'          => 'installed',
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
@@ -85,7 +85,7 @@ class docker (
       basic_settings::monitoring_custom { 'docker_compose':
         source   => 'puppet:///modules/docker/check_compose',
         register => false,
-        require  => Package['jq'],
+        require  => Package['coreutils', 'dash', 'docker-ce-cli', 'docker-compose-plugin', 'jq', 'mawk', 'sed'],
       }
     }
   } else {

@@ -151,6 +151,12 @@ class rabbitmq::management (
 
     # Check if we need to install admin plugin
     if ($admin_enable) {
+      # The downloaded rabbitmqadmin CLI uses Python 3.
+      ensure_packages(['coreutils', 'curl', 'python3'], {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
       # Enable guest account
       rabbitmq::management_user { 'guest':
         password => $admin_password,
@@ -179,7 +185,7 @@ class rabbitmq::management (
       exec { 'rabbitmq_management_admin_cli':
         command => "/usr/bin/curl -fsSL ${admin_cli_url_shell} -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
         unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
-        require => [Package['curl'], File['rabbitmq_management_admin_config']],
+        require => [Package['coreutils', 'curl', 'python3'], File['rabbitmq_management_admin_config']],
       }
 
       # Create list of packages that is suspicious
@@ -196,12 +202,31 @@ class rabbitmq::management (
 
     # Create service check
     if ($rabbitmq::monitoring_enable and $basic_settings::monitoring::package != 'none') {
+      # Order optional management inspection after the CLI installation.
+      $monitoring_admin_require = $admin_enable ? {
+        true    => [Exec['rabbitmq_management_admin_cli'], Package['python3']],
+        default => [],
+      }
+
       # Preserve the configured path as data at the rendered shell assignment boundary.
       $admin_config_path_shell = stdlib::shell_escape($admin_config_path)
+
+      # Install the check tools, including systemd only for the selected inspection path.
+      $monitoring_packages = concat(['dash', 'grep', 'mawk', 'procps'], $systemd_enable ? {
+        true    => ['systemd'],
+        default => [],
+      })
+      ensure_packages($monitoring_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'rabbitmq':
         ensure   => present,
         content  => template('rabbitmq/check_rabbitmq'),
         friendly => 'RabbitMQ',
+        require  => concat([Package[concat(['rabbitmq-server'], $monitoring_packages)]], $monitoring_admin_require),
       }
     }
 

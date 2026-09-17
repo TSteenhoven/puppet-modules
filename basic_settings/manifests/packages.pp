@@ -349,10 +349,22 @@ class basic_settings::packages (
 
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
+    # Install the check tools, including systemd only for the selected inspection path.
+    $monitoring_packages = concat(['coreutils', 'dash', 'findutils', 'grep', 'mawk', 'sed'], $systemd_enable ? {
+      true    => ['systemd'],
+      default => [],
+    })
+    ensure_packages($monitoring_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
+    # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'apt':
       content  => template('basic_settings/monitoring/check_apt'),
       friendly => 'APT',
-      interval => 3600 # 1 hour
+      interval => 3600, # 1 hour
+      require  => Package[concat(['apt'], $monitoring_packages)],
     }
   }
 
