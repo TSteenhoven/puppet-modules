@@ -31,6 +31,7 @@ PERFDATA_BUFFER=""
 
 # Ruleset structure counters drive empty table/chain alerts.
 CHAIN_EMPTY=""
+CHAIN_EMPTY_ALLOWED=""
 TABLE_COUNT=0
 TABLE_EMPTY=""
 TOTAL_RULES=0
@@ -58,6 +59,11 @@ esac
 crit() {
     printf 'nftables %s\n' "$*"
     exit 2
+}
+
+# Sort the space-separated table/chain lists independently of AWK iteration order and locale.
+sort_object_names() {
+    printf '%s\n' "$1" | $TR ' ' '\n' | LC_ALL=C $SORT | $AWK 'NF { printf "%s%s", sep, $0; sep=" " }'
 }
 
 # Add one perfdata item to the sortable buffer.
@@ -225,6 +231,15 @@ RULESET=$($NFT list ruleset 2>/dev/null) || crit "ruleset cannot be read"
 
 # Analyze ruleset structure
 RULESET_STATS=$(printf '%s' "$RULESET" | $AWK '
+# Docker can leave these exact chains empty depending on network configuration.
+# Docker 28.2.2 omits the default RETURN rule when creating DOCKER-USER:
+# https://docs.docker.com/engine/release-notes/28/#2822
+# This permits emptiness only; it does not verify that required Docker network rules exist.
+function allowed_empty_docker_chain(fam, tab, chain) {
+    return (fam == "ip" || fam == "ip6") && \
+        ((tab == "filter" && chain ~ /^(DOCKER-USER|DOCKER|DOCKER-BRIDGE|DOCKER-CT|DOCKER-INTERNAL)$/) || \
+        (tab == "nat" && chain == "DOCKER"))
+}
 BEGIN {
     FS=" "
     inside_chain=0
@@ -254,7 +269,7 @@ BEGIN {
         if ($0 ~ /^[[:space:]]*$/) next
         if ($0 ~ /^[[:space:]]*#/) next
         if ($1 == "type" || $1 == "policy") { chain_has_meta[chain_key]=1; next }
-        if ($1 ~ /^(set|counter|flags|elements|size|timeout)$/) next
+        if ($1 ~ /^(set|flags|elements|size|timeout)$/) next
         rules_in_chain[chain_key]++
     }
 }
@@ -264,6 +279,7 @@ END {
     table_count=0
     empty_tables=""
     empty_chains=""
+    allowed_empty_chains=""
 
     for (chain_key in chain_seen) {
         split(chain_key, chain_parts, SUBSEP)
@@ -273,7 +289,11 @@ END {
         rules=(chain_key in rules_in_chain) ? rules_in_chain[chain_key] : 0
 
         if (!rules && !(chain_key in chain_has_meta)) {
-            empty_chains = empty_chains " " fam "/" tab "/" chain
+            if (allowed_empty_docker_chain(fam, tab, chain)) {
+                allowed_empty_chains = allowed_empty_chains " " fam "/" tab "/" chain
+            } else {
+                empty_chains = empty_chains " " fam "/" tab "/" chain
+            }
         }
 
         table_rules[fam SUBSEP tab] += rules
@@ -295,11 +315,13 @@ END {
 
     sub(/^ /, "", empty_tables)
     sub(/^ /, "", empty_chains)
+    sub(/^ /, "", allowed_empty_chains)
 
     printf "rules_total=%d\n", total_rules;
     printf "table_count=%d\n", table_count;
     printf "table_empty=%s\n", empty_tables;
     printf "chain_empty=%s\n", empty_chains;
+    printf "chain_empty_allowed=%s\n", allowed_empty_chains;
 }')
 
 # Parse the AWK key/value report into shell variables used by status and perfdata.
@@ -307,8 +329,9 @@ while IFS='=' read -r K V; do
     case "$K" in
         rules_total) TOTAL_RULES=$V ;;
         table_count) TABLE_COUNT=$V ;;
-        table_empty) TABLE_EMPTY=$V ;;
-        chain_empty) CHAIN_EMPTY=$V ;;
+        table_empty) TABLE_EMPTY=$(sort_object_names "$V") ;;
+        chain_empty) CHAIN_EMPTY=$(sort_object_names "$V") ;;
+        chain_empty_allowed) CHAIN_EMPTY_ALLOWED=$(sort_object_names "$V") ;;
     esac
 done <<EOF
 $RULESET_STATS
@@ -318,6 +341,7 @@ EOF
 append_long "Ruleset structure: ${TOTAL_RULES} rule(s) in ${TABLE_COUNT} table(s)"
 [ -n "$CHAIN_EMPTY" ] && append_long "Empty chains: ${CHAIN_EMPTY}"
 [ -n "$TABLE_EMPTY" ] && append_long "Empty tables: ${TABLE_EMPTY}"
+[ -n "$CHAIN_EMPTY_ALLOWED" ] && append_long "Allowed empty Docker chains: ${CHAIN_EMPTY_ALLOWED}"
 
 # Find dynamic inet/filter sets that are actually referenced by drop/reject rules.
 FILTER_SETS=$(printf '%s' "$RULESET" | $AWK '
@@ -529,12 +553,13 @@ if [ -n "$LONG_OUTPUT" ]; then
     limit_long_output_details
     append_long ""
     append_long "Interpretation:"
-    append_long "Ruleset structure lines show the table and chain inventory used for firewall effectiveness checks; blacklist sections show dynamic inet/filter sets referenced by drop or reject rules."
+    append_long "Ruleset structure lines show the table and chain inventory used for empty table/chain checks; blacklist sections show dynamic inet/filter sets referenced by drop or reject rules."
     append_long "Empty table and chain checks, nftables service state, and ruleset readability decide the exit code."
+    append_long "Allowed empty Docker chains can be empty depending on network configuration; only their chain emptiness alarm is suppressed. This does not verify that all required Docker network rules are present."
     append_long "Named and inline counter perfdata is context for traffic volume. Inspect the named empty table/chain first when the summary reports a firewall structure failure."
 fi
 
-# Empty tables or chains indicate a loaded but ineffective firewall.
+# Report empty tables and non-exempt empty chains.
 if [ -n "$CHAIN_EMPTY" ]; then
     emit_check "nftables has no rules in chain(s): $CHAIN_EMPTY" "$PERF_DATA"
     exit 2
