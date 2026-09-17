@@ -131,6 +131,9 @@ class basic_settings::package_node (
       }
     }
   } else {
+    # Remove repository files only after APT and the Node.js removal resource.
+    $removal_packages = ['apt', 'nodejs']
+
     # Remove nodejs package
     package { 'nodejs':
       ensure => purged,
@@ -146,7 +149,7 @@ class basic_settings::package_node (
       ensure  => absent,
       path    => $file,
       notify  => Exec['package_node_source_reload'],
-      require => Package['apt', 'nodejs'],
+      require => Package[$removal_packages],
     }
 
     # Remove the matching keyring so the disabled repo leaves no trusted signing material behind.
@@ -154,7 +157,7 @@ class basic_settings::package_node (
       ensure  => absent,
       path    => $key,
       notify  => Exec['package_node_source_reload'],
-      require => Package['apt', 'nodejs'],
+      require => Package[$removal_packages],
     }
   }
 }

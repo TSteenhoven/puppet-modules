@@ -620,12 +620,15 @@ class basic_settings::kernel (
     }
   }
 
+  # Share the dracut package set between installation, rebuild ordering and removal.
+  $dracut_packages = ['dracut', 'dracut-core']
+
   # Install ram disk package
   case $ram_disk_package {
     'dracut': {
       # Install packages
-      $ram_disk_require = ['dracut', 'dracut-core']
-      package {['dracut', 'dracut-core']:
+      $ram_disk_require = $dracut_packages
+      package { $dracut_packages:
         ensure          => installed,
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
@@ -665,7 +668,7 @@ class basic_settings::kernel (
       }
 
       # Remove unused packages
-      package {['dracut', 'dracut-core']:
+      package { $dracut_packages:
         ensure  => purged,
         require => Package['initramfs-tools-core'],
       }
@@ -870,7 +873,10 @@ class basic_settings::kernel (
   # Setup monitoring
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     # Both checks use awk; coreutils and sed are installed with the kernel tools above.
-    ensure_packages(['dash', 'mawk'], {
+    $monitoring_packages = ['dash', 'mawk']
+    $monitoring_required_packages = concat(['coreutils'], $monitoring_packages, ['sed'])
+
+    ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -879,14 +885,14 @@ class basic_settings::kernel (
     basic_settings::monitoring_custom { 'memory_pressure':
       friendly => 'Memory pressure',
       content  => template('basic_settings/monitoring/check_memory_pressure'),
-      require  => Package['coreutils', 'dash', 'mawk', 'sed'],
+      require  => Package[$monitoring_required_packages],
     }
 
     # Reegister USB monitoring
     basic_settings::monitoring_custom { 'usb':
       friendly => 'USB',
       content  => template('basic_settings/monitoring/check_usb'),
-      require  => Package['coreutils', 'dash', 'mawk', 'sed'],
+      require  => Package[$monitoring_required_packages],
     }
   }
 

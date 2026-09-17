@@ -264,17 +264,18 @@ define docker::compose (
             if (defined(Class['basic_settings::systemd'])) {
               # Keep the orchestration commands with the service that starts and stops the stack.
               $service_name = "docker-compose-${name}"
+              $service_packages = ['docker', 'docker-compose-plugin']
               $compose_up_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} up --detach --remove-orphans --pull ${pull}" # lint:ignore:140chars
               $compose_down_command = "/usr/bin/docker compose --project-name ${name} --project-directory ${project_directory}${compose_env_command} --file ${compose_file} down --remove-orphans" # lint:ignore:140chars
 
               # Subscribe to the managed project files using the array required by the shared service wrapper.
               if ($env_source == undef and $env_content == undef) {
                 # Start and refresh the stack using only the Compose file when no environment file is configured.
-                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$compose_file]]
+                $service_require_base = [Package[$service_packages], File[$compose_file]]
                 $service_subscribe = [File[$compose_file]]
               } else {
                 # Start and refresh the stack only after both Compose and environment files are managed.
-                $service_require_base = [Package['docker', 'docker-compose-plugin'], File[$env_file, $compose_file]]
+                $service_require_base = [Package[$service_packages], File[$env_file, $compose_file]]
                 $service_subscribe = File[$env_file, $compose_file]
               }
               $service_require = concat($service_require_base, $project_directory_resources)

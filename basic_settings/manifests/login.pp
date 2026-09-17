@@ -102,12 +102,14 @@ class basic_settings::login (
   # Install wtmpdb packages
   case $facts['os']['release']['major'] {
     '13': {
-      package { ['wtmpdb', 'libpam-wtmpdb']:
+      # Share the login database packages with profile ordering.
+      $wtmpdb_packages = ['wtmpdb', 'libpam-wtmpdb']
+      package { $wtmpdb_packages:
         ensure          => installed,
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
       $mesg_disable = true
-      $require = Package['libpam-wtmpdb', 'wtmpdb']
+      $require = Package[$wtmpdb_packages]
     }
     default: {
       # Retain mesg n in login profiles on the legacy path without wtmpdb dependencies.

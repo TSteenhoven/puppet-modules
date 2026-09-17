@@ -123,10 +123,14 @@ class basic_settings::io (
     $suspicious_packages_root = $default_packages_root
   }
 
+  # Share package sets between installation and removal.
+  $multipath_packages = ['multipath-tools', 'multipath-tools-boot']
+  $nfs_server_packages = ['nfs-kernel-server', 'rpcbind']
+
   # Check if we need multipatp
   if ($multipath_enable) {
     # Install multipath
-    package { ['multipath-tools', 'multipath-tools-boot']:
+    package { $multipath_packages:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
       require         => Exec['multipath_cmdline'],
@@ -155,19 +159,19 @@ class basic_settings::io (
     }
   } else {
     # Remove multipath
-    package { ['multipath-tools', 'multipath-tools-boot']:
+    package { $multipath_packages:
       ensure => purged,
     }
   }
 
   # Check if we need NFS server
   if ($nfs_server_enable) {
-    package { ['nfs-kernel-server', 'rpcbind']:
+    package { $nfs_server_packages:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
-    package { ['nfs-kernel-server', 'rpcbind']:
+    package { $nfs_server_packages:
       ensure => purged,
     }
   }

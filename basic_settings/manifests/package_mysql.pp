@@ -88,12 +88,15 @@ class basic_settings::package_mysql (
     $source_content_shell = stdlib::shell_escape("# Managed by puppet\\n${source_content}")
     $preference_content_shell = stdlib::shell_escape("# Managed by puppet\\nPackage: mysql*\\nPin: origin repo.mysql.com\\nPin-Priority: 990\\n") # lint:ignore:140chars
 
+    # Share the tools required to rebuild the key and configure the repository.
+    $repository_packages = ['apt', 'apt-transport-https', 'gnupg']
+
     # Rebuild key
     exec { 'package_mysql_key_build':
       command     => $key_rebuild,
       onlyif      => "/usr/bin/test -e ${key_file_shell}",
       refreshonly => true,
-      require     => Package['apt', 'apt-transport-https', 'gnupg'],
+      require     => Package[$repository_packages],
     }
 
     # Create MySQL key
@@ -111,7 +114,7 @@ class basic_settings::package_mysql (
     exec { 'package_mysql_source':
       command => "/usr/bin/printf %b ${source_content_shell} > ${source_file_shell}; ${key_rebuild}",
       unless  => "/usr/bin/test -e ${source_file_shell}",
-      require => [Package['apt', 'apt-transport-https', 'gnupg'], File['package_mysql_key_filename']],
+      require => [Package[$repository_packages], File['package_mysql_key_filename']],
     }
 
     # Set preference

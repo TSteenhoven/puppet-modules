@@ -359,12 +359,18 @@ class basic_settings::packages (
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
 
+    # Include the APT package managed by the package configuration.
+    $monitoring_required_packages = concat(
+      $monitoring_packages,
+      ['apt'],
+    )
+
     # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'apt':
       content  => template('basic_settings/monitoring/check_apt'),
       friendly => 'APT',
       interval => 3600, # 1 hour
-      require  => Package[concat(['apt'], $monitoring_packages)],
+      require  => Package[$monitoring_required_packages],
     }
   }
 

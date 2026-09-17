@@ -24,7 +24,8 @@ class basic_settings::pro (
   case $facts['os']['name'] {
     'Ubuntu': {
       # Install advantage tools
-      package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:
+      $client_packages = ['ubuntu-advantage-tools', 'ubuntu-pro-client']
+      package { $client_packages:
         ensure          => installed,
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }
@@ -65,7 +66,7 @@ class basic_settings::pro (
       # Install Ubuntu Pro client tools only for enabled integration with Snap support.
       if ($enable and $snap_enable) {
         # Install advantage tools
-        package { ['ubuntu-advantage-tools', 'ubuntu-pro-client']:
+        package { $client_packages:
           ensure          => installed,
           install_options => ['--no-install-recommends', '--no-install-suggests'],
         }

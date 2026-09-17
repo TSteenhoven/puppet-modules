@@ -79,6 +79,9 @@ class gitlab (
     $root_email_correct = $root_email_found
   }
 
+  # Share installer package prerequisites across both installation-directory layouts.
+  $installer_packages = ['apt', 'dpkg', 'grep']
+
   # Check if installation dir is given
   if ($install_dir != undef) {
     # Create ssl directory
@@ -102,11 +105,11 @@ class gitlab (
     }
 
     # Set requirements
-    $requirements = [File['/opt/gitlab'], Package['apt', 'dpkg', 'grep']]
+    $requirements = [File['/opt/gitlab'], Package[$installer_packages]]
   } else {
     # Set requirements
     $install_dir_correct = '/opt/gitlab'
-    $requirements = [Package['apt', 'dpkg', 'grep']]
+    $requirements = [Package[$installer_packages]]
   }
 
   # Escape install environment values before they are embedded in the shell command.
@@ -119,7 +122,7 @@ class gitlab (
   $gitlab_install_script_shell = stdlib::shell_escape($gitlab_install_script)
 
   # The installer supplies the commands used by the GitLab check.
-  ensure_packages(['apt', 'dpkg', 'grep'], {
+  ensure_packages($installer_packages, {
     'ensure'          => 'installed',
     'install_options' => ['--no-install-recommends', '--no-install-suggests'],
   })
@@ -197,7 +200,9 @@ class gitlab (
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     # Install the external commands used by this check.
-    ensure_packages(['coreutils', 'dash', 'mawk', 'sed'], {
+    $monitoring_packages = ['coreutils', 'dash', 'mawk', 'sed']
+
+    ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -208,7 +213,7 @@ class gitlab (
       friendly => 'GitLab',
       timeout  => 300,
       interval => 600,
-      require  => [Exec['gitlab_install'], Package['coreutils', 'dash', 'mawk', 'sed']],
+      require  => [Exec['gitlab_install'], Package[$monitoring_packages]],
     }
   }
 

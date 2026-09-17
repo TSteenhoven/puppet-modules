@@ -73,6 +73,9 @@ class basic_settings::package_sury (
     # Escape generated repo content as literal newline sequences before the shell writes it.
     $source_shell = stdlib::shell_escape("# Managed by puppet\\n${source}")
 
+    # Share the repository tools across the platform-specific commands.
+    $repository_packages = ['apt', 'apt-transport-https', 'curl', 'gnupg']
+
     # Add sury PHP repo
     case $os_parent {
       'ubuntu': {
@@ -80,7 +83,7 @@ class basic_settings::package_sury (
         exec { 'package_sury_source':
           command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6' | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
           unless  => "/usr/bin/test -e ${file_shell}",
-          require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+          require => Package[$repository_packages],
         }
       }
       default: {
@@ -92,7 +95,7 @@ class basic_settings::package_sury (
         exec { 'package_sury_source':
           command => "/usr/bin/bash -c ${source_install_script_shell}",
           unless  => "/usr/bin/test -e ${file_shell}",
-          require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+          require => Package[$repository_packages],
         }
       }
     }

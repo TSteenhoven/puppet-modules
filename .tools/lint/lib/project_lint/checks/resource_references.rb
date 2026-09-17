@@ -2,6 +2,7 @@
 
 require 'project_lint/ast'
 require 'project_lint/token_helpers'
+require 'project_lint/resource_values'
 
 # Project-owned Puppet lint rules.
 module ProjectLint
@@ -165,7 +166,7 @@ module ProjectLint
         end
 
         def array_container?(node)
-          node.is_a?(Ast::M::LiteralList) || node.is_a?(Ast::M::ParenthesizedExpression)
+          node.is_a?(Ast::M::LiteralList) || node.is_a?(Ast::M::ParenthesizedExpression) || @list_values.concat?(node)
         end
 
         def consuming_context?(parent, child, parents)
@@ -185,12 +186,7 @@ module ProjectLint
       end
 
       def reference?(node)
-        return false unless node.is_a?(Ast::M::AccessExpression) && node.left_expr.is_a?(Ast::M::QualifiedReference)
-
-        name = node.left_expr.value
-        return false if name != 'class' && Puppet::Pops::Types::TypeParser.type_map.key?(name)
-
-        !@type_names.include?(name)
+        @list_values.reference?(node)
       end
 
       def literal_title?(node)
@@ -202,14 +198,12 @@ module ProjectLint
       end
 
       def prepare_references
+        @list_values = ResourceValues.new(ast)
         @source_tokens = tokens
         @positions = tokens.to_h { |token| [[token.line, token.column], token] }
         @closings = bracket_closings
         @fixes = []
         @handled = {}.compare_by_identity
-        @type_names = ast.nodes.filter_map do |node, _parents|
-          node.name.downcase if node.is_a?(Ast::M::TypeAlias) || node.is_a?(Ast::M::TypeDefinition)
-        end
       end
 
       def reference_position(node)
@@ -240,7 +234,16 @@ module ProjectLint
 
         def reference_wrapper(node, parents, entries, relationship)
           parent = parents.reverse.find { |ancestor| !ancestor.is_a?(Ast::M::ParenthesizedExpression) }
+          return unless concat_wrapper?(parent, node, entries.map(&:first))
+
           node if relationship && entries.length == node.values.length && !parent.is_a?(Ast::M::LiteralList)
+        end
+
+        def concat_wrapper?(call, list, references)
+          return true unless @list_values.concat?(call)
+
+          # stdlib concat requires an Array as its first argument; later arguments may be scalar references.
+          !@list_values.first_argument?(call, list) || @list_values.reference_array?(references)
         end
 
         def inspect_group(node, parents, entries)

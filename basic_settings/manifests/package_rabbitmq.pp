@@ -68,18 +68,21 @@ class basic_settings::package_rabbitmq (
     $source_erlang_shell = stdlib::shell_escape("# Managed by puppet\\n${source_erlang}")
     $source_server_shell = stdlib::shell_escape("# Managed by puppet\\n${source_server}")
 
+    # Both repositories use the same download and signing-key tools.
+    $repository_packages = ['apt', 'apt-transport-https', 'curl', 'gnupg']
+
     # Install Rabbitmq erlang repo
     exec { 'package_rabbitmq_erlang_source':
       command => "/usr/bin/printf %b ${source_erlang_shell} > ${file_erlang_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_erlang_shell} >/dev/null; chmod 644 ${key_erlang_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_erlang_shell}",
-      require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+      require => Package[$repository_packages],
     }
 
     # Install Rabbitmq server repo
     exec { 'package_rabbitmq_server_source':
       command => "/usr/bin/printf %b ${source_server_shell} > ${file_server_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_server_shell} >/dev/null; chmod 644 ${key_server_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_server_shell}",
-      require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+      require => Package[$repository_packages],
     }
   } else {
     # Remove Rabbitmq erlang repo

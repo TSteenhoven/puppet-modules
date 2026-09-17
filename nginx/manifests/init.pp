@@ -223,16 +223,24 @@ class nginx (
     basic_settings::monitoring_service { 'nginx': }
 
     # One executable serves all vhost registrations; only the main daemon configuration is templated.
-    ensure_packages(['ca-certificates', 'coreutils', 'dash', 'diffutils', 'grep', 'mawk', 'openssl'], {
+    $monitoring_cert_packages = ['ca-certificates', 'coreutils', 'dash', 'diffutils', 'grep', 'mawk', 'openssl']
+
+    ensure_packages($monitoring_cert_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
+
+    # Prepare the shared certificate check content and package dependencies.
+    $monitoring_cert_required_packages = concat(
+      $monitoring_cert_packages,
+      ['nginx'],
+    )
     $nginx_config_shell = stdlib::shell_escape($config_file)
     $monitoring_cert_content = template('nginx/check_nginx_cert')
     $monitoring_cert_ensure = present
     $monitoring_cert_require = [
       File[$config_file, 'monitoring_location_plugins'],
-      Package['ca-certificates', 'coreutils', 'dash', 'diffutils', 'grep', 'mawk', 'nginx', 'openssl'],
+      Package[$monitoring_cert_required_packages],
     ]
   } else {
     # Remove the shared certificate check when no supported monitoring backend is active.

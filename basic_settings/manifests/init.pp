@@ -738,6 +738,7 @@ class basic_settings (
   if ($deb_version != '822') {
     # Check if we need backports
     $backports_file = "/etc/apt/sources.list.d/${os_name}-backports.list"
+    $backports_packages = ['apt', 'coreutils']
 
     # Escape the backports path before using it in exec commands and guards.
     $backports_file_shell = stdlib::shell_escape($backports_file)
@@ -753,7 +754,7 @@ class basic_settings (
         command => "/usr/bin/printf %s ${backports_source_shell} > ${backports_file_shell}",
         unless  => "/usr/bin/test -e ${backports_file_shell}",
         notify  => Exec['basic_settings_source_reload'],
-        require => Package['apt', 'coreutils'],
+        require => Package[$backports_packages],
       }
     } else {
       # Use normal package selection when backports are not enabled.
@@ -762,7 +763,7 @@ class basic_settings (
         command => "/usr/bin/rm ${backports_file_shell}",
         onlyif  => "/usr/bin/test -e ${backports_file_shell}",
         notify  => Exec['basic_settings_source_reload'],
-        require => Package['apt', 'coreutils'],
+        require => Package[$backports_packages],
       }
     }
 

@@ -170,10 +170,18 @@ class vnstat (
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
       # Install the shell, text tools and JSON parser used to inspect vnStat records.
-      ensure_packages(['coreutils', 'dash', 'grep', 'jq', 'mawk', 'sed'], {
+      $monitoring_packages = ['coreutils', 'dash', 'grep', 'jq', 'mawk', 'sed']
+
+      ensure_packages($monitoring_packages, {
         'ensure'          => 'installed',
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
+
+      # Prepare package names before constructing resource dependencies.
+      $monitoring_required_packages = concat(
+        $monitoring_packages,
+        ['vnstat'],
+      )
 
       # Register the check after its configuration and runtime packages are available.
       basic_settings::monitoring_custom { 'vnstat_interfaces':
@@ -181,7 +189,7 @@ class vnstat (
         source   => 'puppet:///modules/vnstat/check_vnstat_interfaces',
         friendly => 'vnStat interfaces',
         timeout  => 60,
-        require  => [Concat['/etc/vnstat-monitoring.conf'], Package['coreutils', 'dash', 'grep', 'jq', 'mawk', 'sed', 'vnstat']],
+        require  => [Concat['/etc/vnstat-monitoring.conf'], Package[$monitoring_required_packages]],
       }
     }
   } else {

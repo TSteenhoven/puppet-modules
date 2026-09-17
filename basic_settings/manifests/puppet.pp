@@ -73,6 +73,9 @@ class basic_settings::puppet (
     }
   }
 
+  # Share auxiliary packages between bundled and distribution agent layouts.
+  $agent_auxiliary_packages = ['augeas-tools', 'facter']
+
   # Do some things based on server repo
   case $repo {
     'remote': {
@@ -101,7 +104,7 @@ class basic_settings::puppet (
       ]
 
       # Install some puppet packages
-      package { ['augeas-tools', 'facter']:
+      package { $agent_auxiliary_packages:
         ensure => purged,
       }
     }
@@ -136,7 +139,7 @@ class basic_settings::puppet (
       ]
 
       # Install some puppet packages
-      package { ['augeas-tools', 'facter']:
+      package { $agent_auxiliary_packages:
         ensure          => installed,
         install_options => ['--no-install-recommends', '--no-install-suggests'],
       }

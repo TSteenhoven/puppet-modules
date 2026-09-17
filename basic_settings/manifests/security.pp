@@ -73,12 +73,18 @@ class basic_settings::security (
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
 
+    # Include auditd alongside the shared shell tools for the audit check.
+    $audit_required_packages = concat(
+      $monitoring_packages,
+      ['auditd'],
+    )
+
     # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'audit':
       content  => template('basic_settings/monitoring/check_audit'),
       timeout  => 300,
       interval => 600,
-      require  => Package[concat(['auditd'], $monitoring_packages)],
+      require  => Package[$audit_required_packages],
     }
   }
 

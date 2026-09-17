@@ -57,14 +57,17 @@ class basic_settings::locale (
     }
   }
 
+  # Share documentation packages between installation and removal.
+  $documentation_packages = ['manpages', 'manpages-dev', 'man-db']
+
   # Check if docs is needed
   if ($enable and $docs_enable) {
-    package { ['manpages', 'manpages-dev', 'man-db']:
+    package { $documentation_packages:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
-    package { ['manpages', 'manpages-dev', 'man-db']:
+    package { $documentation_packages:
       ensure => purged,
     }
   }

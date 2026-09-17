@@ -56,6 +56,8 @@ Begin bij de [dagelijkse werkwijze](#werkwijze-bij-een-wijziging) en kies hieron
     - [Resources en afhankelijkheden](#resources-en-afhankelijkheden)
     - [Aanroepen en publieke interfaces](#aanroepen-en-publieke-interfaces)
     - [Resource references](#resource-references)
+    - [Resourcelijsten hergebruiken](#resourcelijsten-hergebruiken)
+    - [Resource-dependencies opbouwen](#resource-dependencies-opbouwen)
     - [Volgorde en meldingen](#volgorde-en-meldingen)
   - [Commentaar en documentatie](#commentaar-en-documentatie)
     - [Toelichtingen bij code](#toelichtingen-bij-code)
@@ -366,6 +368,8 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | [`project_class_check_reuse`](#classcontroles-hergebruiken) | Herhaalde classcontroles, vindbare afnemers en hergebruik van classvariabelen binnen een positieve classcontrole. | Nee | Beschikbaarheid, evaluatievolgorde en indirect gebruik. |
 | [`project_packages`](#pakketten-en-mappen) | APT-opties, met lokale defaults, providers en verwijderresources. | Nee | Effectieve of overgeërfde opties en concrete pakketuitzonderingen. |
 | [`project_guarded_packages`](#pakketten-en-mappen) | Herhaalde `if !defined(Package[...])`-declaraties met dezelfde expliciete attributen binnen één class of defined type en hetzelfde blok. | Voorwaardelijk | Bestaande packages, evaluatievolgorde, defaults, relaties, commentaar en beschikbaarheid van stdlib. |
+| [`project_resource_list_reuse`](#resourcelijsten-hergebruiken) | Herhaalde titellijsten van hetzelfde resourcetype in declaraties, references en `ensure_packages()`, inclusief uitbreidingen en sterke overlap. | Voorwaardelijk | Logische samenhang, aanvullende titels, scope, bestaande variabelen en evaluatievolgorde. |
+| [`project_resource_dependencies`](#resource-dependencies-opbouwen) | `concat(...)` binnen een resource reference; titels voorbereiden voordat dependencies worden gecombineerd. | Voorwaardelijk | Inhoud van variabelen, conditionele waarden, scope en onderscheid tussen titels en references. |
 | [`project_files`](#eigenaars-en-rechten) | Expliciete eigenaar/groep/modus, recursieve uitvoerrechten en aantoonbare uitsluiting van `source`/`content`. | Nee | Effectieve cataloguswaarden, uitvoeringsidentiteit, toegang en inhoud van bomen. |
 | [`project_puppet_urls`](#templates-en-bestandsbronnen) | Toegestane mountprefixen, ook naast een ignore van `puppet_url_without_modules`. | Nee | Dynamische delen, beschikbaarheid en fileserverrechten. |
 | [`project_arrays`](#resources-en-afhankelijkheden) | `+` met herkenbare arrays; getal- en hashoptelling blijven toegestaan. | Nee | Dynamische typen en behoud van elementvolgorde. |
@@ -540,6 +544,77 @@ Autofix kan dit herstellen bij `require`, `before`, `notify` en `subscribe`, en 
 Samenvoegen en sorteren gebeurt alleen automatisch bij letterlijke titels zonder commentaar in het te wijzigen gedeelte of bij een te verwijderen reference. Staan er andere elementen tussen de samen te voegen references, dan moeten ook die references met letterlijke titels zijn. Bij bijvoorbeeld een tussenliggende variabele, functieaanroep of geneste array volgt wel een melding, maar beoordeel je de samenvoeging zelf. Dat geldt ook voor dynamische titels en commentaar: behoud de toelichting bij de juiste resource en beoordeel welke waarden de expressies kunnen krijgen. De linter rekent die waarden niet uit.
 
 Een buitenste array rond één reference kan ook bij een dynamische titel worden verwijderd: `require => [Package[$packages]]` wordt `require => Package[$packages]`. De reference zelf verandert dan niet. Bevat de te wijzigen array commentaar, een heredoc of genegeerde code, dan weigert de autofix ook deze correctie.
+
+Deze relatiecontext omvat ook `concat(...)` dat rechtstreeks een dependency-attribuut of losse relatieketen voedt. Bij het eerste argument verdwijnt een wrapper alleen als de reference aantoonbaar een array oplevert: meerdere titels, een arrayliteral, een eerder voorbereide array of een parameter met type `Array`. Zo wordt `concat([Package[$packages]], $other)` veilig vereenvoudigd als `$packages` een bekende array is. Rond een enkele scalaire of onopgeloste titel blijft de eerste wrapper staan, omdat stdlib `concat()` daar een array vereist. Bij latere argumenten accepteert `concat()` ook een scalaire reference. Gewone functieargumenten en opgeslagen concatresultaten behouden hun arraystructuur.
+
+#### Resourcelijsten hergebruiken
+
+Definieer een lijst met resourcetitels eenmaal wanneer declaraties of dependencies dezelfde set gebruiken. Dit geldt voor packages, bestanden, services, classes en eigen defined types. Gebruik bijvoorbeeld dezelfde `$configuration_files` in `file { $configuration_files: ... }` en `File[$configuration_files]`. Kies een naam die bij het doel past; de check schrijft geen variabelenaam voor.
+
+Bij packages deel je de lijst ook tussen `ensure_packages()` en `Package[...]`, zodat een toevoeging of verwijdering niet op meerdere plaatsen hoeft te worden bijgehouden:
+
+```puppet
+# Install the tools shared by this feature's consumers.
+$feature_packages = ['coreutils', 'grep', 'sed']
+
+ensure_packages($feature_packages, {
+  'ensure'          => 'installed',
+  'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+})
+
+# Include an additional package managed by the consuming deployment.
+$feature_required_packages = concat(
+  $feature_packages,
+  ['curl'],
+)
+
+# Order the consumer after its package prerequisites.
+notify { 'feature-ready':
+  require => Package[$feature_required_packages],
+}
+```
+
+Aanvullende dependencies blijven behouden in een afzonderlijk voorbereide lijst. Die uitbreiding declareert de extra resources niet: hun bestaande eigenaar blijft daarvoor verantwoordelijk. De [arrayconventie](#resources-en-afhankelijkheden) schrijft `concat(...)` voor; deze hergebruikcheck herkent ook hergebruik via `+`, maar schakelt de aparte melding van `project_arrays` niet uit. De [opbouw van dependencies](#resource-dependencies-opbouwen) houdt titels gescheiden van resource references.
+
+`project_resource_list_reuse` vergelijkt binnen dezelfde class, hetzelfde defined type of dezelfde topscope bronnen met ten minste twee verschillende letterlijke titels van hetzelfde resourcetype. Een andere schrijfvolgorde maakt geen verschil. Identieke sets worden ook gemeld bij herhaalde declaraties, herhaalde references of meerdere `ensure_packages()`-aanroepen. Gelijke titels van verschillende resourcetypen worden niet gekoppeld. Datatypeparameters, lokale typealiases en gewone indexeringen vallen buiten de regel. Samenhangende herhalingen krijgen één melding bij de eerste bronlijst.
+
+Tussen een declaratielijst of `ensure_packages()` en een afzonderlijke reference meldt de check ook een volledig herhaalde basisset met extra titels. Bij overige overlap is een melding beperkt tot minstens drie gemeenschappelijke titels die ten minste 80% van beide sets vormen. Zo'n melding vraagt altijd review: behoud de bedoelde verschillen en deel alleen de gemeenschappelijke basis. Enkele gemeenschappelijke titels, kleinere dependency-subsets en verschillende declaratiesets zijn geen reden om lijsten samen te voegen.
+
+De analyse volgt eerdere, eenduidige lokale toekenningen, aliassen, `concat(...)`, arrayoptelling en letterlijke lijsten in selectors en `if`-expressies. Verwijzingen naar dezelfde bronlijst tellen als hergebruik. Statisch zichtbare namen naast dynamische waarden kunnen een reviewmelding opleveren; onbekende expressies worden niet uitgevoerd. Parameterdefaults, onopgeloste variabelen, andere functieaanroepen en afzonderlijke lambdascopes blijven buiten deze vergelijking. Bij references in gewone waarden en relatieketens volgt alleen een melding: de autofix beperkt zich tot `require`, `before`, `notify` en `subscribe` op resources.
+
+De hergebruik-autofix beperkt zich tot één rechtstreeks aangeroepen, letterlijke `ensure_packages()`-lijst met passende package-dependencies in hetzelfde uitvoerblok, na de installatieaanroep. Er mag geen tweede installatielijst in die scope zijn. De namen moeten uniek zijn en bestaan uit letters, cijfers, `+`, `_`, `.`, `:` of `-`, beginnend met een letter of cijfer. Bij exacte herhaling zet de fix de lijst direct vóór de aanroep in `$required_packages` en vervangt alle passende references; `concat()` is dan niet nodig. Bij declaraties of alleen references beoordeel je de extractie handmatig, met behoud van hun eigen attributen en levenscyclus.
+
+Een duidelijke uitbreiding mag eveneens worden gecorrigeerd: de installatie gebruikt dan `$packages` en na de aanroep volgt `$required_packages = concat($packages, ['extra'])`, verdeeld over meerdere regels. Iedere dependency bevat de volledige basislijst; er mag maximaal één verschillende uitbreidingsset zijn. Resources die alleen de basis nodig hebben gebruiken `$packages`. Overige resources en dependencyvariabelen blijven buiten `Package[...]`. Naamconflicten, ook met gekwalificeerde variabelen of parameters, verhinderen autofix; kies bij handmatige correctie contextnamen.
+
+Bestaande lijstvariabelen met opnieuw uitgeschreven literals, gedeeltelijke overlap, meerdere verschillende uitbreidingen, conditionele waarden, gebruikte functieresultaten, overerving en complexe expressies krijgen geen hergebruik-autofix. Dat geldt ook voor commentaar in de te vervangen lijsten, lintmarkeringen binnen het wijzigingsbereik, een installatielijst over meerdere regels of een nieuwe declaratie langer dan 140 tekens. Commentaar buiten de lijsten blijft behouden; ontbreekt een toelichting boven de installatie, dan voegt de fix een feitelijke toelichting bij de gedeelde variabele toe. Bij twijfel blijft de hele groep staan met `[review]`.
+
+Controleer bij handmatig hergebruik dat de variabele vóór alle afnemers beschikbaar is en dat voorwaarden, resourceattributen en relaties behouden blijven. Een melding bewijst geen beschikbaarheid van resources; volg daarvoor de [dependencyreview](#resources-en-afhankelijkheden) en bij monitoring de [packagegaranties](#packages-voor-externe-commandos).
+
+#### Resource-dependencies opbouwen
+
+Combineer eerst titels van hetzelfde resourcetype, maak daarna de resource reference en combineer die pas vervolgens met andere dependencies. Dit geldt ook voor `File[...]`, `Service[...]`, `Class[...]` en eigen defined types. Gebruik voor een uitbreiding een benoemde tussenvariabele, zodat de drie stappen afzonderlijk leesbaar blijven. Bij packages ziet dat er zo uit:
+
+```puppet
+# Include the application package alongside the prepared backup tools.
+$backup_required_packages = concat(
+  $backup_packages,
+  ['backup-server'],
+)
+
+# Combine package references with the separately prepared resource dependencies.
+notify { 'backup-ready':
+  require => concat(
+    Package[$backup_required_packages],
+    $backup_other_require,
+  ),
+}
+```
+
+`$backup_packages` bevat hier package-namen; `$backup_other_require` bevat andere resource references. Geef die laatste variabele nooit door als resourcetitel. Bij exact dezelfde packages volstaat `Package[$backup_packages]`; voeg geen `concat()` toe als er niets samen te voegen is. De [referencecheck](#resource-references) verwijdert aantoonbaar overbodige wrappers in dependency-concats, met behoud van de vereiste array als eerste argument.
+
+`project_resource_dependencies` meldt `concat(...)` binnen resource references, zoals `Package[concat(...)]` of `File[concat(...)]`, ook binnen een buitenste dependency-concat. De check kan de binnenste expressie vóór de omringende resource of toekenning in een tussenvariabele plaatsen. Hij behoudt de volgorde van de concatargumenten en laat andere references op hun plaats. De naam volgt een bestaande lokale naam: `$backup_packages` levert `$backup_required_packages` op en `$configuration_files` levert `$configuration_required_files` op. Zonder bronvariabele gebruikt de fix `$required_titles`. Identieke expressies in hetzelfde blok delen die voorbereiding.
+
+Deze autofix vereist aantoonbaar vaste titels als strings via literals, eerdere eenduidige lokale toekenningen of `concat()`. Onbekende variabelen, parameterdefaults, conditionele waarden, resource references tussen de titels, naamconflicten, commentaar of lintmarkeringen in het wijzigingsbereik krijgen uitsluitend een reviewmelding. De fix verplaatst geen onzekere expressie buiten haar voorwaarde. Meerregelige argumenten en uitvoer buiten de regelbreedte worden eveneens handmatig beoordeeld. Reeds voorbereide titelvariabelen en gewone `concat()`-aanroepen blijven toegestaan.
 
 #### Volgorde en meldingen
 
@@ -1099,7 +1174,9 @@ cd .tools/lint
 gem build lint-project.gemspec --output /tmp/lint-project.gem
 ```
 
-Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. Versie `0.1.8` bevat de standaard actieve check `project_guarded_packages` voor [herhaalde package-declaraties](#pakketten-en-mappen), inclusief een voorwaardelijke autofix naar `ensure_packages()`. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen; na autofix worden conflicterende package-attributen zichtbaar als catalogusfout. De gegenereerde Puppet-code vereist stdlib; de linter levert die module niet mee. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
+Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
+
+Versie `0.1.9` bevat de standaard actieve checks `project_resource_list_reuse` voor [hergebruik van resourcelijsten](#resourcelijsten-hergebruiken) en `project_resource_dependencies` voor [de opbouw van dependencies](#resource-dependencies-opbouwen). De fixes behandelen exacte herhaling, duidelijke uitbreidingen en aantoonbaar overbodige wrappers in dependency-concats. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen. De beschikbare `project_guarded_packages`-fix voor [package-declaraties](#pakketten-en-mappen) gebruikt `ensure_packages()` en laat conflicterende package-attributen als catalogusfout zichtbaar worden. Die gegenereerde Puppet-code vereist stdlib; de linter levert de module niet mee.
 
 Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en de rapportcommando's als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 

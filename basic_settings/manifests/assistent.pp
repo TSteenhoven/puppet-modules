@@ -50,16 +50,19 @@ class basic_settings::assistent (
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
+  # Share the audio package set between installation and removal.
+  $audio_packages = ['pipewire-pulse', 'wireplumber']
+
   # Manage the audio stack separately from the desktop assistant packages.
   if ($audio_enable) {
     # Install audio packages
-    package {['pipewire-pulse', 'wireplumber']:
+    package { $audio_packages:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
   } else {
     # Remove audio packages
-    package { ['pipewire-pulse', 'wireplumber']:
+    package { $audio_packages:
       ensure => purged,
     }
   }
@@ -73,6 +76,9 @@ class basic_settings::assistent (
     $keyboard_enable_correct = $keyboard_enable
   }
 
+  # Share console packages between management, ordering and removal.
+  $keyboard_packages = ['console-setup', 'keyboard-configuration']
+
   # Keep debconf and the persistent configuration aligned without reloading the active console.
   if ($keyboard_enable_correct) {
     # Preserve the existing right-Alt behavior in both configuration interfaces.
@@ -82,13 +88,13 @@ class basic_settings::assistent (
     }
 
     # Enabled keyboard management always includes the console packages.
-    package { ['console-setup', 'keyboard-configuration']:
+    package { $keyboard_packages:
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
     # Preseed before installation, and write the managed configuration after package installation has completed.
-    $keyboard_package_require = [Package['console-setup', 'keyboard-configuration']]
+    $keyboard_package_require = [Package[$keyboard_packages]]
 
     # Preseed only when an explicit debconf package dependency is available in the catalog.
     if (defined(Package['debconf'])) {
@@ -136,7 +142,7 @@ class basic_settings::assistent (
     }
   } else {
     # Remove unnecessary packages
-    package { ['console-setup', 'keyboard-configuration']:
+    package { $keyboard_packages:
       ensure => purged,
     }
 

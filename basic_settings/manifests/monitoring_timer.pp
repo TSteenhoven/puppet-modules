@@ -99,7 +99,9 @@ define basic_settings::monitoring_timer (
   # Check if script path is not defined
   if (!$script_exists) {
     # Install the tools used by the shared systemd check.
-    ensure_packages(['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'], {
+    $monitoring_packages = ['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd']
+
+    ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -111,7 +113,7 @@ define basic_settings::monitoring_timer (
       owner   => $uid,
       group   => $gid,
       mode    => '0700',
-      require => Package['coreutils', 'dash', 'grep', 'mawk', 'sed', 'systemd'],
+      require => Package[$monitoring_packages],
     }
 
     # Create sudo

@@ -407,10 +407,16 @@ class basic_settings::network (
             'install_options' => ['--no-install-recommends', '--no-install-suggests'],
           })
 
+          # Include the firewall package after preparing the check's tool dependencies.
+          $firewall_monitoring_required_packages = concat(
+            $firewall_monitoring_packages,
+            ['nftables'],
+          )
+
           # Register the check after its runtime packages.
           basic_settings::monitoring_custom { 'firewall':
             content => template("basic_settings/monitoring/check_${firewall_package}"),
-            require => Package[concat(['nftables'], $firewall_monitoring_packages)],
+            require => Package[$firewall_monitoring_required_packages],
           }
         } else {
           basic_settings::monitoring_service { 'firewall':
@@ -576,6 +582,9 @@ class basic_settings::network (
       'ReadEtcHosts'  => 'yes',
     }
 
+    # Manage the same services for both resolver package layouts.
+    $networkd_services = ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']
+
     # Check if we need to install a systemd resolved package or if it's all built-in
     if ($systemd_resolved_package) {
       # Keep policy flags last even when caller options contain duplicate or conflicting flags.
@@ -585,7 +594,7 @@ class basic_settings::network (
       }
 
       # Ensure that networkd services is always running
-      service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
+      service { $networkd_services:
         ensure  => running,
         enable  => true,
         require => Package['networkd-dispatcher', 'systemd', 'systemd-resolved'],
@@ -601,7 +610,7 @@ class basic_settings::network (
       }
     } else {
       # Ensure that networkd services is always running
-      service { ['systemd-networkd.service', 'systemd-resolved.service', 'networkd-dispatcher.service']:
+      service { $networkd_services:
         ensure  => running,
         enable  => true,
         require => Package['networkd-dispatcher', 'systemd'],
@@ -672,6 +681,12 @@ class basic_settings::network (
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
 
+    # Include the network tools already managed by this class.
+    $network_monitoring_required_packages = concat(
+      $network_monitoring_packages,
+      ['dnsutils', 'iproute2'],
+    )
+
     # Escape the selected service list as one argument for the network check.
     $service_str = join($services, ' ')
 
@@ -681,7 +696,7 @@ class basic_settings::network (
     basic_settings::monitoring_custom { 'network':
       content  => template('basic_settings/monitoring/check_network'),
       interval => 600, # 10 minutes
-      require  => Package[concat(['dnsutils', 'iproute2'], $network_monitoring_packages)],
+      require  => Package[$network_monitoring_required_packages],
     }
   }
 

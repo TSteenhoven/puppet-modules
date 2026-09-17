@@ -199,6 +199,13 @@ class ssh (
     require => File['/etc/ssh/sshd_config.d/99-custom.conf'],
   }
 
+  # Subscribe to the same configuration files for socket and service activation.
+  $service_configuration_files = [
+    '/etc/ssh/sshd_config',
+    '/etc/ssh/sshd_config.d',
+    '/etc/ssh/sshd_config.d/99-custom.conf',
+  ]
+
   # Check if we have systemd socket
   if ($systemd_socket) {
     # Reload systemd deamon
@@ -236,11 +243,7 @@ class ssh (
       ensure    => undef,
       enable    => false,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => File[
-        '/etc/ssh/sshd_config',
-        '/etc/ssh/sshd_config.d',
-        '/etc/ssh/sshd_config.d/99-custom.conf',
-      ],
+      subscribe => File[$service_configuration_files],
     }
 
     # Ensure that ssh is always running
@@ -258,11 +261,7 @@ class ssh (
       ensure    => running,
       enable    => true,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => File[
-        '/etc/ssh/sshd_config',
-        '/etc/ssh/sshd_config.d',
-        '/etc/ssh/sshd_config.d/99-custom.conf',
-      ],
+      subscribe => File[$service_configuration_files],
     }
 
     # Set service name

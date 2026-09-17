@@ -59,7 +59,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 
 ### Impact Review
 
-- Review effects on repository conventions, Puppet abstractions, and reusable wrappers.
+- Review effects on repository conventions, Puppet abstractions, and reusable wrappers. When a request uses a concrete example, assess whether the same principle applies to other resource types, consumers, or integrations in the affected area. Apply shared behavior consistently, preserve type-specific semantics, and record the scope and any deliberate limits in the change review.
 - Review each added or moved declaration in the complete surrounding implementation against the [resource placement and ordering criteria](.tools/lint/README.md#volgorde-en-meldingen). Record any necessary placement exception and its technical reason in the change review.
 - Review effects on monitoring, logging, alerting, audit rules, and operational diagnostics.
 - Review effects on documentation, examples, supported platforms, compatibility, and operational commands.

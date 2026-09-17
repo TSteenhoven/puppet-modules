@@ -42,6 +42,9 @@ define rabbitmq::management_binding (
     $destination_arg_shell = stdlib::shell_escape("destination=${destination}")
     $binding_pattern_shell = stdlib::shell_escape("|${source}|${destination}|")
 
+    # Share the text-processing prerequisites across binding operations.
+    $binding_packages = ['coreutils', 'grep']
+
     # Set commands
     $find = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_pattern_shell}" # lint:ignore:140chars
     $delete = "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} delete binding ${source_arg_shell} ${destination_arg_shell}"
@@ -75,10 +78,7 @@ define rabbitmq::management_binding (
           command => $create_correct,
           unless  => $find,
           require => [
-            Package[
-              'coreutils',
-              'grep',
-            ],
+            Package[$binding_packages],
             Exec['rabbitmq_management_admin_cli', "rabbitmq_management_vhost_${vhost_name}"],
           ],
         }
@@ -90,7 +90,7 @@ define rabbitmq::management_binding (
           exec { "rabbitmq_management_binding_${name}_routing_key":
             command => "${delete} && ${create_correct}",
             unless  => "/usr/sbin/rabbitmqadmin --config ${admin_config_path_shell} ${vhost_option_shell} list bindings source destination routing_key | /usr/bin/tr -d '[:blank:]' | /usr/bin/grep ${binding_routing_key_pattern_shell}", # lint:ignore:140chars
-            require => [Package['coreutils', 'grep'], Exec["rabbitmq_management_vhost_${vhost_name}"]],
+            require => [Package[$binding_packages], Exec["rabbitmq_management_vhost_${vhost_name}"]],
           }
         }
       }
@@ -99,7 +99,7 @@ define rabbitmq::management_binding (
         exec { "rabbitmq_management_binding_${name}":
           onlyif  => $find,
           command => $delete,
-          require => [Package['coreutils', 'grep'], Exec['rabbitmq_management_admin_cli']],
+          require => [Package[$binding_packages], Exec['rabbitmq_management_admin_cli']],
         }
       }
       default: {

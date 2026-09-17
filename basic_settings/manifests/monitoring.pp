@@ -272,17 +272,25 @@ class basic_settings::monitoring (
   # Validate the active systemd configuration from the default target when monitoring is enabled.
   if ($systemd_enable and $package != 'none') {
     # Install the external commands used by this check.
-    ensure_packages(['dash', 'findutils', 'grep', 'mawk'], {
+    $systemd_check_packages = ['dash', 'findutils', 'grep', 'mawk']
+
+    ensure_packages($systemd_check_packages, {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
+
+    # Prepare package names before constructing resource dependencies.
+    $systemd_check_required_packages = concat(
+      $systemd_check_packages,
+      ['systemd'],
+    )
 
     # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'systemd_config':
       friendly => 'Systemd config',
       source   => 'puppet:///modules/basic_settings/monitoring/check_systemd_config',
       timeout  => 60,
-      require  => Package['dash', 'findutils', 'grep', 'mawk', 'systemd'],
+      require  => Package[$systemd_check_required_packages],
     }
   }
 

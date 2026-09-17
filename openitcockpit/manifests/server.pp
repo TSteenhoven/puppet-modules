@@ -508,23 +508,26 @@ class openitcockpit::server (
       }
     }
 
+    # Share component services between native activation and systemd target integration.
+    $component_services = [
+      'gearman-job-server',
+      'gearman_worker',
+      'openitcockpit-node',
+      'openitcockpit-graphing',
+      'oitc_cmd',
+      'oitc_cronjobs.timer',
+      'push_notification',
+      'statusengine',
+      'sudo_server',
+    ]
+
     # Disable service
     if (defined(Package['systemd'])) {
       # Disable service
-      service { [
-          'gearman-job-server',
-          'gearman_worker',
-          'openitcockpit-node',
-          'openitcockpit-graphing',
-          'oitc_cmd',
-          'oitc_cronjobs.timer',
-          'push_notification',
-          'statusengine',
-          'sudo_server',
-        ]:
-          ensure  => undef,
-          enable  => false,
-          require => Package['openitcockpit'],
+      service { $component_services:
+        ensure  => undef,
+        enable  => false,
+        require => Package['openitcockpit'],
       }
 
       # Reload systemd deamon
@@ -733,20 +736,10 @@ class openitcockpit::server (
       }
     } else {
       # Enable service
-      service { [
-          'gearman-job-server',
-          'gearman_worker',
-          'openitcockpit-node',
-          'openitcockpit-graphing',
-          'oitc_cmd',
-          'oitc_cronjobs.timer',
-          'push_notification',
-          'statusengine',
-          'sudo_server',
-        ]:
-          ensure  => true,
-          enable  => true,
-          require => Package['openitcockpit'],
+      service { $component_services:
+        ensure  => true,
+        enable  => true,
+        require => Package['openitcockpit'],
       }
     }
 

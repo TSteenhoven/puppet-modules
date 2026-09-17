@@ -152,7 +152,9 @@ class rabbitmq::management (
     # Check if we need to install admin plugin
     if ($admin_enable) {
       # The downloaded rabbitmqadmin CLI uses Python 3.
-      ensure_packages(['coreutils', 'curl', 'python3'], {
+      $admin_packages = ['coreutils', 'curl', 'python3']
+
+      ensure_packages($admin_packages, {
         'ensure'          => 'installed',
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
@@ -185,7 +187,7 @@ class rabbitmq::management (
       exec { 'rabbitmq_management_admin_cli':
         command => "/usr/bin/curl -fsSL ${admin_cli_url_shell} -o /usr/sbin/rabbitmqadmin && chmod +x /usr/sbin/rabbitmqadmin",
         unless  => '[ -e /usr/sbin/rabbitmqadmin ]',
-        require => [Package['coreutils', 'curl', 'python3'], File['rabbitmq_management_admin_config']],
+        require => [Package[$admin_packages], File['rabbitmq_management_admin_config']],
       }
 
       # Create list of packages that is suspicious
@@ -221,12 +223,21 @@ class rabbitmq::management (
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
 
+      # Include the broker before combining package references with optional admin dependencies.
+      $monitoring_required_packages = concat(
+        $monitoring_packages,
+        ['rabbitmq-server'],
+      )
+
       # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'rabbitmq':
         ensure   => present,
         content  => template('rabbitmq/check_rabbitmq'),
         friendly => 'RabbitMQ',
-        require  => concat([Package[concat(['rabbitmq-server'], $monitoring_packages)]], $monitoring_admin_require),
+        require  => concat(
+          Package[$monitoring_required_packages],
+          $monitoring_admin_require,
+        ),
       }
     }
 

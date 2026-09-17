@@ -76,16 +76,24 @@ class docker (
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
       # Install the check's shell, text tools, JSON parser and Docker CLI.
-      ensure_packages(['dash', 'docker-ce-cli', 'jq', 'mawk', 'sed'], {
+      $monitoring_packages = ['dash', 'docker-ce-cli', 'jq', 'mawk', 'sed']
+
+      ensure_packages($monitoring_packages, {
         'ensure'          => 'installed',
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
+
+      # Prepare package names before constructing resource dependencies.
+      $monitoring_required_packages = concat(
+        $monitoring_packages,
+        ['coreutils', 'docker-compose-plugin'],
+      )
 
       # The parent owns one shared check; project definitions only register their arguments.
       basic_settings::monitoring_custom { 'docker_compose':
         source   => 'puppet:///modules/docker/check_compose',
         register => false,
-        require  => Package['coreutils', 'dash', 'docker-ce-cli', 'docker-compose-plugin', 'jq', 'mawk', 'sed'],
+        require  => Package[$monitoring_required_packages],
       }
     }
   } else {
