@@ -29,7 +29,12 @@
 #   alternative allowed users.
 #
 # @param host_key_algorithms
-#   Host key algorithms rendered into sshd configuration.
+#   Non-empty list controlling HostKeyAlgorithms, local key generation and explicit HostKey paths.
+#   Supports ssh-ed25519, ecdsa-sha2-nistp256/384/521, rsa-sha2-256, rsa-sha2-512 and ssh-rsa; other names
+#   are rejected. Defaults to the three ECDSA curves and Ed25519. RSA algorithms share one local RSA key.
+#   Existing private keys at the selected paths are retained and missing public keys are derived locally.
+#   Keys reside in /etc/ssh/host_keys, a root-owned directory with mode 0700.
+#   Each ECDSA curve uses its own ssh_host_ecdsa_nistp<bits>_key file. Unselected key files are left untouched.
 #
 # @param idle_timeout
 #   Idle timeout value rendered into sshd configuration and monitoring.
@@ -55,7 +60,7 @@ class ssh (
   Array                    $allow_users                   = [],
   String                   $banner_text                   = "WARNING: You are entering a managed server!\nThis server should only be accessed by authorized users and must have a valid reason. Disconnect now if you do not comply with these rules.\nAll activity on this system is recorded and forwarded. Unauthorized access will be fully investigated and reported to law enforcement authorities.", # lint:ignore:140chars
   Optional[Array]          $check_users                   = undef,
-  Array                    $host_key_algorithms           = [
+  Array[String[1], 1]      $host_key_algorithms           = [
     'ecdsa-sha2-nistp256',
     'ecdsa-sha2-nistp384',
     'ecdsa-sha2-nistp521',
@@ -73,6 +78,23 @@ class ssh (
     ensure          => installed,
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
+
+  # Resolve allowed signature algorithms to local key identities; RSA signatures share the same key.
+  $host_key_dir = '/etc/ssh/host_keys'
+  $rsa_host_key = { 'path' => "${host_key_dir}/ssh_host_rsa_key", 'type' => 'rsa', 'bits' => 3072 }
+  $host_key_mapping = {
+    'ecdsa-sha2-nistp256' => { 'path' => "${host_key_dir}/ssh_host_ecdsa_nistp256_key", 'type' => 'ecdsa', 'bits' => 256 },
+    'ecdsa-sha2-nistp384' => { 'path' => "${host_key_dir}/ssh_host_ecdsa_nistp384_key", 'type' => 'ecdsa', 'bits' => 384 },
+    'ecdsa-sha2-nistp521' => { 'path' => "${host_key_dir}/ssh_host_ecdsa_nistp521_key", 'type' => 'ecdsa', 'bits' => 521 },
+    'ssh-ed25519'        => { 'path' => "${host_key_dir}/ssh_host_ed25519_key", 'type' => 'ed25519', 'bits' => 0 },
+    'rsa-sha2-256'       => $rsa_host_key,
+    'rsa-sha2-512'       => $rsa_host_key,
+    'ssh-rsa'            => $rsa_host_key,
+  }
+  $host_key_settings = $host_key_algorithms.map |$algorithm| {
+    assert_type(Hash, $host_key_mapping[$algorithm])
+  }.unique
+  $host_key_paths = $host_key_settings.map |$settings| { $settings['path'] }
 
   # Convert array to string
   $allow_users_str = join($allow_users, ' ')
@@ -157,6 +179,23 @@ class ssh (
     $ip_version = 'default'
   }
 
+  # Restrict access to host identities without purging existing or unselected keys.
+  file { $host_key_dir:
+    ensure  => directory,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0700',
+    require => Package['openssh-server'],
+  }
+
+  # Prepare each selected identity before publishing configuration that references it.
+  $host_key_settings.each |$settings| {
+    ssh::host_key { $settings['path']:
+      bits     => $settings['bits'],
+      key_type => $settings['type'],
+    }
+  }
+
   # Create SSHD directory config
   file { '/etc/ssh/sshd_config.d':
     ensure  => directory,
@@ -185,7 +224,7 @@ class ssh (
     owner   => 'root',
     group   => 'root',
     content => template('ssh/custom.conf'),
-    require => File['/etc/ssh/sshd_config.d'],
+    require => [File['/etc/ssh/sshd_config.d'], Ssh::Host_key[$host_key_paths]],
   }
 
   # Replace distribution or local settings only after the managed drop-in is available.
@@ -205,6 +244,7 @@ class ssh (
     '/etc/ssh/sshd_config.d',
     '/etc/ssh/sshd_config.d/99-custom.conf',
   ]
+  $service_configuration_require = concat(File[$service_configuration_files], Ssh::Host_key[$host_key_paths])
 
   # Check if we have systemd socket
   if ($systemd_socket) {
@@ -243,7 +283,7 @@ class ssh (
       ensure    => undef,
       enable    => false,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => File[$service_configuration_files],
+      subscribe => $service_configuration_require,
     }
 
     # Ensure that ssh is always running
@@ -261,7 +301,7 @@ class ssh (
       ensure    => running,
       enable    => true,
       require   => File['/etc/ssh/sshd_config.d/99-custom.conf'],
-      subscribe => File[$service_configuration_files],
+      subscribe => $service_configuration_require,
     }
 
     # Set service name

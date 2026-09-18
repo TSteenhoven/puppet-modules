@@ -779,7 +779,8 @@ Vhosts, exchanges, queues, bindings en gebruikers staan in [`examples/data-servi
 #### Belangrijkste eigenschappen
 
 - Beheert toegestane gebruikers, rootlogin en gebruikersspecifieke wachtwoordauthenticatie.
-- Beperkt hostkey-algoritmen en configureert idle timeouts.
+- Genereert ontbrekende hostkeys lokaal op basis van `host_key_algorithms`, met een eigen sleutel per ECDSA-curve.
+- Behoudt bestaande private sleutels, herstelt ontbrekende publieke sleutels en configureert idle timeouts.
 - Ondersteunt een alternatieve poort met een afzonderlijke gebruikerslijst.
 - Houdt rekening met socket activation op Ubuntu-versies die dit gebruiken.
 - Registreert auditregels en een check die configuratie en sessiegedrag beoordeelt.
@@ -790,6 +791,14 @@ Vhosts, exchanges, queues, bindings en gebruikers staan in [`examples/data-servi
 De module vervangt `/etc/ssh/sshd_config` en verwijdert onbekende bestanden in `/etc/ssh/sshd_config.d`. Bestaande instellingen in het hoofdbestand en onbeheerde drop-ins verdwijnen. Neem instellingen die je wilt behouden vooraf over in de door Puppet beheerde configuratie.
 
 Houd een tweede root- of consoleverbinding open en controleer sleutels, `allow_users`, firewall en eventuele socket activation vóór de eerste herstart, zodat je de toegang niet verliest.
+
+Hostkeys staan in `/etc/ssh/host_keys`. Deze map is van `root` en heeft modus `0700`; private sleutels hebben modus `0600`.
+
+Zet bestaande lokale sleutels en hun bijbehorende `.pub` vóór de uitrol over naar deze map om hun fingerprints te behouden, zonder bestaande sleutels op de doelpaden te overschrijven. Ed25519 en RSA behouden hun bestandsnamen. ECDSA gebruikt `ssh_host_ecdsa_nistp256_key`, `ssh_host_ecdsa_nistp384_key` en `ssh_host_ecdsa_nistp521_key`; kies voor een bestaande `ssh_host_ecdsa_key` de naam die bij de curve past. Controleer de curve vanuit de private sleutel met `sudo ssh-keygen -y -f /etc/ssh/ssh_host_ecdsa_key | ssh-keygen -lf -`. Ontbreekt een sleutel op het nieuwe pad, dan genereert Puppet daar een nieuwe identiteit. Niet-geselecteerde sleutels blijven op schijf staan, maar krijgen geen actieve `HostKey`-regel.
+
+Bestaande gedeelde sleutels worden bewust niet automatisch vervangen: corrigeer die servers afzonderlijk na deze uitrol. Maak serverimages zonder vooraf gegenereerde hostkeys, want Puppet behoudt ook sleutels die bij het klonen zijn meegekopieerd.
+
+Controleer na de uitrol met `sudo sshd -t` of de configuratie geldig is en met `sudo sshd -T | grep -Ei '^(hostkey|hostkeyalgorithms)'` welke sleutels actief zijn. Met `sudo sh -c 'for key in /etc/ssh/host_keys/ssh_host_*_key.pub; do ssh-keygen -lf "$key"; done'` bekijk je de lokale fingerprints; ook het doorlopen van de afgeschermde map vereist rootrechten. Vergelijk die per actief sleuteltype op twee afzonderlijk ingerichte testservers; de fingerprints moeten verschillen.
 
 #### Basisvoorbeeld
 
