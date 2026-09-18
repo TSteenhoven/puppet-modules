@@ -233,6 +233,8 @@ Niet ieder pakket is voor iedere Linux-versie en architectuur beschikbaar; de cl
 
 Scripts die vanuit zo'n shell starten kunnen `TMOUT` erven, waardoor ook `read` en `select` een timeout krijgen. Geef zulke scripts waar nodig een eigen `read -t`-timeout of verwijder `TMOUT` uit hun eigen omgeving.
 
+Met `getty_enable` zet Puppet de tekst- en seriële consoles uit `getty.target` bij iedere run aan of uit. De bestaande bootkoppelingen blijven behouden; systemd kan een gestopte console tussen Puppet-runs of bij een herstart opnieuw activeren. `gui_mode => 'kiosk'` houdt consolebeheer ingeschakeld. Controleer vóór inschakelen of de consoles bruikbaar zijn en niet door de kiosksessie worden gebruikt. De agentfact `console_gettys` toont de selectie of een detectiefout. Zie de [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp) voor de afbakening.
+
 #### Basisvoorbeeld
 
 ```puppet

@@ -5,6 +5,13 @@
 # exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo
 # customizations.
 #
+# Console selection comes from the read-only agent fact `console_gettys`, using getty.target dependencies.
+# Puppet manages the selected text and serial instances during each run and preserves their existing boot links.
+# This does not block activation by systemd between Puppet runs or during boot. Before enabling a kiosk host, verify
+# that the configured consoles are usable and do not conflict with its graphical session. Review getty-static.service
+# separately if its local configuration starts additional consoles outside getty.target dependencies.
+# Discovery errors fail compilation; a successful empty selection is valid.
+#
 # The shell policy in `/etc/profile.d/tmout.sh` sets a readonly, exported `TMOUT` only when an interactive shell loads
 # it. Non-interactive shells skip this initialization. Bash enforces the idle timeout; Dash does not enforce an idle
 # timeout through `TMOUT`.
@@ -37,8 +44,9 @@
 #   Also used in generated login messages and templates.
 #
 # @param getty_enable
-#   Controls whether `getty@tty*` is enabled unless `gui_mode` forces getty on.
-#   The default is `false`.
+#   Keeps configured text and serial console gettys running when `true`, or stopped when `false`, during Puppet runs.
+#   The default is `false`. Boot links remain unchanged; automatic activation outside Puppet runs is not blocked.
+#   `gui_mode => 'kiosk'` forces the effective value to `true`. Requires the agent-side `console_gettys` fact.
 #
 # @param gui_mode
 #   Selects GUI-related login behavior. `none` keeps the server minimal, `kiosk` enables getty and installs related
@@ -91,13 +99,14 @@ class basic_settings::login (
     install_options => ['--no-install-recommends', '--no-install-suggests'],
   }
 
-  # Check if sudo package is not defined
-  if (!defined(Package['sudo'])) {
-    package { 'sudo':
-      ensure          => installed,
-      install_options => ['--no-install-recommends', '--no-install-suggests'],
-    }
-  }
+  # Install the shared packages required for login configuration and service management.
+  ensure_packages(
+    ['systemd', 'sudo'],
+    {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    },
+  )
 
   # Install wtmpdb packages
   case $facts['os']['release']['major'] {
@@ -336,38 +345,6 @@ class basic_settings::login (
     require => $require,
   }
 
-  # Ensure that getty is stopped or running
-  if ($getty_correct) {
-    service { 'getty@tty*':
-      ensure => running,
-      enable => true,
-    }
-  } else {
-    service { 'getty@tty*':
-      ensure => stopped,
-      enable => false,
-    }
-  }
-
-  # Check if we have systemd
-  if (defined(Package['systemd'])) {
-    # Reload systemd deamon
-    exec { 'login_systemd_daemon_reload':
-      command     => '/usr/bin/systemctl daemon-reload',
-      refreshonly => true,
-      require     => Package['systemd'],
-    }
-
-    # Create drop in for getty service
-    basic_settings::systemd_drop_in { 'getty_settings':
-      target_unit   => 'getty@.service',
-      unit          => {
-        'ConditionPathExists' => '/dev/%I',
-      },
-      daemon_reload => 'login_systemd_daemon_reload',
-    }
-  }
-
   # Check if we have vulnerabilities package and user
   if ($vulnerabilities_package != undef and $vulnerabilities_user != undef) {
     case $vulnerabilities_package {
@@ -436,5 +413,45 @@ class basic_settings::login (
       ],
       rule_suspicious_packages => $suspicious_packages,
     }
+  }
+
+  # Keep legacy cleanup separate so it can be removed after rollout to every consumer.
+  service { 'getty@tty\x2a.service':
+    ensure   => stopped,
+    enable   => false,
+    provider => systemd,
+    require  => Package['systemd'],
+  }
+
+  # Reload only when removing the old wildcard workaround; other getty drop-ins remain untouched.
+  exec { 'login_systemd_daemon_reload':
+    command     => '/usr/bin/systemctl daemon-reload',
+    refreshonly => true,
+    require     => Package['systemd'],
+  }
+
+  # Retire the drop-in that guarded the old wildcard instance.
+  file { '/etc/systemd/system/getty@.service.d/getty_settings.conf':
+    ensure => absent,
+    notify => Exec['login_systemd_daemon_reload'],
+  }
+
+  # Require successful agent discovery; an empty list is valid, a missing or failed fact is not.
+  $console_getty_units = $facts['console_gettys']
+  if ($console_getty_units =~ Array[String[1]]) {
+    # Select the runtime state using the existing effective setting.
+    $console_getty_state = $getty_correct ? {
+      true    => running,
+      false   => stopped,
+    }
+
+    # Preserve boot links so stopping a console does not remove it from the next run's selection.
+    service { $console_getty_units:
+      ensure   => $console_getty_state,
+      provider => systemd,
+      require  => Exec['login_systemd_daemon_reload'],
+    }
+  } else {
+    fail("Agent console_gettys discovery failed or is missing: ${console_getty_units}")
   }
 }

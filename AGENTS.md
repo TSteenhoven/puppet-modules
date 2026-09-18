@@ -51,6 +51,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Treat a user's corrective edit as the current preferred pattern.
 - Never restore an earlier agent approach unless the user explicitly requests it.
 - Keep changes, including supporting refactors, scoped to the requested task and affected area.
+- Use the simplest implementation that meets the requested behavior, starting with existing built-in functionality. Add checks, helpers, configuration files, or abstractions only when a concrete requirement needs them, and explain that need. When the user asks to simplify, remove unnecessary behavior and its supporting code.
 
 ### Git Commits
 
