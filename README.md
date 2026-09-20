@@ -81,7 +81,6 @@ Dit project gebruikt `concat`, `debconf`, `reboot`, `stdlib` en `timezone`. Deze
 - **Los of gecombineerd:** De meeste modules werken zelfstandig. Monitoring, logrotate, auditregels en systemd-koppelingen worden toegevoegd wanneer `basic_settings` ook wordt gebruikt.
 - **Geheimen uit profielen of Hiera:** Geef parameters met type `Sensitive[...]` door als `Sensitive(...)`. Haal wachtwoorden voor oudere parameters van het type String uit versleutelde Hiera-data of een profiel en zet ze niet rechtstreeks in manifests.
 - **Beheerde externe bronnen:** Gebruik HTTPS of `puppet:///` voor aangeleverde bestanden. Modules die externe inhoud accepteren weigeren plain HTTP waar dat een onnodig integriteitsrisico vormt.
-- **Parameters bij de code:** De Puppet Strings-comments bij classes en defined types beschrijven alle parameters, datatypes, standaardwaarden, afhankelijkheden, aangemaakte bestanden en afwijkend gedrag.
 
 ## Beveiliging en afwijkende standaardinstellingen
 
@@ -99,23 +98,19 @@ Deze modules gebruiken bewust strengere beveiligingsinstellingen dan veel standa
 > [!WARNING]
 > `basic_settings` kan `/etc/hosts`, sudoers-inhoud, APT-bronnen, netwerkconfiguratie en andere belangrijke serverinstellingen beheren. Schakel een onderdeel uit wanneer die configuratie al ergens anders wordt beheerd. Gebruik bij een bestaande sudo-configuratie in eerste instantie `sudoers_dir_enable => false`.
 
-Voor kernel-lockdown kiest `kernel_security_lockdown => true` de waarde `integrity`. Met `false` wordt lockdown uitgeschakeld en met een string kun je zelf een modus opgeven. Bij Secure Boot blijft `integrity` de minimale waarde. Voor Multi-Gen LRU gebruikt `kernel_mglru_enable => true` een `min_ttl_ms` van 1000. Met `false` schakel je Multi-Gen LRU uit en met een integer stel je zelf `min_ttl_ms` in.
+Bij Secure Boot blijft `integrity` de minimale waarde voor kernel-lockdown, ook met `kernel_security_lockdown => false`. De [Puppet Strings bij `basic_settings::kernel`](basic_settings/manifests/kernel.pp) beschrijven de instelbare modi en de waarden voor Multi-Gen LRU.
 
 ## Monitoring
 
-OpenITCOCKPIT is het monitoringsysteem dat dit project automatisch kan instellen. Gebruik in `basic_settings` `monitoring_package => 'openitcockpit'`. Zet ook `monitoring_package_install => true` wanneer Puppet het agentpakket moet installeren. Declareer `basic_settings` of `basic_settings::monitoring` vóór de serviceclasses waarvoor je monitoring wilt gebruiken. Die classes bepalen bij hun evaluatie of ze checks toevoegen; hun defined types nemen die keuze over.
+OpenITCOCKPIT is het monitoringsysteem dat dit project automatisch kan instellen. Gebruik in `basic_settings` `monitoring_package => 'openitcockpit'`. Zet ook `monitoring_package_install => true` wanneer Puppet het agentpakket moet installeren. Declareer `basic_settings` of `basic_settings::monitoring` vóór de serviceclasses waarvoor je monitoring wilt gebruiken. Die classes bepalen bij hun evaluatie of ze checks toevoegen.
 
 De checks volgen het Nagios-pluginmodel en kunnen daardoor ook vanuit Naemon, Nagios of Icinga worden uitgevoerd. Ze gebruiken Nagios-exitcodes, noemen de belangrijkste oorzaak in de korte uitvoer, leveren perfdata voor grafieken en tonen extra uitleg in de long output. Controleer bij los gebruik welke commando's, argumenten en door Puppet ingevulde waarden de check nodig heeft.
 
-Gebruik bij een geïnstalleerde check `-h` om de opties en bijbehorende omgevingsvariabelen te bekijken. Voor een eenmalige controle kun je hiermee drempels en uitvoerlimieten aanpassen. Commandline-opties gaan voor op omgevingsvariabelen; de volledige werkwijze staat in het [configuratiecontract](AGENTS.md#monitoring-check-configuration). Pas bij langere looptijden ook de timeout van de executor aan: een instelling in het script verandert die niet.
+Gebruik bij een geïnstalleerde check `-h` om de opties en bijbehorende omgevingsvariabelen te bekijken. Voor een eenmalige controle kun je hiermee drempels en uitvoerlimieten aanpassen. Commandline-opties gaan voor op omgevingsvariabelen. Pas bij langere looptijden ook de timeout van de executor aan: een instelling in het script verandert die niet.
 
 Met `basic_settings::monitoring_custom` kun je een eigen script in de OpenITCOCKPIT-pluginmap plaatsen en registreren. De defined types `monitoring_service`, `monitoring_timer` en `monitoring_npm_audit` zijn bedoeld voor veelvoorkomende systemd- en npm-controles. De checks zelf staan onder `files/` en `templates/`; zie ook [Beschikbare checks](#beschikbare-checks) en [`examples/monitoring.pp`](examples/monitoring.pp).
 
-Nginx-vhosts met HTTPS en ingevulde certificaat- en sleutelpaden krijgen automatisch een lokale certificaatcontrole. Alle registraties gebruiken één gedeeld script; certificaatpaden worden tijdens de controle uit de Nginx-configuratie gelezen. Met `monitoring_cert => false` verwijder je de registratie voor een vhost.
-
 Laat bij het uitschakelen van de hele monitoring `basic_settings::monitoring` aanwezig met `package => 'none'`: Puppet leegt dan zijn bestaande checkregistratie en herstart een actieve systemd-agent om de oude checks uit het geheugen te verwijderen. Andere pluginbestanden blijven staan.
-
-De OpenITCOCKPIT-agent bindt standaard op `127.0.0.1`, publiceert de Prometheus-exporter standaard niet en verifieert in push-mode standaard het servercertificaat. Publiceer de agent of exporter alleen bewust en regel daarbij firewalling en TLS.
 
 ## Installatie
 
@@ -162,7 +157,7 @@ Voer de volgende stappen uit vanuit de hoofdmap van je Puppet-project.
    puppet module list --environment development
    ```
 
-De [toolinghandleiding voor je eigen project](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project) beschrijft hoe je Puppet en Ruby controleert, eigen tooltests uitvoert en de rapporten per controle als afzonderlijke artifacts bewaart.
+Gebruik de [toolinghandleiding voor je eigen project](.tools/lint/README.md#de-linter-gebruiken-in-een-ander-puppet-project) om de gedeelde controles voor je eigen Puppet- en Ruby-code in te richten.
 
 ## Quick start
 
@@ -276,7 +271,7 @@ Geef de inhoud van `.env` met geheimen door als `Sensitive(...)` en gebruik voor
 
 `docker::authentik` verwijdert standaard de eerste beheerder `akadmin`; zet `akadmin_remove => false` als deze gebruiker moet blijven bestaan. Het [Authentik-voorbeeld](examples/docker.pp) laat zien hoe je een eigen beheerder aanmaakt.
 
-`docker::compose` verwijdert bij `ensure => absent` de volledige projectmap, inclusief back-ups en lokale bind-mountgegevens. Bewaar benodigde gegevens dus vooraf op een andere locatie en stop de applicatiestack en back-uptaak. Laat vervallen systemd-bestanden door het centrale mapbeheer van je host opruimen; deze define voegt daar geen eigen opruimroute aan toe. Het stoppen van actieve units en herladen van systemd blijven onderdeel van het buiten gebruik stellen van de stack. Zie ook de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp).
+`docker::compose` verwijdert bij `ensure => absent` de volledige projectmap, inclusief back-ups en lokale bind-mountgegevens. Bewaar benodigde gegevens dus vooraf op een andere locatie, stop de applicatiestack en stop en deactiveer de back-uptimer en -service. Laat vervallen systemd-bestanden door het centrale mapbeheer van je host opruimen en herlaad daarna systemd. Zie ook de [Puppet Strings bij `docker::compose`](docker/manifests/compose.pp).
 
 #### Basisvoorbeeld
 
@@ -302,11 +297,11 @@ Compose-, proxy-, Authentik- en Twenty-varianten staan in [`examples/docker.pp`]
 
 #### Databaseback-ups
 
-Authentik en Twenty krijgen automatisch een dagelijkse PostgreSQL-back-up om 05:00 uur in de lokale servertijd, met zeven dagen retentie. Voor een ander Compose-project geef je `backup_database_type => 'postgresql'` en `backup_service => 'db'` mee, waarbij je `db` vervangt door de databaseservicenaam uit je Compose-bestand. Deze parameters werken ook via `docker::compose_proxy`; Authentik en Twenty vullen ze zelf in. Met `backup_database_type => undef` declareert Puppet geen back-uptaak; centrale opschoning van unitbestanden laat de bestaande back-ups in de projectmap ongemoeid. Stop bij uitschakelen ook de actieve timer en service. Planning en retentie zijn op de generieke Compose-laag instelbaar; zie de [Puppet Strings](docker/manifests/compose.pp).
+Authentik en Twenty krijgen automatisch een dagelijkse PostgreSQL-back-up om 05:00 uur in de lokale servertijd, met zeven dagen retentie. Voor een ander Compose-project geef je `backup_database_type => 'postgresql'` en `backup_service => 'db'` mee, waarbij je `db` vervangt door de databaseservicenaam uit je Compose-bestand. Deze parameters werken ook via `docker::compose_proxy`; Authentik en Twenty vullen ze zelf in. Met `backup_database_type => undef` declareert Puppet geen back-uptaak; bestaande back-ups blijven in de projectmap staan. Stop bij uitschakelen ook de actieve timer en service. Planning en retentie zijn op de generieke Compose-laag instelbaar; zie de [Puppet Strings](docker/manifests/compose.pp).
 
 De gekozen service moet precies één draaiende PostgreSQL-container hebben. De runner vindt die via de Compose-project- en servicelabels en exporteert de database uit `POSTGRES_DB`, met `POSTGRES_USER` als terugval en uiteindelijk `postgres`. Het wachtwoord komt uit `POSTGRES_PASSWORD` of `POSTGRES_PASSWORD_FILE`. De container moet `pg_dump`, `pg_dumpall` en `timeout` bevatten en PostgreSQL op TCP-poort 5432 met wachtwoordauthenticatie aanbieden; externe databases en `POSTGRES_USER_FILE` of `POSTGRES_DB_FILE` worden niet ondersteund. Zorg zelf dat de applicatie deze database gebruikt: de runner vergelijkt geen applicatieverbindingsgegevens. Bestaande initialisatievariabelen veranderen een reeds gevulde PostgreSQL-volume niet; voer databasewijzigingen en wachtwoordrotaties ook daadwerkelijk door.
 
-Iedere geslaagde run schrijft één bestand `postgresql-<voltooiingstijd>-<run-id>.sql.gz` in `/opt/docker/<project>/backup`, met de voltooiingstijd in Unix-seconden. Het bevat eerst clusterbrede globals, waaronder rollen en tablespaces, en daarna de volledige applicatiedatabase met alle schemas en `CREATE DATABASE`. Zorg voor voldoende vrije ruimte voor een tijdelijke ongecomprimeerde export naast de gecomprimeerde back-ups. De map is alleen toegankelijk voor root en krijgt ook die rechten wanneer je haar via `project_directories` opgeeft. Dezelfde rootrechten gebruikt de bestaande monitoringexecutor.
+Iedere geslaagde run schrijft één bestand `postgresql-<voltooiingstijd>-<run-id>.sql.gz` in `/opt/docker/<project>/backup`, met de voltooiingstijd in Unix-seconden. Het bevat eerst clusterbrede globals, waaronder rollen en tablespaces, en daarna de volledige applicatiedatabase met alle schemas en `CREATE DATABASE`. Zorg voor voldoende vrije ruimte voor een tijdelijke ongecomprimeerde export naast de gecomprimeerde back-ups. De map is alleen toegankelijk voor root en krijgt ook die rechten wanneer je haar via `project_directories` opgeeft.
 
 Start na de eerste inrichting zelf een back-up en controleer het resultaat:
 
@@ -408,7 +403,6 @@ Een groter voorbeeld waarin GitLab samen met de serverbasis wordt gebruikt staat
 
 #### Belangrijkste eigenschappen
 
-- Installeert Certbot zonder aanbevolen of voorgestelde extra pakketten.
 - Beheert `/etc/letsencrypt/cli.ini`, dat alleen door root kan worden gelezen, met het e-mailadres en de loginstellingen.
 - Stelt de systemd-prioriteit in en kan een melding sturen wanneer Certbot mislukt.
 - Gebruikt logrotate voor Certbotlogs wanneer logrotate door `basic_settings` wordt beheerd.
@@ -546,7 +540,7 @@ Een fout netwerkplan kan de beheerverbinding verbreken. Controleer interfacename
 
 WiFi-hashes kunnen wachtwoorden bevatten; lever die data vanuit afgeschermde Hiera aan.
 
-Declareer `netplanio` vóór de interfaces. De hoofdclass beheert de packages; `wpasupplicant` wordt alleen geactiveerd voor een WiFi-interface met `ensure => present`. De WiFi-configuratie wacht op dit package voordat Netplan haar toepast.
+Declareer `netplanio` vóór de interfaces.
 
 #### Basisvoorbeeld
 
@@ -578,13 +572,11 @@ Een gecombineerde netwerkinrichting past in het basisprofiel van [`examples/site
 - Beheert security headers en de gegevens in `security.txt`.
 - Werkt samen met Certbot, PHP-FPM, monitoring, auditd, logrotate en de gedeelde systemd-targets.
 - Controleert configuratie vóór een service-reload.
-- Controleert bij actieve OpenITCOCKPIT-monitoring lokale TLS-ketens, DNS-namen, sleutels en geldigheid met één gedeeld script.
+- Controleert bij actieve OpenITCOCKPIT-monitoring HTTPS-vhosts met ingevulde certificaat- en sleutelpaden op lokale TLS-ketens, DNS-namen, sleutels en geldigheid. De controle leest de certificaatpaden uit de Nginx-configuratie; met `monitoring_cert => false` verwijder je de registratie voor een vhost.
 
 #### Belangrijke aandachtspunten
 
 Declareer `nginx` vóór de vhosts. Voeg bij een vhost of een wrapper die Nginx-configuratie wijzigt geen `require => Class['nginx']` toe: dat kan een afhankelijkheidscyclus veroorzaken. Gebruik voor aanvullende afhankelijkheden de betreffende pakket- of bestandsresource; `nginx::server` regelt zijn pakket- en configuratieafhankelijkheden zelf.
-
-De hoofdclass beheert ook de gedeelde commandotools, waaronder `coreutils` voor het opruimen van `security.txt` en certificaatmonitoring. Vhosts hergebruiken deze packages, ook wanneer monitoring uitstaat.
 
 De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten.
 
@@ -616,7 +608,7 @@ De class `openitcockpit` groepeert de classes voor de OpenITCOCKPIT-agent en -se
 #### Belangrijkste eigenschappen
 
 - Beheert een agent in pull- of push-mode met selecteerbare ingebouwde metrics.
-- Gebruikt standaard loopbackbinding, uitgeschakelde Prometheus-export en TLS-certificaatcontrole.
+- Gebruikt standaard `127.0.0.1` als agentadres, uitgeschakelde Prometheus-export en servercertificaatcontrole in push-mode.
 - Levert een Mirth Connect-agentcheck.
 - Kan de server koppelen aan Nginx, PHP-FPM, Naemon, Grafana en de gedeelde systemd-targets.
 - Slaat gevoelige Grafana- en pakketbrongegevens op in bestanden die alleen root kan lezen wanneer de betreffende parameter dit ondersteunt.
@@ -801,7 +793,7 @@ Hostkeys staan in `/etc/ssh/host_keys`. Deze map is van `root` en heeft modus `0
 
 Zet bestaande lokale sleutels en hun bijbehorende `.pub` vóór de uitrol over naar deze map om hun fingerprints te behouden, zonder bestaande sleutels op de doelpaden te overschrijven. Ed25519 en RSA behouden hun bestandsnamen. ECDSA gebruikt `ssh_host_ecdsa_nistp256_key`, `ssh_host_ecdsa_nistp384_key` en `ssh_host_ecdsa_nistp521_key`; kies voor een bestaande `ssh_host_ecdsa_key` de naam die bij de curve past. Controleer de curve vanuit de private sleutel met `sudo ssh-keygen -y -f /etc/ssh/ssh_host_ecdsa_key | ssh-keygen -lf -`. Ontbreekt een sleutel op het nieuwe pad, dan genereert Puppet daar een nieuwe identiteit. Niet-geselecteerde sleutels blijven op schijf staan, maar krijgen geen actieve `HostKey`-regel.
 
-Bestaande gedeelde sleutels worden bewust niet automatisch vervangen: corrigeer die servers afzonderlijk na deze uitrol. Maak serverimages zonder vooraf gegenereerde hostkeys, want Puppet behoudt ook sleutels die bij het klonen zijn meegekopieerd.
+Als meerdere servers dezelfde hostkeys hebben, moet je die zelf vervangen; Puppet behoudt bestaande sleutels. Maak serverimages daarom zonder vooraf gegenereerde hostkeys.
 
 Controleer na de uitrol met `sudo sshd -t` of de configuratie geldig is en met `sudo sshd -T | grep -Ei '^(hostkey|hostkeyalgorithms)'` welke sleutels actief zijn. Met `sudo sh -c 'for key in /etc/ssh/host_keys/ssh_host_*_key.pub; do ssh-keygen -lf "$key"; done'` bekijk je de lokale fingerprints; ook het doorlopen van de afgeschermde map vereist rootrechten. Vergelijk die per actief sleuteltype op twee afzonderlijk ingerichte testservers; de fingerprints moeten verschillen.
 
@@ -900,11 +892,10 @@ Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving
 
 - Controleer de Puppet-code met `bundle exec puppet-lint --no-config --config .puppet-lint.rc .`.
 - Valideer ieder gewijzigd manifest afzonderlijk met `bundle exec puppet parser validate pad/naar/manifest.pp`; vervang het voorbeeldpad door het gewijzigde bestand.
+- Voer vóór oplevering `bundle exec rake validate:puppet` uit om alle eigen manifests te valideren en het bijbehorende rapport te maken.
 - Controleer bij Ruby-wijzigingen ook de eigen Ruby-code met `bundle exec rubocop --config .rubocop.yml`. Volg de [RuboCop-werkwijze](.tools/lint/README.md#ruby-code-controleren) voor het beoordelen van meldingen en veilig corrigeren.
 - Voer na alle correcties `bundle exec rake test` uit voor de tooltests. Pas je het ontwikkelgereedschap aan, gebruik dan ook de [uitleg over het uitbreiden van tooltests](.tools/lint/README.md#tests-uitvoeren-en-uitbreiden).
 
 De tooltests controleren het ontwikkelgereedschap. Valideer gewijzigd modulegedrag en documentatievoorbeelden daarom afzonderlijk volgens de [aanvullende validatie](.tools/lint/README.md#aanvullende-validatie).
 
-In CI draaien Puppet-parservalidatie, Puppet-lint, RuboCop en de tooltests in afzonderlijke jobs met elk een eigen JUnit-artifact. Met `bundle exec rake validate:puppet` valideer je ook lokaal alle eigen manifests en maak je het bijbehorende rapport. De [uitleg over CI en rapporten](.tools/lint/README.md#ci-van-deze-repository) beschrijft waar je de uitslagen en downloadbare rapporten vindt.
-
-Je kunt de gedeelde lintchecks, parservalidatie en JUnit-rapportage ook vanuit je eigen project gebruiken. De uitleg over [gedeelde tooling hergebruiken](.tools/lint/README.md#gedeelde-tooling-hergebruiken) beschrijft wat de gem levert en welke configuratie je zelf instelt. Volg de [installatie voor je eigen Puppet-project](.tools/lint/README.md#installatie-in-je-project) en kies een [rapportmap die bij je project past](.tools/lint/README.md#rapportmap-kiezen).
+De [uitleg over CI en rapporten](.tools/lint/README.md#ci-van-deze-repository) beschrijft waar je de uitslagen en downloadbare rapporten van je bijdrage vindt.

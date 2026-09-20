@@ -545,10 +545,13 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 #### Scope And Reading Path
 
+- For every substantive change, determine whether documented interfaces, usage conditions, risks, or properties change. Record the affected documents or the reason no documentation update is needed in the change review. An internal code change alone does not require a root README addition.
+- Before changing documentation content, identify each affected document's intended reader and the task it supports. Assess relevance for that concrete task, distinguishing module use, module development, and tooling maintenance where applicable.
 - For every substantive change and every edit to a repository-owned Markdown file, read the complete affected documentation sections and surrounding reading path before editing and review them again afterward, including the relevant README section. This applies to all `.md` files, including `AGENTS.md` and small additions to existing text.
 - Integrate additions into the existing explanation according to the [Markdown navigation and continuity rules](#markdown), reviewing the preceding and following text under each affected heading.
-- Check relevance, repetition, contradictions, and placement of technical detail across that reading path.
-- Never move unnecessary considerations below the basic example.
+- For each passage added, changed, moved, or removed, identify the knowledge, decision, action, or troubleshooting it supports. Check that it fits both the document and heading, contributes useful information, and does not contradict existing guidance. Technical accuracy alone does not establish relevance.
+- When consolidating repeated facts, preserve summaries, prominent warnings, and prerequisites that serve a distinct reader decision or entry point. Repetition alone is not a reason to remove them.
+- Remove passages that serve no task for the intended reader instead of moving them to another heading or below an example.
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.
 
 #### Technical Evidence And Links
