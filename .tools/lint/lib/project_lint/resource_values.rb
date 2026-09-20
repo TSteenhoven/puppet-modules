@@ -5,12 +5,13 @@ require 'project_lint/parameter_source'
 module ProjectLint
   # Distinguish fixed resource titles from arrays whose elements can be resource references.
   class ResourceValues
-    def initialize(ast)
+    def initialize(ast, local_value: nil)
       @ast = ast
       @source = ParameterSource.new(ast)
       @parents = {}.compare_by_identity
       ast.nodes.each { |node, parents| @parents[node] = parents }
       @type_names = local_type_names
+      @local_value = local_value
     end
 
     def local_type_names
@@ -34,6 +35,8 @@ module ProjectLint
     end
 
     def local_value(node)
+      return @local_value.call(node) if @local_value
+
       @source.local_value(node, @parents.fetch(node, []))
     end
 

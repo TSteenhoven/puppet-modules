@@ -35,6 +35,13 @@ class basic_settings::package_mongodb (
   String              $os_parent,
   Float               $version     = 8.0,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -53,6 +60,14 @@ class basic_settings::package_mongodb (
 
   # Install the MongoDB repository when enabled and remove its managed source otherwise.
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Get source
     if ($deb_version == '822') {
       # Render the selected repository and signing key in deb822 format.
@@ -70,7 +85,7 @@ class basic_settings::package_mongodb (
     exec { 'package_mongodb_source':
       command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL ${key_url_shell} | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+      require => Package[$repository_required_packages],
     }
 
     # Install mongodb-org-server package
@@ -85,11 +100,14 @@ class basic_settings::package_mongodb (
       ensure => purged,
     }
 
+    # Wait for server removal as well as the source-list tools.
+    $removal_packages = concat($source_packages, ['mongodb-org-server'])
+
     # Remove mongodb repo
     exec { 'package_mongodb_source':
       command => "/usr/bin/rm ${file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt', 'mongodb-org-server'],
+      require => Package[$removal_packages],
     }
 
     # Remove Gitlab key

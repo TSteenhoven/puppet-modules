@@ -43,6 +43,13 @@ class basic_settings::package_openitcockpit (
   Optional[String]    $license     = undef,
   Boolean             $nightly     = false,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -61,6 +68,14 @@ class basic_settings::package_openitcockpit (
 
   # Install the selected OpenITCOCKPIT repository or remove its managed source when disabled.
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Check if package is server or agent
     if ($package == 'server') {
       # Set url
@@ -127,7 +142,7 @@ class basic_settings::package_openitcockpit (
     exec { 'package_openitcockpit_source':
       command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL https://packages5.openitcockpit.io/repokey.txt | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
-      require => [File['package_openitcockpit_license'], Package['curl']],
+      require => [File['package_openitcockpit_license'], Package[$repository_required_packages]],
     }
   } else {
     # Remove openitcockpit license
@@ -140,7 +155,7 @@ class basic_settings::package_openitcockpit (
     exec { 'package_openitcockpit_source':
       command => "/usr/bin/rm ${file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove openitcockpit key

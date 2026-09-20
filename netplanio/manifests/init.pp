@@ -1,8 +1,9 @@
 # @summary Installs netplan.io and prepares shared netplan defaults.
 #
-# This class ensures the netplan package is available, derives DHCP, IPv6 router advertisement, IP-version, and renderer
-# defaults from `basic_settings` when present, removes the cloud-init netplan file, exposes a refresh-only
-# `netplan apply` exec, and adds audit rules for `/etc/netplan`.
+# This class supplies Netplan and shared command tools, and owns the virtual WiFi package realized by active interfaces.
+# It derives DHCP, IPv6 router advertisement, IP-version, and renderer defaults from `basic_settings` when present,
+# removes the cloud-init netplan file, exposes a refresh-only `netplan apply` exec, and adds audit rules for
+# `/etc/netplan`.
 #
 # @example Prepare netplan management
 #   include netplanio
@@ -10,10 +11,15 @@
 # @api public
 class netplanio (
 ) {
-  # Check if systemd is not installed
-  if (!defined(Package['netplan.io'])) {
-    # Install netplan.io package
-    package { 'netplan.io':
+  # Supply Netplan and the shared command tools used by its interfaces.
+  ensure_packages(['coreutils', 'dash', 'netplan.io'], {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
+  # Keep WiFi installation optional: present wifi resources realize this centrally owned package.
+  if (!defined(Package['wpasupplicant'])) {
+    @package { 'wpasupplicant':
       ensure          => installed,
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }

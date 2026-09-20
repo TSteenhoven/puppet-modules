@@ -73,6 +73,13 @@ class basic_settings::monitoring (
     }
   }
 
+  # The notification helper and registry retirement use the same shell and text tools.
+  $command_packages = ['coreutils', 'dash', 'grep']
+  ensure_packages($command_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Create shared monitoring notification helper
   file { $monitoring_notify_path:
     ensure  => file,
@@ -80,7 +87,7 @@ class basic_settings::monitoring (
     owner   => 'root',
     group   => 'root',
     mode    => '0755',
-    require => [File['/usr/local/lib/puppet'], Package['mailutils']],
+    require => [File['/usr/local/lib/puppet'], Package['dash', 'mailutils']],
   }
 
   # Do thing based on mail package
@@ -89,6 +96,7 @@ class basic_settings::monitoring (
       exec { 'monitoring_newaliases':
         command => '/usr/bin/newaliases',
         creates => '/etc/aliases.db',
+        require => Package[$mail_package],
       }
     }
     default: {
@@ -105,6 +113,12 @@ class basic_settings::monitoring (
 
   # Register the monitoring unit reload only when systemd is managed.
   if ($systemd_enable) {
+    # The notification unit starts Bash before invoking the shared mail helper.
+    ensure_packages('bash', {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+
     # Reload systemd deamon
     exec { 'monitoring_systemd_daemon_reload':
       command     => '/usr/bin/systemctl daemon-reload',
@@ -136,7 +150,7 @@ class basic_settings::monitoring (
       },
       daemon_reload => 'monitoring_systemd_daemon_reload',
       enable        => false,
-      require       => [Package[$mail_package], File[$monitoring_notify_path]],
+      require       => [Package[$mail_package, 'bash', 'systemd'], File[$monitoring_notify_path]],
     }
 
     # Create drop in for notify-failed service
@@ -255,6 +269,7 @@ class basic_settings::monitoring (
         command  => '/usr/bin/printf "# Managed by puppet\n[default]\n" > /etc/openitcockpit-agent/customchecks.ini',
         onlyif   => '/usr/bin/grep -qx "# Managed by puppet" /etc/openitcockpit-agent/customchecks.ini && /usr/bin/grep -qx "enabled = true" /etc/openitcockpit-agent/customchecks.ini', # lint:ignore:140chars
         provider => shell,
+        require  => Package[$command_packages],
       }
       Exec['monitoring_retire_customchecks'] -> Concat <| title == '/etc/openitcockpit-agent/customchecks.ini' |>
 
@@ -272,7 +287,7 @@ class basic_settings::monitoring (
   # Validate the active systemd configuration from the default target when monitoring is enabled.
   if ($systemd_enable and $package != 'none') {
     # Install the external commands used by this check.
-    $systemd_check_packages = ['dash', 'findutils', 'grep', 'mawk']
+    $systemd_check_packages = ['findutils', 'mawk']
 
     ensure_packages($systemd_check_packages, {
       'ensure'          => 'installed',
@@ -282,7 +297,7 @@ class basic_settings::monitoring (
     # Prepare package names before constructing resource dependencies.
     $systemd_check_required_packages = concat(
       $systemd_check_packages,
-      ['systemd'],
+      ['dash', 'grep', 'systemd'],
     )
 
     # Register the check after its runtime packages.

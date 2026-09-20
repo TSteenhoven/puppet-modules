@@ -23,9 +23,18 @@ class letsencrypt (
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
 
   # Install certbot
+  $required_packages = ['dash', 'grep']
+
+  ensure_packages($required_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
+  # Share guard prerequisites with certificate creation and removal through the Certbot package.
   package { 'certbot':
     ensure          => installed,
     install_options => ['--no-install-recommends', '--no-install-suggests'],
+    require         => Package[$required_packages],
   }
 
   # Check if we have systemd

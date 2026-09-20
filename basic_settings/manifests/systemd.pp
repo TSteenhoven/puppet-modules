@@ -23,6 +23,20 @@ class basic_settings::systemd (
   String $default_target  = 'helpers',
   Array  $install_options = [],
 ) {
+  # The default-target guard uses an external test and a command substitution.
+  $packages = ['coreutils', 'dash']
+
+  ensure_packages($packages, {
+    'ensure'          => 'installed',
+    'install_options' => concat($install_options, ['--no-install-recommends', '--no-install-suggests']),
+  })
+
+  # Include the additional package prerequisites for these resources.
+  $required_packages = concat(
+    $packages,
+    ['systemd'],
+  )
+
   # Install packages
   # Keep policy flags last even when caller options contain duplicate or conflicting flags.
   package { ['dbus', 'dbus-user-session', 'systemd', 'systemd-cron', 'systemd-sysv', 'libpam-systemd']:
@@ -91,6 +105,6 @@ class basic_settings::systemd (
   exec { 'set_default_target':
     command => "/bin/systemctl set-default ${default_target_unit_shell}",
     unless  => "/usr/bin/test \"\$(/bin/systemctl get-default)\" = ${default_target_unit_shell}",
-    require => [Package['systemd'], File["/etc/systemd/system/${cluster_id}-${default_target}.target"]],
+    require => [Package[$required_packages], File["/etc/systemd/system/${cluster_id}-${default_target}.target"]],
   }
 }

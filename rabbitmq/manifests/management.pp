@@ -152,7 +152,7 @@ class rabbitmq::management (
     # Check if we need to install admin plugin
     if ($admin_enable) {
       # The downloaded rabbitmqadmin CLI uses Python 3.
-      $admin_packages = ['coreutils', 'curl', 'python3']
+      $admin_packages = ['curl', 'python3']
 
       ensure_packages($admin_packages, {
         'ensure'          => 'installed',
@@ -214,7 +214,7 @@ class rabbitmq::management (
       $admin_config_path_shell = stdlib::shell_escape($admin_config_path)
 
       # Install the check tools, including systemd only for the selected inspection path.
-      $monitoring_packages = concat(['dash', 'grep', 'mawk', 'procps'], $systemd_enable ? {
+      $monitoring_packages = concat(['mawk', 'procps'], $systemd_enable ? {
         true    => ['systemd'],
         default => [],
       })

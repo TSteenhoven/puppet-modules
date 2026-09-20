@@ -40,7 +40,7 @@ define mysql::user (
   if (defined(Class['mysql'])) {
     # Set requirements
     Exec {
-      require => Service['mysql'],
+      require => [Service['mysql'], File[$mysql::script_path]],
     }
 
     # Escape MySQL command arguments before using them in exec commands and guards.

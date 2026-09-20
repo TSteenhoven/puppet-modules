@@ -80,7 +80,7 @@ class gitlab (
   }
 
   # Share installer package prerequisites across both installation-directory layouts.
-  $installer_packages = ['apt', 'dpkg', 'grep']
+  $installer_packages = ['apt', 'dash', 'dpkg', 'grep']
 
   # Check if installation dir is given
   if ($install_dir != undef) {
@@ -200,7 +200,7 @@ class gitlab (
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     # Install the external commands used by this check.
-    $monitoring_packages = ['coreutils', 'dash', 'mawk', 'sed']
+    $monitoring_packages = ['coreutils', 'mawk', 'sed']
 
     ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',

@@ -42,7 +42,7 @@ module InstalledGemSupport
   def prepare_bundle
     write('Gemfile', <<~RUBY)
       source 'https://rubygems.org'
-      gem 'lint-project', '= 0.1.9', require: false
+      gem 'lint-project', '= 0.1.11', require: false
     RUBY
     run_success('bundle', 'install', '--local')
     run_success('bundle', 'info', '--path', 'lint-project')

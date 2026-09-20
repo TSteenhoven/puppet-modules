@@ -35,6 +35,13 @@ class basic_settings::package_mysql (
   String              $os_parent,
   Float               $version     = 8.0,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -56,6 +63,14 @@ class basic_settings::package_mysql (
 
   # Install the MySQL repository when enabled and remove its managed source otherwise.
   if ($enable) {
+    # Install the HTTPS transport and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Get source name
     case $version {
       8.0: {
@@ -88,15 +103,12 @@ class basic_settings::package_mysql (
     $source_content_shell = stdlib::shell_escape("# Managed by puppet\\n${source_content}")
     $preference_content_shell = stdlib::shell_escape("# Managed by puppet\\nPackage: mysql*\\nPin: origin repo.mysql.com\\nPin-Priority: 990\\n") # lint:ignore:140chars
 
-    # Share the tools required to rebuild the key and configure the repository.
-    $repository_packages = ['apt', 'apt-transport-https', 'gnupg']
-
     # Rebuild key
     exec { 'package_mysql_key_build':
       command     => $key_rebuild,
       onlyif      => "/usr/bin/test -e ${key_file_shell}",
       refreshonly => true,
-      require     => Package[$repository_packages],
+      require     => Package[$repository_required_packages],
     }
 
     # Create MySQL key
@@ -114,7 +126,7 @@ class basic_settings::package_mysql (
     exec { 'package_mysql_source':
       command => "/usr/bin/printf %b ${source_content_shell} > ${source_file_shell}; ${key_rebuild}",
       unless  => "/usr/bin/test -e ${source_file_shell}",
-      require => [Package[$repository_packages], File['package_mysql_key_filename']],
+      require => [Package[$repository_required_packages], File['package_mysql_key_filename']],
     }
 
     # Set preference
@@ -128,14 +140,14 @@ class basic_settings::package_mysql (
     exec { 'package_mysql_source':
       command => "/usr/bin/rm ${source_file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${source_file_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove mysql preference
     exec { 'package_mysql_preference':
       command => "/usr/bin/rm ${file_preference_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_preference_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove MySQL key

@@ -106,6 +106,12 @@ class nginx (
   # Monitoring shares the service configuration path and uses Nginx binary defaults for the package prefix.
   $config_file = '/etc/nginx/nginx.conf'
 
+  # Supply shared command tools for vhost cleanup and certificate monitoring.
+  ensure_packages('coreutils', {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Remove unnecessary package
   package { 'apache2':
     ensure => purged,
@@ -223,7 +229,7 @@ class nginx (
     basic_settings::monitoring_service { 'nginx': }
 
     # One executable serves all vhost registrations; only the main daemon configuration is templated.
-    $monitoring_cert_packages = ['ca-certificates', 'coreutils', 'dash', 'diffutils', 'grep', 'mawk', 'openssl']
+    $monitoring_cert_packages = ['ca-certificates', 'dash', 'diffutils', 'grep', 'mawk', 'openssl']
 
     ensure_packages($monitoring_cert_packages, {
       'ensure'          => 'installed',
@@ -233,7 +239,7 @@ class nginx (
     # Prepare the shared certificate check content and package dependencies.
     $monitoring_cert_required_packages = concat(
       $monitoring_cert_packages,
-      ['nginx'],
+      ['coreutils', 'nginx'],
     )
     $nginx_config_shell = stdlib::shell_escape($config_file)
     $monitoring_cert_content = template('nginx/check_nginx_cert')

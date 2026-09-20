@@ -101,7 +101,7 @@ class basic_settings::login (
 
   # Install the shared packages required for login configuration and service management.
   ensure_packages(
-    ['systemd', 'sudo'],
+    ['libpam-runtime', 'systemd', 'sudo'],
     {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
@@ -216,7 +216,7 @@ class basic_settings::login (
   exec { 'login_pam_auth_update':
     command     => '/usr/sbin/pam-auth-update --package',
     refreshonly => true,
-    require     => Package['systemd'],
+    require     => Package['libpam-runtime', 'systemd'],
   }
 
   # Setup pam common-session file

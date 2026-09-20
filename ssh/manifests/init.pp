@@ -179,13 +179,21 @@ class ssh (
     $ip_version = 'default'
   }
 
+  # Public host-key recovery uses a shell and an external file-presence guard.
+  $host_key_packages = ['coreutils', 'dash']
+  ensure_packages($host_key_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+  $host_key_required_packages = concat($host_key_packages, ['openssh-server'])
+
   # Restrict access to host identities without purging existing or unselected keys.
   file { $host_key_dir:
     ensure  => directory,
     owner   => 'root',
     group   => 'root',
     mode    => '0700',
-    require => Package['openssh-server'],
+    require => Package[$host_key_required_packages],
   }
 
   # Prepare each selected identity before publishing configuration that references it.
@@ -311,7 +319,7 @@ class ssh (
   # Create service check
   if (defined(Class['basic_settings::monitoring']) and $basic_settings::monitoring::package != 'none') {
     # Install the check tools, including systemd only for the selected inspection path.
-    $monitoring_packages = concat(['coreutils', 'dash', 'mawk', 'procps', 'sed'], $systemd_enable ? {
+    $monitoring_packages = concat(['mawk', 'procps', 'sed'], $systemd_enable ? {
       true    => ['systemd'],
       default => [],
     })
@@ -319,13 +327,14 @@ class ssh (
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
+    $monitoring_required_packages = concat($monitoring_packages, $host_key_packages)
 
     # Register the check after its runtime packages.
     basic_settings::monitoring_custom { 'ssh':
       content  => template('ssh/check_ssh'),
       friendly => 'SSH',
       timeout  => 60,
-      require  => Package[$monitoring_packages],
+      require  => Package[$monitoring_required_packages],
     }
   }
 

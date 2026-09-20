@@ -303,6 +303,26 @@ class basic_settings::kernel (
     }
   }
 
+  # Supply the interpreters and tools used by kernel commands and their guards.
+  $kernel_command_packages = ['bash', 'coreutils', 'dash', 'grep', 'procps', 'sed', 'util-linux']
+  ensure_packages($kernel_command_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
+  # Retain the other kernel inspection tools without coupling them to command execution.
+  ensure_packages(['findutils', 'lsb-release', 'lsof', 'kmod', 'usbutils'], {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
+  $kernel_systemd_packages = concat($kernel_command_packages, ['systemd'])
+
+  # Guards run before their command, so the same runtime ordering applies to every kernel exec.
+  Exec {
+    require => Package[$kernel_command_packages],
+  }
+
   # Install extra packages when Ubuntu
   case $kernel_type {
     'generic': {
@@ -404,6 +424,7 @@ class basic_settings::kernel (
     exec { 'kernel_sysctl_reload':
       command     => '/usr/bin/bash -c "/usr/bin/systemctl start dev-hugepages-shmmax.service && /usr/sbin/sysctl --system"',
       refreshonly => true,
+      require     => Package[$kernel_systemd_packages],
     }
   } else {
     # Set variable
@@ -440,25 +461,6 @@ class basic_settings::kernel (
   package { ['apport', 'installation-report', 'linux-tools-common', 'pemmican-common', 'plymouth', 'thermald', 'upower']:
     ensure => purged,
   }
-
-  # Install system tools with consistent package settings.
-  ensure_packages(
-    [
-      'coreutils',
-      'findutils',
-      'grep',
-      'lsb-release',
-      'lsof',
-      'kmod',
-      'sed',
-      'usbutils',
-      'util-linux',
-    ],
-    {
-      'ensure'          => 'installed',
-      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
-    },
-  )
 
   # Create sysctl config
   file { '/etc/sysctl.conf':
@@ -715,6 +717,7 @@ class basic_settings::kernel (
         'grub': {
           # Set boot loader packages
           $bootloader_packages = ['/usr/sbin/update-grub']
+          $grub_command_packages = concat($kernel_command_packages, ['grub2-common'])
 
           # Install package
           package { 'grub2-common':
@@ -733,6 +736,7 @@ class basic_settings::kernel (
           exec { 'kernel_grub_update':
             command     => '/usr/sbin/update-grub',
             refreshonly => true,
+            require     => Package[$grub_command_packages],
           }
 
           # Create custom grub config
@@ -838,7 +842,7 @@ class basic_settings::kernel (
   exec { 'kernel_mglru_min_ttl_ms':
     command => "/usr/bin/printf %s ${mglru_min_ttl_ms_shell} > /sys/kernel/mm/lru_gen/min_ttl_ms",
     onlyif  => "/usr/bin/bash -c ${mglru_min_ttl_ms_check_script_shell}",
-    require => Exec['kernel_mglru'],
+    require => [Package[$kernel_command_packages], Exec['kernel_mglru']],
   }
 
   # Kernel security lockdown
@@ -873,8 +877,8 @@ class basic_settings::kernel (
   # Setup monitoring
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     # Both checks use awk; coreutils and sed are installed with the kernel tools above.
-    $monitoring_packages = ['dash', 'mawk']
-    $monitoring_required_packages = concat(['coreutils'], $monitoring_packages, ['sed'])
+    $monitoring_packages = ['mawk']
+    $monitoring_required_packages = concat(['coreutils', 'dash'], $monitoring_packages, ['sed'])
 
     ensure_packages($monitoring_packages, {
       'ensure'          => 'installed',

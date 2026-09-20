@@ -30,7 +30,7 @@ class docker (
     }
 
     # Compose deployment, backups and monitoring share these dependencies.
-    ensure_packages(['coreutils', 'docker-compose-plugin', 'gzip', 'util-linux'], {
+    ensure_packages(['coreutils', 'dash', 'docker-compose-plugin', 'gzip', 'util-linux'], {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -60,7 +60,7 @@ class docker (
       group   => 'root',
       mode    => '0700',
       source  => 'puppet:///modules/docker/compose_container',
-      require => [File['/usr/local/lib/puppet'], Package['docker']],
+      require => [File['/usr/local/lib/puppet'], Package['dash', 'docker']],
     }
 
     # Keep the runner available when one project is retired while others still use it.
@@ -76,7 +76,7 @@ class docker (
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
       # Install the check's shell, text tools, JSON parser and Docker CLI.
-      $monitoring_packages = ['dash', 'docker-ce-cli', 'jq', 'mawk', 'sed']
+      $monitoring_packages = ['docker-ce-cli', 'jq', 'mawk', 'sed']
 
       ensure_packages($monitoring_packages, {
         'ensure'          => 'installed',
@@ -86,7 +86,7 @@ class docker (
       # Prepare package names before constructing resource dependencies.
       $monitoring_required_packages = concat(
         $monitoring_packages,
-        ['coreutils', 'docker-compose-plugin'],
+        ['coreutils', 'dash', 'docker-compose-plugin'],
       )
 
       # The parent owns one shared check; project definitions only register their arguments.

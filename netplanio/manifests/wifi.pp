@@ -1,7 +1,8 @@
 # @summary Manages one netplan WiFi YAML file.
 #
-# This defined type renders `/etc/netplan/<title>.yaml` for a WiFi interface, installs `wpasupplicant` when needed,
-# stores generated WiFi configuration as sensitive content, and disables runtime power management for the interface
+# This defined type requires the `netplanio` class and realizes its `wpasupplicant` package for a present WiFi
+# interface.
+# It renders `/etc/netplan/<title>.yaml` as sensitive content and disables runtime power management for the interface
 # device to avoid connectivity problems.
 #
 # @example Configure a DHCP WiFi interface
@@ -46,14 +47,8 @@ define netplanio::wifi (
   if (defined(Class['netplanio'])) {
     # Provision wireless dependencies and configuration only for a present entry.
     if ($ensure == present) {
-      # Check if wpasupplicant is not installed
-      if (!defined(Package['wpasupplicant'])) {
-        # Install wpasupplicant package
-        package { 'wpasupplicant':
-          ensure          => installed,
-          install_options => ['--no-install-recommends', '--no-install-suggests'],
-        }
-      }
+      # Activate the optional package owned by the required parent class.
+      realize(Package['wpasupplicant'])
 
       # Get interface
       if ($interface == undef) {
@@ -120,15 +115,18 @@ define netplanio::wifi (
         group   => 'root',
         mode    => '0600',
         notify  => Exec['netplanio_apply'],
-        require => Package['netplan.io'],
+        require => Package['netplan.io', 'wpasupplicant'],
       }
 
       # Force WiFi runtime power management to "on" for stable connectivity.
       # Escape the sysfs path before writing to it from an exec command.
       $runtime_pm_file_shell = stdlib::shell_escape("/sys/class/net/${name}/device/power/control")
+
+      # Apply the runtime setting only after the command and guard tools are installed.
       exec { "netplan_${name}_runtime_pm":
         command => "/usr/bin/printf %s on > ${runtime_pm_file_shell}",
         onlyif  => "/usr/bin/test -e ${runtime_pm_file_shell} && [ \"\$(/usr/bin/cat ${runtime_pm_file_shell})\" != \"on\" ]",
+        require => Package['coreutils', 'dash'],
       }
     } else {
       # Remove config

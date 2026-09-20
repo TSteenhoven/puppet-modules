@@ -802,6 +802,7 @@ define nginx::server (
         command     => "/bin/rm -f ${securitytxt_file_shell}",
         refreshonly => true,
         subscribe   => File[$config_file],
+        require     => Package['coreutils'],
       }
 
       # The file resource creates missing files; replace false prevents daily Expires churn.

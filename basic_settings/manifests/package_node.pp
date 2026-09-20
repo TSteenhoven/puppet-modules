@@ -26,6 +26,13 @@ class basic_settings::package_node (
   Boolean             $enable,
   Integer             $version     = 20,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -47,11 +54,19 @@ class basic_settings::package_node (
   exec { 'package_node_source_reload':
     command     => '/usr/bin/apt-get update',
     refreshonly => true,
-    require     => Package['apt'],
+    require     => Package[$source_packages],
   }
 
   # Provision Node.js access and its repository only when this package source is enabled.
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # The nodejs group is the local authorization boundary for running npm and npx without giving package-management rights.
     group { 'nodejs':
       ensure => present,
@@ -76,7 +91,7 @@ class basic_settings::package_node (
       mode    => '0644',
       content => "# Managed by puppet\n${source}",
       notify  => Exec['package_node_source_reload'],
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Download and install the repository signing key in a dedicated keyring file.
@@ -84,7 +99,7 @@ class basic_settings::package_node (
       command => "/usr/bin/curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${key_shell}",
       notify  => Exec['package_node_source_reload'],
-      require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+      require => Package[$repository_required_packages],
     }
 
     # Install Node.js only after the managed source and key have been applied.
@@ -104,6 +119,14 @@ class basic_settings::package_node (
       }
     }
 
+    # Supply the shared permission helper's interpreter and external commands.
+    $permission_packages = ['findutils', 'libc-bin']
+    ensure_packages($permission_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $permission_required_packages = concat($source_packages, $permission_packages)
+
     # Install the permission helper separately so the recursive mode logic stays reviewable and avoids npm or npx execution.
     file { $npm_permission_helper_path:
       ensure  => file,
@@ -111,7 +134,7 @@ class basic_settings::package_node (
       owner   => 'root',
       group   => 'root',
       mode    => '0700',
-      require => File['/usr/local/lib/puppet'],
+      require => [File['/usr/local/lib/puppet'], Package[$permission_required_packages]],
     }
 
     # Keep the npm package tree root-owned while granting the nodejs group only read and execute access needed by npm and npx.

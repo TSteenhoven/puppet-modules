@@ -129,6 +129,8 @@ class basic_settings::packages (
   ensure_packages(
     [
       'apt',
+      'coreutils',
+      'dash',
       'dpkg',
       'curl',
       'gnupg',
@@ -139,10 +141,16 @@ class basic_settings::packages (
     },
   )
 
+  # Repository helpers can already supply the HTTPS trust store.
+  ensure_packages('ca-certificates', {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+  Package['apt'] -> Package['ca-certificates']
+
   # Install package
   package { [
       'apt-listchanges',
-      'ca-certificates',
       'debconf',
       'debian-archive-keyring',
       'debian-keyring',
@@ -225,6 +233,7 @@ class basic_settings::packages (
     exec { 'packages_man_remove':
       command => '/usr/bin/rm /usr/bin/man',
       onlyif  => ['[ -e /usr/bin/man ]', '[ -e /etc/dpkg/dpkg.cfg.d/excludes ]'],
+      require => Package['coreutils', 'dash'],
     }
 
     # Create list of packages that is suspicious
@@ -350,7 +359,7 @@ class basic_settings::packages (
   # Create service check
   if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
     # Install the check tools, including systemd only for the selected inspection path.
-    $monitoring_packages = concat(['coreutils', 'dash', 'findutils', 'grep', 'mawk', 'sed'], $systemd_enable ? {
+    $monitoring_packages = concat(['findutils', 'grep', 'mawk', 'sed'], $systemd_enable ? {
       true    => ['systemd'],
       default => [],
     })
@@ -362,7 +371,7 @@ class basic_settings::packages (
     # Include the APT package managed by the package configuration.
     $monitoring_required_packages = concat(
       $monitoring_packages,
-      ['apt'],
+      ['apt', 'coreutils', 'dash'],
     )
 
     # Register the check after its runtime packages.

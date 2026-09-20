@@ -31,6 +31,13 @@ class basic_settings::package_mozilla (
   String              $os_name,
   String              $os_parent,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -49,6 +56,14 @@ class basic_settings::package_mozilla (
 
   # Check if enabled
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Get variables
     case $os_parent {
       'ubuntu': {
@@ -73,23 +88,20 @@ class basic_settings::package_mozilla (
     # Escape generated repo content as literal newline sequences before the shell writes it.
     $source_shell = stdlib::shell_escape("# Managed by puppet\\n${source}")
 
-    # Share the repository tools across the platform-specific commands.
-    $repository_packages = ['apt', 'apt-transport-https', 'curl', 'gnupg']
-
     # Add mozilla repo
     case $os_parent {
       'ubuntu': {
         exec { 'package_mozilla_source':
           command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x738BEB9321D1AAEC13EA9391AEBDF4819BE21867' | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
           unless  => "/usr/bin/test -e ${file_shell}",
-          require => Package[$repository_packages],
+          require => Package[$repository_required_packages],
         }
       }
       default: {
         exec { 'package_mozilla_source':
           command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor | tee ${key_shell} >/dev/null; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
           unless  => "/usr/bin/test -e ${file_shell}",
-          require => Package[$repository_packages],
+          require => Package[$repository_required_packages],
         }
       }
     }
@@ -98,7 +110,7 @@ class basic_settings::package_mozilla (
     exec { 'package_mozilla_source':
       command => "/usr/bin/rm ${file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove sury key

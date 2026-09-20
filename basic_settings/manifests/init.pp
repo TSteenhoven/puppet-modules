@@ -716,11 +716,29 @@ class basic_settings (
     }
   }
 
-  # Basic system packages; This packages needed to be installed first
-  package { ['apt', 'apt-transport-https', 'bc', 'coreutils', 'curl', 'dpkg', 'findutils', 'grep', 'gnupg', 'lsb-release', 'kmod', 'sed', 'util-linux']: # lint:ignore:140chars
-    ensure          => installed,
-    install_options => ['--no-install-recommends', '--no-install-suggests'],
-  }
+  # Reuse packages already supplied by standalone features and keep APT policy consistent.
+  ensure_packages(
+    [
+      'apt',
+      'apt-transport-https',
+      'bc',
+      'coreutils',
+      'curl',
+      'dash',
+      'dpkg',
+      'findutils',
+      'grep',
+      'gnupg',
+      'lsb-release',
+      'kmod',
+      'sed',
+      'util-linux',
+    ],
+    {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    },
+  )
 
   # Basic system packages
   package { 'sysstat':
@@ -732,13 +750,14 @@ class basic_settings (
   exec { 'basic_settings_source_reload':
     command     => '/usr/bin/apt-get update',
     refreshonly => true,
+    require     => Package['apt'],
   }
 
   # Use the source-list format selected for this platform.
   if ($deb_version != '822') {
     # Check if we need backports
     $backports_file = "/etc/apt/sources.list.d/${os_name}-backports.list"
-    $backports_packages = ['apt', 'coreutils']
+    $backports_packages = ['apt', 'coreutils', 'dash']
 
     # Escape the backports path before using it in exec commands and guards.
     $backports_file_shell = stdlib::shell_escape($backports_file)

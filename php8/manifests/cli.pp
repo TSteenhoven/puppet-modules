@@ -51,6 +51,12 @@ class php8::cli (
 
       # Update the default PHP executable only when default-file management is enabled.
       if (!$php8::skip_default_files) {
+        # update-alternatives is provided by dpkg, independently of the selected PHP package.
+        ensure_packages('dpkg', {
+          'ensure'          => 'installed',
+          'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+        })
+
         # Escape the PHP binary path before passing it to update-alternatives.
         $php_cli_bin_shell = stdlib::shell_escape("/usr/bin/php8.${minor_version}")
 
@@ -58,19 +64,32 @@ class php8::cli (
         exec { 'php_set_default_version':
           command     => "/usr/bin/update-alternatives --set php ${php_cli_bin_shell}",
           refreshonly => true,
-          require     => Package["php8.${minor_version}"],
+          require     => Package['dpkg', "php8.${minor_version}"],
           subscribe   => Package["php8.${minor_version}"],
         }
       }
 
       # Check if we need to install composer
       if ($composer_enable) {
+        # Composer's verified installer uses Bash, curl and temporary-file tools.
+        $composer_packages = ['bash', 'ca-certificates', 'coreutils', 'curl', 'dash']
+        ensure_packages($composer_packages, {
+          'ensure'          => 'installed',
+          'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+        })
+        $composer_required_packages = concat($composer_packages, ["php8.${minor_version}-cli"])
+        $composer_version_require = $php8::skip_default_files ? {
+          true    => [],
+          default => [Exec['php_set_default_version']],
+        }
+        $composer_require = concat([Package[$composer_required_packages]], $composer_version_require)
+
         # Download, verify, and install Composer in a root-only temp directory that is always removed.
         exec { "php8_${minor_version}_composer_install":
           environment => 'COMPOSER_HOME=/usr/local/bin',
           command     => "/usr/bin/bash -c 'set -e; umask 077; tmpdir=\$(/usr/bin/mktemp -d /root/php8-composer.XXXXXX) || exit 1; trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; /usr/bin/curl -fsSL https://getcomposer.org/installer -o \"\$tmpdir/composer-setup.php\"; /usr/bin/curl -fsSL https://composer.github.io/installer.sig -o \"\$tmpdir/composer_hash\"; php -r \"if (hash_file(\\\"SHA384\\\", \\\"\$tmpdir/composer-setup.php\\\") !== trim(file_get_contents(\\\"\$tmpdir/composer_hash\\\"))) { exit(1); }\"; php \"\$tmpdir/composer-setup.php\" --quiet --install-dir=/usr/local/bin --filename=composer'", # lint:ignore:140chars
           unless      => '[ -e /usr/local/bin/composer ]',
-          require     => [Package['curl', "php8.${minor_version}-cli"], Exec['php_set_default_version']],
+          require     => $composer_require,
         }
       }
     } else {

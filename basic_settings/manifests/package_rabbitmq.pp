@@ -30,6 +30,13 @@ class basic_settings::package_rabbitmq (
   String              $os_name,
   String              $os_parent,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use separate deb822 source files for Erlang and RabbitMQ.
@@ -53,6 +60,14 @@ class basic_settings::package_rabbitmq (
 
   # Install the RabbitMQ and Erlang repositories or remove their managed sources when disabled.
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Get source
     if ($deb_version == '822') {
       # Render the Erlang and RabbitMQ repositories with their signing keys in deb822 format.
@@ -68,34 +83,32 @@ class basic_settings::package_rabbitmq (
     $source_erlang_shell = stdlib::shell_escape("# Managed by puppet\\n${source_erlang}")
     $source_server_shell = stdlib::shell_escape("# Managed by puppet\\n${source_server}")
 
-    # Both repositories use the same download and signing-key tools.
-    $repository_packages = ['apt', 'apt-transport-https', 'curl', 'gnupg']
-
     # Install Rabbitmq erlang repo
     exec { 'package_rabbitmq_erlang_source':
       command => "/usr/bin/printf %b ${source_erlang_shell} > ${file_erlang_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_erlang_shell} >/dev/null; chmod 644 ${key_erlang_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_erlang_shell}",
-      require => Package[$repository_packages],
+      require => Package[$repository_required_packages],
     }
 
     # Install Rabbitmq server repo
     exec { 'package_rabbitmq_server_source':
       command => "/usr/bin/printf %b ${source_server_shell} > ${file_server_shell}; /usr/bin/curl -fsSL https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA | gpg --dearmor | tee ${key_server_shell} >/dev/null; chmod 644 ${key_server_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_server_shell}",
-      require => Package[$repository_packages],
+      require => Package[$repository_required_packages],
     }
   } else {
     # Remove Rabbitmq erlang repo
     exec { 'package_rabbitmq_erlang_source':
       command => "/usr/bin/rm ${file_erlang_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_erlang_shell}",
+      require => Package[$source_packages],
     }
 
     # Remove Rabbitmq server repo
     exec { 'package_rabbitmq_server_source':
       command => "/usr/bin/rm ${file_server_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_server_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove rabbitmq key

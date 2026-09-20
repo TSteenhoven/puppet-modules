@@ -32,6 +32,14 @@ class rabbitmq (
   $systemd_enable = defined(Package['systemd'])
   $monitoring_enable = defined(Class['basic_settings::monitoring'])
 
+  # Broker administration and its guards share these interpreters and text tools.
+  $command_packages = ['bash', 'coreutils', 'dash', 'grep', 'sed']
+  ensure_packages($command_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+  $required_packages = concat($command_packages, ['erlang-base'])
+
   # Install erlang
   package { 'erlang-base':
     ensure          => installed,
@@ -42,7 +50,7 @@ class rabbitmq (
   package { 'rabbitmq-server':
     ensure          => installed,
     install_options => ['--no-install-recommends', '--no-install-suggests'],
-    require         => Package['erlang-base'],
+    require         => Package[$required_packages],
   }
 
   # Disable service

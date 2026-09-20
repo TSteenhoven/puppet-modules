@@ -91,7 +91,7 @@ The first-party Puppet modules target Debian and Ubuntu servers. The complete mo
 - Never infer runtime availability solely from the presence or absence of a declaration.
 - Verify that the documented contract supplies required prerequisites before use or defines behavior for their absence: skip an optional operation or fail clearly for a required operation.
 - Validate dependent behavior with prerequisites present and absent, including relevant declaration or evaluation order.
-- Follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden) for Puppet-specific details.
+- Follow the [dependency review criteria](.tools/lint/README.md#resources-en-afhankelijkheden) and [external-command package contract](.tools/lint/README.md#packageafhankelijkheden-bij-externe-commandos) for Puppet-specific details, including exec resources and managed scripts.
 
 ### Shell Scripts
 
@@ -112,7 +112,7 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 - Review the purpose of each external tool used in changed shell code. Prefer the original command's native output, filters and exit status; do not convert output to JSON or another format solely to extract a simple value or determine success.
 - Use shell comparisons, `case` patterns, parameter expansion and builtins for simple validation and string operations when they reliably preserve the required behavior. Do not install additional packages solely for operations the declared shell or original command already handles simply.
 - Use a dedicated parser such as `jq` when native structured output requires reliable processing of multiple fields or complex structures. Do not replace a necessary structured parser with fragile shell parsing merely to remove a dependency.
-- Manage runtime packages with the feature or shared executable that needs them. Before removing obsolete command discovery, package declarations or dependency references, review all consumers and retain dependencies still required elsewhere.
+- Follow the [external-command package contract](.tools/lint/README.md#packageafhankelijkheden-bij-externe-commandos) for runtime dependencies. Before removing obsolete command discovery, package declarations or dependency references, review all consumers and retain dependencies still required elsewhere.
 
 #### Formatting And Naming
 
@@ -201,7 +201,7 @@ These conventions govern all first-party POSIX shell and Bash code, regardless o
 
 ### Monitoring Validation
 
-- Verify each check's explicit package guarantees through the [package dependency review and its documented exception](.tools/lint/README.md#packages-voor-externe-commandos). Never assume that `basic_settings`, another class, or the base system installs the required packages.
+- Verify each check's package guarantees through the general [external-command package contract and its documented exceptions](.tools/lint/README.md#packageafhankelijkheden-bij-externe-commandos).
 - Apply [shell validation](#shell-validation) to changed check implementations.
 - For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
 - For each changed check, validate that retiring one target preserves the shared executable and the other registrations.
@@ -470,7 +470,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Keep required prerequisites, essential warnings, and security- or compatibility-critical conditions beside the action they affect, including when relocating elaboration.
 - Link to relocated elaboration from the warning and required action that remain at the point of use.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
-- Use `## Inhoudsopgave` for the [complete table of contents](#markdown) in Dutch READMEs; never label it `Legenda`.
+- Use `## Inhoudsopgave` for the [table of contents](#markdown) in Dutch READMEs; never label it `Legenda`.
 - Maintain a bottom-level list of expanded examples.
 
 ### README Module Sections
@@ -535,6 +535,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Markdown
 
 - Maintain a linked table of contents near the top of every repository-owned `.md` file except `AGENTS.md`, the sole exception to this requirement. Include every section and subsection heading in document order, at every depth, with nesting that follows the heading hierarchy; exclude the document title and headings inside code examples. Update the contents and verify its links whenever headings change.
+- Limit only the repository root `README.md` table of contents to headings at levels two and three.
 - Keep the sentences, paragraphs, lists, tables, and examples under each heading on that heading's subject and in a logical reading order. Introduce concepts before relying on them and connect the explanations before and after examples or tables. Rewrite surrounding text when additions or moves break that continuity.
 - Keep each prose paragraph or list item on one physical line without hard wrapping, except where Markdown syntax, a table, or a code block requires line breaks.
 - Separate distinct topics with normal paragraph breaks.

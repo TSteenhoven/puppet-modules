@@ -30,6 +30,13 @@ class basic_settings::package_proxmox (
   String              $os_name,
   String              $os_parent,
 ) {
+  # Provide the shell and source-list tools on both installation and removal paths.
+  $source_packages = ['apt', 'coreutils', 'dash']
+  ensure_packages($source_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Check if we need newer format for APT
   if ($deb_version == '822') {
     # Use the .sources filename for a deb822 repository definition.
@@ -48,6 +55,14 @@ class basic_settings::package_proxmox (
 
   # Install the Proxmox repository when enabled and remove its managed source otherwise.
   if ($enable) {
+    # Install the download and signing tools only while this repository is enabled.
+    $repository_packages = ['apt-transport-https', 'ca-certificates', 'curl']
+    ensure_packages($repository_packages, {
+      'ensure'          => 'installed',
+      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+    })
+    $repository_required_packages = concat($source_packages, $repository_packages)
+
     # Get source
     if ($deb_version == '822') {
       # Render the selected repository and signing key in deb822 format.
@@ -65,14 +80,14 @@ class basic_settings::package_proxmox (
     exec { 'package_proxmox_source':
       command => "/usr/bin/printf %b ${source_shell} > ${file_shell}; /usr/bin/curl -fsSLo ${key_shell} ${key_url_shell}; chmod 644 ${key_shell}; /usr/bin/apt-get update", # lint:ignore:140chars
       unless  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt', 'apt-transport-https', 'curl', 'gnupg'],
+      require => Package[$repository_required_packages],
     }
   } else {
     # Remove proxmox repo
     exec { 'package_proxmox_source':
       command => "/usr/bin/rm ${file_shell} && /usr/bin/apt-get update",
       onlyif  => "/usr/bin/test -e ${file_shell}",
-      require => Package['apt'],
+      require => Package[$source_packages],
     }
 
     # Remove proxmox key

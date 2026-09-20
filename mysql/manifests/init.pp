@@ -113,6 +113,13 @@ class mysql (
     $version = $package_version
   }
 
+  # The shared grant helper and SQL guards use these tools without requiring monitoring.
+  $grant_packages = ['bash', 'coreutils', 'dash', 'grep', 'mawk', 'sed']
+  ensure_packages($grant_packages, {
+    'ensure'          => 'installed',
+    'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+  })
+
   # Do only the following steps when package name is mysql
   if ($package_name == 'mysql') {
     # Default file is different than normal install
@@ -137,10 +144,19 @@ class mysql (
 
     # Enable hugepages
     if ($basic_settings_enable and $basic_settings::kernel_hugepages > 0) {
+      # getent and usermod are required independently of the group and server resources.
+      $hugetlb_packages = ['libc-bin', 'passwd']
+      ensure_packages($hugetlb_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+      $hugetlb_required_packages = concat($hugetlb_packages, ['coreutils', 'dash', 'grep', 'mysql-server'])
+
+      # Add the database user only after its group and command prerequisites are available.
       exec { 'mysql_hugetlb':
         unless  => '/bin/getent group hugetlb | /bin/cut -d: -f4 | /bin/grep -q mysql',
         command => '/usr/sbin/usermod -a -G hugetlb mysql',
-        require => [Group['hugetlb'], Package['mysql-server']],
+        require => [Group['hugetlb'], Package[$hugetlb_required_packages]],
       }
     }
 
@@ -228,7 +244,7 @@ class mysql (
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
       # Install the check tools, including systemd only for the selected inspection path.
-      $monitoring_packages = concat(['dash', 'mawk', 'mysql-client'], $systemd_enable ? {
+      $monitoring_packages = concat(['mysql-client'], $systemd_enable ? {
         true    => ['systemd'],
         default => [],
       })
@@ -236,11 +252,12 @@ class mysql (
         'ensure'          => 'installed',
         'install_options' => ['--no-install-recommends', '--no-install-suggests'],
       })
+      $monitoring_required_packages = concat($monitoring_packages, ['dash', 'mawk'])
 
       # Register the check after its runtime packages.
       basic_settings::monitoring_custom { 'mysql':
         content => template('mysql/check_mysql'),
-        require => Package[$monitoring_packages],
+        require => Package[$monitoring_required_packages],
       }
     }
 
@@ -311,7 +328,7 @@ class mysql (
     owner   => 'root',
     group   => 'root',
     mode    => '0700',
-    require => File['/usr/local/lib/puppet'],
+    require => [File['/usr/local/lib/puppet'], Package[$grant_packages]],
   }
 
   # Set config file

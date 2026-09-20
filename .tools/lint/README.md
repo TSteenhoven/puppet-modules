@@ -24,7 +24,7 @@ Gebruik je de tooling voor het eerst, begin dan bij de snelstart voor [deze repo
 | --- | --- |
 | Een normaal Puppet-manifest aanpassen | [Basisopmaak](#basisopmaak), [parameters en resources](#parameters-en-resources) en [toelichtingen bij code](#toelichtingen-bij-code). |
 | Puppet Strings aanpassen | [Puppet Strings](#puppet-strings), [lange regels](#lange-regels) en [waar de uitleg hoort](#waar-de-uitleg-hoort). |
-| Resources of dependencies aanpassen | [Resources en afhankelijkheden](#resources-en-afhankelijkheden), [resource references](#resource-references) en [volgorde en meldingen](#volgorde-en-meldingen). |
+| Resources of dependencies aanpassen | [Packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos), [Resources en afhankelijkheden](#resources-en-afhankelijkheden), [resource references](#resource-references) en [volgorde en meldingen](#volgorde-en-meldingen). |
 | Bestanden, privileges of shellcommando's aanpassen | [Bestanden en beveiliging](#bestanden-en-beveiliging) en de [algemene beveiligingsreview](../../AGENTS.md#security-and-privacy). |
 | Een shellscript, Bash-script, shelltemplate of bijbehorende runtime-dependency aanpassen | [Shellscripts](#shellscripts) en de [algemene shellconventies](../../AGENTS.md#shell-scripts), inclusief [native tools en dependencies](../../AGENTS.md#native-tools-and-dependencies). |
 | Een monitoringcheck of registratie aanpassen | [Monitoringchecks](#monitoringchecks), [targets en monitoring](#targets-en-monitoring) en de [monitoringcontracten](../../AGENTS.md#monitoring-checks). |
@@ -137,6 +137,8 @@ Volg [Linter ontwikkelen en testen](#linter-ontwikkelen-en-testen) voor wijzigin
     - [Bestaande interfaces voor integratiewaarden gebruiken](#bestaande-interfaces-voor-integratiewaarden-gebruiken)
     - [Dependencies pas na een geslaagde controle koppelen](#dependencies-pas-na-een-geslaagde-controle-koppelen)
     - [Prerequisites van ordering onderscheiden](#prerequisites-van-ordering-onderscheiden)
+    - [Packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos)
+      - [Optionele packages activeren met realize](#optionele-packages-activeren-met-realize)
     - [Gedeelde voorwaarden om resources groeperen](#gedeelde-voorwaarden-om-resources-groeperen)
     - [Aanroepen en publieke interfaces](#aanroepen-en-publieke-interfaces)
     - [Alle verplichte argumenten doorgeven](#alle-verplichte-argumenten-doorgeven)
@@ -234,7 +236,6 @@ Volg [Linter ontwikkelen en testen](#linter-ontwikkelen-en-testen) voor wijzigin
     - [Puppet-waarden rechtstreeks in shelltemplates invoegen](#puppet-waarden-rechtstreeks-in-shelltemplates-invoegen)
     - [Daemonconfiguratie als invoerbron behouden](#daemonconfiguratie-als-invoerbron-behouden)
   - [Monitoringchecks](#monitoringchecks)
-    - [Packages voor externe commando's](#packages-voor-externe-commandos)
     - [Invoer en configuratie](#invoer-en-configuratie)
     - [Optionele monitoringdefaults in het executable houden](#optionele-monitoringdefaults-in-het-executable-houden)
     - [Effectieve monitoringinvoer volgens het configuratiecontract valideren](#effectieve-monitoringinvoer-volgens-het-configuratiecontract-valideren)
@@ -471,7 +472,7 @@ De [gemspec](lint-project.gemspec) en [rootlockfile](../../Gemfile.lock) zijn ve
 
 | Laag | Gecontroleerde gegevens | Betekenis en beperking |
 | --- | --- | --- |
-| Gedeclareerde runtime | `lint-project 0.1.9`, Ruby `>= 3.2`; builder `~> 3.3`, OpenVox `~> 8.29`, Puppet-lint `~> 5.1`, beide lintplugins `~> 3.0`, RuboCop `~> 1.91`, syslog `~> 0.4` | Dit zijn packagegrenzen, geen testmatrix. |
+| Gedeclareerde runtime | `lint-project 0.1.11`, Ruby `>= 3.2`; builder `~> 3.3`, OpenVox `~> 8.29`, Puppet-lint `~> 5.1`, beide lintplugins `~> 3.0`, RuboCop `~> 1.91`, syslog `~> 0.4` | Dit zijn packagegrenzen, geen testmatrix. |
 | Transitieve installatierestricties | De opgeloste `parallel 2.2.0` verlangt Ruby `>= 3.3`; beide lintplugins en onder meer `fast_gettext 4.1.1` verlangen Ruby `>= 3.2` | De huidige volledige oplossing kan dus niet op iedere Ruby vanaf 3.2 installeren. |
 | Opgeloste runtime | Puppet-lint `5.1.1`, param-types `3.0.0`, trailing-comma `3.0.1`, OpenVox `8.29.0`, RuboCop `1.91.0`, builder `3.3.0`, syslog `0.4.0` | `bundle install` volgt de rootlockfile; consumers onderhouden hun eigen oplossing. |
 | Opgeloste ontwikkelgems | metadata-json-lint `5.1.0`, Minitest `6.0.6`, minitest-reporters `1.8.0`, Rake `13.4.2`, rexml `3.4.4`; lockfile vermeldt Bundler `4.0.20` | Niet allemaal runtime-dependencies van de gedeelde gem. |
@@ -743,6 +744,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | `project_if_sections` | Ja | Ja | [Voorwaarden toelichten](#voorwaarden-toelichten) | Geen | [Voorwaarden toelichten](#voorwaarden-toelichten) |
 | `project_variable_sections` | Ja | Ja | [Een variabelegroep bij blokbegin toelichten](#een-variabelegroep-bij-blokbegin-toelichten), [Een onafhankelijke groep na afhankelijke waarden beginnen](#een-onafhankelijke-groep-na-afhankelijke-waarden-beginnen) | Geen | [Een variabelegroep bij blokbegin toelichten](#een-variabelegroep-bij-blokbegin-toelichten), [Een onafhankelijke groep na afhankelijke waarden beginnen](#een-onafhankelijke-groep-na-afhankelijke-waarden-beginnen) |
 | `project_class_check_reuse` | Ja | Ja | [Classcontroles hergebruiken](#classcontroles-hergebruiken) | Geen | [Classcontroles hergebruiken](#classcontroles-hergebruiken) |
+| `project_exec_packages` | Ja | Ja | [Packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos) | Geen | [Packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos) |
 | `project_packages` | Ja | Ja | [APT-opties expliciet afsluiten](#apt-opties-expliciet-afsluiten) | Geen | [APT-opties expliciet afsluiten](#apt-opties-expliciet-afsluiten) |
 | `project_guarded_packages` | Ja | Ja | [Gelijk ingestelde packageguards samenvoegen](#gelijk-ingestelde-packageguards-samenvoegen) | Per meldingsvariant: [Gelijk ingestelde packageguards samenvoegen](#gelijk-ingestelde-packageguards-samenvoegen) | [Gelijk ingestelde packageguards samenvoegen](#gelijk-ingestelde-packageguards-samenvoegen) |
 | `project_resource_list_reuse` | Ja | Ja | [Resourcelijsten hergebruiken](#resourcelijsten-hergebruiken) | Per meldingsvariant: [Resourcelijsten hergebruiken](#resourcelijsten-hergebruiken) | [Resourcelijsten hergebruiken](#resourcelijsten-hergebruiken) |
@@ -759,7 +761,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | `project_suppressions` | Ja | Ja | [Alleen toegestane suppressions gebruiken](#alleen-toegestane-suppressions-gebruiken) | Geen | [Alleen toegestane suppressions gebruiken](#alleen-toegestane-suppressions-gebruiken) |
 <!-- END PROJECT CHECK REGISTRY -->
 
-De registratie is vastgesteld via `require 'project_lint'`; activatie is afzonderlijk gecontroleerd met beide configuratieprofielen. `--list-checks` bewijst alleen beschikbaarheid. De inventaris gebruikt `lint-project 0.1.9`, `puppet-lint 5.1.1`, `puppet-lint-param-types 3.0.0` en `puppet-lint-trailing_comma-check 3.0.1` uit de rootlockfile. Nieuwe bundleversies vragen een nieuwe inventaris.
+De registratie is vastgesteld via `require 'project_lint'`; activatie is afzonderlijk gecontroleerd met beide configuratieprofielen. `--list-checks` bewijst alleen beschikbaarheid. De inventaris gebruikt `lint-project 0.1.11`, `puppet-lint 5.1.1`, `puppet-lint-param-types 3.0.0` en `puppet-lint-trailing_comma-check 3.0.1` uit de rootlockfile. Nieuwe bundleversies vragen een nieuwe inventaris.
 
 ### Native checks in deze bundle
 
@@ -2811,6 +2813,173 @@ Controleer aanwezigheid, afwezigheid, declaratievolgorde en evaluatievolgorde vo
 
 Handmatige beoordeling van beide scenario’s: Controleer aanwezigheid, afwezigheid, declaratievolgorde en evaluatievolgorde volgens de gekoppelde prerequisitereview. De onjuiste variant wordt afgekeurd; de juiste variant voldoet onder de beschreven voorwaarden. Module- en hostgedrag worden hiermee niet als getest gepresenteerd.
 
+#### Packageafhankelijkheden bij externe commando’s
+
+<a id="packages-voor-externe-commandos"></a>
+
+**Norm**
+
+Borg de packages die externe commando’s leveren bij de functionaliteit die ze uitvoert. Dit geldt voor Puppet-`exec`-resources, monitoringchecks en andere door Puppet beheerde scripts. Vertrouw niet op de hoofdclass `basic_settings`, een optionele class of de basisinstallatie. Een monitoringcheck moet bruikbaar zijn met alleen zijn eigen module en `basic_settings::monitoring`.
+
+Inventariseer bij een `exec` het effectieve `command`, of de resourcetitel wanneer `command` ontbreekt, en alle commando’s in `onlyif`, `unless` en `refresh`. Neem string- en arrayvormen mee. Bekijk bij iedere toepassing de interpreter, aangeroepen scripts, pipelines, command substitutions, vaste executablepaden en conditionele uitvoerpaden. Onderscheid externe executables van shell-builtins en lokale functies.
+
+Controleer per ondersteunde distributie en pakketbron welk package het executable levert; leid de packagenaam niet uit de commandonaam af. `cmp` komt bijvoorbeeld uit `diffutils` en `awk` heeft meerdere providers. NodeSource levert npm via `nodejs`, terwijl Debian en Ubuntu daarvoor een afzonderlijk `npm`-package leveren.
+
+Borg ontbrekende algemene modulepackages met `ensure_packages` in de hoofdclass en groepeer gelijke instellingen volgens [pakketten en mappen](#pakketten-en-mappen). Een define die zijn parentclass vereist, controleert die afhankelijkheid expliciet en hergebruikt haar packages zonder eigen `ensure_packages` of package-declaraties. Een zelfstandige define mag zijn specifieke packages zelf beheren; gedeelde scripts en hun packages hebben één eigenaar.
+
+Verplaats verspreid packagebeheer naar die eigenaar met behoud van optionele installatievoorwaarden en uitvoeringsrelaties. Voor een package dat alleen actieve onderdelen nodig hebben, kan de hoofdclass een [virtuele package met `realize()`](#optionele-packages-activeren-met-realize) aanbieden. Declareer geen extra package als installatie al in dezelfde module of een verplichte parentclass op ieder relevant uitvoerpad is geborgd. Ook een verplichte package-afhankelijkheid kan volstaan wanneer de dependencyketen voor de ondersteunde pakketbronnen is gecontroleerd; een aanbeveling volstaat niet.
+
+Controleer installatie en uitvoeringsvolgorde afzonderlijk. Een `Package[...]`-verwijzing installeert niets; de tekstuele plaats van een package vóór een `exec` bewijst geen dependency. Borg de volgorde met `require`, een andere passende Puppet-relatie of een aantoonbaar geldige dependencyketen. Bij gedeelde scripts wachten ook de registraties of uitvoerders via het executable op zijn packages. Gebruik bij een bewust afzonderlijk beheerde applicatie-installatie de bestaande installatieresource en behoud haar voorwaarden.
+
+Een executable dat uitsluitend op aanwezigheid wordt getest, is geen verplichte dependency. Behoud bewust optionele tools met werkende terugvalroutes: een package toevoegen mag de betekenis van een guard of installatieprocedure niet veranderen. De enige uitzondering voor een vereist executable is de reeds benodigde Puppet/OpenVox-agent zelf. De agentcheck hergebruikt `puppet`; voeg daarvoor geen agentpackage, packagekeuzeparameter of package-`require` toe. De overige hulpmiddelen blijven expliciet geborgd.
+
+**Herkomst**
+
+Projectregel. De beperkte providertabel volgt de Debian/Ubuntu-packages, waaronder de bestandslijsten voor curl bij [Debian](https://packages.debian.org/trixie/amd64/curl/filelist) en [Ubuntu](https://packages.ubuntu.com/noble/amd64/curl/filelist), en de [Debian-documentatie van cmp uit diffutils](https://manpages.debian.org/bookworm/diffutils/cmp.1.en.html).
+
+**Toepassingsgebied**
+
+Externe commando’s in alle `exec`-velden en door Puppet beheerde scripts, inclusief monitoring, met hun installatiegaranties en uitvoeringsrelaties.
+
+**Automatische controle**
+
+`project_exec_packages` controleert een begrensd deel van `exec`-resources. De check gebruikt de expliciete Debian/Ubuntu-koppelingen `bash → bash`, `cmp → diffutils`, `curl → curl`, `jq → jq`, `rsync → rsync`, `tar → tar`, `unzip → unzip` en `wget → wget`. Hij herkent deze namen als eerste executable, ongewijzigd of onder `/bin/` en `/usr/bin/`, in `command`, de impliciete commandotitel, `onlyif`, `unless` en `refresh`. Argumentarrays en arrays met afzonderlijke guards worden volgens hun eigen betekenis behandeld. Een vaste commandoprefix vóór geïnterpoleerde argumenten en een eenduidige voorafgaande lokale toekenning tellen mee.
+
+De analyse hergebruikt lokale resource-defaults en vaste package-/referencelijsten, ook via `concat`. Hij beoordeelt `package`-declaraties en `ensure_packages` afzonderlijk van relaties via `require`, `subscribe`, `before`, `notify` en relatiepijlen. Eenvoudige transitieve relaties via bestanden tellen mee. Packages in een bereikbare class tellen mee via `include`, `contain`, `require`, classdeclaraties of een positieve omvattende `defined(Class[...])`-guard met één classreference. Classbronnen komen uit dezelfde invoer of het [ingestelde modulepad](#aanroepen-van-modules-controleren). Alleen een classreference bewijst geen installatie; `include` bewijst geen ordering.
+
+`PackageGraph` beoordeelt relevante routes door `case`, `if`/`elsif`/`else` en `unless` afzonderlijk, inclusief geneste keuzes en keuzes binnen verplichte parentclasses. Een package is gegarandeerd wanneer iedere route waarop de onderzochte `exec` kan bestaan zijn installatie borgt. Verschillende geldige dependencyketens per route mogen dezelfde ordering bewijzen; installatie en relaties uit verschillende routes worden nooit samengevoegd tot één bewijs.
+
+Een ontbrekende `else` of `default` telt als een lege route. Een rechtstreeks, aantoonbaar uitgevoerd `fail()` beëindigt een route zonder catalogus; die route hoeft geen runtimepackages te leveren. Lokale variabelen en lijsten mogen per route verschillen als een eenduidige eerdere toekenning op die route hun waarde vastlegt; parameterdefaults zijn geen vaste waarden.
+
+`project_packages`, `project_guarded_packages` en de resourcechecks blijven verantwoordelijk voor APT-opties, groepering en resourceopmaak. `project_shell` blijft verantwoordelijk voor escaping. De keuze van de package-eigenaar en de inhoud van gewone scripts en monitoringexecutables vragen handmatige review; daarvoor geldt dezelfde bovenstaande norm.
+
+**Detectiegrenzen**
+
+De check is geen shellparser, cataloguscompiler of package-resolver. Hij volgt geen pipelines, substitutions, shellfuncties, `sh -c`-bodies, templates of aangeroepen scripts. Onbekende executable-namen en volledig dynamische commando’s blijven handmatige review en krijgen niet ieder een algemene melding. Strings met een terugvaloperator `||`, backticks of nieuwe regels vallen buiten de entrypointdetectie. Dit is een analysegrens, geen vrijstelling van de norm.
+
+Dynamische packages, providers, resource-overrides, collectors, classinheritance en onopgeloste relaties kunnen geen bewezen installatie of ordering leveren. Niet uitgewerkte defined types en resourcecreatie via `create_resources` of `ensure_resources` leveren evenmin zelfstandig bewijs. Een concrete herkende commandodependency krijgt dan gericht review wanneer zijn garantie niet kan worden vastgesteld. De check berekent geen package-dependencies uit distributiemetadata en geen willekeurige voorwaarden of caller-metaparameters. Controleer die ketens in de catalogus. Een geslaagde lintscan bewijst nooit dat alle runtimepackages aanwezig zullen zijn, ook niet bij monitoring.
+
+Een virtuele `@package` levert evenmin automatisch installatiebewijs: `PackageGraph` volgt de activatie door `realize()` niet. Ook met een passende `require` volgt voor een herkend commando `[review]` wanneer alleen die virtuele declaratie de installatie moet borgen. Dit kan geldige Puppet-code zijn; voeg geen dubbele declaratie of onvoorwaardelijke installatie toe om die analysegrens te omzeilen. Onderbouw de garantie met catalogusreview.
+
+De routeanalyse gebruikt de codestructuur en voert geen Puppet-functies of voorwaarden uit. Zij leidt geen verband af tussen afzonderlijke voorwaarden en bewijst geen volledige `case`-dekking uit een parametertype of regexlabels zonder `default`. Per package en `exec` worden maximaal 128 analysestaten onderzocht; als relevante routes overblijven, volgt `[review]`, met behoud van een al bewezen installatiegarantie. Niet-relevante keuzes en al volledig bewezen garanties vragen geen verdere vertakking.
+
+**Meldingen en severity**
+
+Alle varianten zijn `warning`; `[review]` is een tekstlabel. De vaste prefix is `Exec {veld} uses {commando} ({package}):` met uitsluitend het veld en namen uit de providertabel:
+
+- `no package installation guarantee in the owning code; a Package reference does not install it`: De benodigde package is bekend en installatie ontbreekt in de geanalyseerde eigenaar.
+- `package installation is declared but no dependency path orders it before execution`: Installatie is aantoonbaar, maar een uitvoeringsrelatie ontbreekt in de geanalyseerde code.
+- `[review]` vóór de prefix met `resolve conditional, external or dynamic package installation evidence`: Voor de concrete dependency is de installatiegarantie niet vast te stellen.
+- `[review]` vóór de prefix met `package installation is declared; resolve the indirect execution order`: Installatie is aantoonbaar, maar de indirecte ordering is niet vast te stellen.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: packages raden, installatiegedrag wijzigen of relaties zonder voldoende bewijs toevoegen is geen veilige automatische correctie.
+
+**Toegestane uitzonderingen**
+
+De reeds benodigde Puppet/OpenVox-agent en bewust optionele tools met geteste terugvalroutes zoals hierboven beschreven. Een bestaande module- of parentclassinstallatie of gecontroleerde verplichte packageketen is een geldige garantie, geen reden voor een tweede declaratie.
+
+**Suppressions**
+
+Suppressie van `project_exec_packages` is niet toegestaan. Een lintmarkering kan ook de handmatige review niet vervangen.
+
+**Onjuist voorbeeld**
+
+Fragment; `project_exec_packages` meldt ontbrekende installatie, ondanks de reference.
+
+<!-- lint-example: project_exec_packages warning -->
+```puppet
+exec { 'compare':
+  command => '/usr/bin/cmp /tmp/first /tmp/second',
+  require => Package['diffutils'],
+}
+```
+
+**Correct voorbeeld**
+
+Fragment; `project_exec_packages` accepteert de installatie en de indirecte uitvoeringsrelatie.
+
+<!-- lint-example: project_exec_packages clean -->
+```puppet
+ensure_packages('diffutils', {
+  'ensure'          => 'installed',
+  'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+})
+file { '/tmp/first':
+  require => Package['diffutils'],
+}
+exec { 'compare':
+  command => '/usr/bin/cmp /tmp/first /tmp/second',
+  require => File['/tmp/first'],
+}
+```
+
+**Grensgevallen**
+
+Een losse `test -x /usr/bin/curl` of `command -v curl` maakt curl niet verplicht. De check herkent zo’n enkelvoudige aanwezigheidscontrole in `onlyif` ook als optionele uitvoering van het corresponderende hoofd- of refreshcommando. Een aanwezigheidscontrole in `unless` kan juist een installatieprocedure beschermen; die blijft behouden. Een package in een andere branch bewijst geen installatie voor deze branch. Een package dat elders in dezelfde module staat telt pas mee wanneer de installatie op het relevante uitvoerpad is geborgd.
+
+Installatie in iedere keuzetak kan een garantie leveren, ook als een tak aanvullende packages installeert. Een tak met `ensure => absent`, een onopgeloste waarde of ontbrekende ordering verhindert goedkeuring voor alle routes. Als de `exec` zelf slechts in één tak staat, tellen alleen de routes mee waarop die `exec` bestaat; een package uitsluitend in de tegenoverliggende tak geeft dan een concrete melding voor ontbrekende installatie.
+
+**Handmatige review**
+
+Leg per gewijzigde functionaliteit commando’s, providers, installatiegaranties en uitvoeringsrelaties vast. Neem alle uitvoerpaden en aanroepende resources mee, inclusief interpreter, scripts, pipelines, substitutions en optionele terugvalroutes. Beoordeel dezelfde punten bij monitoring en gewone scripts, ook wanneer de linter niets meldt.
+
+Beoordeel packagebeheer voor de hele module: controleer welke defines hun parentclass vereisen, welke zelfstandig bruikbaar zijn en welke packages meerdere onderdelen delen. Controleer na verplaatsing dat ieder gebruik op installatie wacht en dat optionele packages alleen op de bedoelde uitvoerpaden worden geactiveerd.
+
+Valideer relevante catalogi zonder de hoofdclass `basic_settings` en met vereiste packages vooraf wel en niet gedeclareerd. Controleer conditionele providers met de relevante declaratie- en evaluatievolgorde. Valideer bij monitoring ook uitgeschakelde monitoring en twee registraties waarvan één vervalt; het gedeelde executable en de andere registratie moeten behouden blijven. Catalogus- en functionele validatie blijven buiten de repositorytooltests.
+
+**Verificatie**
+
+De voorbeeldparen worden door [guide_examples_test.rb](test/guide_examples_test.rb) gecontroleerd. [exec_packages_test.rb](test/exec_packages_test.rb), [package_graph_test.rb](test/package_graph_test.rb) en [package_graph_boundaries_test.rb](test/package_graph_boundaries_test.rb) controleren commandovelden, arrays, installatie, ordering, parenthergebruik en analysegrenzen via de native lintengine. [package_graph_branches_test.rb](test/package_graph_branches_test.rb) en [package_graph_branch_order_test.rb](test/package_graph_branch_order_test.rb) bewaken volledige en onvolledige keuzes, geneste routes, lokale waarden, afzonderlijke dependencyketens en de analysegrens. [external_exec_packages_test.rb](test/external_exec_packages_test.rb) controleert de gebouwde gem vanuit een onafhankelijk consumerproject, inclusief parentkeuzes via het modulepad en ongewijzigde bron bij `--fix`. Deze tests bewijzen het toolcontract; leg catalogus- en runtimebewijs afzonderlijk vast in de wijzigingsreview.
+
+##### Optionele packages activeren met realize
+
+Gebruik dit patroon wanneer de hoofdclass de package-instellingen bezit, maar installatie alleen nodig is zodra een afhankelijke define actief wordt. Algemene packages die ieder gebruik van de module nodig heeft, blijven gewoon in `ensure_packages()` in de hoofdclass.
+
+De hoofdclass beschrijft met `@package` de gewenste toestand zonder die al af te dwingen. De actieve define maakt diezelfde resource met `realize(Package[...])` beheerd. Meerdere defines mogen dezelfde resource activeren: er blijft één package-resource met één set instellingen. Zie de [Puppet-uitleg over virtuele resources](https://help.puppet.com/core/current/Content/PuppetCore/lang_virtual.htm).
+
+Fragment uit [netplanio](../../netplanio/manifests/init.pp); de hoofdclass beheert ook de algemene modulepackages:
+
+```puppet
+# Keep the optional package settings with their owner.
+if (!defined(Package['wpasupplicant'])) {
+  @package { 'wpasupplicant':
+    ensure          => installed,
+    install_options => ['--no-install-recommends', '--no-install-suggests'],
+  }
+}
+```
+
+Fragment uit [netplanio::wifi](../../netplanio/manifests/wifi.pp), binnen de bestaande parentclasscontrole en de tak voor `ensure => present`. Alleen de activatie en packagevolgorde zijn getoond; de overige bestandsattributen en de afhandeling van `absent` blijven in de define:
+
+```puppet
+# Activate the package before using its functionality.
+realize(Package['wpasupplicant'])
+
+file { "/etc/netplan/${name}.yaml":
+  require => Package['netplan.io', 'wpasupplicant'],
+}
+```
+
+`realize()` activeert de declaratie tijdens cataloguscompilatie; het voert de package-installatie niet direct uit en vervangt geen [uitvoeringsrelatie](https://help.puppet.com/core/current/Content/PuppetCore/lang_relationships.htm). Omgekeerd activeert alleen een `require` de virtuele package niet. In deze module wacht het configuratiebestand via `require` op de packages en meldt het wijzigingen aan de bestaande `netplan apply`-exec. Een `exec` die zelf het package nodig heeft, krijgt eveneens een passende dependency.
+
+De vereiste parentclass moet bij evaluatie van de classcontrole bekend zijn. `realize()` zelf kan vóór de virtuele declaratie staan, maar de declaratie moet wel tijdens compilatie beschikbaar komen; anders mislukt compilatie. Een guard met `defined(Package[...])` voorkomt een tweede declaratie, maar bewijst niet dat de bestaande resource de juiste `ensure`, provider of installatieopties heeft. `realize()` herstelt die attributen niet.
+
+Beoordeel bij dit patroon ten minste de volgende catalogi:
+
+- Alleen de hoofdclass of uitsluitend afwezige WiFi-interfaces: de virtuele package wordt door deze module niet geactiveerd.
+- Eén of meerdere aanwezige interfaces: één geïnstalleerde package-resource, met een dependency naar ieder afhankelijk configuratiebestand.
+- Eén interface verdwijnt terwijl een andere actief blijft: de gedeelde package blijft actief. Laat een define haar daarom niet op `absent` zetten.
+- Geen actieve afnemers meer: stoppen met realiseren verwijdert een eerder geïnstalleerd package niet automatisch.
+- De parentclass ontbreekt of een bestaande package heeft conflicterende attributen: verifieer de parentfout respectievelijk wijs de ongeldige installatiegarantie af.
+
+Dit zijn handmatige catalogusscenario’s, geen bewijs van automatische lintdekking. De [detectiegrenzen](#packageafhankelijkheden-bij-externe-commandos) gelden ook hier; `netplan` en de WiFi-tools staan bovendien niet in de beperkte commandolijst van `project_exec_packages`.
+
 #### Gedeelde voorwaarden om resources groeperen
 
 **Norm**
@@ -3412,7 +3581,7 @@ Een duidelijke uitbreiding mag eveneens worden gecorrigeerd: de installatie gebr
 
 Bestaande lijstvariabelen met opnieuw uitgeschreven literals, gedeeltelijke overlap, meerdere verschillende uitbreidingen, conditionele waarden, gebruikte functieresultaten, overerving en complexe expressies krijgen geen hergebruik-autofix. Dat geldt ook voor commentaar in de te vervangen lijsten, lintmarkeringen binnen het wijzigingsbereik, een installatielijst over meerdere regels of een nieuwe declaratie langer dan 140 tekens. Commentaar buiten de lijsten blijft behouden; ontbreekt een toelichting boven de installatie, dan voegt de fix een feitelijke toelichting bij de gedeelde variabele toe. Bij twijfel blijft de hele groep staan met `[review]`.
 
-Controleer bij handmatig hergebruik dat de variabele vóór alle afnemers beschikbaar is en dat voorwaarden, resourceattributen en relaties behouden blijven. Een melding bewijst geen beschikbaarheid van resources; volg daarvoor de [dependencyreview](#resources-en-afhankelijkheden) en bij monitoring de [packagegaranties](#packages-voor-externe-commandos).
+Controleer bij handmatig hergebruik dat de variabele vóór alle afnemers beschikbaar is en dat voorwaarden, resourceattributen en relaties behouden blijven. Een melding bewijst geen beschikbaarheid van resources; volg daarvoor de [dependencyreview](#resources-en-afhankelijkheden) de [packagegaranties voor externe commando’s](#packageafhankelijkheden-bij-externe-commandos).
 
 #### Resource-dependencies opbouwen
 
@@ -7652,7 +7821,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Verge
 
 **Norm**
 
-Checks volgen de algemene [shellconventies](../../AGENTS.md#shell-scripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. De aanvullende [monitoringcontracten](../../AGENTS.md#monitoring-checks) regelen gedeelde executables, instellingen per target en de levenscyclus van registraties. Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
+Borg de runtimepackages volgens [packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos). Checks volgen de algemene [shellconventies](../../AGENTS.md#shell-scripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. De aanvullende [monitoringcontracten](../../AGENTS.md#monitoring-checks) regelen gedeelde executables, instellingen per target en de levenscyclus van registraties. Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
 
 **Herkomst**
 
@@ -7705,80 +7874,6 @@ Een schakelaar voor lange uitvoer wordt alleen op verzoek toegevoegd; lange uitv
 **Handmatige review**
 
 Controleer twee verschillende registraties en verwijder één target; het executable en de andere registratie blijven bestaan. Beoordeel daarnaast shellsyntax, exitcodes, perfdata en begrensde lange uitvoer.
-
-**Verificatie**
-
-Handmatige beoordeling van beide bovenstaande reviewscenario’s tegen de norm: het onjuiste scenario wordt afgekeurd, het correcte scenario voldoet mits de beschreven prerequisites en uitzonderingsvoorwaarden zijn aangetoond. Bij een echte wijziging wordt de concrete functionele validatie buiten de repository uitgevoerd en in de review vastgelegd; de tooltests bewijzen geen modulegedrag.
-
-#### Packages voor externe commando's
-
-**Norm**
-
-Borg bij iedere monitoringcheck expliciet de packages die zijn externe commando's leveren. Ga er niet van uit dat `basic_settings`, een andere class of de basisinstallatie die packages meeneemt. De check moet bruikbaar zijn met alleen de benodigde module en `basic_settings::monitoring`.
-
-De enige uitzondering voor een benodigd executable is de Puppet/OpenVox-agent zelf: die is al geïnstalleerd om de catalogus toe te passen. De Puppet-agentcheck hergebruikt diens `puppet`-commando; voeg hiervoor geen agentpackage, packagekeuzeparameter of package-`require` toe. Alle overige hulppackages van deze check blijven expliciet geborgd.
-
-Inventariseer het hele script, inclusief de interpreter, pipelines, command substitutions, vaste executablepaden en conditionele uitvoerpaden. Maak onderscheid tussen shell-builtins, lokale functies en externe executables. Controleer de leverancier van ieder benodigd executable voor de ondersteunde Debian/Ubuntu-versies; `awk` heeft bijvoorbeeld meerdere providers en `cmp` komt uit `diffutils`. Een bewust optionele tool met een werkende terugvalroute hoeft geen verplichte package te worden. Leg die terugvalroute vast in de review.
-
-Beheer ontbrekende packages bij de eigenaar van het gedeelde executable met `ensure_packages`, en groepeer packages met gelijke instellingen volgens [pakketten en mappen](#pakketten-en-mappen). Gebruik alleen daadwerkelijk benodigde packages. Een bestaande installatie in dezelfde module of een verplichte parentclass mag de garantie leveren als die op ieder relevant uitvoerpad actief is. Ook een verplichte package-afhankelijkheid kan volstaan, mits je de dependencyketen voor de ondersteunde pakketbronnen controleert. Een aanbeveling, toevallige classdeclaratie of aanwezig executable op de testserver is geen garantie.
-
-Laat de monitoringresource via `require` wachten op de packages die de check gebruikt. Bij gedeelde bestanden moeten ook de registraties via het executable op die packages wachten. Gebruik voor een bewust afzonderlijk beheerde applicatie-installatie de bestaande installatieresource en behoud de bijbehorende voorwaarden. Controleer providers en installatievolgorde: bijvoorbeeld NodeSource levert npm in `nodejs`, terwijl Debian en Ubuntu een afzonderlijk `npm`-package leveren.
-
-Dit is een verplicht reviewpunt. Leg per check de commando's, providers, installatiegaranties en relaties vast. Valideer catalogi zonder de hoofdclass `basic_settings`, met benodigde packages vooraf wel en niet gedeclareerd, met monitoring uitgeschakeld en met meerdere registraties waarvan er één wordt verwijderd. Controleer conditionele providers ook met de relevante declaratievolgorde.
-
-De bestaande checks `project_packages`, `project_guarded_packages` en `project_resource_references` helpen met package-opties, groepering en references. Ze bewijzen niet dat een shellscript alle runtimepackages krijgt: `project_packages` inspecteert package-resources, geen effectieve `ensure_packages`-aanroepen; `project_shell` controleert escaping in Puppet-execs. Een betrouwbare volledigheidscontrole zou scripts, templates, providers en conditionele installatiepaden moeten koppelen. Die package-analyse blijft daarom handmatige review; de linter raadt geen Debian-packages bij willekeurige commandonamen.
-
-**Herkomst**
-
-Projectregel; deze handmatige verplichtingen maken deel uit van de bestaande codeafspraken.
-
-**Toepassingsgebied**
-
-Externe commando’s in gedeelde monitoringexecutables en de Puppet-packagegaranties, registraties en uitvoerrelaties die hen ondersteunen.
-
-**Automatische controle**
-
-Geen automatische controle voor dit inhoudelijke contract. De opmaakchecks en andere gedeeltelijke controles die in de norm worden genoemd vervangen deze review niet.
-
-**Detectiegrenzen**
-
-Puppet-lint voert geen catalogus of hostactie uit en inspecteert het beschreven runtimegedrag niet. Een groene lintscan bevestigt dit contract daarom niet.
-
-**Meldingen en severity**
-
-Geen lintmelding of lintseverity voor dit inhoudelijke contract; de reviewer keurt de beschreven overtreding af.
-
-**Autofix**
-
-Geen
-
-**Autofixvoorwaarden**
-
-Niet van toepassing: dit contract vereist inhoudelijke beoordeling en heeft geen automatische correctie.
-
-**Toegestane uitzonderingen**
-
-De reeds benodigde Puppet/OpenVox-agent is de enige executable-uitzondering. Een bewust optionele tool met geteste terugvalroute is geen verplichte dependency. Een verplichte parentclass of gecontroleerde package-dependencyketen mag de garantie leveren.
-
-**Suppressions**
-
-Suppressie niet toegestaan: lintmarkeringen kunnen dit handmatige reviewcriterium niet opheffen.
-
-**Onjuist voorbeeld**
-
-Handmatig reviewscenario: Een check gebruikt cmp maar declareert geen diffutils en vertrouwt op de toevallige aanwezigheid via basic_settings. Dit voldoet niet aan de norm.
-
-**Correct voorbeeld**
-
-Handmatig reviewscenario: Borg het package bij de eigenaar van het gedeelde executable en laat de registraties via dat executable op de package-installatie wachten.
-
-**Grensgevallen**
-
-De reeds benodigde Puppet/OpenVox-agent is de enige executable-uitzondering. Een bewust optionele tool met geteste terugvalroute is geen verplichte dependency. Een verplichte parentclass of gecontroleerde package-dependencyketen mag de garantie leveren. Controleer de afzonderlijke voorwaarden in de norm, ook wanneer de omliggende Puppet-code geen lintmelding geeft.
-
-**Handmatige review**
-
-Inventariseer interpreter, pipelines, substitutions, vaste paden en conditionele branches. Controleer Debian/Ubuntu-providers en verplichte dependencyketens; valideer zonder basic_settings, met packages vooraf aanwezig/afwezig, monitoring uit en twee registraties waarvan één vervalt.
 
 **Verificatie**
 
@@ -9459,7 +9554,7 @@ test -f "$LINT_PACKAGE"
 gem install "$LINT_PACKAGE"
 ```
 
-Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:`-dependency. Deze compatibiliteitsconstraint laat versies vanaf 0.1.3 binnen 0.1 toe; zij is geen exacte versiepin. De eigen lockfile legt de gekozen versie vast. De [volledige pakketroute](#gebouwd-gempakket-installeren) gebruikt de daadwerkelijk gecontroleerde pakketversie 0.1.9:
+Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:`-dependency. Deze compatibiliteitsconstraint laat versies vanaf 0.1.3 binnen 0.1 toe; zij is geen exacte versiepin. De eigen lockfile legt de gekozen versie vast. De [volledige pakketroute](#gebouwd-gempakket-installeren) gebruikt de daadwerkelijk gecontroleerde pakketversie 0.1.11:
 
 ```ruby
 source 'https://rubygems.org'
@@ -9513,7 +9608,7 @@ gem build lint-project.gemspec --output /tmp/lint-project.gem
 
 Het pakket bevat alleen `lib/`, `bin/`, `config/`, de README en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
 
-Versie `0.1.9` bevat de standaard actieve checks `project_resource_list_reuse` voor [hergebruik van resourcelijsten](#resourcelijsten-hergebruiken) en `project_resource_dependencies` voor [de opbouw van dependencies](#resource-dependencies-opbouwen). De fixes behandelen exacte herhaling, duidelijke uitbreidingen en aantoonbaar overbodige wrappers in dependency-concats. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen. De beschikbare `project_guarded_packages`-fix voor [package-declaraties](#pakketten-en-mappen) gebruikt `ensure_packages()` en laat conflicterende package-attributen als catalogusfout zichtbaar worden. Die gegenereerde Puppet-code vereist stdlib; de linter levert de module niet mee.
+Versie `0.1.11` levert de standaard actieve check `project_exec_packages` voor [packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos), zonder autofix. De gem bevat ook de standaard actieve checks `project_resource_list_reuse` voor [hergebruik van resourcelijsten](#resourcelijsten-hergebruiken) en `project_resource_dependencies` voor [de opbouw van dependencies](#resource-dependencies-opbouwen). De fixes behandelen exacte herhaling, duidelijke uitbreidingen en aantoonbaar overbodige wrappers in dependency-concats. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen. De beschikbare `project_guarded_packages`-fix voor [package-declaraties](#pakketten-en-mappen) gebruikt `ensure_packages()` en laat conflicterende package-attributen als catalogusfout zichtbaar worden. Die gegenereerde Puppet-code vereist stdlib; de linter levert de module niet mee.
 
 Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en de rapportcommando's als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 
@@ -9521,7 +9616,7 @@ Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODUL
 
 Deze route installeert alleen de gem uit een gekozen Git-revisie. Een eventuele Puppet-moduleverzameling blijft een afzonderlijke prerequisite. De consumerroot bevat `Gemfile`, `Gemfile.lock`, `.puppet-lint.rc`, `modules/` en `manifests/site.pp`; een lokale `global-modules/` is voor deze Ruby-installatie niet vereist. Bundler vindt de geneste gemspec met `glob: '.tools/lint/*.gemspec'`. Zonder die selectie is de monoreporoot geen gemdirectory.
 
-**Werkmap:** Nieuwe lege consumerroot. **Shell:** POSIX shell. **Vereisten:** Git, nieuwste stabiele Ruby/Bundler en toegang tot de goedgekeurde Git-/gembron. **Invoer:** Synthetisch manifest hieronder; de gekozen bestaande revisie bevat gemversie 0.1.9. **Wijzigt bestanden:** Eigen Gemfile, lockfile, configuratie, manifest en geïnstalleerde gems. **Verwacht resultaat:** Bundler kiest de geneste gemspec; de volledige profielscan eindigt met 0.
+**Werkmap:** Nieuwe lege consumerroot. **Shell:** POSIX shell. **Vereisten:** Git, nieuwste stabiele Ruby/Bundler en toegang tot de goedgekeurde Git-/gembron. **Invoer:** Synthetisch manifest hieronder; de gekozen bestaande revisie bevat gemversie 0.1.11. **Wijzigt bestanden:** Eigen Gemfile, lockfile, configuratie, manifest en geïnstalleerde gems. **Verwacht resultaat:** Bundler kiest de geneste gemspec; de volledige profielscan eindigt met 0.
 
 ```sh
 set -e
@@ -9580,7 +9675,7 @@ gem install "$LINT_PACKAGE"
 cat > Gemfile <<'RUBY'
 source 'https://rubygems.org'
 
-gem 'lint-project', '= 0.1.9', require: false
+gem 'lint-project', '= 0.1.11', require: false
 RUBY
 cat > .puppet-lint.rc <<'CONFIG'
 --ignore-paths=vendor/*,./vendor/*
@@ -9842,7 +9937,7 @@ Gebruikt je project een ander testframework, behoud dan de eigen testtaak en geb
 
 ## Documentatiecontract voor maintainers
 
-Gebruik dit contract wanneer je een regel, check of gebruiksprocedure in deze handleiding bijwerkt. De algemene afspraken voor een volledige inhoudsopgave en samenhang binnen ieder onderwerp staan in [`AGENTS.md`](../../AGENTS.md#markdown). Het onderstaande schema bepaalt welke informatie iedere Puppet-regel daarnaast moet bevatten.
+Gebruik dit contract wanneer je een regel, check of gebruiksprocedure in deze handleiding bijwerkt. De algemene afspraken voor de inhoudsopgave en samenhang binnen ieder onderwerp staan in [`AGENTS.md`](../../AGENTS.md#markdown). Het onderstaande schema bepaalt welke informatie iedere Puppet-regel daarnaast moet bevatten.
 
 Iedere onafhankelijke Puppet-regel krijgt een eigen `###`- of `####`-subsectie. Gebruik de onderstaande velden exact in deze volgorde; laat geen veld leeg. Een regel kan meerdere checks hebben en een check meerdere regels: verbind ze met interne links, zonder een tweede regelnummering.
 
