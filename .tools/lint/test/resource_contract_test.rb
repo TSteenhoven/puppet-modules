@@ -14,6 +14,14 @@ class ResourceContractTest < Minitest::Test
     assert_empty findings(valid, 'project_packages')
   end
 
+  def test_a_documented_package_exception_has_no_automatic_acceptance_interface
+    code = "# This synthetic package requires a recommended helper.\npackage { 'example': ensure => installed }\n"
+    problems, unchanged = lint_checks(code, [:project_packages], fix: true)
+    assert_equal([:warning], problems.map { |problem| problem[:kind] })
+    assert_includes problems.first[:message], 'tested central package exception'
+    assert_equal code, unchanged
+  end
+
   def test_resource_defaults_apply_to_files_and_packages
     assert_empty findings(
       "File { owner => 'root', group => 'root', mode => '0600' } file { '/tmp/example': ensure => file }",

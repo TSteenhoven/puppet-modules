@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require_relative 'test_helper'
+require_relative 'option_file_support'
 
 # Verify that project configuration isolates personal options while leaving standard checks enabled.
 class CliConfigurationTest < Minitest::Test
   include LintCliSupport
+  include OptionFileSupport
 
   EXPECTED_CHECKS = %w[140chars documentation parameter_order selector_inside_resource
                        single_quote_string_with_variables class_inherits_from_params_class project_arrays
@@ -14,52 +16,6 @@ class CliConfigurationTest < Minitest::Test
                        project_parameter_passthrough project_positive_flow
                        project_puppet_urls project_resource_sections project_shell project_suppressions
                        project_templates project_variable_sections].freeze
-
-  def personal_options
-    { directory: @directory, env: @personal_environment }
-  end
-
-  def prepare_personal_configuration
-    copy_project_config(@directory)
-    @original = "$values = [\n      \"synthetic\",\n]\n"
-    @fixed = "$values = [\n  'synthetic',\n]\n"
-    write_source(@original)
-    write_file('system.rc', "--no-double_quoted_strings-check\n")
-    write_file('personal.rc', "--fix\n--no-140chars-check\n")
-    hook = write_file('option_files.rb', File.read(File.join(__dir__, 'fixtures/option_files.rb')))
-    @personal_environment = { 'SYNTHETIC_LINT_CONFIG_ROOT' => @directory,
-                              'RUBYOPT' => [ENV.fetch('RUBYOPT', nil), "-r#{hook}"].compact.join(' ') }
-  end
-
-  def assert_personal_fix_effect
-    assert_cli_success('.', **personal_options, project_config: false)
-    assert_equal @original.sub('      ', '  '), source
-    assert_includes @output, 'fixed'
-    refute_includes @output, 'double_quoted_strings'
-  end
-
-  def assert_explicit_configuration_boundary
-    write_source(@original)
-    assert_cli_failure('.', **personal_options)
-    assert_equal @original, source
-    assert_includes @output, 'project_layout'
-    assert_includes @output, 'double_quoted_strings'
-    refute_includes @output, ': fixed:'
-  end
-
-  def assert_explicit_fix
-    assert_cli_success('--fix', '.', **personal_options)
-    assert_equal @fixed, source
-    assert_cli_stable(@fixed, **personal_options)
-  end
-
-  def assert_invalid_configuration_boundaries
-    %w[system.rc personal.rc].each { |path| write_file(path, "--invalid-synthetic-option\n") }
-    assert_cli_success(@file, **personal_options)
-    File.open(File.join(@directory, '.puppet-lint.rc'), 'a') { |config| config.puts '--invalid-project-option' }
-    assert_cli_failure(@file, **personal_options)
-    assert_includes @output, 'invalid-project-option'
-  end
 
   def test_project_configuration_isolates_system_and_personal_options_before_scanning_or_fixing
     prepare_personal_configuration
@@ -112,5 +68,33 @@ class CliConfigurationTest < Minitest::Test
     assert_cli_failure('--no-config', '--no-nonexistent-check', '.')
     assert_includes @output, 'invalid option'
     assert_cli_failure('--no-config', '--load=missing-plugin.rb', '.')
+  end
+
+  def test_repeated_configurations_replace_lists_and_formats_but_accumulate_boolean_flags
+    first = write_file('first.rc', "--fix\n--ignore-paths=first/*\n--top-scope-variables=first\n--log-format=first\n")
+    second = write_file('second.rc',
+                        "--relative\n--ignore-paths=second/*\n--top-scope-variables=second\n--log-format=second\n")
+    assert_equal [true, true, ['second/*'], ['second'], 'second'], configuration_values(first, second)
+  end
+
+  def test_relative_load_paths_use_the_working_directory_not_the_configuration_directory
+    nested = write_file('nested/options.rc', "--load=plugin.rb\n")
+    write_file('plugin.rb', "PuppetLint.new_check(:synthetic_loaded) { def check; end }\n")
+    assert_cli_success('--no-config', '--config', nested, '--list-checks',
+                       directory: @directory, project_config: false)
+    assert_includes @output, 'synthetic_loaded'
+    FileUtils.mv(File.join(@directory, 'plugin.rb'), File.join(@directory, 'nested/plugin.rb'))
+    assert_cli_failure('--no-config', '--config', nested, '--list-checks',
+                       directory: @directory, project_config: false)
+    assert_equal 1, @status.exitstatus
+    assert_includes @errors, 'LoadError'
+  end
+
+  def test_project_check_switches_are_not_added_after_native_option_parser_construction
+    assert_cli_failure('--no-project_arrays-check', '--list-checks')
+    assert_equal 1, @status.exitstatus
+    assert_includes @output, 'invalid option'
+    assert_cli_success('--only-checks', 'project_arrays', '--list-checks')
+    assert_includes @output, 'project_arrays'
   end
 end

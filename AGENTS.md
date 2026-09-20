@@ -423,27 +423,54 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Tooling READMEs
 
-- Keep all lint documentation in `.tools/lint/README.md`, with a task-based reading guide and daily workflow before the code reference, maintenance guidance, and downstream integration.
-- Document linter testing in the lint README, explaining prerequisites before commands, troubleshooting, and adding tests.
-- Keep tool-specific test instructions in the owning tool's guide instead of separate test READMEs.
-- Include developer implementation detail in the tooling guide only when it supports a relevant task or its authoritative reference.
+- Keep `.tools/lint/README.md` as the single complete Dutch reference for Puppet conventions, checks, configuration, CLI usage, validation, autofixes, suppressions, reports, CI, packaging, downstream integration, troubleshooting, and linter maintenance.
+- Do not split this guide or move its content to another document to reduce its length. File size, word count, and line count are not quality targets.
+- Preserve requirements, exceptions, warnings, detection limits, autofix conditions, supported usage routes, and manual review criteria during reorganization. Consolidating duplicate explanations must preserve every distinct condition and obligation.
+- Keep both the repository quick start and the consumer quick start before the detailed reference. Keep the full reference and maintainer explanations in the same file.
+- Keep tool-specific test instructions in the owning tooling guide. Do not create separate test READMEs.
+- General README brevity, selective-detail, and presentation guidance must not remove information or required fields from the lint guide. Apply the lint guide's documentation contract to its rule reference.
 
 ### Lint Documentation Maintenance
 
-- Classify new lint knowledge before documenting it: clarification of an existing rule, a new Puppet convention, a manual review criterion, an autofix limitation, check implementation detail, downstream guidance, or a one-time finding.
-- Update the existing authoritative section when it covers the subject; add a durable rule only when required behavior is missing. Keep one-time findings in the change review unless they establish a reusable contract.
-- Place code expectations, examples, automated coverage, autofix conditions, and manual review limits with the relevant convention; keep parser, token, and fix implementation details in the maintainer section.
-- Keep the check overview concise and link to the complete rule instead of repeating its explanation.
-- Verify configuration behavior against the installed CLI, loader, and tests before changing commands.
-- Update local and consumer instructions in the same change when shared tooling affects installation, linting, autofix, tests, reports, artifacts, or CI. Validate consumer examples in a separate project with its own bundle and configuration, preserving supported configuration differences.
-- Maintain the reading guide, contents, and incoming links when moving sections; verify that obligations, exceptions, and warnings remain at their authoritative destination.
+#### Rule Contract
+
+- Use the field schema defined in the lint guide's `Documentatiecontract voor maintainers` for every Puppet rule. Do not omit, rename, or merge required fields without an explicit owner request to change that schema.
+- State each rule's applicability and required action directly. Preserve whether existing policy is mandatory, prohibited, recommended, or permitted.
+- Keep conditions, permitted exceptions, analysis limits, and autofix refusal cases with the rule they modify. An undetected violation is not a permitted exception.
+- Document every distinct diagnostic variant and its actual severity. Classify autofix coverage per variant rather than inferring coverage from the existence of a fix method.
+- Label examples as fragments, complete executable examples, or manual review scenarios. Do not describe a fragment as passing the complete profile unless that complete run was executed successfully.
+- Use an explicit reason for a field that does not apply. Missing evidence is an unresolved item, not a reason to omit the field or claim compliance.
+
+#### Inventory And Synchronization
+
+- Maintain exactly one entry per registered `project_*` check in the lint guide's project check registry. Verify runtime registration, profile activation, diagnostic coverage, and rule links as separate properties.
+- Update the affected rule fields, registry entries, command examples, and tool tests in the same change when checks, diagnostics, severity, defaults, fixes, suppressions, configuration, dependencies, reports, or public consumer interfaces change.
+- When a tooling change has no documentation impact, identify the reviewed interfaces and explain that conclusion in the change review. Do not use that explanation to leave changed documented behavior stale.
+- Treat check names, entrypoints, shared configuration paths, report executables, public environment variables, and consumer invocation behavior as public interfaces. Document and test intentional interface changes.
+- Verify version claims against their declared constraints and resolved dependencies. Keep declared compatibility, installed versions, tested combinations, and repository development policy distinct.
+
+#### Executable Procedures
+
+- State the working directory, shell, prerequisites, input selection, file mutations, and expected result before an executable procedure. Define all variables and replacement values before use.
+- Verify changed configuration instructions against the installed CLI, loader, and tooltests. Determine precedence by option type instead of assuming every later value replaces an earlier one.
+- Validate changed downstream procedures in a separate consumer project with its own Gemfile, lockfile, local configuration, and manifest selection. Do not rely on the source repository's implicit environment.
+- Validate each documented installation route independently, including the built package when package distribution is documented. A successful path installation does not prove Git or package installation.
+- Verify both successful and failing command outcomes, including numeric exit status and report production. A successful report conversion must not conceal a failed validation or lint process.
+
+#### Preservation And Review
+
+- Record the previous location, preserved meaning, new location, and reason for each substantive documentation change in the change review. Do not create another repository document for this migration record.
+- Preserve existing incoming anchors when reorganizing the lint guide and verify internal and repository-local links. Keep one authoritative explanation of each rule inside the guide.
+- Do not change lint behavior or weaken a rule to resolve a documentation mismatch. Record the normative requirement and observed behavior separately when the intended resolution is not established.
+- Keep unresolved policy conflicts and unexecuted required checks visible in the delivery report. Do not describe validation or the task as complete while required evidence is missing.
+- Use automated checks to verify technical inventories, links, and execution contracts. Review explanatory accuracy and preservation of meaning manually; successful automation does not prove prose quality.
 
 ### README Navigation And Prerequisites
 
 - Keep required prerequisites, essential warnings, and security- or compatibility-critical conditions beside the action they affect, including when relocating elaboration.
 - Link to relocated elaboration from the warning and required action that remain at the point of use.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
-- Maintain a `## Inhoudsopgave` near the top with main-section links and relevant nested module or tooling-task links; never label it `Legenda`.
+- Use `## Inhoudsopgave` for the [complete table of contents](#markdown) in Dutch READMEs; never label it `Legenda`.
 - Maintain a bottom-level list of expanded examples.
 
 ### README Module Sections
@@ -493,7 +520,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Explain non-obvious choices when the explanation helps the reader act correctly.
 - Use headings, lists, and tables when they help navigation or comparison, except where the [considerations presentation rules](#considerations-presentation) require prose.
 - Retain useful lists outside those considerations, including main properties and installation steps.
-- Never add content to fill a template or make sections look uniform.
+- Do not add filler to make sections look uniform. The required fields in the lint guide's documentation contract are not filler: complete every field, or state why it does not apply without hiding missing evidence.
 
 #### Terminology And Preservation
 
@@ -502,11 +529,13 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Start README prose list items with a capital letter.
 - Preserve the case of identifiers, module names, class names, paths, and literals.
 - Preserve intentional author viewpoints and relevant project context when reorganizing content.
-- Preserve necessary technical requirements, warnings, exceptions, safeguards, and operational knowledge in their designated documentation layers. Elaboration need not remain in the README.
+- Preserve necessary technical requirements, warnings, exceptions, safeguards, and operational knowledge in their designated documentation layers. For `.tools/lint/README.md`, keep the full lint reference and its elaboration in that same file; use internal links instead of relocating that content elsewhere.
 - Remove duplicate explanations and demonstrably obsolete information only after the [editorial review](#editorial-review).
 
 ### Markdown
 
+- Maintain a linked table of contents near the top of every repository-owned `.md` file except `AGENTS.md`, the sole exception to this requirement. Include every section and subsection heading in document order, at every depth, with nesting that follows the heading hierarchy; exclude the document title and headings inside code examples. Update the contents and verify its links whenever headings change.
+- Keep the sentences, paragraphs, lists, tables, and examples under each heading on that heading's subject and in a logical reading order. Introduce concepts before relying on them and connect the explanations before and after examples or tables. Rewrite surrounding text when additions or moves break that continuity.
 - Keep each prose paragraph or list item on one physical line without hard wrapping, except where Markdown syntax, a table, or a code block requires line breaks.
 - Separate distinct topics with normal paragraph breaks.
 - Keep documentation professional, concrete, and focused on operational impact and risk.
@@ -516,7 +545,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 #### Scope And Reading Path
 
 - For every substantive change and every edit to a repository-owned Markdown file, read the complete affected documentation sections and surrounding reading path before editing and review them again afterward, including the relevant README section. This applies to all `.md` files, including `AGENTS.md` and small additions to existing text.
-- Integrate additions into the existing explanation, rewriting or reordering surrounding sentences and paragraphs wherever needed for a coherent whole.
+- Integrate additions into the existing explanation according to the [Markdown navigation and continuity rules](#markdown), reviewing the preceding and following text under each affected heading.
 - Check relevance, repetition, contradictions, and placement of technical detail across that reading path.
 - Never move unnecessary considerations below the basic example.
 - Check whether a new reader can identify prerequisites, the next action, and the expected outcome without reconstructing missing context.

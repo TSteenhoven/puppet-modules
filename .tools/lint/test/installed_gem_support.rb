@@ -4,10 +4,15 @@ require 'bundler'
 
 # Build a gem and exercise it through a separate, offline consumer bundle.
 module InstalledGemSupport
+  ISOLATED_VARIABLES = %w[DEBUG RUBYOPT RUBYLIB PROJECT_LINT_MODULEPATH GITHUB_ACTION
+                          CODECLIMATE_REPORT_FILE MINITEST_REPORTERS_REPORTS_DIR].freeze
+
   def setup
     @project = Dir.mktmpdir('lint-consumer-')
     @gem_home = File.join(@project, 'installed gems')
-    @env = Bundler.unbundled_env.reject { |key, _| key.start_with?('BUNDLE_') || key == 'DEBUG' }
+    @env = Bundler.unbundled_env.reject do |key, _|
+      key.start_with?('BUNDLE_') || ISOLATED_VARIABLES.include?(key)
+    end
     prepare_environment
     install_gem
     prepare_bundle
@@ -18,6 +23,8 @@ module InstalledGemSupport
     @env['PATH'] = [Gem.bindir, @env.fetch('PATH')].join(File::PATH_SEPARATOR)
     @env.merge!('BUNDLE_IGNORE_CONFIG' => '1', 'BUNDLE_USER_HOME' => File.join(@project, 'bundle home'),
                 'GEM_HOME' => @gem_home, 'GEM_PATH' => ([@gem_home] + Gem.path).join(File::PATH_SEPARATOR))
+    # New offline lockfiles cannot obtain registry checksums from installed gems.
+    @env['BUNDLE_LOCKFILE_CHECKSUMS'] = 'false'
   end
 
   def reverse_modulepath
@@ -37,8 +44,6 @@ module InstalledGemSupport
       source 'https://rubygems.org'
       gem 'lint-project', '= 0.1.9', require: false
     RUBY
-    # Seed the consumer resolution with the tested dependency versions, then let Bundler resolve the installed gem.
-    FileUtils.cp(File.join(LintTestSupport::ROOT, 'Gemfile.lock'), File.join(@project, 'Gemfile.lock'))
     run_success('bundle', 'install', '--local')
     run_success('bundle', 'info', '--path', 'lint-project')
     @installed = @output.strip

@@ -41,9 +41,10 @@ class CliDiagnosticsTest < Minitest::Test
   def assert_annotation_counts(code, github_action, options)
     write_source(code, path: 'project_layout.pp')
     assert_cli_failure(*options, @file, env: { 'GITHUB_ACTION' => github_action })
-    assert_equal 2, diagnostics(@output, 'project_layout').length, @output
-    assert_equal 1, diagnostics(@output, 'project_arrays').length, @output
-    assert_annotations(github_action, options)
+    { 'project_layout' => 2, 'project_arrays' => 1 }.each do |check, count|
+      assert_equal count, diagnostics(@output, check).length, @output
+    end
+    assert_equal annotation_count(github_action, options), @output.lines.grep(/\A::warning /).length, @output
     assert_equal options.empty? ? code : code.gsub('      ', '  '), source
   end
 
@@ -76,8 +77,46 @@ class CliDiagnosticsTest < Minitest::Test
     end
   end
 
-  def assert_annotations(github_action, options)
-    expected = annotation_count(github_action, options)
-    assert_equal expected, @output.lines.grep(/\A::warning /).length, @output
+  def test_clean_numeric_exit_code_and_output_channels_match_the_guide
+    write_source("$values = concat([1], [2])\n")
+    assert_cli_success(@file)
+    assert_equal 0, @status.exitstatus
+    assert_empty @output
+    assert_empty @errors
+  end
+
+  def test_warning_and_error_numeric_exit_codes_match_the_guide
+    { "$values = [1] + [2]\n" => 'project_arrays: warning:',
+      "# lint:ignore:project_arrays\n$values = [1] + [2]\n# lint:endignore\n" => 'project_suppressions: error:' }
+      .each do |code, message|
+      write_source(code)
+      assert_cli_failure(@file)
+      assert_equal 1, @status.exitstatus
+      assert_includes @output, message
+      assert_empty @errors
+    end
+  end
+
+  def test_invalid_option_exit_code_and_channels_match_the_guide
+    write_source("$values = concat([1], [2])\n")
+    assert_cli_failure('--invalid-synthetic-option', @file)
+    assert_equal 1, @status.exitstatus
+    assert_includes @output, 'invalid option'
+    assert_empty @errors
+  end
+
+  def test_filtering_output_does_not_change_the_warning_exit_status
+    write_source("$values = [1] + [2]\n")
+    assert_cli_failure('--error-level', 'error', '--json', @file)
+    assert_equal 1, @status.exitstatus
+    assert_equal [[]], JSON.parse(@output)
+  end
+
+  def test_native_report_write_errors_fail_after_scanning
+    write_source("$values = concat([1], [2])\n")
+    assert_cli_failure('--json', '--codeclimate-report-file', @directory, @file)
+    assert_equal 1, @status.exitstatus
+    assert_equal [[]], JSON.parse(@output)
+    assert_includes @errors, 'EISDIR'
   end
 end

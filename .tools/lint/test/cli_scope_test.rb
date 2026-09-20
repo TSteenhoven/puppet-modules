@@ -52,4 +52,26 @@ class CliScopeTest < Minitest::Test
   def ignored_path?(patterns, path)
     patterns.any? { |pattern| File.fnmatch(pattern, path) }
   end
+
+  def test_file_arguments_and_first_directory_selection_have_distinct_semantics
+    good = write_file('first/good.pp', "$values = concat([1], [2])\n")
+    bad = write_file('second/bad.pp', "$values = [1] + [2]\n")
+    assert_cli_success(good)
+    assert_cli_failure(good, bad)
+    assert_equal 1, @status.exitstatus
+    assert_includes @output, 'project_arrays'
+    assert_cli_success(File.dirname(good), File.dirname(bad))
+    assert_empty @output
+    assert_cli_failure(File.dirname(bad), File.dirname(good))
+    assert_includes @output, 'project_arrays'
+  end
+
+  def test_zero_selected_files_succeeds_but_json_proves_the_empty_selection
+    write_file('empty/.keep', '')
+    assert_cli_success('--json', File.join(@directory, 'empty'))
+    assert_equal [], JSON.parse(@output)
+    good = write_file('good.pp', "$values = concat([1], [2])\n")
+    assert_cli_success('--ignore-paths', good, '--json', good)
+    assert_equal [], JSON.parse(@output)
+  end
 end
