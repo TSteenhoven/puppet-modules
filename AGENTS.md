@@ -76,6 +76,7 @@ The [general Puppet rules](.tools/lint/docs/CODE_RULES.md), [Puppet documentatio
 ### Reuse And Shared Abstractions
 
 - Inspect existing abstractions before adding a new one.
+- Review component interfaces and their callers against the [configuration ownership criteria](.tools/lint/docs/CODE_RULES.md#instellingen-bij-hun-eigenaar-houden), including the boundary between source configuration, internal derived values, and template input.
 - Review parent-class interfaces before computing local settings in dependent defines, following the [class-check reuse criteria](.tools/lint/docs/CODE_RULES.md#classcontroles-hergebruiken).
 - Identify the existing owner of cleanup before adding removal logic. When a centrally managed directory removes undeclared files, rely on that mechanism instead of adding cleanup to each consumer. Keep file removal separate from any required runtime stop or reload.
 - When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change.
