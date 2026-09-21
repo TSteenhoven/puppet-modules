@@ -11,6 +11,7 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
 - [Inhoudsopgave](#inhoudsopgave)
 - [Basisopmaak](#basisopmaak)
   - [Twee spaties per inspringniveau](#twee-spaties-per-inspringniveau)
+  - [Inhoud direct na een openingsaccolade beginnen](#inhoud-direct-na-een-openingsaccolade-beginnen)
   - [Resourcepijlen uitlijnen](#resourcepijlen-uitlijnen)
   - [Aanhalingstekens bij stringinhoud kiezen](#aanhalingstekens-bij-stringinhoud-kiezen)
   - [Selectors vóór resources berekenen](#selectors-vóór-resources-berekenen)
@@ -28,6 +29,7 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
 - [Parameters en resources](#parameters-en-resources)
   - [Parameters en instellingen](#parameters-en-instellingen)
   - [Classes en defines bruikbaar ontwerpen](#classes-en-defines-bruikbaar-ontwerpen)
+  - [Herhaalde resourceorkestratie in defined types delen](#herhaalde-resourceorkestratie-in-defined-types-delen)
   - [Publieke parameters expliciet typeren](#publieke-parameters-expliciet-typeren)
   - [Parameters met defaultafhankelijkheden sorteren](#parameters-met-defaultafhankelijkheden-sorteren)
     - [Verdieping bij Parameters met defaultafhankelijkheden sorteren](#verdieping-bij-parameters-met-defaultafhankelijkheden-sorteren)
@@ -154,6 +156,83 @@ Een even aantal spaties kan nog het verkeerde structurele niveau zijn; vergelijk
 **Verificatie**
 
 De gemarkeerde voorbeeldparen worden uitgevoerd door [guide_examples_test.rb](../tests/guide_examples_test.rb). Voor de beschreven quote- en pijlcorrecties controleert [guide_examples_test.rb](../tests/guide_examples_test.rb) exacte uitvoer, hercontrole en tweede run. Een even aantal spaties kan nog het verkeerde structurele niveau zijn; vergelijk ieder blok met zijn opening.
+
+### Inhoud direct na een openingsaccolade beginnen
+
+**Norm**
+
+Na een openende `{` begint de inhoud direct op de volgende regel, ook als er achter de accolade commentaar staat. Dit geldt voor codeblokken en verzamelingen. Verderop in het blok mogen lege regels onderdelen scheiden. Bij `[` en `(` mag ook de eerste regel leeg zijn. Deze opmaakregels gaan over Puppet-code; tekens binnen strings, reguliere expressies, heredocs of commentaar behouden hun betekenis.
+
+**Herkomst**
+
+Projectregel; de bestaande norm blijft van kracht waar automatische dekking ontbreekt.
+
+**Toepassingsgebied**
+
+Na een openende `{` begint de inhoud direct op de volgende regel, ook als er achter de accolade commentaar staat. Dit geldt voor codeblokken en verzamelingen. Verderop in het blok mogen lege regels onderdelen scheiden. Bij `[` en `(` mag ook de eerste regel leeg zijn. Deze opmaakregels gaan over Puppet-code; tekens binnen strings, reguliere expressies, heredocs of commentaar behouden hun betekenis.
+
+**Automatische controle**
+
+`project_layout`
+
+**Detectiegrenzen**
+
+Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden. De inhoudelijke juistheid van de uitleg blijft review.
+
+**Meldingen en severity**
+
+`Remove blank lines immediately after an opening brace`: `warning` op de eerste lege regel, ook met spaties of tabs.
+
+**Autofix**
+
+Voorwaardelijk
+
+**Autofixvoorwaarden**
+
+Verwijdert uitsluitend lege tokens na een echte openingsaccolade; comments op de openingsregel blijven behouden en genegeerde bereiken worden niet gewijzigd.
+
+**Toegestane uitzonderingen**
+
+Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden.
+
+**Suppressions**
+
+Suppressie niet toegestaan voor deze projectchecks. De afzonderlijke lengte- en bronuitzonderingen veranderen deze regel niet.
+
+**Onjuist voorbeeld**
+
+Fragment; alleen `project_layout`; verwacht warning.
+
+<!-- lint-example: project_layout warning -->
+```puppet
+if $active {
+
+  notice('Active')
+}
+```
+
+**Correct voorbeeld**
+
+Fragment; alleen `project_layout`; verwacht geen melding.
+
+<!-- lint-example: project_layout clean -->
+```puppet
+if $active {
+  notice('Active')
+}
+```
+
+**Grensgevallen**
+
+Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden.
+
+**Handmatige review**
+
+Vergelijk de toelichting met de direct betrokken verwerking en controleer dat scheiding en witruimte haar bij de juiste resource of het juiste blok houden.
+
+**Verificatie**
+
+De voorbeeldparen worden via de native engine gecontroleerd door `guide_examples_test.rb`. Aanvullende detectie-, grens- en fixscenario’s: [comment_spacing_test.rb](../tests/comment_spacing_test.rb), [resource_sections_test.rb](../tests/resource_sections_test.rb), [brace_layout_test.rb](../tests/brace_layout_test.rb), [cli_sections_test.rb](../tests/cli_sections_test.rb). Bij fixes verifiëren `assert_fix` en de CLI-tests de exacte uitvoer, parsergeldigheid, hercontrole en ongewijzigde tweede run. Zie de tests per beschreven grens; een succesvolle lintscan is geen catalogusvalidatie.
 
 ### Resourcepijlen uitlijnen
 
@@ -444,7 +523,7 @@ Handmatige vergelijking van beide scenario’s: de correcte variant levert de wa
 
 De standaardchecks en geïnstalleerde plugins controleren onder meer witruimte, aanhalingstekens, parameterdatatypen en afsluitende komma's. De projectchecks vullen deze controles aan. Bij [autofix](../README.md#automatisch-corrigeren-autofix) gelden voor beide dezelfde eisen aan behoud van gedrag.
 
-De projectconfiguratie gebruikt alle standaard ingeschakelde checks en schakelt daarnaast `class_inherits_from_params_class` in. Ook nieuwe standaardchecks komen bij een update beschikbaar. De optionele checks voor 80 tekens, booleans tussen aanhalingstekens en code op hoofdniveau staan uit: dit project gebruikt een grens van 140 tekens en ondersteunt daemonstrings zoals `'true'` en uitvoerbare profielen. Bestaande stijlachterstand is geen reden om een check uit te schakelen of een module uit te zonderen.
+De [profielbeschrijving](../README.md#eigen-lintconfiguratie) beschrijft de activatie van native checks en de redenen voor de optionele checkkeuzes.
 
 ## Inspringing
 
@@ -930,6 +1009,68 @@ Controleer prerequisites, resource-eigendom en dubbele declaraties bij afzonderl
 **Verificatie**
 
 Handmatige vergelijking van de beschreven scenario’s; controleer het interfacecontract en benodigde afhankelijkheden. Een groene lintscan is geen catalogusbewijs.
+
+### Herhaalde resourceorkestratie in defined types delen
+
+**Norm**
+
+Gebruik herbruikbare defined types voor herhaalde Puppet-resourceorkestratie en geef instellingen die per aanroeper verschillen als parameters door. Behoud de beveiligings- en levenscyclusvereisten van iedere aanroeper.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Herhaalde orkestratie van Puppet-resources en migratie van de betrokken aanroepers.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Geen check bewijst semantisch gedeelde resourceorkestratie of equivalentie van alle aanroepers. Opmaak-, aanroep- en dependencychecks dekken uitsluitend hun eigen contracten.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Een aanroeper behoudt zijn eigen instellingen en voorwaarden; gedeeld gedrag rechtvaardigt geen wijziging daarvan.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Twee aanroepers dupliceren dezelfde resourceorkestratie of een gedeelde define verliest de beveiligingsvoorwaarde van één aanroeper. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Deel de resourceorkestratie via een defined type, geef de verschillende instellingen door en behoud de individuele beveiliging en levenscyclus.
+
+**Grensgevallen**
+
+Een aanroeper behoudt zijn eigen instellingen en voorwaarden; gedeeld gedrag rechtvaardigt geen wijziging daarvan. Geen check bewijst semantisch gedeelde resourceorkestratie of equivalentie van alle aanroepers. Opmaak-, aanroep- en dependencychecks dekken uitsluitend hun eigen contracten.
+
+**Handmatige review**
+
+Vergelijk iedere gemigreerde aanroeper, diens instellingen, resource-eigendom, beveiliging, levenscyclus en dependencies.
+
+**Verificatie**
+
+Vergelijk beide reviewscenario’s en valideer iedere gemigreerde aanroeper afzonderlijk volgens de [hergebruikreview](../../../AGENTS.md#reuse-and-shared-abstractions).
 
 ### Publieke parameters expliciet typeren
 
@@ -2007,7 +2148,9 @@ Handmatige beoordeling van beide scenario’s: Traceer zichtbaarheid op het eval
 
 **Norm**
 
-Maak bij dependencies onderscheid tussen wat een operatie nodig heeft om te kunnen draaien en wat alleen de uitvoervolgorde bepaalt. Het weglaten van `require` schakelt de operatie niet uit. Controleer volgens de [prerequisitereview](../../../AGENTS.md#prerequisite-review) wat er gebeurt met de prerequisite aanwezig en afwezig, inclusief de relevante declaratie- en evaluatievolgorde.
+Maak bij dependencies onderscheid tussen wat een operatie nodig heeft om te kunnen draaien en wat alleen de uitvoervolgorde bepaalt. Het weglaten van een dependencyreference, zoals `require`, schakelt de afhankelijke operatie niet uit. Leid runtimebeschikbaarheid nooit uitsluitend af uit de aanwezigheid of afwezigheid van een declaratie.
+
+Het gedocumenteerde contract moet vereiste prerequisites vóór gebruik leveren of het gedrag bij ontbreken vastleggen: sla een optionele operatie over of faal duidelijk bij een verplichte operatie. De [prerequisitereview](../../../AGENTS.md#prerequisite-review) vereist validatie met prerequisites aanwezig en afwezig, inclusief de relevante declaratie- en evaluatievolgorde.
 
 **Herkomst**
 

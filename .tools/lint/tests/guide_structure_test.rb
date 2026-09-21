@@ -17,6 +17,24 @@ class GuideStructureTest < Minitest::Test
     'docs/OPERATIONAL_RULES.md' => ['Bestanden en beveiliging', 'Gedeelde services en systemd', 'Shellscripts',
                                     'Monitoringchecks']
   }.freeze
+  RULE_OWNERS = {
+    'docs/CODE_RULES.md' => ['Inhoud direct na een openingsaccolade beginnen',
+                             'Herhaalde resourceorkestratie in defined types delen',
+                             'Prerequisites van ordering onderscheiden'],
+    'docs/DOCUMENTATION_RULES.md' => ['Strings-parametercontract', 'Codecommentaar in Engelse zinnen schrijven'],
+    'docs/OPERATIONAL_RULES.md' => ['Door Puppet beheerde inhoud markeren',
+                                    'Beheerhelpers op de gedeelde locatie installeren',
+                                    'Interpreter en shellcompatibiliteit', 'Shellscripts in uitvoervolgorde opbouwen',
+                                    'Externe commando’s rechtstreeks vinden', 'Shellcode opmaken en benoemen',
+                                    'Shellargumenten en runtime-instellingen verwerken',
+                                    'Shellhelpers op een herkenbare taak afbakenen',
+                                    'Shellbuffers en tijdelijke bestanden kiezen',
+                                    'Tekstbuffers en substitutiemetadata opbouwen',
+                                    'Checkexecutables onafhankelijk van targets delen',
+                                    'Monitoring onafhankelijk van de waargenomen taak houden',
+                                    'Vastgestelde afwijkingen en onvolledige inspecties onderscheiden',
+                                    'Firewallconfiguratie bij de deployment houden']
+  }.freeze
 
   def test_exactly_four_documents_with_all_rule_documents_linked_from_the_readme
     documents = Dir[File.join(ROOT, '**/*.md')].map { |path| path.delete_prefix("#{ROOT}/") }
@@ -52,6 +70,40 @@ class GuideStructureTest < Minitest::Test
       contents = text[/^## Inhoudsopgave\n(.*?)(?=^## )/m, 1]
       assert_equal expected_contents(text), contents.lines.grep(/^ *- /).map(&:chomp), name
       assert_equal anchors(text).uniq, anchors(text), "Duplicate anchors in #{name}"
+    end
+  end
+
+  def test_implementation_topics_have_one_owner_across_all_documentation_layers
+    headings = [*DOCUMENTS, '../../AGENTS.md'].to_h do |name|
+      [name, prose(File.read(File.join(ROOT, name))).scan(/^\#{2,6} (.+)$/).flatten]
+    end
+    RULE_OWNERS.each do |owner, titles|
+      titles.each do |title|
+        actual = headings.flat_map { |name, entries| [name] * entries.count(title) }
+        assert_equal [owner], actual, title
+      end
+    end
+  end
+
+  def test_workflow_navigation_links_to_the_owning_operational_rules
+    agents = File.read(File.join(LintTestSupport::ROOT, 'AGENTS.md'))
+    guide = File.read(File.join(ROOT, 'README.md'))
+    %w[shellscripts monitoringchecks door-puppet-beheerde-inhoud-markeren
+       beheerhelpers-op-de-gedeelde-locatie-installeren].each do |anchor|
+      [agents, guide].each do |text|
+        assert_includes text, "docs/OPERATIONAL_RULES.md##{anchor})"
+      end
+    end
+  end
+
+  def test_general_workflow_and_documentation_policy_remain_in_agents
+    agents = heading_anchors(File.read(File.join(LintTestSupport::ROOT, 'AGENTS.md')))
+    assert_includes agents, 'authority-and-rule-placement'
+    %w[markdown readme-guidance editorial-review shell-validation monitoring-validation].each do |anchor|
+      assert_includes agents, anchor
+      RULE_GROUPS.each_key do |name|
+        refute_includes heading_anchors(File.read(File.join(ROOT, name))), anchor
+      end
     end
   end
 

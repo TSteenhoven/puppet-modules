@@ -13,7 +13,6 @@ De [linthandleiding](../README.md) beschrijft het gebruik en onderhoud van de to
   - [Toelichtingen bij code](#toelichtingen-bij-code)
   - [Toelichtingsblokken van eerdere code scheiden](#toelichtingsblokken-van-eerdere-code-scheiden)
     - [Verdieping bij Toelichtingsblokken van eerdere code scheiden](#verdieping-bij-toelichtingsblokken-van-eerdere-code-scheiden)
-  - [Inhoud direct na een openingsaccolade beginnen](#inhoud-direct-na-een-openingsaccolade-beginnen)
   - [Een resource na een afgesloten blok toelichten](#een-resource-na-een-afgesloten-blok-toelichten)
   - [Bestaande implementatie-uitleg actueel houden](#bestaande-implementatie-uitleg-actueel-houden)
   - [Niet-zichtbare implementatiekeuzes toelichten](#niet-zichtbare-implementatiekeuzes-toelichten)
@@ -130,84 +129,7 @@ De voorbeeldparen worden via de native engine gecontroleerd door `guide_examples
 
 #### Verdieping bij Toelichtingsblokken van eerdere code scheiden
 
-`project_comment_spacing` kan de lege regel vóór een bestaand commentaarblok toevoegen. `project_layout` kan lege regels direct na `{` verwijderen en meldt daarbij de eerste lege regel, ook als die spaties of tabs bevat. Genegeerde delen blijven behouden. `project_resource_sections` controleert of de toelichting bij een nieuwe resource aanwezig is en heeft geen autofix.
-
-### Inhoud direct na een openingsaccolade beginnen
-
-**Norm**
-
-Na een openende `{` begint de inhoud direct op de volgende regel, ook als er achter de accolade commentaar staat. Dit geldt voor codeblokken en verzamelingen. Verderop in het blok mogen lege regels onderdelen scheiden. Bij `[` en `(` mag ook de eerste regel leeg zijn. Deze opmaakregels gaan over Puppet-code; tekens binnen strings, reguliere expressies, heredocs of commentaar behouden hun betekenis.
-
-**Herkomst**
-
-Projectregel; de bestaande norm blijft van kracht waar automatische dekking ontbreekt.
-
-**Toepassingsgebied**
-
-Na een openende `{` begint de inhoud direct op de volgende regel, ook als er achter de accolade commentaar staat. Dit geldt voor codeblokken en verzamelingen. Verderop in het blok mogen lege regels onderdelen scheiden. Bij `[` en `(` mag ook de eerste regel leeg zijn. Deze opmaakregels gaan over Puppet-code; tekens binnen strings, reguliere expressies, heredocs of commentaar behouden hun betekenis.
-
-**Automatische controle**
-
-`project_layout`
-
-**Detectiegrenzen**
-
-Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden. De inhoudelijke juistheid van de uitleg blijft review.
-
-**Meldingen en severity**
-
-`Remove blank lines immediately after an opening brace`: `warning` op de eerste lege regel, ook met spaties of tabs.
-
-**Autofix**
-
-Voorwaardelijk
-
-**Autofixvoorwaarden**
-
-Verwijdert uitsluitend lege tokens na een echte openingsaccolade; comments op de openingsregel blijven behouden en genegeerde bereiken worden niet gewijzigd.
-
-**Toegestane uitzonderingen**
-
-Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden.
-
-**Suppressions**
-
-Suppressie niet toegestaan voor deze projectchecks. De afzonderlijke lengte- en bronuitzonderingen veranderen deze regel niet.
-
-**Onjuist voorbeeld**
-
-Fragment; alleen `project_layout`; verwacht warning.
-
-<!-- lint-example: project_layout warning -->
-```puppet
-if $active {
-
-  notice('Active')
-}
-```
-
-**Correct voorbeeld**
-
-Fragment; alleen `project_layout`; verwacht geen melding.
-
-<!-- lint-example: project_layout clean -->
-```puppet
-if $active {
-  notice('Active')
-}
-```
-
-**Grensgevallen**
-
-Na [ of ( mag de eerste regel leeg zijn. Tekens in strings, regex, heredocs en commentaar blijven data. Lege regels verder in het blok mogen onderdelen scheiden.
-
-**Handmatige review**
-
-Vergelijk de toelichting met de direct betrokken verwerking en controleer dat scheiding en witruimte haar bij de juiste resource of het juiste blok houden.
-
-**Verificatie**
-
-De voorbeeldparen worden via de native engine gecontroleerd door `guide_examples_test.rb`. Aanvullende detectie-, grens- en fixscenario’s: [comment_spacing_test.rb](../tests/comment_spacing_test.rb), [resource_sections_test.rb](../tests/resource_sections_test.rb), [brace_layout_test.rb](../tests/brace_layout_test.rb), [cli_sections_test.rb](../tests/cli_sections_test.rb). Bij fixes verifiëren `assert_fix` en de CLI-tests de exacte uitvoer, parsergeldigheid, hercontrole en ongewijzigde tweede run. Zie de tests per beschreven grens; een succesvolle lintscan is geen catalogusvalidatie.
+`project_comment_spacing` kan de lege regel vóór een bestaand commentaarblok toevoegen. De [accoladeopmaak](CODE_RULES.md#inhoud-direct-na-een-openingsaccolade-beginnen) beschrijft de afzonderlijke `project_layout`-correctie en haar grenzen. `project_resource_sections` controleert of de toelichting bij een nieuwe resource aanwezig is en heeft geen autofix.
 
 ### Een resource na een afgesloten blok toelichten
 
@@ -1640,7 +1562,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Verge
 
 **Norm**
 
-Gebruik de [documentatie-indeling in `AGENTS.md`](../../../AGENTS.md#documentation) om te bepalen waar de uitleg thuishoort. Gebruikskeuzes horen in de gebruikershandleiding, parametercontracten in Puppet Strings en lokale implementatieredenen bij het script of de template. Maak geen handmatige `REFERENCE.md` of `docs/`-boom voor informatie die Puppet Strings kan genereren. Voeg een ADR alleen toe wanneer dat is gevraagd of al gebruikelijk is.
+Onderhoud parametercontracten in Puppet Strings bij de code. Maak geen handmatige `REFERENCE.md` of `docs/`-boom voor informatie die Puppet Strings kan genereren. Gebruik voor algemene informatieplaatsing en ADR’s de [repositorydocumentatie-indeling](../../../AGENTS.md#language-and-authority).
 
 **Herkomst**
 
@@ -1648,7 +1570,7 @@ Projectregel
 
 **Toepassingsgebied**
 
-Gebruikskeuzes, parametercontracten en lokale implementatieredenen.
+Puppet-parametercontracten en handmatige duplicaten van genereerbare API-documentatie.
 
 **Automatische controle**
 
@@ -1656,7 +1578,7 @@ Geen automatische controle. Eventuele ondersteunende checks die in de norm worde
 
 **Detectiegrenzen**
 
-De linter beoordeelt de genoemde runtimeobjecten, intentie en operationele gevolgen niet. Een ADR wordt alleen toegevoegd op verzoek of wanneer dat al gebruikelijk is; dit wijzigt de inhoudelijke documentatieplicht niet.
+De linter beoordeelt de genoemde runtimeobjecten, intentie en operationele gevolgen niet. Een verwijzing naar gegenereerde API-documentatie is toegestaan; zij vervangt het parametercontract bij de code niet.
 
 **Meldingen en severity**
 
@@ -1672,7 +1594,7 @@ Niet van toepassing: dit inhoudelijke contract heeft geen autofix.
 
 **Toegestane uitzonderingen**
 
-Een ADR wordt alleen toegevoegd op verzoek of wanneer dat al gebruikelijk is; dit wijzigt de inhoudelijke documentatieplicht niet.
+Een verwijzing naar gegenereerde API-documentatie is toegestaan; zij vervangt het parametercontract bij de code niet.
 
 **Suppressions**
 
@@ -1684,11 +1606,11 @@ Handmatig reviewscenario: Een handmatig REFERENCE.md dupliceert de door Puppet S
 
 **Correct voorbeeld**
 
-Handmatig reviewscenario: Behoud parametercontracten bij de code, gebruikskeuzes in de gebruikershandleiding en lokale redenen bij script of template. Dit voldoet aan de norm onder de genoemde voorwaarden.
+Handmatig reviewscenario: Behoud parametercontracten bij de code en gebruik Puppet Strings als bron voor eventuele gegenereerde API-documentatie; beoordeel de overige informatieplaatsing volgens de gekoppelde repositoryafspraken. Dit voldoet aan de norm onder de genoemde voorwaarden.
 
 **Grensgevallen**
 
-Een ADR wordt alleen toegevoegd op verzoek of wanneer dat al gebruikelijk is; dit wijzigt de inhoudelijke documentatieplicht niet.
+Een verwijzing naar gegenereerde API-documentatie is toegestaan; zij vervangt het parametercontract bij de code niet.
 
 **Handmatige review**
 
