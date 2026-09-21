@@ -1,0 +1,22 @@
+name: nextcloud-aio
+services:
+  nextcloud-aio-mastercontainer:
+    image: ghcr.io/nextcloud-releases/all-in-one:${NEXTCLOUD_TAG:?nextcloud tag required}
+    init: true
+    restart: always
+    container_name: nextcloud-aio-mastercontainer
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${NEXTCLOUD_BACKUPDIR:?nextcloud backup directory required}:/mnt/backup
+    network_mode: bridge
+    ports:
+      - "127.0.0.1:${AIO_ADMIN_PORT:-8080}:8080"
+    environment:
+      APACHE_PORT: ${APACHE_PORT:-11000}
+      APACHE_IP_BINDING: 127.0.0.1
+      NEXTCLOUD_BACKUPDIR: ${NEXTCLOUD_BACKUPDIR:?nextcloud backup directory required}
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
