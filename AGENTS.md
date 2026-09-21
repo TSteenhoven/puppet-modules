@@ -55,7 +55,9 @@ The [general Puppet rules](.tools/lint/docs/CODE_RULES.md), [Puppet documentatio
 - Treat a user's corrective edit as the current preferred pattern.
 - Never restore an earlier agent approach unless the user explicitly requests it.
 - Keep changes, including supporting refactors, scoped to the requested task and affected area.
-- Use the simplest implementation that meets the requested behavior, starting with existing built-in functionality. Add checks, helpers, configuration files, or abstractions only when a concrete requirement needs them, and explain that need. When the user asks to simplify, remove unnecessary behavior and its supporting code.
+- Use the simplest implementation that meets the requested behavior and preserves existing contracts, starting with existing built-in functionality.
+- Do not add input formats, normalization, edge-case handling, fallbacks, checks, helpers, configuration files, or abstractions unless the user's request, an existing project or interface contract, or a demonstrated failure within the task's scope requires them. Hypothetical edge cases, possible future use, and general robustness arguments are not sufficient justification. Tests created for an unsolicited extension do not establish a requirement for that extension.
+- Before adding such behavior or structure, identify the concrete requirement or demonstrated failure and explain why the simpler implementation cannot satisfy it. Record that justification in the change review; omit the addition when the need cannot be demonstrated. During final diff review, remove additions that lack this justification. When the user asks to simplify, remove unnecessary behavior and its supporting code.
 
 ### Impact Review
 

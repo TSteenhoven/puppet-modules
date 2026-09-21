@@ -584,7 +584,11 @@ Bij actieve HTTP/3 schakelt de module ook `quic_gso`, `quic_retry` en `quic_bpf`
 
 De bestaande kernelinstellingen `kernel.unprivileged_bpf_disabled = 1` en `net.core.bpf_jit_harden = 2` kunnen behouden blijven. Ze blokkeren BPF voor processen zonder de vereiste rechten en beveiligen de JIT-compiler. De Nginx-master behoudt met die rechten toegang tot BPF.
 
-Houd de gebruikte HTTPS-poort ook voor UDP bereikbaar. Zet voor BPF-routering `reuseport => true` op precies één vhost per gedeelde combinatie van luisteradres en poort. Controleer na de uitrol ook de servicestart: `nginx -t` test het laden van BPF-programma's niet. Zie de [Puppet Strings](nginx/manifests/server.pp) en de [NGINX QUIC-documentatie](https://nginx.org/en/docs/http/ngx_http_v3_module.html).
+Houd de gebruikte HTTPS-poort ook voor UDP bereikbaar. Zet voor BPF-routering `reuseport => true` op minstens één vhost per gedeelde combinatie van luisteradres en poort. Je mag `reuseport`, `fastopen`, `backlog` en `multipath` op meerdere vhosts instellen: Puppet voegt gelijke waarden samen en meldt conflicterende waarden tijdens het compileren. De opties komen één keer per luistersocket in de configuratie; IPv4, IPv6, verschillende poorten en TCP/UDP hebben ieder hun eigen socket. Gebruik voor gedeelde listeners dezelfde schrijfwijze van adres en poort. Zie de [Puppet Strings](nginx/manifests/server.pp) voor de voorwaarden en defaults.
+
+Controleer na de uitrol ook de servicestart: `nginx -t` test het laden van BPF-programma's niet. De [NGINX QUIC-documentatie](https://nginx.org/en/docs/http/ngx_http_v3_module.html) beschrijft de runtimevoorwaarden.
+
+Met `multipath => true` op `nginx::server` schakel je Multipath TCP in voor de TCP-listeners van die vhost en zijn redirects. Gebruik hiervoor Nginx 1.29.7 of nieuwer met Multipath TCP-ondersteuning op Linux 5.6 of nieuwer. Standaard staat deze optie uit. Nginx schakelt bij het toevoegen of verwijderen ervan ook `SO_REUSEPORT` in; zie de [NGINX-documentatie](https://nginx.org/en/docs/http/ngx_http_core_module.html#listen) voor de beveiligingsgevolgen.
 
 Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
 

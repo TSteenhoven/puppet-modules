@@ -2244,19 +2244,21 @@ Projectregel
 
 **Toepassingsgebied**
 
-Resources met een gezamenlijke beschikbaarheids- of inschakelvoorwaarde.
+Resources met een gezamenlijke beschikbaarheids- of inschakelvoorwaarde, inclusief aanroepen van defined types en activatie van virtuele resources.
 
 **Automatische controle**
 
-Geen automatische controle voor deze afzonderlijke inhoudelijke verplichting. De gerelateerde technische controles staan bij [Resources en afhankelijkheden](#resources-en-afhankelijkheden).
+`project_shared_conditions`
 
 **Detectiegrenzen**
 
-De gerelateerde checks voeren de beschreven runtime- of inhoudelijke beoordeling niet uit. Resources met verschillende voorwaarden mogen die eigen controle behouden; de gedeelde buitenvoorwaarde vervangt haar niet.
+De check vergelijkt rechtstreekse `if`-opdrachten in hetzelfde AST-blok. Minstens één blok moet de gedeelde voorwaarde als volledige conditie gebruiken; andere blokken mogen diezelfde conditie gebruiken of ermee beginnen in een `and`-keten. Herkend worden variabelen, `==`/`!=` tussen een variabele links en een letterlijke scalaire waarde rechts, en negatie van deze expressies, ook met haakjes. Letterlijke stringwaarden worden gelijk behandeld met en zonder quotes; verschillende waardetypen blijven onderscheiden.
+
+Beide geldige takken moeten resourcedeclaraties, defaults, overrides of een bekende resource-aanroep bevatten: `realize`, `include`, `contain`, `require`, `ensure_packages` of `stdlib::ensure_packages`, eventueel met `::` ervoor. Resources binnen iteraties tellen mee. Losse toekenningen leveren geen resourcegroep op. De vergelijking overschrijdt geen blok-, class-, define- of lambdagrenzen. `unless`, losse `elsif`-armen, `or` of functieaanroepen als gedeelde conditie, herleiding via andere conditievariabelen en een gedeelde term die niet vooraan staat vallen buiten de detectie. Twee samengestelde voorwaarden zonder bestaand blok voor alleen de gedeelde conditie worden niet gemeld. De check bewijst geen veilige verplaatsing of catalogusvolgorde.
 
 **Meldingen en severity**
 
-Geen afzonderlijke lintmelding of severity voor deze norm; de overtreding vraagt de hieronder beschreven handmatige afkeur.
+`[review] Group resource declarations under the existing condition at line {line}; preserve additional conditions, fallback branches and evaluation order`: `warning` op iedere andere kandidaat-`if` naast het eerste blok met de volledige gedeelde conditie. `{line}` is het regelnummer van dat bestaande blok; bronwaarden worden niet in de melding opgenomen.
 
 **Autofix**
 
@@ -2264,35 +2266,49 @@ Geen
 
 **Autofixvoorwaarden**
 
-Niet van toepassing: de concrete inhoudelijke correctie kan niet door een opmaakfix worden bewezen.
+Niet van toepassing: verplaatsen kan variabelegebruik, evaluatievolgorde, resourcevolgorde en de betekenis van `else`- of `elsif`-takken veranderen. De melding vraagt daarom inhoudelijke review.
 
 **Toegestane uitzonderingen**
 
-Resources met verschillende voorwaarden mogen die eigen controle behouden; de gedeelde buitenvoorwaarde vervangt haar niet.
+Resources met verschillende voorwaarden mogen die eigen controle behouden; de gedeelde buitenvoorwaarde vervangt haar niet. Beoordeel een noodzakelijke afwijkende plaats volgens [Resources bij hun voorziening plaatsen](#resources-bij-hun-voorziening-plaatsen).
 
 **Suppressions**
 
-Suppressie niet toegestaan: de handmatige norm blijft gelden, ook bij een groene scan.
+Suppressie niet toegestaan: de handmatige norm blijft gelden, ook bij een groene scan. De native lintengine verwerkt suppressions technisch; `project_suppressions` bewaakt het verbod.
 
 **Onjuist voorbeeld**
 
-Handmatig reviewscenario: Dezelfde voorwaarde wordt rond iedere resource herhaald. Keur dit af tegen de norm.
+Fragment; alleen `project_shared_conditions` is voor dit voorbeeld bedoeld. Verwacht een warning bij de tweede `if`.
+
+<!-- lint-example: project_shared_conditions warning -->
+```puppet
+if ($ensure == present) { file { '/tmp/example': } }
+if ($ensure == present and $monitoring) { profile::check { 'example': } }
+```
 
 **Correct voorbeeld**
 
-Handmatig reviewscenario: Plaats de gezamenlijke voorwaarde buiten de resources en houd hun eigen controles daarbinnen. Beoordeel de genoemde voorwaarden afzonderlijk.
+Fragment; controle `project_shared_conditions`; verwacht geen melding. De aanvullende monitoringvoorwaarde blijft binnen het gedeelde blok staan.
+
+<!-- lint-example: project_shared_conditions clean -->
+```puppet
+if ($ensure == present) {
+  file { '/tmp/example': }
+  if ($monitoring) { profile::check { 'example': } }
+}
+```
 
 **Grensgevallen**
 
-Resources met verschillende voorwaarden mogen die eigen controle behouden; de gedeelde buitenvoorwaarde vervangt haar niet.
+Het bestaande blok mag vóór of na de specifiekere controle staan. Tussenliggende opdrachten verhinderen detectie niet, maar kunnen samenvoegen wel beïnvloeden. `defined(...)` wordt niet als gedeelde conditie hergebruikt: een tussenliggende declaratie kan de uitkomst veranderen. Een samengestelde conditie mag binnen haar eigen tak blijven bestaan; de check verwijdert of verplaatst niets.
 
 **Handmatige review**
 
-Volg alle afhankelijke verwerking en behoud iedere aanvullende lokale voorwaarde.
+Volg alle afhankelijke verwerking en behoud iedere aanvullende lokale voorwaarde. Controleer bij samenvoegen de beschikbaarheid van variabelen, resourceplaatsing, notificaties en dependencies. Houd de afhandeling voor afwezige of uitgeschakelde resources volledig: een `else` van een samengestelde voorwaarde kan meerdere situaties afhandelen. Valideer de betrokken catalogi met de prerequisites en inschakelvoorwaarden aanwezig en afwezig.
 
 **Verificatie**
 
-Handmatige beoordeling van beide scenario’s: Volg alle afhankelijke verwerking en behoud iedere aanvullende lokale voorwaarde. De onjuiste variant wordt afgekeurd; de juiste variant voldoet onder de beschreven voorwaarden. Module- en hostgedrag worden hiermee niet als getest gepresenteerd.
+[shared_conditions_test.rb](../tests/shared_conditions_test.rb) controleert detectie, bronposities, beide bronvolgorden, aanvullende voorwaarden, verschillende resourcetypen, scopes, analysegrenzen, native suppressions en ongewijzigde bron bij `--fix`. [guide_examples_test.rb](../tests/guide_examples_test.rb) voert de gemarkeerde voorbeeldparen uit. [external_shared_conditions_test.rb](../tests/external_shared_conditions_test.rb) controleert de nieuwe check, exitcodes en ongewijzigde bron vanuit een onafhankelijk geïnstalleerd gempakket. Dit bewijst het toolcontract; module- en hostgedrag worden afzonderlijk gevalideerd.
 
 ### Aanroepen en publieke interfaces
 

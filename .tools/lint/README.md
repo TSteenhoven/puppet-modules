@@ -336,7 +336,7 @@ De [gemspec](lint-project.gemspec) en [rootlockfile](../../Gemfile.lock) zijn ve
 
 | Laag | Gecontroleerde gegevens | Betekenis en beperking |
 | --- | --- | --- |
-| Gedeclareerde runtime | `lint-project 0.1.11`, Ruby `>= 3.2`; builder `~> 3.3`, OpenVox `~> 8.29`, Puppet-lint `~> 5.1`, beide lintplugins `~> 3.0`, RuboCop `~> 1.91`, syslog `~> 0.4` | Dit zijn packagegrenzen, geen testmatrix. |
+| Gedeclareerde runtime | `lint-project 0.1.12`, Ruby `>= 3.2`; builder `~> 3.3`, OpenVox `~> 8.29`, Puppet-lint `~> 5.1`, beide lintplugins `~> 3.0`, RuboCop `~> 1.91`, syslog `~> 0.4` | Dit zijn packagegrenzen, geen testmatrix. |
 | Transitieve installatierestricties | De opgeloste `parallel 2.2.0` verlangt Ruby `>= 3.3`; beide lintplugins en onder meer `fast_gettext 4.1.1` verlangen Ruby `>= 3.2` | De huidige volledige oplossing kan dus niet op iedere Ruby vanaf 3.2 installeren. |
 | Opgeloste runtime | Puppet-lint `5.1.1`, param-types `3.0.0`, trailing-comma `3.0.1`, OpenVox `8.29.0`, RuboCop `1.91.0`, builder `3.3.0`, syslog `0.4.0` | `bundle install` volgt de rootlockfile; consumers onderhouden hun eigen oplossing. |
 | Opgeloste ontwikkelgems | metadata-json-lint `5.1.0`, Minitest `6.0.6`, minitest-reporters `1.8.0`, Rake `13.4.2`, rexml `3.4.4`; lockfile vermeldt Bundler `4.0.20` | Niet allemaal runtime-dependencies van de gedeelde gem. |
@@ -617,6 +617,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | `project_puppet_urls` | Ja | Ja | [Puppet-fileservermounts expliciet kiezen](docs/OPERATIONAL_RULES.md#puppet-fileservermounts-expliciet-kiezen) | Geen | [Puppet-fileservermounts expliciet kiezen](docs/OPERATIONAL_RULES.md#puppet-fileservermounts-expliciet-kiezen) |
 | `project_arrays` | Ja | Ja | [Arrays met concat combineren](docs/CODE_RULES.md#arrays-met-concat-combineren) | Geen | [Arrays met concat combineren](docs/CODE_RULES.md#arrays-met-concat-combineren) |
 | `project_templates` | Ja | Ja | [Gegenereerde configuratie met ERB renderen](docs/OPERATIONAL_RULES.md#gegenereerde-configuratie-met-erb-renderen) | Geen | [Gegenereerde configuratie met ERB renderen](docs/OPERATIONAL_RULES.md#gegenereerde-configuratie-met-erb-renderen) |
+| `project_shared_conditions` | Ja | Ja | [Gedeelde voorwaarden om resources groeperen](docs/CODE_RULES.md#gedeelde-voorwaarden-om-resources-groeperen) | Geen | [Gedeelde voorwaarden om resources groeperen](docs/CODE_RULES.md#gedeelde-voorwaarden-om-resources-groeperen) |
 | `project_positive_flow` | Ja | Ja | [De grootste verwerking vóór de korte afhandeling plaatsen](docs/CODE_RULES.md#de-grootste-verwerking-vóór-de-korte-afhandeling-plaatsen), [Validatie om haar afhankelijke implementatie plaatsen](docs/CODE_RULES.md#validatie-om-haar-afhankelijke-implementatie-plaatsen) | Geen | [De grootste verwerking vóór de korte afhandeling plaatsen](docs/CODE_RULES.md#de-grootste-verwerking-vóór-de-korte-afhandeling-plaatsen), [Validatie om haar afhankelijke implementatie plaatsen](docs/CODE_RULES.md#validatie-om-haar-afhankelijke-implementatie-plaatsen) |
 | `project_shell` | Ja | Ja | [Shellcommando's in Puppet](docs/OPERATIONAL_RULES.md#shellcommandos-in-puppet) | Geen | [Shellcommando's in Puppet](docs/OPERATIONAL_RULES.md#shellcommandos-in-puppet) |
 | `project_interface_calls` | Ja | Ja | [Alle verplichte argumenten doorgeven](docs/CODE_RULES.md#alle-verplichte-argumenten-doorgeven) | Geen | [Alle verplichte argumenten doorgeven](docs/CODE_RULES.md#alle-verplichte-argumenten-doorgeven) |
@@ -625,7 +626,7 @@ De tabel beschrijft de automatische dekking en verwijst naar de volledige regel.
 | `project_suppressions` | Ja | Ja | [Alleen toegestane suppressions gebruiken](docs/CODE_RULES.md#alleen-toegestane-suppressions-gebruiken) | Geen | [Alleen toegestane suppressions gebruiken](docs/CODE_RULES.md#alleen-toegestane-suppressions-gebruiken) |
 <!-- END PROJECT CHECK REGISTRY -->
 
-De registratie is vastgesteld via `require 'project_lint'`; activatie is afzonderlijk gecontroleerd met beide configuratieprofielen. `--list-checks` bewijst alleen beschikbaarheid. De inventaris gebruikt `lint-project 0.1.11`, `puppet-lint 5.1.1`, `puppet-lint-param-types 3.0.0` en `puppet-lint-trailing_comma-check 3.0.1` uit de rootlockfile. Nieuwe bundleversies vragen een nieuwe inventaris.
+De registratie is vastgesteld via `require 'project_lint'`; activatie is afzonderlijk gecontroleerd met beide configuratieprofielen. `--list-checks` bewijst alleen beschikbaarheid. De inventaris gebruikt `lint-project 0.1.12`, `puppet-lint 5.1.1`, `puppet-lint-param-types 3.0.0` en `puppet-lint-trailing_comma-check 3.0.1` uit de rootlockfile. Nieuwe bundleversies vragen een nieuwe inventaris.
 
 ### Native checks in deze bundle
 
@@ -1372,7 +1373,7 @@ test -f "$LINT_PACKAGE"
 gem install "$LINT_PACKAGE"
 ```
 
-Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:`-dependency. Deze compatibiliteitsconstraint laat versies vanaf 0.1.3 binnen 0.1 toe; zij is geen exacte versiepin. De eigen lockfile legt de gekozen versie vast. De [volledige pakketroute](#gebouwd-gempakket-installeren) gebruikt de daadwerkelijk gecontroleerde pakketversie 0.1.11:
+Gebruik bij deze installatieroute de volgende dependency in plaats van de `path:`-dependency. Deze compatibiliteitsconstraint laat versies vanaf 0.1.3 binnen 0.1 toe; zij is geen exacte versiepin. De eigen lockfile legt de gekozen versie vast. De [volledige pakketroute](#gebouwd-gempakket-installeren) gebruikt de daadwerkelijk gecontroleerde pakketversie 0.1.12:
 
 ```ruby
 source 'https://rubygems.org'
@@ -1426,7 +1427,9 @@ gem build lint-project.gemspec --output /tmp/lint-project.gem
 
 Het pakket bevat alleen `lib/`, `bin/`, `config/`, `README.md`, `docs/CODE_RULES.md`, `docs/DOCUMENTATION_RULES.md`, `docs/OPERATIONAL_RULES.md` en de licentie, inclusief `puppet-lint-junit`, `puppet-validate-junit` en hun XML-dependency. Tests, ontwikkelgems en Puppet-modules zijn geen onderdeel van de distributie. Publicatie naar RubyGems is niet nodig; je kunt het bestand via je eigen goedgekeurde distributieroute beschikbaar maken. Een ontvangend project installeert zijn eigen dependencies en bewaart zijn eigen lockfile.
 
-Versie `0.1.11` levert de standaard actieve check `project_exec_packages` voor [packageafhankelijkheden bij externe commando’s](docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos), zonder autofix. De gem bevat ook de standaard actieve checks `project_resource_list_reuse` voor [hergebruik van resourcelijsten](docs/CODE_RULES.md#resourcelijsten-hergebruiken) en `project_resource_dependencies` voor [de opbouw van dependencies](docs/CODE_RULES.md#resource-dependencies-opbouwen). De fixes behandelen exacte herhaling, duidelijke uitbreidingen en aantoonbaar overbodige wrappers in dependency-concats. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen. De beschikbare `project_guarded_packages`-fix voor [package-declaraties](docs/OPERATIONAL_RULES.md#pakketten-en-mappen) gebruikt `ensure_packages()` en laat conflicterende package-attributen als catalogusfout zichtbaar worden. Die gegenereerde Puppet-code vereist stdlib; de linter levert de module niet mee.
+Versie `0.1.12` levert de standaard actieve check `project_shared_conditions` voor [resources met een gedeelde voorwaarde](docs/CODE_RULES.md#gedeelde-voorwaarden-om-resources-groeperen). De melding wijst naar een bestaand blok waarmee een andere resourcegroep haar buitenste voorwaarde deelt. Samenvoegen vraagt review van aanvullende voorwaarden, `else`-afhandeling en evaluatievolgorde; deze check heeft daarom geen autofix.
+
+De gem levert ook de standaard actieve check `project_exec_packages` voor [packageafhankelijkheden bij externe commando’s](docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos), zonder autofix. De gem bevat ook de standaard actieve checks `project_resource_list_reuse` voor [hergebruik van resourcelijsten](docs/CODE_RULES.md#resourcelijsten-hergebruiken) en `project_resource_dependencies` voor [de opbouw van dependencies](docs/CODE_RULES.md#resource-dependencies-opbouwen). De fixes behandelen exacte herhaling, duidelijke uitbreidingen en aantoonbaar overbodige wrappers in dependency-concats. Afnemende projecten kunnen daardoor nieuwe lintmeldingen krijgen. De beschikbare `project_guarded_packages`-fix voor [package-declaraties](docs/OPERATIONAL_RULES.md#pakketten-en-mappen) gebruikt `ensure_packages()` en laat conflicterende package-attributen als catalogusfout zichtbaar worden. Die gegenereerde Puppet-code vereist stdlib; de linter levert de module niet mee.
 
 Behandel checknamen, meldingsniveaus, veilige fixresultaten, `PROJECT_LINT_MODULEPATH`, het entrypoint, de gedeelde configuratiepaden en de rapportcommando's als publieke interfaces. Verhoog de gemversie bij een uitgave en beschrijf wijzigingen die afnemers raken. Wijzigingen aan actieve regels en profielen kunnen bestaande projecten laten falen; laat afnemers zo’n update bewust uitvoeren met Bundler en hun eigen CI. Werk een Git-afnemer bij naar een gecontroleerde revisie en een pakketafnemer naar een gecontroleerde gemversie.
 
@@ -1493,7 +1496,7 @@ gem install "$LINT_PACKAGE"
 cat > Gemfile <<'RUBY'
 source 'https://rubygems.org'
 
-gem 'lint-project', '= 0.1.11', require: false
+gem 'lint-project', '= 0.1.12', require: false
 RUBY
 cat > .puppet-lint.rc <<'CONFIG'
 --ignore-paths=vendor/*,./vendor/*
@@ -1590,6 +1593,8 @@ Voor hergebruik uit een gecontroleerde class onderzoekt de check de geldige tak 
 #### Voorbereiding van voorwaarden
 
 `project_if_sections` volgt opeenvolgende toekenningen terug vanaf de variabelen in de voorwaarde, ook als een afhankelijkheid via een andere variabele loopt. De voorwaarden van aansluitende `elsif`-takken tellen mee bij dezelfde voorbereiding. Een losstaande toekenning of andere opdracht onderbreekt die reeks. Commentaar bij een eerder blok of een bovenliggende voorwaarde geldt niet voor een geneste `if`. Bij een toekenning zoals `$result = if ...` staat de toelichting boven de toekenning en eventuele voorbereiding. De check deelt de analyse van variabeleafhankelijkheden met `project_variable_sections`; de betekenis van de toelichting blijft onderdeel van de inhoudelijke review.
+
+`project_shared_conditions` zoekt binnen hetzelfde opdrachtenblok naar resourcegroepen met dezelfde voorwaarde als een bestaand `if`-blok. Ook een voorwaarde die met diezelfde controle begint en daarna met `and` verdergaat, wordt herkend. De melding wijst naar het bestaande blok; de [regelbeschrijving](docs/CODE_RULES.md#gedeelde-voorwaarden-om-resources-groeperen) beschrijft de expressievormen, analysegrenzen en vereiste review.
 
 #### Hints voor variabelegroepen
 

@@ -451,24 +451,24 @@ class basic_settings::network (
 
   # Apply DHCP and router-advertisement policy through managed systemd network files.
   if ($systemd_enable) {
-    # If DHCP is disabled, force system not to use DHCP
-    if ($interfaces_str != '' and !$dhcp_enable) {
-      basic_settings::systemd_network { '90-dhcpc':
-        interface     => $interfaces_str,
-        network       => {
-          'DHCP' => 'no',
-        },
-        daemon_reload => 'network_firewall_systemd_daemon_reload',
-      }
-    } else {
-      basic_settings::systemd_network { '90-dhcpc':
-        ensure        => absent,
-        daemon_reload => 'network_firewall_systemd_daemon_reload',
-      }
-    }
-
-    # Setup default router advertisement settings
+    # Apply interface policy when interfaces are selected; otherwise remove both managed network files.
     if ($interfaces_str != '') {
+      # If DHCP is disabled, force system not to use DHCP
+      if (!$dhcp_enable) {
+        basic_settings::systemd_network { '90-dhcpc':
+          interface     => $interfaces_str,
+          network       => {
+            'DHCP' => 'no',
+          },
+          daemon_reload => 'network_firewall_systemd_daemon_reload',
+        }
+      } else {
+        basic_settings::systemd_network { '90-dhcpc':
+          ensure        => absent,
+          daemon_reload => 'network_firewall_systemd_daemon_reload',
+        }
+      }
+
       # Configure learned IPv6 prefixes when router advertisements are allowed.
       if ($ip_ra_enable) {
         # Translate the kernel's prefix-learning policy into a networkd boolean.
@@ -496,7 +496,7 @@ class basic_settings::network (
         }
       }
     } else {
-      basic_settings::systemd_network { '90-router-advertisement':
+      basic_settings::systemd_network { ['90-dhcpc', '90-router-advertisement']:
         ensure        => absent,
         daemon_reload => 'network_firewall_systemd_daemon_reload',
       }

@@ -12,6 +12,12 @@
 # The vhost already requires the package and configuration directory; use specific package or file resources for extra
 # dependencies.
 #
+# Socket options (`backlog`, `fastopen`, `multipath`, `reuseport`) are shared per listen address, port and transport,
+# including redirects. Repeated equal overrides are merged onto one listen directive in a shared `.inc` snippet.
+# Conflicting effective values fail catalog compilation with the option, socket and both values. Disabled defaults
+# contribute no override and do not disable another vhost's setting. Absent vhosts contribute nothing.
+# Shared listeners must use the same address and port spelling.
+#
 # @example Static HTTPS vhost with secure defaults
 #   nginx::server { 'www.example.org':
 #     docroot             => '/var/www/www.example.org',
@@ -43,8 +49,9 @@
 #   Controls whether directory access is allowed by the generated root location.
 #
 # @param backlog
-#   Listener backlog behavior. `-1` disables explicit backlog, `0` inherits the kernel connection limit, and values
-#   greater than zero set a custom backlog.
+#   Shared TCP listener backlog. Negative values omit an override; `0` inherits `basic_settings::kernel::connection_max`
+#   when that class is declared, otherwise it omits the override. Positive values set a custom backlog. Matching
+#   effective limits are merged, including an inherited kernel limit and the same explicit value.
 #
 # @param client_max_body_size
 #   Optional `client_max_body_size` value for the vhost.
@@ -73,7 +80,8 @@
 #   Optional PHP FastCGI read timeout.
 #
 # @param fastopen
-#   TCP Fast Open queue length used when the kernel class allows TFO.
+#   Shared TCP Fast Open queue length. Positive values contribute an override only when `basic_settings::kernel`
+#   is declared with `tcp_fastopen == 3`; other values or missing prerequisites omit the override.
 #
 # @param http2_enable
 #   Enables HTTP/2 for HTTPS listeners when certificates are configured.
@@ -85,7 +93,7 @@
 #   Requires an Nginx build with HTTP/3 and QUIC BPF support, Linux 5.7 or newer, UDP segmentation offloading,
 #   and permission for the privileged master to load BPF programs. The systemd service receives an unlimited
 #   locked-memory allowance for BPF maps; existing service hardening remains in place.
-#   QUIC BPF routing requires `reuseport` on the UDP listener; enable it on exactly one vhost per address/port pair.
+#   QUIC BPF routing requires `reuseport` on the UDP listener; enable it on at least one vhost per address/port pair.
 #
 # @param http_enable
 #   Creates HTTP listeners when `true`.
@@ -112,7 +120,7 @@
 #   Optional IPv4 listen address.
 #
 # @param ipv6
-#   Optional IPv6 listen address.
+#   Optional IPv6 listen address in square brackets, for example `[::1]`.
 #
 # @param keepalive_request_file
 #   Optional file path used by the template for keepalive request handling.
@@ -129,6 +137,12 @@
 # @param monitoring_cert
 #   Enables automatic local TLS checks with OpenITCOCKPIT and nonempty certificate/key values. `false` removes both
 #   checks.
+#
+# @param multipath
+#   Requests shared Multipath TCP on HTTP and HTTPS listeners, including redirects, but never on QUIC listeners.
+#   Defaults to `false`, which contributes no override and does not veto another vhost's request. Repeated `true`
+#   values emit `multipath` once per TCP socket. Requires Nginx 1.29.7 or newer with Multipath TCP support on Linux 5.6
+#   or newer. Nginx also enables SO_REUSEPORT when adding or removing this option.
 #
 # @param php_fpm_directives
 #   Additional raw directives rendered into the PHP-FPM location.
@@ -167,7 +181,7 @@
 #   Optional IPv4 listen address for the redirect server.
 #
 # @param redirect_ipv6
-#   Optional IPv6 listen address for the redirect server.
+#   Optional IPv6 listen address in square brackets for the redirect server.
 #
 # @param redirect_ssl_ciphers
 #   Optional TLS cipher list for the redirect server.
@@ -186,10 +200,12 @@
 #   managed header.
 #
 # @param restart_service
-#   Notifies the Nginx service when the vhost file changes if `true`.
+#   Notifies Nginx when this vhost file or its shared listener configuration changes if `true`. Shared listener changes
+#   notify the service when at least one participating vhost enables notifications.
 #
 # @param reuseport
-#   Enables `reuseport` on generated listen directives.
+#   Requests shared `reuseport` on TCP and QUIC listeners. Repeated `true` values emit it once per socket. `false`
+#   contributes no override and does not veto another vhost's request.
 #
 # @param securitytxt_contacts
 #   Vhost-specific security.txt contacts. `undef` inherits the class default or monitoring mail fallback.
@@ -291,6 +307,7 @@ define nginx::server (
   Boolean                   $location_internal               = false,
   Array                     $locations                       = [],
   Boolean                   $monitoring_cert                 = true,
+  Boolean                   $multipath                       = false, # Global settings
   Array                     $php_fpm_directives              = [],
   Boolean                   $php_fpm_enable                  = true,
   String                    $php_fpm_location                = '~* \.php$',
@@ -648,16 +665,6 @@ define nginx::server (
       $redirect_certificate_key_correct = undef
     }
 
-    # Realize host-wide QUIC settings once, even when several active vhosts share them.
-    if ($ensure == present and $http3_active) {
-      realize(File['nginx_quic'])
-
-      # Reuse the parent service integration only when systemd is managed.
-      if ($nginx::systemd_enable) {
-        realize(Basic_settings::Systemd_drop_in['nginx_quic'])
-      }
-    }
-
     # Split server_name from by space, we need only the first in template to use as a redirect
     if ($redirect_from and $redirect_from != '') {
       # Redirect requests to the first configured canonical server name.
@@ -691,15 +698,6 @@ define nginx::server (
       $redirect_http_port_correct = $redirect_http_port
     }
 
-    # Check if the HTTP port are the same
-    if ($redirect_http_port_correct == $http_port) {
-      # Avoid repeating HTTP socket options on a shared listen port.
-      $redirect_http_options = false
-    } else {
-      # Configure HTTP socket options on the redirect listener's separate port.
-      $redirect_http_options = true
-    }
-
     # Set HTTP port
     if ($redirect_https_port == undef) {
       # Reuse the primary HTTPS port for the redirect listener.
@@ -707,15 +705,6 @@ define nginx::server (
     } else {
       # Use the explicit HTTPS redirect port.
       $redirect_https_port_correct = $redirect_https_port
-    }
-
-    # Check if the HTTP port are the same
-    if ($redirect_https_port_correct == $https_port) {
-      # Avoid repeating HTTPS socket options on a shared listen port.
-      $redirect_https_options = false
-    } else {
-      # Configure HTTPS socket options on the redirect listener's separate port.
-      $redirect_https_options = true
     }
 
     # Set SSL protocols
@@ -761,44 +750,154 @@ define nginx::server (
     $config_ensure = $ensure ? { present => file, default => absent }
     $config_notify = $restart_service ? { true => Service['nginx'], default => undef }
 
-    # Apply the vhost lifecycle state while preserving its service notification.
+    # Configure listeners and register certificate checks only for present vhosts.
+    if ($ensure == present) {
+      # Realize host-wide QUIC settings once, even when several active vhosts share them.
+      if ($http3_active) {
+        realize(File['nginx_quic'])
+
+        # Reuse the parent service integration only when systemd is managed.
+        if ($nginx::systemd_enable) {
+          realize(Basic_settings::Systemd_drop_in['nginx_quic'])
+        }
+      }
+
+      # Keep Multipath TCP off QUIC sockets and preserve the backlog and Fast Open kernel prerequisites.
+      $listen_tcp_settings = {
+        'backlog'   => $backlog_active ? { true => $backlog_value, default => undef },
+        'fastopen'  => $tcp_fastopen ? { true => $fastopen, default => undef },
+        'multipath' => $multipath ? { true => true, default => undef },
+        'reuseport' => $reuseport ? { true => true, default => undef },
+      }
+      $listen_udp_settings = { 'reuseport' => $listen_tcp_settings['reuseport'] }
+
+      # Default-server selection remains specific to each vhost and transport.
+      $listen_default_flags = $default_server ? { true => ['default'], default => [] }
+      $listen_https_flags = $http3_active ? {
+        true    => [concat(['quic'], $listen_default_flags), ['ssl']],
+        default => [concat(['ssl'], $listen_default_flags)],
+      }
+
+      # Redirects share protocol settings without claiming the default-server role.
+      $listen_redirect_https_flags = $http3_active ? { true => [['quic'], ['ssl']], default => [['ssl']] }
+
+      # Keep the existing primary and redirect listener enablement, addresses and ports together.
+      $listen_groups = {
+        'http' => {
+          'enable' => $http_enable,
+          'ipv6_enable' => $http_ipv6_correct,
+          'ip' => $ip, 'ipv6' => $ipv6, 'port' => $http_port,
+          'flags' => [$listen_default_flags],
+        },
+        'https' => {
+          'enable' => $https_enable,
+          'ipv6_enable' => $https_ipv6_correct,
+          'ip' => $ip, 'ipv6' => $ipv6, 'port' => $https_port,
+          'flags' => $listen_https_flags,
+        },
+        'redirect_http' => {
+          'enable' => $redirect_from != undef,
+          'ipv6_enable' => $http_ipv6_correct,
+          'ip' => $redirect_ip_correct, 'ipv6' => $redirect_ipv6_correct, 'port' => $redirect_http_port_correct,
+          'flags' => [[]],
+        },
+        'redirect_https' => {
+          'enable' => $redirect_from != undef and $https_enable,
+          'ipv6_enable' => $https_ipv6_correct,
+          'ip' => $redirect_ip_correct, 'ipv6' => $redirect_ipv6_correct, 'port' => $redirect_https_port_correct,
+          'flags' => $listen_redirect_https_flags,
+        },
+      }
+      $listen_directives = Hash($listen_groups.map |$group, $listener| {
+        # Register only listeners whose server block will be rendered.
+        if ($listener['enable']) {
+          # An explicit IPv6 address selects IPv6 only; otherwise IPv6 enablement retains the IPv4 wildcard too.
+          if ($listener['ipv6_enable']) {
+            # Match the template's existing dual-stack selection.
+            $addresses = $listener['ipv6'] ? { undef => ['[::]', undef], default => [$listener['ipv6']] }
+          } else {
+            # Use the configured IPv4 address or its wildcard default.
+            $addresses = [$listener['ip']]
+          }
+
+          # Register all transports of each socket before rendering the owning vhost file.
+          $directives = flatten($addresses.map |$address| {
+            # Use the default IPv4 wildcard only when no address is configured.
+            $address_correct = $address ? { undef => '0.0.0.0', default => $address }
+            $socket_address = "${address_correct}:${listener['port']}"
+            $listener['flags'].map |$flags| {
+              # Keep TCP-only settings off QUIC sockets and select one include site per shared socket.
+              $settings = 'quic' in $flags ? { true => $listen_udp_settings, default => $listen_tcp_settings }
+              $transport = 'quic' in $flags ? { true => 'udp', default => 'tcp' }
+              $socket = "${transport} ${socket_address}"
+              $path = "${nginx::config}/listen-${stdlib::sha256($socket)}.inc"
+              $primary = !defined(Nginx::Listen[$socket])
+              $resource_title = $primary ? { true => $socket, default => "${socket} ${config_file} ${group}" }
+
+              # Register the shared owner before rendering so later vhosts can select their own listen directive.
+              nginx::listen { $resource_title:
+                address         => $socket_address,
+                config_file     => $config_file,
+                flags           => $flags,
+                path            => $path,
+                primary         => $primary,
+                restart_service => $restart_service,
+                settings        => $settings,
+                socket          => $socket,
+              }
+
+              # The template receives only the prepared include or vhost-local listen text.
+              $primary ? {
+                true    => "include ${path};",
+                default => "listen ${join(concat([$socket_address], $flags), ' ')};",
+              }
+            }
+          })
+          [$group, $directives]
+        } else {
+          [$group, []]
+        }
+      })
+
+      # Templates only emit the prepared directives and the remaining vhost configuration.
+      $config_content = template('nginx/server.conf')
+
+      # Register checks only for active TLS vhosts; concat removes omitted registrations from customchecks.ini.
+      if ($monitoring_cert and $https_enable
+        and $ssl_certificate != undef and $ssl_certificate != ''
+        and $ssl_certificate_key != undef and $ssl_certificate_key != ''
+        and $nginx::monitoring_enable and $basic_settings::monitoring::package != 'none') {
+        # Register the main HTTPS identity using the configuration path owned by this vhost.
+        nginx::monitoring_cert { "${name}/main":
+          config_file       => $config_file,
+          registration_name => "${server_name_primary}/main",
+          server_name       => $server_name,
+        }
+
+        # Register a configured TLS redirect separately so its certificate cannot replace the main target's assessment.
+        if ($redirect_from != undef and $redirect_from != ''
+          and $redirect_certificate_correct != '' and $redirect_certificate_key_correct != '') {
+          nginx::monitoring_cert { "${name}/redirect":
+            config_file       => $config_file,
+            registration_name => "${server_name_primary}/redirect",
+            server_name       => $redirect_from,
+          }
+        }
+      }
+    } else {
+      # File removal does not need content or shared socket registrations.
+      $config_content = undef
+    }
+
+    # Share one File declaration for present and absent vhosts; certificate checks explicitly require this resource.
     file { $config_file:
       ensure  => $config_ensure,
-      content => template('nginx/server.conf'),
+      content => $config_content,
       owner   => 'root',
       group   => 'root',
       mode    => '0600',
       notify  => $config_notify,
       require => [Package['nginx'], File[$nginx::config]],
-    }
-
-    # Absent resources also remove previously registered checks when TLS or monitoring is disabled.
-    $monitoring_cert_active = (
-      $ensure == present and $monitoring_cert and $https_enable
-      and $ssl_certificate != undef and $ssl_certificate != ''
-      and $ssl_certificate_key != undef and $ssl_certificate_key != ''
-      and $nginx::monitoring_enable and $basic_settings::monitoring::package != 'none'
-    )
-    $monitoring_cert_ensure = $monitoring_cert_active ? { true => present, default => absent }
-    $monitoring_redirect_ensure = (
-      $monitoring_cert_active and $redirect_from != undef and $redirect_from != ''
-      and $redirect_certificate_correct != '' and $redirect_certificate_key_correct != ''
-    ) ? { true => present, default => absent }
-
-    # Register the main HTTPS identity using the configuration path owned by this vhost.
-    nginx::monitoring_cert { "${name}/main":
-      ensure            => $monitoring_cert_ensure,
-      config_file       => $config_file,
-      registration_name => "${server_name_primary}/main",
-      server_name       => $server_name,
-    }
-
-    # Give the TLS redirect its own identity so its certificate cannot replace the main target's assessment.
-    nginx::monitoring_cert { "${name}/redirect":
-      ensure            => $monitoring_redirect_ensure,
-      config_file       => $config_file,
-      registration_name => "${server_name_primary}/redirect",
-      server_name       => $redirect_from,
     }
 
     # Rebuild security.txt after the vhost config changes by removing the stale fallback first.

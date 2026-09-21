@@ -111,59 +111,6 @@ class basic_settings::monitoring (
     require => Package[$mail_package],
   }
 
-  # Register the monitoring unit reload only when systemd is managed.
-  if ($systemd_enable) {
-    # The notification unit starts Bash before invoking the shared mail helper.
-    ensure_packages('bash', {
-      'ensure'          => 'installed',
-      'install_options' => ['--no-install-recommends', '--no-install-suggests'],
-    })
-
-    # Reload systemd deamon
-    exec { 'monitoring_systemd_daemon_reload':
-      command     => '/usr/bin/systemctl daemon-reload',
-      refreshonly => true,
-      require     => Package['systemd'],
-    }
-
-    # Create systemd service for notification
-    basic_settings::systemd_service { 'notify-failed@':
-      description   => 'Send systemd notifications to mail',
-      service       => {
-        'ExecStart'               => "/usr/bin/bash -c '${notify_failed_script}' %i",
-        'LockPersonality'         => 'true',
-        'MemoryDenyWriteExecute'  => 'true',
-        'NoNewPrivileges'         => 'true',
-        'PrivateDevices'          => 'true',
-        'PrivateTmp'              => 'true',
-        'ProtectClock'            => 'true',
-        'ProtectHome'             => 'true',
-        'ProtectHostname'         => 'true',
-        'ProtectKernelLogs'       => 'true',
-        'ProtectKernelModules'    => 'true',
-        'ProtectKernelTunables'   => 'true',
-        'ProtectSystem'           => 'full',
-        'RestrictSUIDSGID'        => 'true',
-        'SystemCallArchitectures' => 'native',
-        'Type'                    => 'oneshot',
-        'UMask'                   => '0077',
-      },
-      daemon_reload => 'monitoring_systemd_daemon_reload',
-      enable        => false,
-      require       => [Package[$mail_package, 'bash', 'systemd'], File[$monitoring_notify_path]],
-    }
-
-    # Create drop in for notify-failed service
-    basic_settings::systemd_drop_in { "notify-failed_${mail_package}_dependency":
-      target_unit   => 'notify-failed@',
-      unit          => {
-        'Wants' => "${mail_package}.service",
-      },
-      daemon_reload => 'monitoring_systemd_daemon_reload',
-      require       => [Package[$mail_package], Basic_settings::Systemd_service['notify-failed@']],
-    }
-  }
-
   # Monitoring package 
   case $package {
     'openitcockpit': {
@@ -284,28 +231,81 @@ class basic_settings::monitoring (
     }
   }
 
-  # Validate the active systemd configuration from the default target when monitoring is enabled.
-  if ($systemd_enable and $package != 'none') {
-    # Install the external commands used by this check.
-    $systemd_check_packages = ['findutils', 'mawk']
-
-    ensure_packages($systemd_check_packages, {
+  # Configure failure notifications and optional configuration monitoring when systemd is managed.
+  if ($systemd_enable) {
+    # The notification unit starts Bash before invoking the shared mail helper.
+    ensure_packages('bash', {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
 
-    # Prepare package names before constructing resource dependencies.
-    $systemd_check_required_packages = concat(
-      $systemd_check_packages,
-      ['dash', 'grep', 'systemd'],
-    )
+    # Reload systemd deamon
+    exec { 'monitoring_systemd_daemon_reload':
+      command     => '/usr/bin/systemctl daemon-reload',
+      refreshonly => true,
+      require     => Package['systemd'],
+    }
 
-    # Register the check after its runtime packages.
-    basic_settings::monitoring_custom { 'systemd_config':
-      friendly => 'Systemd config',
-      source   => 'puppet:///modules/basic_settings/monitoring/check_systemd_config',
-      timeout  => 60,
-      require  => Package[$systemd_check_required_packages],
+    # Create systemd service for notification
+    basic_settings::systemd_service { 'notify-failed@':
+      description   => 'Send systemd notifications to mail',
+      service       => {
+        'ExecStart'               => "/usr/bin/bash -c '${notify_failed_script}' %i",
+        'LockPersonality'         => 'true',
+        'MemoryDenyWriteExecute'  => 'true',
+        'NoNewPrivileges'         => 'true',
+        'PrivateDevices'          => 'true',
+        'PrivateTmp'              => 'true',
+        'ProtectClock'            => 'true',
+        'ProtectHome'             => 'true',
+        'ProtectHostname'         => 'true',
+        'ProtectKernelLogs'       => 'true',
+        'ProtectKernelModules'    => 'true',
+        'ProtectKernelTunables'   => 'true',
+        'ProtectSystem'           => 'full',
+        'RestrictSUIDSGID'        => 'true',
+        'SystemCallArchitectures' => 'native',
+        'Type'                    => 'oneshot',
+        'UMask'                   => '0077',
+      },
+      daemon_reload => 'monitoring_systemd_daemon_reload',
+      enable        => false,
+      require       => [Package[$mail_package, 'bash', 'systemd'], File[$monitoring_notify_path]],
+    }
+
+    # Create drop in for notify-failed service
+    basic_settings::systemd_drop_in { "notify-failed_${mail_package}_dependency":
+      target_unit   => 'notify-failed@',
+      unit          => {
+        'Wants' => "${mail_package}.service",
+      },
+      daemon_reload => 'monitoring_systemd_daemon_reload',
+      require       => [Package[$mail_package], Basic_settings::Systemd_service['notify-failed@']],
+    }
+
+    # Validate the active systemd configuration from the default target when monitoring is enabled.
+    if ($package != 'none') {
+      # Install the external commands used by this check.
+      $systemd_check_packages = ['findutils', 'mawk']
+
+      ensure_packages($systemd_check_packages, {
+        'ensure'          => 'installed',
+        'install_options' => ['--no-install-recommends', '--no-install-suggests'],
+      })
+
+      # Prepare package names before constructing resource dependencies.
+      $systemd_check_required_packages = concat(
+        $systemd_check_packages,
+        ['dash', 'grep', 'systemd'],
+      )
+
+      # Register the check after its runtime packages.
+      basic_settings::monitoring_custom { 'systemd_config':
+        friendly => 'Systemd config',
+        source   => 'puppet:///modules/basic_settings/monitoring/check_systemd_config',
+        timeout  => 60,
+        require  => Package[$systemd_check_required_packages],
+      }
     }
   }
 

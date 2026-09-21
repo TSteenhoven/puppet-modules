@@ -28,7 +28,7 @@ class LoadingTest < Minitest::Test
       output, errors, status = Open3.capture3(RbConfig.ruby, '-e', script)
       assert status.success?, errors
       assert_empty errors
-      assert_equal "26\n", output
+      assert_equal "27\n", output
     end
   end
 
