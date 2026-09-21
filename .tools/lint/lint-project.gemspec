@@ -8,7 +8,10 @@ Gem::Specification.new do |spec|
   spec.license = 'Apache-2.0'
   spec.homepage = 'https://github.com/DevSysEngineer/puppet-modules'
   spec.required_ruby_version = '>= 3.2'
-  spec.files = Dir.chdir(__dir__) { Dir['lib/**/*.rb', 'bin/*', 'config/*', 'README.md', 'LICENSE'] }
+  spec.files = Dir.chdir(__dir__) do
+    Dir['lib/**/*.rb', 'bin/*', 'config/*', 'README.md', 'LICENSE',
+        'docs/CODE_RULES.md', 'docs/DOCUMENTATION_RULES.md', 'docs/OPERATIONAL_RULES.md']
+  end
   spec.bindir = 'bin'
   spec.executables = %w[puppet-lint-junit puppet-validate-junit]
   spec.require_paths = ['lib']

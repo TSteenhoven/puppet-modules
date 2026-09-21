@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 require_relative 'test_helper'
+require_relative 'guide_links_support'
 
 # Check the guide's bounded technical structure against the loaded public interfaces.
 class GuideContractTest < Minitest::Test
   include LintTestSupport
+  include ProjectLint::GuideLinks
 
   GUIDE = File.join(LintTestSupport::ROOT, '.tools/lint/README.md')
+  RULES = %w[docs/CODE_RULES.md docs/DOCUMENTATION_RULES.md docs/OPERATIONAL_RULES.md].freeze
   FIELDS = ['Norm', 'Herkomst', 'Toepassingsgebied', 'Automatische controle', 'Detectiegrenzen',
             'Meldingen en severity', 'Autofix', 'Autofixvoorwaarden', 'Toegestane uitzonderingen',
             'Suppressions', 'Onjuist voorbeeld', 'Correct voorbeeld', 'Grensgevallen',
@@ -44,38 +47,47 @@ class GuideContractTest < Minitest::Test
     JSON.parse(output)
   end
 
-  def test_registry_activation_and_rule_links_match_both_profiles
+  def test_registry_activation_matches_both_profiles
     repository = profile_checks('.puppet-lint.rc')
     shared = profile_checks('.tools/lint/config/puppet-lint.rc')
     registry.each do |row|
       check = row.first.delete('`')
       assert_equal repository.fetch(check) ? 'Ja' : 'Nee', row[1], check
       assert_equal shared.fetch(check) ? 'Ja' : 'Nee', row[2], check
+    end
+  end
+
+  def test_registry_links_point_to_authoritative_rules
+    registry.each do |row|
+      check = row.first.delete('`')
       row.values_at(3, 5).each { |cell| assert_registry_links(cell, check) }
+      assert_registry_links(row[4], check) if row[4].include?('](')
     end
   end
 
   def assert_registry_links(cell, check)
-    links = cell.scan(/\]\(#([^)]*)\)/).flatten
+    links = cell.scan(/\]\(([^)]*)\)/).flatten
     refute_empty links, "Missing rule links for #{check}"
-    links.each { |link| assert_includes anchors(guide), link, check }
-  end
-
-  def prose(text)
-    text.gsub(/^```[^\n]*\n.*?^```\s*$/m, '')
-  end
-
-  def anchors(text)
-    visible = prose(text)
-    headings = visible.scan(/^\#{1,6} (.+)$/).flatten.map do |heading|
-      heading.downcase.gsub(/[^\p{Word}\s-]/, '').tr(' ', '-')
+    links.each do |link|
+      path, anchor = link.split('#', 2)
+      assert_includes RULES, path, check
+      target = File.join(File.dirname(GUIDE), path)
+      assert_path_exists target
+      assert_includes anchors(File.read(target)), anchor, check
     end
-    headings + visible.scan(%r{<a id="([^"]+)"></a>}).flatten
   end
 
   def rule_blocks
-    chapter = guide.split('## Puppet-coderegels en reviewcriteria', 2).last.split('## Autofix en suppressions', 2).first
-    prose(chapter).split(/(?=^\#{3,4} )/).drop(1).reject { |block| block.include?('<!-- lint-rule-group -->') }
+    RULES.flat_map do |name|
+      chapter = File.read(File.join(File.dirname(GUIDE), name)).sub(/^## Inhoudsopgave\n.*?(?=^## )/m, '')
+      prose(chapter).split(/(?=^\#{2,3} )/).drop(1).reject { |block| block.include?('<!-- lint-rule-group -->') }
+    end
+  end
+
+  def test_rules_have_unique_authoritative_headings
+    headings = rule_blocks.map { |block| block.lines.first.sub(/^\#+ /, '').strip }
+    duplicates = headings.tally.select { |_heading, count| count > 1 }
+    assert_empty duplicates, 'Rules duplicated across authoritative documents'
   end
 
   def test_each_rule_has_all_nonempty_fields_in_order
@@ -85,35 +97,5 @@ class GuideContractTest < Minitest::Test
       assert_equal FIELDS, values.map(&:first), block.lines.first
       values.each { |name, value| refute_empty value.strip, "#{block.lines.first}: #{name}" }
     end
-  end
-
-  def test_contents_links_every_section_in_heading_order
-    contents = guide[/^## Inhoudsopgave\n(.*?)(?=^## )/m, 1]
-    expected = prose(guide).scan(/^\#{2,6} (.+)$/).flatten.map do |title|
-      "[#{title}](##{anchors("## #{title}").first})"
-    end
-    assert_equal expected, contents.scan(/^ *- (\[.+\]\(#[^)]+\))$/).flatten
-  end
-
-  def test_guide_links_and_repository_incoming_links_resolve
-    assert_equal anchors(guide).uniq, anchors(guide), 'Duplicate guide anchors'
-    links = prose(guide).scan(/\]\(([^)\s]+)\)/).flatten
-    links.grep_v(/\A[a-z]+:/).each { |link| assert_local_link(link) }
-    %w[AGENTS.md README.md].each { |file| assert_incoming_links(file) }
-  end
-
-  def assert_incoming_links(file)
-    File.read(File.join(LintTestSupport::ROOT, file)).scan(%r{\]\(\.tools/lint/README\.md#([^)]+)\)}) do |match|
-      assert_includes anchors(guide), match.first, "Incoming link from #{file}"
-    end
-  end
-
-  def assert_local_link(link)
-    relative, fragment = link.split('#', 2)
-    target = relative.empty? ? GUIDE : File.expand_path(relative, File.dirname(GUIDE))
-    assert File.exist?(target), "Missing target: #{link}"
-    return unless fragment && File.file?(target) && target.end_with?('.md')
-
-    assert_includes anchors(File.read(target)), fragment, link
   end
 end

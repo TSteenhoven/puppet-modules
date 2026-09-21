@@ -51,7 +51,9 @@ class GuideExamplesTest < Minitest::Test
   end
 
   def documented_examples
-    File.read(File.join(LintTestSupport::ROOT, '.tools/lint/README.md')).scan(EXAMPLE)
+    %w[CODE_RULES.md DOCUMENTATION_RULES.md OPERATIONAL_RULES.md].flat_map do |name|
+      File.read(File.join(LintTestSupport::ROOT, '.tools/lint/docs', name)).scan(EXAMPLE)
+    end
   end
 
   def wrap_fragment(wrapper, code)

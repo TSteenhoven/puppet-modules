@@ -10,7 +10,7 @@ class ExternalProjectTest < Minitest::Test
   def test_installation_loads_all_checks_without_a_repository_checkout
     refute File.directory?(File.join(@installed, '.tools'))
     refute File.exist?(File.join(@installed, 'Gemfile'))
-    refute File.exist?(File.join(@installed, 'test'))
+    refute File.exist?(File.join(@installed, 'tests'))
   end
 
   def test_installed_checks_are_registered_once

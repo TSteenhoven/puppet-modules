@@ -886,7 +886,7 @@ De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specif
 
 ## Contributie
 
-Pull requests en meldingen zijn welkom. Wil je een wijziging bijdragen, lees dan eerst [`AGENTS.md`](AGENTS.md) voor het werkproces, de inhoudelijke review en de beveiligingsverantwoordelijkheden. De [codeafspraken en reviewcriteria](.tools/lint/README.md#naslag) gelden voor alle eigen modules en uitvoerbare voorbeelden; de [leeswijzer](.tools/lint/README.md#leeswijzer) helpt je de relevante onderdelen te vinden.
+Pull requests en meldingen zijn welkom. Wil je een wijziging bijdragen, lees dan eerst [`AGENTS.md`](AGENTS.md) voor het werkproces, de inhoudelijke review en de beveiligingsverantwoordelijkheden. De [algemene codeafspraken en reviewcriteria](.tools/lint/docs/CODE_RULES.md#naslag) gelden voor alle eigen modules en uitvoerbare voorbeelden. Raakt je wijziging commentaar, Puppet Strings of documentatie van Puppet-interfaces, volg dan daarnaast de [documentatieregels](.tools/lint/docs/DOCUMENTATION_RULES.md). Raakt je wijziging beheerde bestanden, rechten, beveiliging, services, shellcode, runtime-dependencies of monitoring, volg dan daarnaast de [operationele regels](.tools/lint/docs/OPERATIONAL_RULES.md). Beide aanvullende regelsbestanden kunnen tegelijk van toepassing zijn. De [leeswijzer](.tools/lint/README.md#leeswijzer) helpt je de relevante onderdelen te vinden.
 
 Richt vervolgens de [ontwikkelomgeving](.tools/lint/README.md#benodigde-omgeving) in en voer `bundle install` uit vanuit de hoofdmap van deze repository. Volg tijdens het aanpassen de [dagelijkse werkwijze](.tools/lint/README.md#werkwijze-bij-een-wijziging), van de eerste lintscan tot de eindcontrole. Gebruik daarbij de volgende controles vanuit de hoofdmap:
 
