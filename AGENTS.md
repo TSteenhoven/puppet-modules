@@ -2,45 +2,12 @@
 
 ## Scope And Authority
 
-This file governs project-wide development workflow, engineering responsibilities, and security. Its content and structure follow [Maintaining AGENTS.md](#maintaining-agentsmd).
+This file governs project-wide development workflow, engineering responsibilities, security, and documentation governance. Its content and structure follow [Maintaining AGENTS.md](#maintaining-agentsmd).
 
 - Agents must read this file and the root `README.md` before making changes.
-- Local agent instructions may refine workflow within this baseline.
-- Local agent instructions must not weaken or duplicate project-wide policy.
+- Local agent instructions may refine workflow within this baseline, but must not weaken or duplicate project-wide policy.
 
-### Project Constraints
-
-#### First-Party Code And Dependencies
-
-- Treat all module directories listed in the README as first-party except the vendored Git submodules `concat`, `debconf`, `reboot`, `stdlib`, and `timezone`.
-- Keep changes within first-party code and repository-owned documentation or tooling unless the task explicitly requires a vendored dependency change.
-- Never use vendored submodules as project style examples.
-- Prefer existing local modules for integrations. Runtime Puppet-module dependencies are limited to `stdlib`, `concat`, `reboot`, `timezone`, and `debconf`, except when a requirement demonstrably cannot be met adequately by the local implementation. Similar functionality alone does not justify adding an external Docker, MySQL, Nginx, or RabbitMQ module.
-- Review the concrete requirement against existing local interfaces before accepting that exception. For sensitive components, include package policy, monitoring, and audit. For example, reject an external Nginx module added solely for comparable functionality; accept a substantiated exception only for a requirement the local integration cannot adequately meet. This dependency-policy decision requires manual review; the linter does not establish it.
-
-#### Supported Platforms
-
-The first-party Puppet modules target Debian and Ubuntu servers. The complete module set primarily targets `amd64`; individual platform paths may support a narrower or broader set of releases or architectures.
-
-- Support claims for operating systems, releases, architectures, Puppet, or OpenVox must match the implementation, relevant `metadata.json`, available validation, and Dutch README in the same change.
-
-### Puppet Code Authority
-
-The [general Puppet rules](.tools/lint/docs/CODE_RULES.md), [Puppet documentation rules](.tools/lint/docs/DOCUMENTATION_RULES.md), and [operational rules](.tools/lint/docs/OPERATIONAL_RULES.md) define the mandatory Puppet conventions, formatting rules, permitted exceptions, and manual review criteria within their respective scopes. The [lint guide](.tools/lint/README.md) owns the workflow and tooling instructions. The [project puppet-lint configuration](.puppet-lint.rc), shared profiles, and [project checks](.tools/lint/lib/project_lint/checks/) determine automated activation, detection, and correction; tool tests verify the scenarios they execute. This file governs repository-wide workflow, engineering, security, and documentation governance.
-
-- Before changing Puppet code or Puppet Strings, follow the lint guide's [workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging) and use its [reading guide](.tools/lint/README.md#leeswijzer) to select and read the relevant conventions and review criteria in `.tools/lint/docs/CODE_RULES.md`.
-- For changes affecting Puppet code comments, Puppet Strings, or Puppet interface documentation, also read and apply the relevant rules in `.tools/lint/docs/DOCUMENTATION_RULES.md`.
-- For changes affecting managed files or directories, ownership or permissions, security, systemd or services, shell code or templates, runtime tools or operational dependencies, or monitoring checks or registrations, also read and apply the relevant rules in `.tools/lint/docs/OPERATIONAL_RULES.md`. These operational rules apply in addition to the general rules.
-- Both additional rule documents can apply to the same change; neither replaces `CODE_RULES.md`. A change affecting both operational code and its documentation must satisfy the applicable rules in all three rule documents.
-- Inspect the project configuration and relevant check implementations when determining automated coverage or resolving a lint finding.
-- Read additional relevant sections when the change affects Puppet Strings, dependencies, monitoring, systemd, security, or lint tooling. Unrelated specialized sections need not be read in advance.
-- Follow the authoritative conventions and review criteria for every affected area, extending the reading scope when new dependencies or integrations are found.
-- Agents must apply the documented review criteria even when the automated lint checks pass.
-- Keep conflicts between the documented norm, configuration, implementation, and test evidence visible. Do not silently change any source to resolve a conflict without evidence or an explicit project decision.
-- Apply [authority and rule placement](#authority-and-rule-placement) when maintaining rules or references in root and local agent instructions, the lint guide, or other documentation.
-- Changes to Puppet conventions must include their tests and all affected first-party code in the same change.
-
-## Authority And Rule Placement
+### Authority And Rule Placement
 
 Every durable norm has exactly one authoritative location. Classify a new or changed norm by the decision it governs, not by the file where the issue was found. Separate mixed passages before assigning ownership; apply the following questions in order, using the specific tooling route for tool procedures:
 
@@ -57,6 +24,23 @@ Every durable norm has exactly one authoritative location. Classify a new or cha
 - Rule ownership does not depend on automation. The rules documents are the central code and implementation standard, including fully automated, partly automated, detection-only, and exclusively manual rules. Missing checks or unsafe autofix never move a norm into `AGENTS.md` or make it optional.
 - When a task asks for a new general agreement, determine its owner before editing. Do not automatically add it here merely because the request calls it an "agent rule" or names `AGENTS.md`. Classify workflow, Puppet code, Puppet documentation, operational implementation, tooling, and general repository documentation first; add only a focused reference here when agents need to find the norm.
 - Keep general workflow out of the rules documents as well: preparation, scope, user changes, Git policy, overall security review, diff review, and reporting incomplete validation remain project-wide responsibilities here.
+- Apply this ownership model when maintaining rules or references in root and local agent instructions, the lint guide, or other documentation.
+
+### Project Constraints
+
+#### First-Party Code And Dependencies
+
+- Treat all module directories listed in the README as first-party except the vendored Git submodules `concat`, `debconf`, `reboot`, `stdlib`, and `timezone`.
+- Keep changes within first-party code and repository-owned documentation or tooling unless the task explicitly requires a vendored dependency change.
+- Never use vendored submodules as project style examples.
+
+Integration choices and exceptions follow [runtime module dependencies](#runtime-module-dependencies).
+
+#### Supported Platforms
+
+The first-party Puppet modules target Debian and Ubuntu servers. The complete module set primarily targets `amd64`; individual platform paths may support a narrower or broader set of releases or architectures.
+
+- Support claims for operating systems, releases, architectures, Puppet, or OpenVox must match the implementation, relevant `metadata.json`, available validation, and Dutch README in the same change.
 
 ## Working With The Existing Codebase
 
@@ -69,20 +53,32 @@ Every durable norm has exactly one authoritative location. Classify a new or cha
 - Check existing integration with `basic_settings`, monitoring, systemd, security audit, `php8::fpm`, `nginx`, and other local modules relevant to the change.
 - Check existing ownership, mode, `require`, `notify`, and `subscribe` patterns before adding resources.
 
+### Puppet Code Authority
+
+The [general Puppet rules](.tools/lint/docs/CODE_RULES.md), [Puppet documentation rules](.tools/lint/docs/DOCUMENTATION_RULES.md), and [operational rules](.tools/lint/docs/OPERATIONAL_RULES.md) define the mandatory Puppet conventions, formatting rules, permitted exceptions, and manual review criteria within their respective scopes. The [lint guide](.tools/lint/README.md) owns tooling procedures and the lint workflow; [authority and rule placement](#authority-and-rule-placement) distinguishes those procedures from project-wide workflow. The [project puppet-lint configuration](.puppet-lint.rc), shared profiles, and [project checks](.tools/lint/lib/project_lint/checks/) determine automated activation, detection, and correction; tool tests verify the scenarios they execute.
+
+- Before changing Puppet code or Puppet Strings, follow the lint guide's [workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging) and use its [reading guide](.tools/lint/README.md#leeswijzer) to select and read the relevant conventions and review criteria in `.tools/lint/docs/CODE_RULES.md`.
+- For changes affecting Puppet code comments, Puppet Strings, or Puppet interface documentation, also read and apply the relevant rules in `.tools/lint/docs/DOCUMENTATION_RULES.md`.
+- For changes affecting managed files or directories, ownership or permissions, security, systemd or services, shell code or templates, runtime tools or operational dependencies, or monitoring checks or registrations, also read and apply the relevant rules in `.tools/lint/docs/OPERATIONAL_RULES.md`. These operational rules apply in addition to the general rules.
+- Both additional rule documents can apply to the same change; neither replaces `CODE_RULES.md`. A change affecting both operational code and its documentation must satisfy the applicable rules in all three rule documents.
+- Read additional relevant sections when the change affects Puppet Strings, dependencies, monitoring, systemd, security, or lint tooling. Unrelated specialized sections need not be read in advance.
+- Follow the authoritative conventions and review criteria for every affected area, extending the reading scope when new dependencies or integrations are found.
+- Agents must apply the documented review criteria even when the automated lint checks pass.
+- Keep conflicts between the documented norm, configuration, implementation, and test evidence visible. Do not silently change any source to resolve a conflict without evidence or an explicit project decision.
+- Changes to Puppet conventions must include their tests and all affected first-party code in the same change.
+
 ### Scope And User Changes
 
 - Preserve unrelated user changes.
 - Treat a user's corrective edit as the current preferred pattern.
 - Never restore an earlier agent approach unless the user explicitly requests it.
 - Keep changes, including supporting refactors, scoped to the requested task and affected area.
-- Use the simplest implementation that meets the requested behavior and preserves existing contracts, starting with existing built-in functionality.
-- Do not add input formats, normalization, edge-case handling, fallbacks, checks, helpers, configuration files, or abstractions unless the user's request, an existing project or interface contract, or a demonstrated failure within the task's scope requires them. Hypothetical edge cases, possible future use, and general robustness arguments are not sufficient justification. Tests created for an unsolicited extension do not establish a requirement for that extension.
-- Before adding such behavior or structure, identify the concrete requirement or demonstrated failure and explain why the simpler implementation cannot satisfy it. Record that justification in the change review; omit the addition when the need cannot be demonstrated. During final diff review, remove additions that lack this justification. When the user asks to simplify, remove unnecessary behavior and its supporting code.
+
+Apply the [implementation scope](#implementation-scope) when deciding whether additional behavior or structure is justified.
 
 ### Impact Review
 
 - Review effects on repository conventions, Puppet abstractions, and reusable wrappers. When a request uses a concrete example, assess whether the same principle applies to other resource types, consumers, or integrations in the affected area. Apply shared behavior consistently, preserve type-specific semantics, and record the scope and any deliberate limits in the change review.
-- Review each added or moved declaration in the complete surrounding implementation against the [resource placement and ordering criteria](.tools/lint/docs/CODE_RULES.md#volgorde-en-meldingen). Record any necessary placement exception and its technical reason in the change review.
 - Review effects on monitoring, logging, alerting, audit rules, and operational diagnostics.
 - Review effects on documentation, examples, supported platforms, compatibility, and operational commands.
 
@@ -90,57 +86,6 @@ Every durable norm has exactly one authoritative location. Classify a new or cha
 
 - AI agents must never create, amend, or rewrite Git commits through Git commands, APIs, or other tools.
 - Leave validated changes in the working tree for human review and commit.
-
-## Design And Implementation
-
-### Reuse And Shared Abstractions
-
-- Inspect existing abstractions before adding a new one.
-- Review component interfaces and their callers against the [configuration ownership criteria](.tools/lint/docs/CODE_RULES.md#instellingen-bij-hun-eigenaar-houden), including the boundary between source configuration, internal derived values, and template input.
-- Review parent-class interfaces before computing local settings in dependent defines, following the [class-check reuse criteria](.tools/lint/docs/CODE_RULES.md#classcontroles-hergebruiken).
-- Identify the existing owner of cleanup before adding removal logic and review the change against the [directory ownership and cleanup contract](.tools/lint/docs/OPERATIONAL_RULES.md#recursieve-bewerkingen-tot-module-eigendom-beperken).
-- When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change.
-- Review repeated Puppet resource orchestration against the [defined-type reuse rule](.tools/lint/docs/CODE_RULES.md#herhaalde-resourceorkestratie-in-defined-types-delen).
-- Preserve caller-specific security and lifecycle requirements during migration.
-- Validate each migrated caller's behavior and dependencies.
-
-### Prerequisite Review
-
-- Identify operational prerequisites and ordering dependencies in changed code using the [prerequisite criteria](.tools/lint/docs/CODE_RULES.md#prerequisites-van-ordering-onderscheiden).
-- Verify that the documented contract covers availability and absence according to those criteria; validate both cases, including relevant declaration and evaluation order.
-- Apply the [dependency review criteria](.tools/lint/docs/CODE_RULES.md#resources-en-afhankelijkheden) and [external-command package contract](.tools/lint/docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos), including exec resources and managed scripts.
-
-### Managed Files And Helpers
-
-- Apply the [managed-file identification](.tools/lint/docs/OPERATIONAL_RULES.md#door-puppet-beheerde-inhoud-markeren) and [management-helper rules](.tools/lint/docs/OPERATIONAL_RULES.md#beheerhelpers-op-de-gedeelde-locatie-installeren) when changing managed content or helpers.
-- Verify identification in the resulting file content, including rendered templates and assembled fragments; review any format exception at its source.
-- When moving a helper, update and validate all invocations and dependencies together.
-
-## Shell Scripts
-
-- For changes to any first-party shell code, including generated shell, apply the [operational shell rules](.tools/lint/docs/OPERATIONAL_RULES.md#shellscripts).
-- Review the purpose of each external tool and all consumers before removing command discovery, package declarations, or dependency references, according to the [runtime-tool criteria](.tools/lint/docs/OPERATIONAL_RULES.md#runtime-tools-op-hun-functie-beoordelen).
-- Preserve existing public interfaces or document deliberate changes with their callers, applying the [script input contract](.tools/lint/docs/OPERATIONAL_RULES.md#shellargumenten-en-runtime-instellingen-verwerken).
-
-### Shell Validation
-
-- Review the source and rendered output against the linked operational shell rules, and run syntax validation with the intended interpreter. Puppet-lint does not validate shell syntax or the complete shell style.
-- Validate changed scripts with isolated synthetic cases for every supported input source: defaults, environment-only values, combined environment and CLI values, empty and invalid inputs, and partial overrides. Include related value ordering, repeated options, boolean resets and timeout behavior where applicable.
-- When replacing external tools, verify equivalent behavior, validation, error handling, monitoring statuses, exit codes and externally consumed output unless a behavior change is explicitly requested. Include relevant whitespace, escaping, locale and boundary cases in the comparison, and apply the [prerequisite review](#prerequisite-review) to removed or relocated dependencies.
-- Keep functional validation outside the repository according to the [test scope](#test-scope), including checks of failure paths and temporary-file cleanup when affected.
-
-## Monitoring Checks
-
-- Apply the [monitoring implementation rules](.tools/lint/docs/OPERATIONAL_RULES.md#monitoringchecks) and review effects on existing checks and registrations.
-- Review executor scheduling separately from script options against the [agent scheduling contract](.tools/lint/docs/OPERATIONAL_RULES.md#agentplanning-afzonderlijk-afstemmen).
-- Report changed operational risks and verify the affected monitoring behavior with the validation below.
-
-### Monitoring Validation
-
-- Verify each check's package guarantees through the general [external-command package contract and its documented exceptions](.tools/lint/docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos).
-- Apply [shell validation](#shell-validation) to changed check implementations.
-- For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
-- For each changed check, validate that retiring one target preserves the shared executable and the other registrations.
 
 ## Security And Privacy
 
@@ -227,42 +172,89 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Revoke or rotate compromised credentials and key material where applicable.
 - Follow the applicable security-incident procedure.
 
+## Design And Implementation
+
+### Implementation Scope
+
+- Use the simplest implementation that meets the requested behavior and preserves existing contracts, starting with existing built-in functionality.
+- Do not add input formats, normalization, edge-case handling, fallbacks, checks, helpers, configuration files, or abstractions unless the user's request, an existing project or interface contract, or a demonstrated failure within the task's scope requires them. Hypothetical edge cases, possible future use, and general robustness arguments are not sufficient justification. Tests created for an unsolicited extension do not establish a requirement for that extension.
+- Before adding such behavior or structure, identify the concrete requirement or demonstrated failure and explain why the simpler implementation cannot satisfy it. Record that justification in the change review; omit the addition when the need cannot be demonstrated. During final diff review, remove additions that lack this justification. When the user asks to simplify, remove unnecessary behavior and its supporting code.
+
+### Runtime Module Dependencies
+
+- Prefer existing local modules for integrations. Runtime Puppet-module dependencies are limited to `stdlib`, `concat`, `reboot`, `timezone`, and `debconf`, except when a requirement demonstrably cannot be met adequately by the local implementation. Similar functionality alone does not justify adding an external Docker, MySQL, Nginx, or RabbitMQ module.
+- Review the concrete requirement against existing local interfaces before accepting that exception. For sensitive components, include package policy, monitoring, and audit. For example, reject an external Nginx module added solely for comparable functionality; accept a substantiated exception only for a requirement the local integration cannot adequately meet. This dependency-policy decision requires manual review; the linter does not establish it.
+
+### Reuse And Shared Abstractions
+
+- Inspect existing abstractions before adding a new one.
+- Review component interfaces and their callers against the [configuration ownership criteria](.tools/lint/docs/CODE_RULES.md#instellingen-bij-hun-eigenaar-houden), including the boundary between source configuration, internal derived values, and template input.
+- Review parent-class interfaces before computing local settings in dependent defines, following the [class-check reuse criteria](.tools/lint/docs/CODE_RULES.md#classcontroles-hergebruiken).
+- When work reveals duplicated behavior in the affected area, extract a shared abstraction and migrate the affected callers in the same change.
+- Review repeated Puppet resource orchestration against the [defined-type reuse rule](.tools/lint/docs/CODE_RULES.md#herhaalde-resourceorkestratie-in-defined-types-delen).
+- Preserve caller-specific security and lifecycle requirements during migration.
+- Validate each migrated caller's behavior and dependencies.
+
+### Prerequisite Review
+
+- Identify operational prerequisites and ordering dependencies in changed code using the [prerequisite criteria](.tools/lint/docs/CODE_RULES.md#prerequisites-van-ordering-onderscheiden).
+- Verify that the documented contract covers availability and absence according to those criteria; validate both cases, including relevant declaration and evaluation order.
+- Apply the [dependency review criteria](.tools/lint/docs/CODE_RULES.md#resources-en-afhankelijkheden) and [external-command package contract](.tools/lint/docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos), including exec resources and managed scripts.
+
+### Resource Placement And Ordering
+
+- Review each added or moved declaration in the complete surrounding implementation against the [resource placement and ordering criteria](.tools/lint/docs/CODE_RULES.md#volgorde-en-meldingen). Record any necessary placement exception and its technical reason in the change review.
+
+### Managed Files And Helpers
+
+- Identify the existing owner of cleanup before adding removal logic and review the change against the [directory ownership and cleanup contract](.tools/lint/docs/OPERATIONAL_RULES.md#recursieve-bewerkingen-tot-module-eigendom-beperken).
+- Apply the [managed-file identification](.tools/lint/docs/OPERATIONAL_RULES.md#door-puppet-beheerde-inhoud-markeren) and [management-helper rules](.tools/lint/docs/OPERATIONAL_RULES.md#beheerhelpers-op-de-gedeelde-locatie-installeren) when changing managed content or helpers.
+- Verify identification in the resulting file content, including rendered templates and assembled fragments; review any format exception at its source.
+- When moving a helper, update and validate all invocations and dependencies together.
+
+### Shell Scripts
+
+- For changes to any first-party shell code, including generated shell, apply the [operational shell rules](.tools/lint/docs/OPERATIONAL_RULES.md#shellscripts).
+- Review the purpose of each external tool and all consumers before removing command discovery, package declarations, or dependency references, according to the [runtime-tool criteria](.tools/lint/docs/OPERATIONAL_RULES.md#runtime-tools-op-hun-functie-beoordelen).
+- Preserve existing public interfaces or document deliberate changes with their callers, applying the [script input contract](.tools/lint/docs/OPERATIONAL_RULES.md#shellargumenten-en-runtime-instellingen-verwerken).
+
+#### Shell Validation
+
+- Review the source and rendered output against the linked operational shell rules, and run syntax validation with the intended interpreter. Puppet-lint does not validate shell syntax or the complete shell style.
+- Validate changed scripts with isolated synthetic cases for every supported input source: defaults, environment-only values, combined environment and CLI values, empty and invalid inputs, and partial overrides. Include related value ordering, repeated options, boolean resets and timeout behavior where applicable.
+- When replacing external tools, verify equivalent behavior, validation, error handling, monitoring statuses, exit codes and externally consumed output unless a behavior change is explicitly requested. Include relevant whitespace, escaping, locale and boundary cases in the comparison, and apply the [prerequisite review](#prerequisite-review) to removed or relocated dependencies.
+- Keep functional validation outside the repository according to the [test scope](#test-scope), including checks of failure paths and temporary-file cleanup when affected.
+
+### Monitoring Checks
+
+- Apply the [monitoring implementation rules](.tools/lint/docs/OPERATIONAL_RULES.md#monitoringchecks) and review effects on existing checks and registrations.
+- Review executor scheduling separately from script options against the [agent scheduling contract](.tools/lint/docs/OPERATIONAL_RULES.md#agentplanning-afzonderlijk-afstemmen).
+- Report changed operational risks and verify the affected monitoring behavior with the validation below.
+
+#### Monitoring Validation
+
+- Verify each check's package guarantees through the general [external-command package contract and its documented exceptions](.tools/lint/docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos).
+- Apply [shell validation](#shell-validation) to changed check implementations.
+- For each changed check, validate registrations with at least two targets invoking the same executable with their own settings.
+- For each changed check, validate that retiring one target preserves the shared executable and the other registrations.
+
 ## Development Tooling
 
 ### Development Environment
 
 - Set up development and CI through the [documented bundle setup](.tools/lint/README.md#installatie), using the root Gemfile, lockfile, standard CLI, and regression tests.
 
+### Linting And Autofix
+
+- Inspect the project configuration and relevant check implementations when determining automated coverage or resolving a lint finding.
+- Follow the lint guide's [correction workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging), including the initial findings, safe scoped corrections, rescan, and remaining manual corrections.
+- Review corrections manually when safety cannot be demonstrated. Review the complete diff to confirm semantic correctness and scope, preserving functional behavior, resource relationships, dependencies, and intended configuration.
+
 ### Linter Changes
 
 - Before changing the linter, apply the [architecture and check development procedures](.tools/lint/README.md#een-check-toevoegen-of-wijzigen), including their public-interface and consumer-validation requirements.
 - Use the [native autofix development procedure](.tools/lint/README.md#veilige-autofixes-ontwikkelen) for custom corrections and verify its detection, correction, rescan, idempotence, interaction, and suppression evidence.
 - Report checks that appear suitable for safe detection or autofix but lack it as possible linter improvements. Implement them only when linter development is within the task's scope.
-
-### Linting And Autofix
-
-- Follow the lint guide's [correction workflow](.tools/lint/README.md#werkwijze-bij-een-wijziging), including the initial findings, safe scoped corrections, rescan, and remaining manual corrections.
-- Review corrections manually when safety cannot be demonstrated. Review the complete diff to confirm semantic correctness and scope, preserving functional behavior, resource relationships, dependencies, and intended configuration.
-
-## Validation And Testing
-
-### Test Scope
-
-- Add or maintain repository-owned automated tests only for repository tools.
-- Classify tests by the behavior their assertions verify, not by filenames, input formats, or implementation technologies.
-- Run repository-wide Puppet syntax validation as a separate task using the native `puppet parser validate` command; keep it outside tool tests and their task dependencies.
-- Never add general module, catalog, template, script, or monitoring behavior tests to the repository, including indirect execution through tool tests, helpers, hooks, or task dependencies.
-- Perform required functional validation with existing validators and isolated temporary checks outside the repository.
-
-### Isolation And Evidence
-
-- Keep synthetic tests and validation isolated from production credentials, production connections, and managed hosts.
-- Never treat vendored submodule tooling as validation of first-party modules.
-- Never treat passing lint as a replacement for functional validation or review.
-- Verify that the central lint solution and its required review evidence cover changed public interfaces.
-- Record applicable review outcomes and functional validation commands and results in the change review.
-- Report unavailable tooling, failed or unexecuted checks, fallback checks, and remaining uncertainty.
-- Never describe incomplete validation as complete.
 
 ### Tool Test Structure
 
@@ -289,6 +281,26 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 - Apply the [CI and reporting procedures](.tools/lint/README.md#ci-van-deze-repository) when changing tooling or pipelines; verify job independence, report publication, exit-status preservation, and tracked-file checks.
 - Never restore files to make a CI cleanliness check pass.
+
+## Validation And Testing
+
+### Test Scope
+
+- Add or maintain repository-owned automated tests only for repository tools.
+- Classify tests by the behavior their assertions verify, not by filenames, input formats, or implementation technologies.
+- Run repository-wide Puppet syntax validation as a separate task using the native `puppet parser validate` command; keep it outside tool tests and their task dependencies.
+- Never add general module, catalog, template, script, or monitoring behavior tests to the repository, including indirect execution through tool tests, helpers, hooks, or task dependencies.
+- Perform required functional validation with existing validators and isolated temporary checks outside the repository.
+
+### Isolation And Evidence
+
+- Keep synthetic tests and validation isolated from production credentials, production connections, and managed hosts.
+- Never treat vendored submodule tooling as validation of first-party modules.
+- Never treat passing lint as a replacement for functional validation or review.
+- Verify that the central lint solution and its required review evidence cover changed public interfaces.
+- Record applicable review outcomes and functional validation commands and results in the change review.
+- Report unavailable tooling, failed or unexecuted checks, fallback checks, and remaining uncertainty.
+- Never describe incomplete validation as complete.
 
 ### Required Checks
 
@@ -390,7 +402,6 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Link to relocated elaboration from the warning and required action that remain at the point of use.
 - Keep placeholder hostnames, replacement values, Hiera guidance, and `Sensitive(...)` handling near the quick start.
 - Use `## Inhoudsopgave` for the [table of contents](#markdown) in Dutch READMEs; never label it `Legenda`.
-- Keep the lint README's contents task-oriented around lint usage and tooling. Organize the rule documents around their assigned domains: general Puppet code in `CODE_RULES.md`, Puppet comments and interface documentation in `DOCUMENTATION_RULES.md`, and operational rules in `OPERATIONAL_RULES.md`. Link clearly from the lint README to all three rule documents and between relevant sections in all four documents, following the [Markdown navigation requirements](#markdown). Make the cumulative applicability of the three rule documents explicit in the reading guide.
 - Maintain a bottom-level list of expanded examples.
 
 #### README Style
@@ -459,6 +470,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Keep the general rules under `CODE_RULES.md`; do not introduce `STYLE_RULES.md`, since these rules also cover interfaces, parameters, dependencies, and resources. Do not use `REFERENCE.md` for lint rules; module `REFERENCE.md` files retain their Puppet Strings/API-reference purpose.
 - Keep each of the four central lint documents strictly below 300 KiB (307200 bytes), guarded by a lint documentation contract test. On an overshoot, first review placement within the four assigned responsibilities. Never delete or shorten necessary content, combine independent rules to save space, or split automatically to meet the limit; any necessary fifth document requires a separate, explicitly reviewed architecture change.
 - Preserve requirements, exceptions, warnings, detection limits, autofix conditions, supported usage routes, and manual review criteria during reorganization. Consolidating duplicate explanations must preserve every distinct condition and obligation.
+- Keep the lint README's contents task-oriented around lint usage and tooling. Link clearly from the lint README to all three rule documents and between relevant sections in all four documents, following the [Markdown navigation requirements](#markdown). Make the cumulative applicability of the three rule documents explicit in the reading guide.
 - Keep both the repository quick start and the consumer quick start before the detailed tooling reference in `README.md`. Keep the sole central check registry and maintainer explanations there, and link directly to the authoritative rule in `CODE_RULES.md`, `DOCUMENTATION_RULES.md`, or `OPERATIONAL_RULES.md` without duplicating full rules or the registry.
 - Keep tool-specific test instructions in the owning tooling guide. Do not create separate test READMEs.
 - General README brevity, selective-detail, and presentation guidance must not remove information or required fields from the lint guide. Apply the lint guide's documentation contract to its rule reference.
@@ -472,6 +484,23 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ## Maintaining AGENTS.md
 
+### Change Scope
+
+- Read the complete file before a substantive change so existing rules, exceptions, and cross-references inform the edit.
+- Update this file when a repository-wide convention, architecture constraint, validation command, security requirement, non-Puppet engineering standard, or operational workflow changes.
+- Limit routine maintenance to the affected rules and directly impacted references.
+- Restructure the whole file only when explicitly requested or when documented contradictions across sections require it.
+
+### Maintenance Decisions
+
+- Identify the underlying objective, required behavior or lasting knowledge, scope, and necessary exceptions before proposing a policy change. Determine its owner with [authority and rule placement](#authority-and-rule-placement), including when the task explicitly names this file.
+- Find the existing authoritative rules that wholly or partly cover the required behavior before adding material.
+- Distinguish missing or unclear policy from failure to follow a clear rule before deciding to edit.
+- Leave this file unchanged when existing policy covers the requested behavior completely and unambiguously and no structural improvement is needed, even after repeated violations.
+- When a clear rule was violated, investigate which execution or verification step failed and correct that step without adding or rewording policy that already covers the behavior.
+- Update or clarify the existing authoritative rule before creating a parallel rule. Broaden its scope only when existing authority or an explicit instruction supports that policy change.
+- Add a new rule only when necessary durable behavior is not already covered.
+
 ### Content And Placement
 
 - Store only durable project-wide engineering rules that govern future development.
@@ -480,29 +509,11 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Never copy a task instruction verbatim into this file merely because it requests a policy update.
 - When adding new material, place feature-specific implementation detail, configuration guides, troubleshooting, implementation plans, examples, and concrete test scenarios in their [designated locations](#language-and-authority), according to [authority and rule placement](#authority-and-rule-placement), including durable code conventions. When reorganizing this file, apply the [preservation requirements](#consolidation-and-placement) to its existing content.
 - Preserve exact technical names, values, and versions when required by a contract, constraint, exception, compatibility requirement, or security requirement.
-- Preserve relevant technical detail, explanations, examples, and verification instructions at their authoritative location when reorganizing this file. Move content under [authority and rule placement](#authority-and-rule-placement) with a targeted reference; changing ownership never authorizes information loss.
-
-### Change Scope
-
-- Update this file when a repository-wide convention, architecture constraint, validation command, security requirement, non-Puppet engineering standard, or operational workflow changes.
-- Limit routine maintenance to the affected rules and directly impacted references.
-- Restructure the whole file only when explicitly requested or when documented contradictions across sections require it.
-- Read the complete file before a substantive change so existing rules, exceptions, and cross-references inform the edit.
-
-### Maintenance Decisions
-
-- Identify the underlying objective, required behavior or lasting knowledge, scope, and necessary exceptions before proposing a policy change. Determine its owner with [authority and rule placement](#authority-and-rule-placement), including when the task explicitly names this file.
-- Find the existing authoritative rules that wholly or partly cover the required behavior.
-- Distinguish missing or unclear policy from failure to follow a clear rule before deciding to edit.
-- Leave this file unchanged when existing policy covers the requested behavior completely and unambiguously and no structural improvement is needed, even after repeated violations.
-- When a clear rule was violated, investigate which execution or verification step failed.
-- Correct that failed step without adding or rewording policy that already covers the behavior.
-- Update or clarify the existing authoritative rule before creating a parallel rule. Broaden its scope only when existing authority or an explicit instruction supports that policy change.
-- Add a new rule only when necessary durable behavior is not already covered.
+- Preserve relevant technical detail, explanations, examples, and verification instructions within this file when reorganizing it. Reorganization alone must not move unique content to another file. A change of ownership under [authority and rule placement](#authority-and-rule-placement) is a substantive change to review under [conflict resolution](#conflict-resolution); preserve the information at its authoritative location and leave a targeted reference. Changing ownership never authorizes information loss.
 
 ### Consolidation And Placement
 
-- Keep one authoritative location for every normative rule. Consolidate duplicate or weaker variants only when their full meaning is preserved, including any distinct conditions, exceptions, explanations, examples, and verification requirements.
+- Consolidate duplicate or weaker variants under the [single-authority rule](#authority-and-rule-placement) only when their full meaning is preserved, including any distinct conditions, exceptions, explanations, examples, and verification requirements.
 - Place each rule in the narrowest relevant section, extending an existing section when its subject fits.
 - Place each exception directly with the rule it modifies.
 - Combine rules only when they share the same objective, scope, required behavior, and decision point without hiding independent obligations. For partial overlap, consolidate the shared part and keep additional conditions or exceptions visible.
@@ -523,7 +534,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Write active, concrete rules with consistent terminology, explicit scope and triggers, required behavior, and necessary technical boundaries. Generalize only as far as the underlying agreement supports, retaining specific constraints and exceptions.
 - Use mandatory wording for obligations and prohibitions, reserving `may`, `can`, `prefer`, and `optional` for genuine discretion.
 - State how compliance is verified when this is not apparent from the rule.
-- Prioritize completeness, correctness, readability, scope, and traceability over reducing words, lines, bullets, or headings. Improve organization and wording without compressing information; relocate content only to its authoritative owner under [authority and rule placement](#authority-and-rule-placement).
+- Prioritize completeness, correctness, readability, scope, and traceability over reducing words, lines, bullets, or headings. Improve organization and wording without compressing information, following [content and placement](#content-and-placement) when reorganizing existing content or changing its owner.
 - Never compress independent requirements into a dense paragraph to reduce the document's length.
 
 ### Conflict Resolution
@@ -535,7 +546,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 
 ### Final Review
 
-- Review the complete diff against the pre-change version. Verify that every original obligation, prohibition, preference, condition, exception, technical contract, compatibility requirement, security safeguard, explanation, example, and verification instruction remains at its authoritative location with a working reference or has an explicitly justified correction.
+- Review the complete diff against the pre-change version. Verify that every original obligation, prohibition, preference, condition, exception, technical contract, compatibility requirement, security safeguard, explanation, example, and verification instruction remains in this file after reorganization or has an explicitly justified correction. For a substantive change of ownership, verify preservation and a working reference under [content and placement](#content-and-placement).
 - Verify that generalization and restructuring neither make required behavior optional nor make optional behavior mandatory.
 - Manually verify that every changed rule is necessary, reusable, scannable, non-duplicative, unambiguous, and consistent with this document, its terminology, and its references.
 - Run automated checks for literal duplicate rules and local link targets, using repository tooling when available or isolated temporary checks otherwise. Review meaning, structure, and readability manually rather than enforcing numerical prose limits.
