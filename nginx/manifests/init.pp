@@ -173,6 +173,7 @@ class nginx (
       command     => '/usr/bin/systemctl daemon-reload',
       refreshonly => true,
       require     => Package['systemd'],
+      before      => Service['nginx'],
     }
 
     # Create drop in for x target
@@ -221,6 +222,18 @@ class nginx (
       },
       daemon_reload => 'nginx_systemd_daemon_reload',
       require       => Package['nginx'],
+      before        => Exec['nginx_systemd_daemon_reload'],
+    }
+
+    # Older Linux kernels charge QUIC BPF maps against the service's locked-memory limit.
+    @basic_settings::systemd_drop_in { 'nginx_quic':
+      target_unit   => 'nginx.service',
+      service       => {
+        'LimitMEMLOCK' => 'infinity',
+      },
+      daemon_reload => 'nginx_systemd_daemon_reload',
+      require       => Package['nginx'],
+      notify        => Service['nginx'],
     }
   }
 
@@ -292,7 +305,13 @@ class nginx (
     require => Package['nginx'],
   }
 
-  # Create sites config directory
+  # Reload systemd as well as Nginx when retiring the shared QUIC configuration.
+  $quic_notify = $systemd_enable ? {
+    true    => [Exec['nginx_systemd_daemon_reload'], Service['nginx']],
+    default => Service['nginx'],
+  }
+
+  # Own the configuration directories and purge retired vhosts and the last unused QUIC fragment.
   file { [$config, '/etc/nginx/sites-enabled']:
     ensure  => directory,
     owner   => 'root',
@@ -301,7 +320,20 @@ class nginx (
     purge   => true,
     force   => true,
     recurse => true,
+    notify  => $quic_notify,
     require => Package['nginx'],
+  }
+
+  # HTTP/3 vhosts realize this single fragment because quic_bpf is valid only in the main context.
+  @file { 'nginx_quic':
+    ensure  => file,
+    path    => "${config}/0-quic.main",
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    content => "# Managed by puppet\nquic_bpf on;\n",
+    notify  => Service['nginx'],
+    require => File[$config],
   }
 
   # Create snippets directory

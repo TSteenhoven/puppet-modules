@@ -79,7 +79,13 @@
 #   Enables HTTP/2 for HTTPS listeners when certificates are configured.
 #
 # @param http3_enable
-#   Enables HTTP/3 when HTTPS and TLS 1.3 are active.
+#   Enables HTTP/3 when HTTPS and TLS 1.3 are active. Active vhosts and their redirects always enable `quic_gso`
+#   and `quic_retry`; the shared `conf.d/0-quic.main` fragment enables `quic_bpf` while any managed HTTP/3 vhost
+#   remains.
+#   Requires an Nginx build with HTTP/3 and QUIC BPF support, Linux 5.7 or newer, UDP segmentation offloading,
+#   and permission for the privileged master to load BPF programs. The systemd service receives an unlimited
+#   locked-memory allowance for BPF maps; existing service hardening remains in place.
+#   QUIC BPF routing requires `reuseport` on the UDP listener; enable it on exactly one vhost per address/port pair.
 #
 # @param http_enable
 #   Creates HTTP listeners when `true`.
@@ -640,6 +646,16 @@ define nginx::server (
       $http3_active = false
       $redirect_certificate_correct = undef
       $redirect_certificate_key_correct = undef
+    }
+
+    # Realize host-wide QUIC settings once, even when several active vhosts share them.
+    if ($ensure == present and $http3_active) {
+      realize(File['nginx_quic'])
+
+      # Reuse the parent service integration only when systemd is managed.
+      if ($nginx::systemd_enable) {
+        realize(Basic_settings::Systemd_drop_in['nginx_quic'])
+      }
     }
 
     # Split server_name from by space, we need only the first in template to use as a redirect

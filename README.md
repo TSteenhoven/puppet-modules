@@ -578,7 +578,13 @@ Een gecombineerde netwerkinrichting past in het basisprofiel van [`examples/site
 
 Declareer `nginx` vóór de vhosts. Voeg bij een vhost of een wrapper die Nginx-configuratie wijzigt geen `require => Class['nginx']` toe: dat kan een afhankelijkheidscyclus veroorzaken. Gebruik voor aanvullende afhankelijkheden de betreffende pakket- of bestandsresource; `nginx::server` regelt zijn pakket- en configuratieafhankelijkheden zelf.
 
-De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten.
+De module verwijdert Apache en neemt de Nginx-configuratie over. Controleer bestaande vhosts, document roots, certificaatrechten en gebruikte poorten. In `conf.d` worden bestanden met `.conf` binnen `http {}` ingelezen en bestanden met `.main` op hoofdniveau; geef eigen HTTP-configuratie daarom de extensie `.conf`.
+
+Bij actieve HTTP/3 schakelt de module ook `quic_gso`, `quic_retry` en `quic_bpf` in. Gebruik daarvoor een Nginx-build met HTTP/3- en QUIC BPF-ondersteuning op Linux 5.7 of nieuwer, met UDP-segmentatieondersteuning. De Nginx-master moet BPF-programma's mogen laden; controleer dit ook bij containers en aanvullende servicebeperkingen. De module verruimt bij systemd de limiet voor vergrendeld geheugen om BPF-maps te kunnen aanmaken. Deze opties zijn niet afzonderlijk uitschakelbaar; met `http3_enable => false` schakel je HTTP/3 voor een vhost uit.
+
+De bestaande kernelinstellingen `kernel.unprivileged_bpf_disabled = 1` en `net.core.bpf_jit_harden = 2` kunnen behouden blijven. Ze blokkeren BPF voor processen zonder de vereiste rechten en beveiligen de JIT-compiler. De Nginx-master behoudt met die rechten toegang tot BPF.
+
+Houd de gebruikte HTTPS-poort ook voor UDP bereikbaar. Zet voor BPF-routering `reuseport => true` op precies één vhost per gedeelde combinatie van luisteradres en poort. Controleer na de uitrol ook de servicestart: `nginx -t` test het laden van BPF-programma's niet. Zie de [Puppet Strings](nginx/manifests/server.pp) en de [NGINX QUIC-documentatie](https://nginx.org/en/docs/http/ngx_http_v3_module.html).
 
 Gebruik voor reverse proxies bij voorkeur HTTPS naar de achterliggende applicatie. Schakel certificaatcontrole alleen uit voor een lokale of self-signed verbinding waarvoor dat echt nodig is. Gebruik HTTP alleen als de achterliggende applicatie geen TLS ondersteunt.
 
