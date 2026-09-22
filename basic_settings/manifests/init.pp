@@ -54,6 +54,10 @@
 # @param getty_enable
 #   Controls console getty state through `basic_settings::login`.
 #
+# @param getty_reserved_units
+#   Concrete getty instances passed unchanged to `basic_settings::login` for exclusion from console management.
+#   Defaults to `[]`. See `basic_settings::login::getty_reserved_units` for accepted names, precedence, and ownership.
+#
 # @param gitlab_enable
 #   Enables management of the GitLab upstream APT repository when supported.
 #
@@ -288,6 +292,7 @@ class basic_settings (
   String                                $firewall_package                         = 'nftables',
   Boolean                               $firewall_remove                          = true,
   Boolean                               $getty_enable                             = false,
+  Array[Basic_settings::Getty_unit]     $getty_reserved_units                     = [],
   Boolean                               $gitlab_enable                            = false,
   Boolean                               $guest_agent_enable                       = false,
   Enum['none', 'kiosk', 'adwaita-icon'] $gui_mode                                 = 'none',
@@ -1317,6 +1322,7 @@ class basic_settings (
   class { 'basic_settings::login':
     environment             => $environment,
     getty_enable            => $getty_enable,
+    getty_reserved_units    => $getty_reserved_units,
     gui_mode                => $gui_mode,
     mail_to                 => $systemd_notify_mail,
     server_fdqn             => $server_fdqn,

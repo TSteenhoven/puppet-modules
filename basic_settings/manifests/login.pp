@@ -5,12 +5,12 @@
 # exceptions. These changes affect interactive access and should be reviewed carefully on existing hosts with local sudo
 # customizations.
 #
-# Console selection comes from the read-only agent fact `console_gettys`, using getty.target dependencies.
-# Puppet manages the selected text and serial instances during each run and preserves their existing boot links.
-# This does not block activation by systemd between Puppet runs or during boot. Before enabling a kiosk host, verify
-# that the configured consoles are usable and do not conflict with its graphical session. Review getty-static.service
-# separately if its local configuration starts additional consoles outside getty.target dependencies.
-# Discovery errors fail compilation; a successful empty selection is valid.
+# The read-only agent fact `console_gettys` only discovers text and serial instances from getty.target dependencies.
+# Puppet excludes `getty_reserved_units` and manages the remaining instances on each run, keeping their boot links.
+# This does not block activation by systemd between Puppet runs or during boot. Reserve consoles used by another
+# application and verify that the remaining consoles are usable. Review getty-static.service separately if its local
+# configuration starts additional consoles outside getty.target dependencies.
+# Discovery errors fail compilation even with reservations; a successful empty selection is valid.
 #
 # The shell policy in `/etc/profile.d/tmout.sh` sets a readonly, exported `TMOUT` only when an interactive shell loads
 # it. Non-interactive shells skip this initialization. Bash enforces the idle timeout; Dash does not enforce an idle
@@ -44,13 +44,21 @@
 #   Also used in generated login messages and templates.
 #
 # @param getty_enable
-#   Keeps configured text and serial console gettys running when `true`, or stopped when `false`, during Puppet runs.
+#   Keeps discovered, non-reserved gettys running when `true`, or stopped when `false`, on each Puppet run.
 #   The default is `false`. Boot links remain unchanged; automatic activation outside Puppet runs is not blocked.
 #   `gui_mode => 'kiosk'` forces the effective value to `true`. Requires the agent-side `console_gettys` fact.
 #
+# @param getty_reserved_units
+#   Excludes concrete `getty@<instance>.service` or `serial-getty@<instance>.service` names from the getty policy.
+#   Examples are `getty@tty2.service` and `serial-getty@ttyAMA0.service`. Templates and wildcards are not accepted.
+#   Defaults to `[]`, which retains management of every discovered instance. Reservations take precedence over
+#   `getty_enable` and kiosk mode: this class does not declare a Service resource for a reserved instance and does not
+#   start, stop, enable, disable, or mask it. Reservations are configuration independent of `console_gettys`; a reserved
+#   instance need not be discovered. The consumer determines why and how to reserve a console and arranges its use.
+#
 # @param gui_mode
-#   Selects GUI-related login behavior. `none` keeps the server minimal, `kiosk` enables getty and installs related
-#   session packages, and `adwaita-icon` is handled by the parent class for icon package selection.
+#   Selects GUI-related login behavior. `none` keeps the server minimal; `kiosk` enables non-reserved gettys
+#   and installs related session packages. The parent class handles `adwaita-icon` for icon package selection.
 #
 # @param hostname
 #   Hostname used by generated login templates. The default comes from Facter.
@@ -79,6 +87,7 @@
 class basic_settings::login (
   String                                $environment             = 'production',
   Boolean                               $getty_enable            = false,
+  Array[Basic_settings::Getty_unit]     $getty_reserved_units    = [],
   Enum['none', 'kiosk', 'adwaita-icon'] $gui_mode                = 'none',
   String                                $hostname                = $facts['networking']['hostname'],
   String                                $mail_to                 = 'root',
@@ -439,6 +448,9 @@ class basic_settings::login (
   # Require successful agent discovery; an empty list is valid, a missing or failed fact is not.
   $console_getty_units = $facts['console_gettys']
   if ($console_getty_units =~ Array[String[1]]) {
+    # Reservations exclude instances from management regardless of the effective console policy.
+    $managed_gettys = $console_getty_units - $getty_reserved_units
+
     # Select the runtime state using the existing effective setting.
     $console_getty_state = $getty_correct ? {
       true    => running,
@@ -446,7 +458,7 @@ class basic_settings::login (
     }
 
     # Preserve boot links so stopping a console does not remove it from the next run's selection.
-    service { $console_getty_units:
+    service { $managed_gettys:
       ensure   => $console_getty_state,
       provider => systemd,
       require  => Exec['login_systemd_daemon_reload'],
