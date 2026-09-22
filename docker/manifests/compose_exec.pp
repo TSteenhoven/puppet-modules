@@ -5,7 +5,8 @@
 # Container discovery excludes one-off `docker compose run` containers and must find exactly one running service
 # container.
 # Missing or ambiguous matches fail without executing the command.
-# Commands and guards are marked Sensitive and output logging is disabled; never put secrets in command arguments.
+# Commands and guards are marked Sensitive and output logging is disabled. Sensitive arguments are redacted in reports,
+# but remain visible to anyone permitted to inspect host or container process arguments.
 # Environment values are passed through Docker's command arguments and are visible to host/Docker administrators.
 # For secrets that must stay out of arguments, use a protected stdin_file and read it inside the container.
 #
@@ -19,7 +20,7 @@
 #
 # @param command
 #   Executable and arguments inside the container. Each array element is escaped separately; use /bin/sh -c explicitly
-#   for shell code.
+#   for shell code. Sensitive arguments remain protected while the command is assembled.
 #
 # @param compose_name
 #   Title of the managed docker::compose resource and value of its Compose project label.
@@ -46,16 +47,21 @@
 #   Optional read-only executable and arguments inside the container. Exit 0 skips command; also runs during Puppet
 #   --noop. Default undef.
 #
+# @param user
+#   Optional container user or UID, optionally with a group, for both command and unless. Default undef uses the image
+#   user. This does not change the host user connecting to Docker.
+#
 # @api public
 define docker::compose_exec (
-  Array[String, 1]                                 $command,
-  Pattern[/\A[A-Za-z0-9_.-]+\z/]                   $compose_name,
-  Pattern[/\A[A-Za-z0-9_.-]+\z/]                   $service,
-  Optional[Pattern[/\A\/[^\r\n]+\z/]]              $creates      = undef,
-  Hash[String, Variant[String, Sensitive[String]]] $environment  = {},
-  Optional[Pattern[/\A\/[^\r\n]+\z/]]              $stdin_file   = undef,
-  Integer[1]                                       $timeout      = 120,
-  Optional[Array[String, 1]]                       $unless       = undef,
+  Array[Variant[String, Sensitive[String]], 1]           $command,
+  Pattern[/\A[A-Za-z0-9_.-]+\z/]                         $compose_name,
+  Pattern[/\A[A-Za-z0-9_.-]+\z/]                         $service,
+  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $creates      = undef,
+  Hash[String, Variant[String, Sensitive[String]]]       $environment  = {},
+  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $stdin_file   = undef,
+  Integer[1]                                             $timeout      = 120,
+  Optional[Array[Variant[String, Sensitive[String]], 1]] $unless       = undef,
+  Optional[String[1]]                                    $user         = undef,
 ) {
   # Validate environment keys before forming Docker options; values are escaped independently below.
   if (defined(Class['docker']) and $environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
@@ -77,8 +83,25 @@ define docker::compose_exec (
       $entry_shell = stdlib::shell_escape("${key}=${value_correct}")
       "--env ${entry_shell}"
     }
-    $command_args_shell = $command.map |$argument| { stdlib::shell_escape($argument) }
-    $docker_exec_command = join(concat(['/usr/bin/docker exec'], $environment_args_shell), ' ')
+    $command_args_shell = $command.map |$argument| {
+      # Unwrap only while assembling the Sensitive exec command.
+      $argument_correct = $argument ? {
+        Sensitive => $argument.unwrap,
+        default   => $argument,
+      }
+      stdlib::shell_escape($argument_correct)
+    }
+
+    # Apply an explicit identity only when requested, preserving the image user for existing callers.
+    if ($user != undef) {
+      # Keep the container identity separate from Docker's option syntax.
+      $user_shell = stdlib::shell_escape($user)
+      $user_arg_shell = "--user ${user_shell}"
+    } else {
+      # An omitted identity leaves Docker's default intact.
+      $user_arg_shell = ''
+    }
+    $docker_exec_command = join(concat(['/usr/bin/docker exec', $user_arg_shell], $environment_args_shell), ' ')
 
     # Feed a host file only to the mutation; guards must remain independent of bootstrap stdin.
     if ($stdin_file != undef) {
@@ -95,7 +118,14 @@ define docker::compose_exec (
     # Apply the same discovery and execution boundary to the read-only application guard.
     if ($unless != undef) {
       # Shell escaping is identical for the guard and the mutation.
-      $unless_args_shell = $unless.map |$argument| { stdlib::shell_escape($argument) }
+      $unless_args_shell = $unless.map |$argument| {
+        # Unwrap only while assembling the Sensitive exec guard.
+        $argument_correct = $argument ? {
+          Sensitive => $argument.unwrap,
+          default   => $argument,
+        }
+        stdlib::shell_escape($argument_correct)
+      }
       $unless_command = Sensitive.new(join([
         $container_lookup_command,
         join(concat([$docker_exec_command, '"$container_id"'], $unless_args_shell, ['< /dev/null']), ' '),

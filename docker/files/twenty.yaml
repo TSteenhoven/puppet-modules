@@ -1,5 +1,3 @@
-name: twenty
-
 services:
   server:
     image: twentycrm/twenty:${TAG:-latest}

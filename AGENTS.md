@@ -177,6 +177,7 @@ External disclosure is every transfer outside an organization-controlled or expl
 ### Implementation Scope
 
 - Use the simplest implementation that meets the requested behavior and preserves existing contracts, starting with existing built-in functionality.
+- Treat an explicitly requested execution method as part of the task contract. Follow it directly; do not replace it with a custom runner, helper script, request-file protocol, or another execution layer to satisfy an inferred preference. If the requested method cannot meet a concrete requirement, explain that conflict before choosing a different design.
 - Do not add input formats, normalization, edge-case handling, fallbacks, checks, helpers, configuration files, or abstractions unless the user's request, an existing project or interface contract, or a demonstrated failure within the task's scope requires them. Hypothetical edge cases, possible future use, and general robustness arguments are not sufficient justification. Tests created for an unsolicited extension do not establish a requirement for that extension.
 - Before adding such behavior or structure, identify the concrete requirement or demonstrated failure and explain why the simpler implementation cannot satisfy it. Record that justification in the change review; omit the addition when the need cannot be demonstrated. During final diff review, remove additions that lack this justification. When the user asks to simplify, remove unnecessary behavior and its supporting code.
 
