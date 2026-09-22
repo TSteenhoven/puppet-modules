@@ -1,9 +1,9 @@
 # @summary Registers or removes one named S3 objectstore through Nextcloud OCC.
 #
 # Declare docker first and provide the initialized Nextcloud AIO deployment required by docker::nextcloud_occ.
-# The title is the key below objectstore; only that complete subtree is managed.
+# The resource name is the key below objectstore; only that complete subtree is managed.
 # Other stores and the default/root selections are preserved. Registration does not activate primary storage.
-# Titles start with a letter or digit and use letters, digits, dots, underscores and hyphens.
+# Names start with a letter or digit and use letters, digits, dots, underscores and hyphens.
 # The names default, root, class and arguments are reserved.
 # Unspecified optional arguments are omitted, including on updates that remove a previously configured override.
 # Nextcloud owns their defaults. PHP-style option names are mapped from the snake_case Puppet parameters below.
@@ -126,7 +126,7 @@ define docker::nextcloud_s3 (
   # Docker supplies the host runtime; the OCC wrapper owns the AIO invocation.
   if (defined(Class['docker'])) {
     # Reject selection keys and the legacy single-store fields so this resource only owns a named store.
-    if ($title =~ /\A[A-Za-z0-9][A-Za-z0-9_.-]*\z/ and !($title in ['default', 'root', 'class', 'arguments'])) {
+    if ($name =~ /\A[A-Za-z0-9][A-Za-z0-9_.-]*\z/ and !($name in ['default', 'root', 'class', 'arguments'])) {
       # Removal needs only a name; creation requires the three S3 credentials/settings.
       if ($ensure == absent or ($bucket != undef and $key != undef and $secret != undef and $proxy != true)) {
         # Serialize real Puppet data and preserve false, integer and fractional values without copying defaults.
@@ -166,27 +166,27 @@ define docker::nextcloud_s3 (
             'class'     => '\OC\Files\ObjectStore\S3',
             'arguments' => $arguments,
           })
-          $command = ['config:system:set', '--type=json', Sensitive("--value=${objectstore_json}"), 'objectstore', $title]
+          $command = ['config:system:set', '--type=json', Sensitive("--value=${objectstore_json}"), 'objectstore', $name]
           $expected_json = Sensitive($objectstore_json)
         } else {
           # OCC renders the explicit missing-value fallback as a JSON string, distinct from any objectstore object.
-          $command = ['config:system:delete', 'objectstore', $title]
+          $command = ['config:system:delete', 'objectstore', $name]
           $expected_json = '"null"'
         }
 
         # Read the named subtree as JSON; the explicit missing-value fallback distinguishes absence from an object.
-        docker::nextcloud_occ { "s3_${title}":
+        docker::nextcloud_occ { "s3_${name}":
           command      => $command,
           compose_name => $compose_name,
           timeout      => $occ_timeout,
-          unless       => ['config:system:get', '--output=json', '--default-value=null', 'objectstore', $title],
+          unless       => ['config:system:get', '--output=json', '--default-value=null', 'objectstore', $name],
           unless_json  => $expected_json,
         }
       } else {
         fail('docker::nextcloud_s3 requires bucket, key and secret when present; proxy must be a URL or false.')
       }
     } else {
-      fail('docker::nextcloud_s3 requires a named objectstore title; default, root, class and arguments are reserved.')
+      fail('docker::nextcloud_s3 requires a valid objectstore name; default, root, class and arguments are reserved.')
     }
   } else {
     fail('docker::nextcloud_s3 requires the docker class before its declaration.')

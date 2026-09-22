@@ -339,7 +339,7 @@ De generieke define `docker::nextcloud_occ` gebruikt de bestaande serviceselecti
 
 De [AIO-documentatie](https://github.com/nextcloud/all-in-one#how-to-run-occ-commands) voert OCC uit in `nextcloud-aio-nextcloud`. De selectie van de mastercontainer levert daarom op zichzelf geen werkende OCC-uitvoering in standaard AIO; de deployment moet OCC in de geselecteerde service beschikbaar maken. De aanroep gebruikt de PATH en werkmap van die container, zonder PHP op de host te installeren.
 
-De resourcetitel bepaalt de naam onder `objectstore`. Iedere resource beheert alleen die eigen configuratie en laat andere stores staan. Puppet schrijft alleen bij een inhoudelijk verschil. Optionele instellingen die je weglaat krijgen hun standaardwaarde van Nextcloud; een eerder opgegeven optie weglaten verwijdert de bijbehorende override.
+De resourcenaam bepaalt de naam onder `objectstore`. Iedere resource beheert alleen die eigen configuratie en laat andere stores staan. Puppet schrijft alleen bij een inhoudelijk verschil. Optionele instellingen die je weglaat krijgen hun standaardwaarde van Nextcloud; een eerder opgegeven optie weglaten verwijdert de bijbehorende override.
 
 Registreren kiest geen primaire opslag: `objectstore default` en `objectstore root` beheer je afzonderlijk. Gebruik per store een eigen bucket waar alleen deze Nextcloud-installatie toegang toe heeft. Het omschakelen van een bestaande installatie migreert geen bestanden en kan bestaande data ontoegankelijk maken. Regel vooraf de migratie en back-ups van zowel de database als de objectdata; zie de [Nextcloud-handleiding voor primaire objectopslag](https://docs.nextcloud.com/server/stable/admin_manual/configuration_files/primary_storage.html).
 
