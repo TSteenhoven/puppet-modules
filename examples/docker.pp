@@ -230,12 +230,13 @@ node 'twenty.example.org' {
   }
 }
 
-# Complete domain validation and initialization in AIO before expecting OCC defaults and S3 registration to succeed.
+# Complete domain validation and initialization in AIO before expecting OCC defaults, SMTP and S3 registration to succeed.
 # AIO requires one installation per Docker daemon; the Compose title does not isolate its fixed container names.
 node 'nextcloud.example.org' {
   class { 'basic_settings':
     docker_enable => true,
     nginx_enable  => true,
+    smtp_server   => 'smtp.example.org',
   }
 
   # Prepare the runtime and systemd integration used by the AIO mastercontainer.
@@ -250,6 +251,7 @@ node 'nextcloud.example.org' {
   }
 
   # Keep admin access on loopback for an SSH tunnel; configure backups separately in the AIO interface.
+  # SMTP uses basic_settings::smtp_server above; no mail settings are needed on this resource.
   docker::nextcloud { 'nextcloud-aio':
     server_name         => 'cloud.example.org',
     ssl_certificate     => '/etc/letsencrypt/live/cloud.example.org/fullchain.pem',

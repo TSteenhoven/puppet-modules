@@ -94,8 +94,8 @@
 #   Optional public Nginx `server_name`. When unset, only `docker::compose` is declared.
 #
 # @param smtp_from
-#   Optional sender address written as `AUTHENTIK_EMAIL__FROM`. `undef` derives `authentik@<server_name>` or
-#   `authentik@basic_settings::server_fdqn` when SMTP is active.
+#   Optional sender address written as `AUTHENTIK_EMAIL__FROM`. `undef` or empty derives `noreply@<first server_name>`
+#   or `noreply@basic_settings::server_fdqn` when SMTP is active.
 #
 # @param smtp_host
 #   Optional SMTP relay host written as `AUTHENTIK_EMAIL__HOST`. `undef` inherits `basic_settings::smtp_server` when
