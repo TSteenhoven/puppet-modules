@@ -98,6 +98,10 @@
 #   Optional public Nginx `server_name` for the Nextcloud application. When unset, only `docker::compose` is declared
 #   and the application stays reachable only on `127.0.0.1:<port>` on the host itself.
 #
+# @param skeleton_directory
+#   Global default skeleton directory written through OCC `config:system:set skeletondirectory`. The default is an
+#   empty string, matching upstream AIO's own recommendation to disable the sample-content skeleton.
+#
 # @param ssl_certificate
 #   Public TLS certificate path for the generated Nginx vhost(s).
 #
@@ -106,10 +110,6 @@
 #
 # @param ssl_certificate_trusted
 #   Optional trusted certificate path for public OCSP configuration.
-#
-# @param skeleton_directory
-#   Global default skeleton directory written through OCC `config:system:set skeletondirectory`. The default is an
-#   empty string, matching upstream AIO's own recommendation to disable the sample-content skeleton.
 #
 # @param ssl_verify
 #   Verifies the AIO upstream certificates when proxying over HTTPS. The default is `false` because both AIO
@@ -150,7 +150,9 @@ define docker::nextcloud (
   # Nginx is only required when at least one of the two AIO endpoints is published.
   $nginx_required = ($server_name != undef or $admin_server_name != undef)
 
+  # Require Docker before creating the Compose stack; a public vhost also needs Nginx.
   if (defined(Class['docker'])) {
+    # Require Nginx only when at least one AIO endpoint will get a public vhost.
     if ($nginx_required == false or defined(Class['nginx'])) {
       # AIO's own backup feature needs a host directory bind-mounted into the mastercontainer.
       $backup_directory = "/opt/docker/${name}/backup"
@@ -169,7 +171,7 @@ define docker::nextcloud (
       if ($server_name != undef) {
         docker::compose_proxy { $name:
           ensure                     => $ensure,
-          client_max_body_size       => '0', # Nextcloud handles large file uploads itself; do not cap the request body at the proxy. # lint:ignore:140chars
+          client_max_body_size       => '0', # lint:ignore:140chars Nextcloud handles large file uploads itself; do not cap the request body at the proxy.
           compose_source             => 'puppet:///modules/docker/nextcloud.yaml',
           content_security_policy    => false, # Nextcloud ships its own CSP; avoid a conflicting proxy-level policy.
           env_content                => $env_content,
@@ -211,10 +213,12 @@ define docker::nextcloud (
         }
       }
 
-      # Apply the deployment's global defaults through OCC once the stack is managed; each guard reads the current
-      # value back as JSON so Puppet only writes on an actual difference. docker::nextcloud_occ resolves its own
-      # ordering against the Docker::Compose[$name]/Docker::Compose_proxy[$name] resource declared above.
+      # Apply the deployment's global OCC defaults and the optional admin vhost only for a stack the operator wants
+      # present; both share this condition instead of repeating it on separate top-level blocks.
       if ($ensure == present) {
+        # Apply the deployment's global defaults through OCC once the stack is managed; each guard reads the current
+        # value back as JSON so Puppet only writes on an actual difference. docker::nextcloud_occ resolves its own
+        # ordering against the Docker::Compose[$name]/Docker::Compose_proxy[$name] resource declared above.
         docker::nextcloud_occ { "${name}_default_quota":
           command      => ['config:app:set', 'files', 'default_quota', '--value', $default_quota],
           compose_name => $name,
@@ -222,6 +226,7 @@ define docker::nextcloud (
           unless_json  => stdlib::to_json($default_quota),
         }
 
+        # Set the default UI language for new sessions.
         docker::nextcloud_occ { "${name}_default_language":
           command      => ['config:system:set', 'default_language', '--value', $default_language],
           compose_name => $name,
@@ -229,6 +234,7 @@ define docker::nextcloud (
           unless_json  => stdlib::to_json($default_language),
         }
 
+        # Set the default locale for number, date and currency formatting.
         docker::nextcloud_occ { "${name}_default_locale":
           command      => ['config:system:set', 'default_locale', '--value', $default_locale],
           compose_name => $name,
@@ -236,6 +242,7 @@ define docker::nextcloud (
           unless_json  => stdlib::to_json($default_locale),
         }
 
+        # Set the default region for phone numbers entered without a country prefix.
         docker::nextcloud_occ { "${name}_default_phone_region":
           command      => ['config:system:set', 'default_phone_region', '--value', $default_phone_region],
           compose_name => $name,
@@ -243,6 +250,7 @@ define docker::nextcloud (
           unless_json  => stdlib::to_json($default_phone_region),
         }
 
+        # Set the app users land on after login.
         docker::nextcloud_occ { "${name}_defaultapp":
           command      => ['config:system:set', 'defaultapp', '--value', $default_app],
           compose_name => $name,
@@ -250,51 +258,54 @@ define docker::nextcloud (
           unless_json  => stdlib::to_json($default_app),
         }
 
+        # Control the sample content copied into new users' file lists; empty disables it.
         docker::nextcloud_occ { "${name}_skeletondirectory":
           command      => ['config:system:set', 'skeletondirectory', '--value', $skeleton_directory],
           compose_name => $name,
           unless       => ['config:system:get', 'skeletondirectory', '--output=json'],
           unless_json  => stdlib::to_json($skeleton_directory),
         }
-      }
 
-      # Publish the AIO admin UI separately: docker::compose_proxy manages one vhost per Compose stack, and AIO
-      # genuinely needs two upstreams (app and admin), so the second vhost is declared directly here.
-      # ponytail: duplicates a handful of docker::compose_proxy's proxy_pass directives instead of a shared helper;
-      # promote to a shared directive-builder if a third multi-endpoint app ever needs the same thing.
-      if ($ensure == present and $admin_server_name != undef) {
-        $admin_ssl_enable = ($ssl_certificate != undef and $ssl_certificate_key != undef)
-        $admin_proxy_ssl_verify_value = $ssl_verify ? {
-          true    => 'on',
-          default => 'off',
-        }
+        # Publish the AIO admin UI separately: docker::compose_proxy manages one vhost per Compose stack, and AIO
+        # genuinely needs two upstreams (app and admin), so the second vhost is declared directly here.
+        # ponytail: duplicates a handful of docker::compose_proxy's proxy_pass directives instead of a shared helper;
+        # promote to a shared directive-builder if a third multi-endpoint app ever needs the same thing.
+        if ($admin_server_name != undef) {
+          # Resolve the admin vhost's TLS and upstream-verification settings from the shared certificate parameters.
+          $admin_ssl_enable = ($ssl_certificate != undef and $ssl_certificate_key != undef)
+          $admin_proxy_ssl_verify_value = $ssl_verify ? {
+            true    => 'on',
+            default => 'off',
+          }
 
-        nginx::server { "docker_compose_${name}_admin":
-          access_log              => "/var/log/nginx/docker_compose_${name}_admin_access.log combined buffer=32k flush=1m", # lint:ignore:140chars
-          docroot                 => undef,
-          error_log               => "/var/log/nginx/docker_compose_${name}_admin_error.log",
-          https_enable            => $admin_ssl_enable,
-          https_force             => $admin_ssl_enable,
-          location_directives     => [
-            "proxy_pass https://127.0.0.1:${admin_port};",
-            'proxy_set_header Host $host;',
-            'proxy_set_header X-Real-IP $remote_addr;',
-            'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
-            'proxy_set_header X-Forwarded-Host $host;',
-            'proxy_set_header X-Forwarded-Proto $scheme;',
-            'proxy_read_timeout 86400;',
-            "proxy_ssl_verify ${admin_proxy_ssl_verify_value};",
-          ],
-          php_fpm_enable          => false,
-          server_name             => $admin_server_name,
-          ssl_certificate         => $ssl_certificate,
-          ssl_certificate_key     => $ssl_certificate_key,
-          ssl_certificate_trusted => $ssl_certificate_trusted,
-          ssl_ocsp                => $admin_ssl_enable,
-          ssl_session_cache       => 'shared:SSL:10m',
-          ssl_session_timeout     => '10',
-          try_files               => false,
-          require                 => Docker::Compose[$name],
+          # Publish the admin UI through the vhost settings resolved above.
+          nginx::server { "docker_compose_${name}_admin":
+            access_log              => "/var/log/nginx/docker_compose_${name}_admin_access.log combined buffer=32k flush=1m", # lint:ignore:140chars
+            docroot                 => undef,
+            error_log               => "/var/log/nginx/docker_compose_${name}_admin_error.log",
+            https_enable            => $admin_ssl_enable,
+            https_force             => $admin_ssl_enable,
+            location_directives     => [
+              "proxy_pass https://127.0.0.1:${admin_port};",
+              'proxy_set_header Host $host;',
+              'proxy_set_header X-Real-IP $remote_addr;',
+              'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
+              'proxy_set_header X-Forwarded-Host $host;',
+              'proxy_set_header X-Forwarded-Proto $scheme;',
+              'proxy_read_timeout 86400;',
+              "proxy_ssl_verify ${admin_proxy_ssl_verify_value};",
+            ],
+            php_fpm_enable          => false,
+            server_name             => $admin_server_name,
+            ssl_certificate         => $ssl_certificate,
+            ssl_certificate_key     => $ssl_certificate_key,
+            ssl_certificate_trusted => $ssl_certificate_trusted,
+            ssl_ocsp                => $admin_ssl_enable,
+            ssl_session_cache       => 'shared:SSL:10m',
+            ssl_session_timeout     => '10',
+            try_files               => false,
+            require                 => Docker::Compose[$name],
+          }
         }
       }
     } else {
