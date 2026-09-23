@@ -227,7 +227,9 @@ Niet ieder pakket is voor iedere Linux-versie en architectuur beschikbaar; de cl
 
 Scripts die vanuit zo'n shell starten kunnen `TMOUT` erven, waardoor ook `read` en `select` een timeout krijgen. Geef zulke scripts waar nodig een eigen `read -t`-timeout of verwijder `TMOUT` uit hun eigen omgeving.
 
-Met `getty_enable` zet Puppet de tekst- en seriële consoles uit `getty.target` bij iedere run aan of uit. De bestaande bootkoppelingen blijven behouden; systemd kan een gestopte console tussen Puppet-runs of bij een herstart opnieuw activeren. `gui_mode => 'kiosk'` houdt consolebeheer ingeschakeld. Controleer vóór inschakelen of de consoles bruikbaar zijn en niet door de kiosksessie worden gebruikt. De agentfact `console_gettys` toont de selectie of een detectiefout. Zie de [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp) voor de afbakening.
+Met `getty_enable` zet Puppet de niet-gereserveerde tekst- en seriële consoles uit `getty.target` bij iedere run aan of uit. De bestaande bootkoppelingen blijven behouden; systemd kan een gestopte console tussen Puppet-runs of bij een herstart opnieuw activeren. `gui_mode => 'kiosk'` houdt deze consoles ingeschakeld. Controleer vóór inschakelen of ze bruikbaar zijn. De agentfact `console_gettys` toont de ontdekte consoles of een detectiefout.
+
+Gebruikt een andere toepassing een console, reserveer dan de concrete getty-instance in `basic_settings`, bijvoorbeeld met `getty_reserved_units => ['getty@tty2.service']`. Puppet laat die instance buiten het algemene consolebeleid en activeert haar ook in kioskmodus niet opnieuw. Je regelt zelf het gebruik van de console; een reservering stopt of maskeert de getty niet. Zie de [Puppet Strings bij `basic_settings::login`](basic_settings/manifests/login.pp) voor het volledige contract.
 
 #### Basisvoorbeeld
 
@@ -256,6 +258,7 @@ Meer gecombineerde basisconfiguratie staat in [`examples/site.pp`](examples/site
 - Kan een Compose-stack via een Nginx reverse proxy publiceren en gebruikt standaard HTTPS naar de containerapplicatie.
 - Levert Authentik- en Twenty-configuratie met `Sensitive` geheimen, vaste PostgreSQL-back-ups en een optionele Nginx-proxy.
 - Levert GitLab Runner met optionele eenmalige registratie en behoud van de actieve runnerconfiguratie.
+- Beheert named S3-objectstores in een bestaande Nextcloud AIO-installatie via OCC.
 
 #### Belangrijke aandachtspunten
 
@@ -325,6 +328,40 @@ docker exec -i restore-test psql -X -v ON_ERROR_STOP=1 -U restore_admin -d resto
 ```
 
 Controleer na herstel schemas, data, rollen, eigenaarschap en extensies voordat je op de back-up vertrouwt. Dit zijn lokale databaseback-ups: applicatiebestanden, secrets, externe kopieën en PITR vallen erbuiten.
+
+#### Nextcloud AIO en S3-opslag
+
+Met `docker::nextcloud_s3` registreer je één S3-objectstore in een Nextcloud AIO-installatie. Declareer eerst `docker` en geef met `compose_name` de titel van de deployment door, zoals bij `docker::authentik_admin`. `docker::nextcloud_occ` controleert centraal of een `docker::compose`-, `docker::compose_proxy`- of `docker::nextcloud`-resource met die titel beschikbaar is en laat de OCC-opdrachten daarvan afhangen. Zonder zo'n resource mislukt de catalogusopbouw met een gerichte foutmelding. Een wrapper moet uiteindelijk de gelijknamige `docker::compose`-resource leveren.
+
+Gebruik bij de [standaard AIO-configuratie](https://github.com/nextcloud/all-in-one/blob/main/compose.yaml) `nextcloud-aio`: AIO gebruikt die projectnaam ook voor de containers die de mastercontainer zelf aanmaakt. De gedeelde `docker::compose_exec` regelt de uitvoervolgorde en controleert of de juiste container draait. Rond de AIO-installatie af voordat je de S3-resources toepast: een ontbrekende of gestopte container of een onvoltooide installatie laat de opdracht mislukken zonder configuratie te schrijven. Een volgende Puppet-run kan het opnieuw proberen.
+
+De generieke define `docker::nextcloud_occ` gebruikt de bestaande serviceselectie van `docker::compose_exec`, met `service => 'nextcloud-aio-mastercontainer'`, zoals die in de gelinkte Compose-YAML staat. De geselecteerde container moet `php occ` als `www-data` kunnen uitvoeren.
+
+De [AIO-documentatie](https://github.com/nextcloud/all-in-one#how-to-run-occ-commands) voert OCC uit in `nextcloud-aio-nextcloud`. De selectie van de mastercontainer levert daarom op zichzelf geen werkende OCC-uitvoering in standaard AIO; de deployment moet OCC in de geselecteerde service beschikbaar maken. De aanroep gebruikt de PATH en werkmap van die container, zonder PHP op de host te installeren.
+
+De resourcenaam bepaalt de naam onder `objectstore`. Iedere resource beheert alleen die eigen configuratie en laat andere stores staan. Puppet schrijft alleen bij een inhoudelijk verschil. Optionele instellingen die je weglaat krijgen hun standaardwaarde van Nextcloud; een eerder opgegeven optie weglaten verwijdert de bijbehorende override.
+
+Registreren kiest geen primaire opslag: `objectstore default` en `objectstore root` beheer je afzonderlijk. Gebruik per store een eigen bucket waar alleen deze Nextcloud-installatie toegang toe heeft. Het omschakelen van een bestaande installatie migreert geen bestanden en kan bestaande data ontoegankelijk maken. Regel vooraf de migratie en back-ups van zowel de database als de objectdata; zie de [Nextcloud-handleiding voor primaire objectopslag](https://docs.nextcloud.com/server/stable/admin_manual/configuration_files/primary_storage.html).
+
+Vervang de voorbeeldhostnaam en credentials door waarden uit je profiel of versleutelde Hiera-data. Geef het secret door als `Sensitive`; ook de access key en een proxy-URL kunnen gevoelig zijn. Puppet schermt commando's en uitvoer af, maar argumenten blijven zichtbaar voor beheerders die processen op de host of in de container mogen inspecteren. Beperk daarom Docker- en procestoegang en bescherm ook de Nextcloud-configuratie, logs en eventuele profiler.
+
+```puppet
+include docker
+
+# Register this store without changing the default or root selection.
+docker::nextcloud_s3 { 'server1':
+  compose_name   => 'nextcloud-aio',
+  bucket         => 'nextcloud-01',
+  hostname       => 's3.example.org',
+  key            => 'replace-with-access-key',
+  secret         => Sensitive('replace-with-secret'),
+  use_path_style => true,
+}
+```
+
+Met `ensure => absent` verwijder je alleen de registratie, zonder credentials te hoeven opgeven. Migreer eerst de data en pas verwijzingen vanuit opslagselecties en gebruikers aan; verwijdering van een store die nog in gebruik is maakt de data ontoegankelijk. Buckets en objecten blijven bestaan. Alleen de Puppet-resource weghalen laat de registratie in Nextcloud staan.
+
+Voor andere OCC-opdrachten gebruik je `docker::nextcloud_occ`, eventueel met een alleen-lezen `unless`-commando. Zonder guard draait de opdracht bij iedere Puppet-run; een mislukte guard staat uitvoering toe. Zie de Puppet Strings bij [`docker::nextcloud_occ`](docker/manifests/nextcloud_occ.pp) voor uitvoeringsvoorwaarden en bij [`docker::nextcloud_s3`](docker/manifests/nextcloud_s3.pp) voor S3-opties en datatypes. Het voorbeeld met twee onafhankelijke stores staat in [`examples/docker.pp`](examples/docker.pp).
 
 #### GitLab Runner
 
@@ -888,7 +925,7 @@ De checks worden automatisch door relevante modules geregistreerd wanneer OpenIT
 De map `examples/` bevat grotere, herkenbare scenario's. Houd environment-specifieke waarden in profielen of Hiera en neem voorbeeldgeheimen nooit letterlijk over.
 
 - [`examples/site.pp`](examples/site.pp): Gecombineerde basisinstellingen, webserver, PHP, SSH, Docker, MySQL en profielopbouw.
-- [`examples/docker.pp`](examples/docker.pp): Compose, monitoring, Nginx-proxy, Authentik, Twenty en een aparte GitLab Runner-host met eenmalige registratie.
+- [`examples/docker.pp`](examples/docker.pp): Compose, monitoring, Nginx-proxy, Authentik, Twenty, Nextcloud AIO met meerdere S3-objectstores en een aparte GitLab Runner-host met eenmalige registratie.
 - [`examples/web.pp`](examples/web.pp): Nginx, PHP-FPM, Let's Encrypt, TLS, security headers en reverse proxies.
 - [`examples/data-services.pp`](examples/data-services.pp): MySQL, RabbitMQ en vnStat.
 - [`examples/monitoring.pp`](examples/monitoring.pp): OpenITCOCKPIT-agent, eigen checks en monitoringinstellingen.

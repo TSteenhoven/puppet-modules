@@ -1,4 +1,4 @@
-# Docker-focused examples for Compose stacks, reverse proxies, bundled apps, and GitLab Runner.
+# Docker-focused examples for Compose stacks, reverse proxies, bundled apps, Nextcloud AIO, and GitLab Runner.
 # Replace hostnames, paths, checksums, and secrets with environment data.
 
 node 'container-basic.example.org' {
@@ -227,6 +227,40 @@ node 'twenty.example.org' {
     image_tag                    => 'latest',
     target                       => 'services',
     require                      => [Class['docker'], Package['nginx']],
+  }
+}
+
+# Supply the deployment profile's AIO Compose file and complete AIO initialization before registering stores.
+# The host must provide the Docker package source and basic_settings::systemd for Compose service management.
+# The selected nextcloud-aio-mastercontainer service must provide OCC; standard AIO runs OCC in nextcloud-aio-nextcloud.
+node 'nextcloud.example.org' {
+  include docker
+
+  # Keep the project name aligned with AIO's fixed label on the containers created by its mastercontainer.
+  docker::compose { 'nextcloud-aio':
+    compose_source => 'puppet:///modules/profile/nextcloud/compose.yaml',
+  }
+
+  # Register a path-style endpoint, preserving an explicit false option and fractional connection timeout.
+  docker::nextcloud_s3 { 'server1':
+    compose_name         => 'nextcloud-aio',
+    bucket               => 'nextcloud-01',
+    hostname             => 's3.example.org',
+    key                  => 'replace-with-first-access-key',
+    secret               => Sensitive('replace-with-first-secret'),
+    connect_timeout      => 4.2,
+    port                 => 8443,
+    use_path_style       => true,
+    verify_bucket_exists => false,
+  }
+
+  # Register an Amazon store independently; Nextcloud supplies defaults for all unspecified options.
+  docker::nextcloud_s3 { 'server2':
+    compose_name => 'nextcloud-aio',
+    bucket       => 'nextcloud-02',
+    region       => 'eu-central-1',
+    key          => Sensitive('replace-with-second-access-key'),
+    secret       => Sensitive('replace-with-second-secret'),
   }
 }
 

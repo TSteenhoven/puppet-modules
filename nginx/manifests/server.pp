@@ -14,8 +14,8 @@
 #
 # Socket options (`backlog`, `fastopen`, `multipath`, `reuseport`) are shared per listen address, port and transport,
 # including redirects. Repeated equal overrides are merged onto one listen directive in a shared `.inc` snippet.
-# Conflicting effective values fail catalog compilation with the option, socket and both values. Disabled defaults
-# contribute no override and do not disable another vhost's setting. Absent vhosts contribute nothing.
+# Conflicting effective values fail catalog compilation with the option and socket in the duplicate resource title.
+# Disabled defaults contribute no override and do not disable another vhost's setting. Absent vhosts contribute nothing.
 # Shared listeners must use the same address and port spelling.
 #
 # @example Static HTTPS vhost with secure defaults
@@ -578,56 +578,29 @@ define nginx::server (
       default => $x_frame_options,
     }
 
-    # Check if TCP fast open is enabled
+    # Resolve address-family policy and optional kernel-backed socket settings once for this vhost.
     if (defined(Class['basic_settings::kernel'])) {
-      # Check if valid backlog value is given
-      if ($backlog == 0) {
-        # Use the kernel connection limit for an automatically sized listen backlog.
-        $backlog_active = true
-        $backlog_value = $basic_settings::kernel::connection_max
-      } elsif ($backlog > 0) {
-        # Enable the listen backlog override with the caller's positive limit.
-        $backlog_active = true
-        $backlog_value = $backlog
-      } else {
-        # Leave the listen backlog override disabled without a positive limit.
-        $backlog_active = false
-        $backlog_value = undef
-      }
+      # Use IPv6 listeners only when kernel policy permits them.
+      $http_ipv6_correct = $http_ipv6 and $basic_settings::kernel::ip_version_v6
+      $https_ipv6_correct = $https_ipv6 and $basic_settings::kernel::ip_version_v6
 
-      # Check TCP fast open
-      if ($basic_settings::kernel::tcp_fastopen == 3 and $fastopen > 0) {
-        # Enable TCP Fast Open when both kernel policy and the server setting allow it.
-        $tcp_fastopen = true
-      } else {
-        # Leave TCP Fast Open disabled when its prerequisites are not met.
-        $tcp_fastopen = false
+      # A zero backlog inherits the kernel limit; Fast Open requires the kernel's client/server setting.
+      $backlog_value = $backlog ? {
+        0       => $basic_settings::kernel::connection_max,
+        default => $backlog > 0 ? { true => $backlog, default => undef },
       }
-
-      # Check if IPv6 is active
-      if ($basic_settings::kernel::ip_version_v6) {
-        # Honor the server's IPv6 listeners when the kernel permits IPv6.
-        $http_ipv6_correct = $http_ipv6
-        $https_ipv6_correct = $https_ipv6
-      } else {
-        # Disable IPv6 listeners when the kernel is configured without IPv6.
-        $http_ipv6_correct = false
-        $https_ipv6_correct = false
+      $fastopen_value = ($basic_settings::kernel::tcp_fastopen == 3 and $fastopen > 0) ? {
+        true    => $fastopen,
+        default => undef,
       }
     } else {
-      # Check if valid backlog value is given
-      if ($backlog > 0) {
-        # Enable the listen backlog override with the caller's positive limit.
-        $backlog_active = true
-        $backlog_value = $backlog
-      } else {
-        # Leave the listen backlog override disabled without a positive limit.
-        $backlog_active = false
-        $backlog_value = undef
-      }
-      $tcp_fastopen = false
+      # Without managed kernel policy, honor the vhost's address-family settings.
       $http_ipv6_correct = $http_ipv6
       $https_ipv6_correct = $https_ipv6
+
+      # Without kernel configuration only an explicitly positive backlog can contribute an override.
+      $backlog_value = $backlog > 0 ? { true => $backlog, default => undef }
+      $fastopen_value = undef
     }
 
     # Check if HTTP/2 or HTTP/3 is allowed
@@ -762,10 +735,10 @@ define nginx::server (
         }
       }
 
-      # Keep Multipath TCP off QUIC sockets and preserve the backlog and Fast Open kernel prerequisites.
+      # Disabled defaults do not veto another vhost's override; UDP supports only reuseport from these options.
       $listen_tcp_settings = {
-        'backlog'   => $backlog_active ? { true => $backlog_value, default => undef },
-        'fastopen'  => $tcp_fastopen ? { true => $fastopen, default => undef },
+        'backlog'   => $backlog_value,
+        'fastopen'  => $fastopen_value,
         'multipath' => $multipath ? { true => true, default => undef },
         'reuseport' => $reuseport ? { true => true, default => undef },
       }
@@ -820,36 +793,75 @@ define nginx::server (
             $addresses = [$listener['ip']]
           }
 
-          # Register all transports of each socket before rendering the owning vhost file.
+          # Prepare every directive here so the vhost template only renders the resulting text.
           $directives = flatten($addresses.map |$address| {
             # Use the default IPv4 wildcard only when no address is configured.
             $address_correct = $address ? { undef => '0.0.0.0', default => $address }
             $socket_address = "${address_correct}:${listener['port']}"
             $listener['flags'].map |$flags| {
-              # Keep TCP-only settings off QUIC sockets and select one include site per shared socket.
-              $settings = 'quic' in $flags ? { true => $listen_udp_settings, default => $listen_tcp_settings }
+              # TCP and QUIC on the same address and port have distinct identities and shared files.
               $transport = 'quic' in $flags ? { true => 'udp', default => 'tcp' }
               $socket = "${transport} ${socket_address}"
               $path = "${nginx::config}/listen-${stdlib::sha256($socket)}.inc"
-              $primary = !defined(Nginx::Listen[$socket])
-              $resource_title = $primary ? { true => $socket, default => "${socket} ${config_file} ${group}" }
+              $primary = !defined(Concat[$path])
 
-              # Register the shared owner before rendering so later vhosts can select their own listen directive.
-              nginx::listen { $resource_title:
-                address         => $socket_address,
-                config_file     => $config_file,
-                flags           => $flags,
-                path            => $path,
-                primary         => $primary,
-                restart_service => $restart_service,
-                settings        => $settings,
-                socket          => $socket,
+              # Keep protocol selection and the shared directive's complete address/flags out of templates.
+              $settings = $transport ? { 'udp' => $listen_udp_settings, default => $listen_tcp_settings }
+              $listen = join(concat([$socket_address], $flags), ' ')
+
+              # The first vhost for this socket owns its snippet; later vhosts contribute options to the same file.
+              if $primary {
+                concat { $path:
+                  owner   => 'root',
+                  group   => 'root',
+                  mode    => '0600',
+                  require => [Package['nginx'], File[$nginx::config]],
+                }
+
+                # Keep the managed header and listener flags before the independently collected socket options.
+                concat::fragment { "nginx_listen_${socket}_header":
+                  target  => $path,
+                  content => template('nginx/listen.conf'),
+                  order   => '01',
+                }
+
+                # Terminate the directive only after every shared option fragment.
+                concat::fragment { "nginx_listen_${socket}_footer":
+                  target  => $path,
+                  content => ";\n",
+                  order   => '99',
+                }
               }
 
-              # The template receives only the prepared include or vhost-local listen text.
+              # Install the complete shared directive before any participating vhost can trigger a reload.
+              Concat[$path] -> File[$config_file]
+
+              # Any participating vhost can request reloads, including when the first vhost opts out.
+              if $restart_service {
+                Concat[$path] ~> Service['nginx']
+              }
+
+              # Register only effective overrides; repeated equal values contribute one fragment per socket.
+              $settings.each |$setting, $value| {
+                # A missing override neither contributes a fragment nor conflicts with an enabled option.
+                if $value != undef {
+                  # Socket identity keeps fragments shared across vhosts, independently of evaluation order.
+                  $fragment = "nginx_listen_${socket}_${setting}"
+                  $content = $value ? { true => " ${setting}", default => " ${setting}=${value}" }
+
+                  # Reuse identical fragments; conflicting values fail with the socket and setting in the resource title.
+                  ensure_resource('concat::fragment', $fragment, {
+                    'target'  => $path,
+                    'content' => $content,
+                    'order'   => "50-${setting}",
+                  })
+                }
+              }
+
+              # Include shared options once; all other server blocks retain their own address and flags.
               $primary ? {
                 true    => "include ${path};",
-                default => "listen ${join(concat([$socket_address], $flags), ' ')};",
+                default => "listen ${listen};",
               }
             }
           })
@@ -859,7 +871,7 @@ define nginx::server (
         }
       })
 
-      # Templates only emit the prepared directives and the remaining vhost configuration.
+      # All listener decisions are complete before rendering the vhost in one template.
       $config_content = template('nginx/server.conf')
 
       # Register checks only for active TLS vhosts; concat removes omitted registrations from customchecks.ini.
@@ -889,7 +901,7 @@ define nginx::server (
       $config_content = undef
     }
 
-    # Share one File declaration for present and absent vhosts; certificate checks explicitly require this resource.
+    # Share one File declaration for present and absent vhosts and their monitoring/cleanup dependencies.
     file { $config_file:
       ensure  => $config_ensure,
       content => $config_content,

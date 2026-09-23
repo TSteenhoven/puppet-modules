@@ -11,6 +11,8 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
 - [Inhoudsopgave](#inhoudsopgave)
 - [Bestanden en beveiliging](#bestanden-en-beveiliging)
   - [Templates en bestandsbronnen](#templates-en-bestandsbronnen)
+  - [Door Puppet beheerde inhoud markeren](#door-puppet-beheerde-inhoud-markeren)
+  - [Beheerhelpers op de gedeelde locatie installeren](#beheerhelpers-op-de-gedeelde-locatie-installeren)
   - [Gegenereerde configuratie met ERB renderen](#gegenereerde-configuratie-met-erb-renderen)
   - [Puppet-fileservermounts expliciet kiezen](#puppet-fileservermounts-expliciet-kiezen)
     - [Verdieping bij Puppet-fileservermounts expliciet kiezen](#verdieping-bij-puppet-fileservermounts-expliciet-kiezen)
@@ -36,6 +38,7 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
   - [Audituitzonderingen onderbouwen](#audituitzonderingen-onderbouwen)
   - [Transportversleuteling behouden](#transportversleuteling-behouden)
   - [Een minder streng beveiligingsmodel toelichten](#een-minder-streng-beveiligingsmodel-toelichten)
+  - [Firewallconfiguratie bij de deployment houden](#firewallconfiguratie-bij-de-deployment-houden)
 - [Gedeelde services en systemd](#gedeelde-services-en-systemd)
   - [Targets en monitoring](#targets-en-monitoring)
     - [Verdieping bij Targets en monitoring](#verdieping-bij-targets-en-monitoring)
@@ -50,10 +53,21 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
   - [Wrapperdefaults voor alle afnemers beoordelen](#wrapperdefaults-voor-alle-afnemers-beoordelen)
 - [Shellscripts](#shellscripts)
   - [Shellbron en gegenereerde shell controleren](#shellbron-en-gegenereerde-shell-controleren)
+  - [Interpreter en shellcompatibiliteit](#interpreter-en-shellcompatibiliteit)
+  - [Shellscripts in uitvoervolgorde opbouwen](#shellscripts-in-uitvoervolgorde-opbouwen)
+  - [Externe commando’s rechtstreeks vinden](#externe-commandos-rechtstreeks-vinden)
+  - [Shellcode opmaken en benoemen](#shellcode-opmaken-en-benoemen)
+  - [Shellargumenten en runtime-instellingen verwerken](#shellargumenten-en-runtime-instellingen-verwerken)
+  - [Shellhelpers op een herkenbare taak afbakenen](#shellhelpers-op-een-herkenbare-taak-afbakenen)
+  - [Shellbuffers en tijdelijke bestanden kiezen](#shellbuffers-en-tijdelijke-bestanden-kiezen)
+  - [Tekstbuffers en substitutiemetadata opbouwen](#tekstbuffers-en-substitutiemetadata-opbouwen)
   - [Runtime-tools op hun functie beoordelen](#runtime-tools-op-hun-functie-beoordelen)
   - [Puppet-waarden rechtstreeks in shelltemplates invoegen](#puppet-waarden-rechtstreeks-in-shelltemplates-invoegen)
   - [Daemonconfiguratie als invoerbron behouden](#daemonconfiguratie-als-invoerbron-behouden)
 - [Monitoringchecks](#monitoringchecks)
+  - [Checkexecutables onafhankelijk van targets delen](#checkexecutables-onafhankelijk-van-targets-delen)
+  - [Monitoring onafhankelijk van de waargenomen taak houden](#monitoring-onafhankelijk-van-de-waargenomen-taak-houden)
+  - [Vastgestelde afwijkingen en onvolledige inspecties onderscheiden](#vastgestelde-afwijkingen-en-onvolledige-inspecties-onderscheiden)
   - [Invoer en configuratie](#invoer-en-configuratie)
   - [Optionele monitoringdefaults in het executable houden](#optionele-monitoringdefaults-in-het-executable-houden)
   - [Effectieve monitoringinvoer volgens het configuratiecontract valideren](#effectieve-monitoringinvoer-volgens-het-configuratiecontract-valideren)
@@ -82,6 +96,132 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
 ### Templates en bestandsbronnen
 
 <!-- lint-rule-group -->
+
+### Door Puppet beheerde inhoud markeren
+
+**Norm**
+
+Geef ieder bestand waarvan Puppet de inhoud beheert een `Managed by puppet`-header, ongeacht of de inhoud uit inline content, een template, een statische bron of samengevoegde fragmenten komt. Gebruik voor formaten met hashcommentaar exact `# Managed by puppet`; gebruik anders de eigen commentsyntaxis van het formaat. De header staat aan het begin, direct na een verplichte shebang of formaatheader.
+
+Laat de header alleen weg wanneer hij het formaat ongeldig zou maken. Documenteer die formaatbeperking naast de resource of inhoudsbron, ook bij binaire inhoud, formaten zonder commentaar of cryptografisch materiaal. De header hoort in het resulterende bestand; alleen een commentaarregel in het Puppet-manifest voldoet niet.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Alle door Puppet beheerde bestandsinhoud, inclusief inline content, templates, statische bronnen en concatenatiefragmenten.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Geen check inspecteert de header in alle inhoudsbronnen of gerenderde bestanden. `project_files` controleert andere bestandsattributen.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Alleen een header die het bestandsformaat ongeldig maakt mag worden weggelaten, met lokale onderbouwing.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een manifest bevat de beheermelding als commentaar, maar het gegenereerde configuratiebestand niet. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Een shellscript begint met zijn shebang, gevolgd door de exacte beheerheader. Een commentaarloos formaat heeft een onderbouwde uitzondering naast zijn bron.
+
+**Grensgevallen**
+
+Alleen een header die het bestandsformaat ongeldig maakt mag worden weggelaten, met lokale onderbouwing. Geen check inspecteert de header in alle inhoudsbronnen of gerenderde bestanden. `project_files` controleert andere bestandsattributen.
+
+**Handmatige review**
+
+Controleer de daadwerkelijk geschreven inhoud, de plaats na een verplichte formaatheader en iedere reden voor weglaten.
+
+**Verificatie**
+
+Render of assembleer gewijzigde inhoud en inspecteer de header of de gedocumenteerde formaatuitzondering. Vergelijk de twee reviewscenario’s; documentatiecontracttests controleren geen beheerde bestandsinhoud.
+
+### Beheerhelpers op de gedeelde locatie installeren
+
+**Norm**
+
+Installeer interne beheerscripts en hun ondersteunende bestanden onder `/usr/local/lib/puppet/`, volgens de bestaande helperindeling van MySQL. Pas deze locatie toe wanneer je een helper toevoegt of wijzigt en hergebruik de bestaande gedeelde directoryresource. Service-eigen configuratie, data en monitoringplugins behouden hun gevestigde locaties.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Nieuwe of gewijzigde interne beheerscripts en ondersteunende bestanden.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Geen check bepaalt of een bestand een interne beheerhelper is of controleert alle aanroepen en ondersteunende bestanden.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Service-eigen configuratie, data en monitoringplugins blijven op hun gevestigde locaties; ongewijzigde helpers vallen buiten een migratieplicht.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een nieuwe interne beheerhelper krijgt een eigen installatiemap en een tweede declaratie van de gedeelde directory. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Installeer de helper bij de bestaande MySQL-helperindeling en hergebruik de directoryresource; behoud de native configuratie- en pluginlocaties.
+
+**Grensgevallen**
+
+Service-eigen configuratie, data en monitoringplugins blijven op hun gevestigde locaties; ongewijzigde helpers vallen buiten een migratieplicht. Geen check bepaalt of een bestand een interne beheerhelper is of controleert alle aanroepen en ondersteunende bestanden.
+
+**Handmatige review**
+
+Volg het helperpad door bestanden, aanroepen en dependencies en controleer de gedeelde directory-eigenaar.
+
+**Verificatie**
+
+Controleer bij verplaatsing alle aanroepen en dependencies volgens de [helperreview](../../../AGENTS.md#managed-files-and-helpers). Vergelijk de reviewscenario’s en valideer geraakt gedrag tijdelijk buiten de repository.
 
 ### Gegenereerde configuratie met ERB renderen
 
@@ -514,6 +654,8 @@ Handmatige beoordeling van beide scenario’s: Inventariseer executable-inhoud e
 
 Recursieve bestandsbewerkingen vragen een andere afweging: welke inhoud is volledig eigendom van de module? Gebruik purge, force en recurse alleen voor zulke mappen. Houd `replace => false` op bestanden waarvan een installer of eenmalige initialisatie de inhoud bepaalt.
 
+Heeft een centraal beheerde map al de verantwoordelijkheid om niet-gedeclareerde bestanden te verwijderen, gebruik dan dat mechanisme in plaats van opruimresources per afnemer toe te voegen. Houd bestandsverwijdering gescheiden van een eventueel vereiste runtime-stop of reload.
+
 **Herkomst**
 
 Projectregel
@@ -564,11 +706,11 @@ Bestanden waarvan een installer de inhoud bepaalt blijven beschermd met replace 
 
 **Handmatige review**
 
-Bepaal eerst de eigenaar van ieder subtree en controleer de gevolgen van opschonen.
+Bepaal eerst de eigenaar van ieder subtree en controleer de gevolgen van opschonen, de centrale verwijdering van niet-gedeclareerde bestanden en de afzonderlijke runtime-stop of reload.
 
 **Verificatie**
 
-Handmatige beoordeling van beide scenario’s: Bepaal eerst de eigenaar van ieder subtree en controleer de gevolgen van opschonen. De onjuiste variant wordt afgekeurd; de juiste variant voldoet onder de beschreven voorwaarden. Module- en hostgedrag worden hiermee niet als getest gepresenteerd.
+Handmatige beoordeling van beide scenario’s: Bepaal eerst de eigenaar van ieder subtree en controleer de gevolgen van opschonen, de centrale verwijdering van niet-gedeclareerde bestanden en de afzonderlijke runtime-stop of reload. De onjuiste variant wordt afgekeurd; de juiste variant voldoet onder de beschreven voorwaarden. Module- en hostgedrag worden hiermee niet als getest gepresenteerd.
 
 ### Eigenaars en rechten
 
@@ -1111,65 +1253,9 @@ Handmatige beoordeling van beide scenario’s: Volg de string eerst door Puppet 
 
 ### Lokale integraties en runtimeafhankelijkheden kiezen
 
-**Norm**
+<!-- lint-rule-group -->
 
-Gebruik voor lokale integraties bij voorkeur de bestaande modules. De runtimeafhankelijkheden zijn beperkt tot `stdlib`, `concat`, `reboot`, `timezone` en `debconf`, behalve wanneer een eis aantoonbaar niet goed lokaal kan worden ingevuld. Een externe Docker-, MySQL-, Nginx- of RabbitMQ-module toevoegen alleen vanwege vergelijkbare functies past daar niet bij. Neem bij nieuwe gevoelige onderdelen ook pakketbeleid, monitoring en audit mee in de beoordeling.
-
-**Herkomst**
-
-Projectregel
-
-**Toepassingsgebied**
-
-Nieuwe integraties en externe Puppet-moduledependencies.
-
-**Automatische controle**
-
-Geen automatische controle. Eventuele ondersteunende checks die in de norm worden genoemd bewijzen dit inhoudelijke contract niet.
-
-**Detectiegrenzen**
-
-De linter beoordeelt de genoemde runtimeobjecten, intentie en operationele gevolgen niet. De beschreven uitzondering voor aantoonbaar niet goed lokaal invulbare eisen blijft bestaan; vergelijkbare functies alleen zijn onvoldoende.
-
-**Meldingen en severity**
-
-Geen lintmelding of severity voor deze handmatige norm; de reviewer beoordeelt de overtreding op de hieronder genoemde criteria.
-
-**Autofix**
-
-Geen
-
-**Autofixvoorwaarden**
-
-Niet van toepassing: dit inhoudelijke contract heeft geen autofix.
-
-**Toegestane uitzonderingen**
-
-De beschreven uitzondering voor aantoonbaar niet goed lokaal invulbare eisen blijft bestaan; vergelijkbare functies alleen zijn onvoldoende.
-
-**Suppressions**
-
-Suppressie niet toegestaan: een lintmarkering heft deze reviewverplichting niet op.
-
-**Onjuist voorbeeld**
-
-Handmatig reviewscenario: Een externe Nginx-module wordt toegevoegd uitsluitend omdat zij vergelijkbare functies heeft. De beschreven constructie wordt afgekeurd.
-
-**Correct voorbeeld**
-
-Handmatig reviewscenario: Gebruik de bestaande lokale integratie en onderbouw een uitzondering alleen met een eis die lokaal niet goed kan worden ingevuld. Dit voldoet aan de norm onder de genoemde voorwaarden.
-
-**Grensgevallen**
-
-De beschreven uitzondering voor aantoonbaar niet goed lokaal invulbare eisen blijft bestaan; vergelijkbare functies alleen zijn onvoldoende.
-
-**Handmatige review**
-
-Vergelijk de concrete eis met bestaande lokale interfaces; neem pakketbeleid, monitoring en audit mee voor gevoelige onderdelen.
-
-**Verificatie**
-
-Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Vergelijk de concrete eis met bestaande lokale interfaces; neem pakketbeleid, monitoring en audit mee voor gevoelige onderdelen. Het onjuiste scenario schendt de genoemde verplichting; de juiste variant behoudt de uitzonderingsvoorwaarden. Dit is reviewbewijs, geen uitgevoerde host- of modulegedragstest.
+De keuze van toegestane externe Puppet-moduledependencies is [repositorybeleid](../../../AGENTS.md#first-party-code-and-dependencies), inclusief de onderbouwde uitzondering en review van gevoelige onderdelen. Gebruik voor de technische integratie de regels voor [gedeelde voorzieningen](#gedeelde-services-en-systemd) en voor executables het [packagecontract](CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos).
 
 ### Audituitzonderingen onderbouwen
 
@@ -1356,6 +1442,72 @@ Lees de reden tegen het concrete servicegedrag en bepaal welke gevolgen vooraf b
 **Verificatie**
 
 Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Lees de reden tegen het concrete servicegedrag en bepaal welke gevolgen vooraf bekend moeten zijn. Het onjuiste scenario schendt de genoemde verplichting; de juiste variant behoudt de uitzonderingsvoorwaarden. Dit is reviewbewijs, geen uitgevoerde host- of modulegedragstest.
+
+### Firewallconfiguratie bij de deployment houden
+
+**Norm**
+
+Afnemende projecten beheren hun eigen nftables-regels: inhoud, namen, policies, interfaces, IP-families en aanlevermethode. Zij mogen daarvoor templates, bestandsbronnen of een ander configuratiesysteem gebruiken. Gedeelde modules genereren of beheren geen deployment-firewallprofielen, voegen geen firewallverwachtingsbestanden met bijbehorende Puppet-datatypes of validatiefuncties toe en introduceren geen gespecialiseerde monitoringclasses die dit eigenaarschap overnemen.
+
+Houd firewallmonitoring in de bestaande netwerkintegratie. Geef de deployment-eigen structurele verwachtingen als runtimeargumenten aan het gedeelde executable en vergelijk ze met de geladen toestand. Leid vereiste onderdelen nooit uitsluitend uit die geladen toestand af.
+
+Algemene aantallen regels en lege tabellen of chains bewijzen noch bescherming noch falen. Documenteer de reikwijdte van een geslaagde structurele check; valideer pakketbereikbaarheid afzonderlijk wanneer dat nodig is.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Deployment-eigen firewallconfiguratie en structurele firewallmonitoring vanuit de gedeelde modules.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+De deployment kiest zelf haar aanlevermethode; een structureel geslaagde check vervangt geen benodigde bereikbaarheidstest.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een check leidt de verwachte chains af uit de geladen firewall en rapporteert gezondheid op basis van een regeltelling. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Een deployment levert verwachtingen via runtimeargumenten; de bestaande netwerkcheck vergelijkt die met geladen state en benoemt de grens van die structurele beoordeling.
+
+**Grensgevallen**
+
+De deployment kiest zelf haar aanlevermethode; een structureel geslaagde check vervangt geen benodigde bereikbaarheidstest. De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Handmatige review**
+
+Controleer configuratie-eigendom, de herkomst van iedere verwachting en de conclusies die de check uit geladen state trekt.
+
+**Verificatie**
+
+Beoordeel beide scenario’s en valideer passende, ontbrekende en afwijkende structuren met synthetische invoer. Voer vereiste bereikbaarheidstests afzonderlijk uit volgens de [netwerkreview](../../../AGENTS.md#network-review).
 
 ## Gedeelde services en systemd
 
@@ -2050,7 +2202,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Zoek 
 
 **Norm**
 
-De [shellconventies in `AGENTS.md`](../../../AGENTS.md#shell-scripts) bepalen de opbouw, naamgeving, opmaak, commandodetectie, argumentverwerking en gegevensverwerking voor alle eigen shellcode. Gebruik ze voor POSIX shell en Bash, ook in bestanden zonder extensie, templates en inline fragmenten. De [shellvalidatie](../../../AGENTS.md#shell-validation) beschrijft hoe je de bron en gegenereerde uitvoer controleert; een geslaagde Puppet-lintscan vervangt die controle niet.
+De regels in dit hoofdstuk gelden voor alle eigen POSIX-shell- en Bash-code, ongeacht doel of bestandsextensie: `.sh`-bestanden, executables zonder extensie, shelltemplates, gegenereerde shellcode en inline fragmenten. Broncode en gegenereerde code moeten aan dezelfde toepasselijke shellregels voldoen. Voor de uitvoering van syntaxis- en functionele controles geldt de [shellvalidatie](../../../AGENTS.md#shell-validation).
 
 **Herkomst**
 
@@ -2108,11 +2260,529 @@ Controleer interpreter, opbouw, naamgeving, inspringing, commandodetectie, argum
 
 Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Controleer interpreter, opbouw, naamgeving, inspringing, commandodetectie, argumentverwerking en gegevensverwerking volgens de gekoppelde afspraken. Het onjuiste scenario schendt de genoemde verplichting; de juiste variant behoudt de uitzonderingsvoorwaarden. Dit is reviewbewijs, geen uitgevoerde host- of modulegedragstest.
 
+### Interpreter en shellcompatibiliteit
+
+**Norm**
+
+Gebruik POSIX `#!/bin/sh`, tenzij benodigde functionaliteit Bash vereist. Declareer bij Bash de interpreter expliciet en documenteer de benodigde Bash-functies naast de implementatie. Houd alle code compatibel met de gedeclareerde interpreter, inclusief gegenereerde code en inline fragmenten. Gebruik geen Bash-constructies zoals arrays, `[[ ... ]]` of `pipefail` in POSIX-shellcode.
+
+Plaats de shebang en vereiste headers eerst, volgens [beheerde inhoud markeren](#door-puppet-beheerde-inhoud-markeren).
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Interpreterkeuze en compatibiliteit van eigen shellbron, templates en inline shell.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Bash is toegestaan wanneer benodigde functionaliteit dat vereist en die behoefte naast de implementatie is gedocumenteerd.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een script met `#!/bin/sh` gebruikt `[[ ... ]]` of `pipefail`. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Gebruik POSIX-constructies of declareer Bash wanneer benodigde functionaliteit dat vereist en leg die behoefte lokaal uit.
+
+**Grensgevallen**
+
+Bash is toegestaan wanneer benodigde functionaliteit dat vereist en die behoefte naast de implementatie is gedocumenteerd. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Vergelijk gebruikte constructies met de interpreter, ook na renderen; controleer de verplichte headers.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Shellscripts in uitvoervolgorde opbouwen
+
+**Norm**
+
+Orden de toepasselijke onderdelen als volgt: fouthelper, commandodetectie, initialisatie van instellingen en toestand, argumentverwerking, helperfuncties en invoervalidatie, daarna de hoofdverwerking. Definieer iedere helper voordat hij wordt aangeroepen. Laat onderdelen weg die het script niet nodig heeft; voeg geen opties, omgevingsinstellingen of helperlagen toe uitsluitend om deze structuur te vullen.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+De volgorde van onderdelen en functies in eigen shellscripts.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Onderdelen die het script niet nodig heeft worden weggelaten; de structuur vereist geen extra functionaliteit.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: De commandodetectie roept een fouthelper aan die pas verderop is gedefinieerd. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Definieer eerst de fouthelper, ontdek daarna commando’s en plaats alleen daadwerkelijk benodigde volgende onderdelen.
+
+**Grensgevallen**
+
+Onderdelen die het script niet nodig heeft worden weggelaten; de structuur vereist geen extra functionaliteit. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Volg de eerste aanroep van iedere helper en vergelijk de onderdelen met de voorgeschreven uitvoervolgorde.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Externe commando’s rechtstreeks vinden
+
+**Norm**
+
+Zoek externe commando’s rechtstreeks met `COMMAND=$(command -v command 2>/dev/null) || die ...`, via de fouthelper van het script. Roep de gevonden `$COMMAND` zonder quotes aan op de commandopositie en houd argumenten afzonderlijk. Gebruik shell-builtins rechtstreeks en gebruik `printf` voor uitvoer. De installatiegaranties blijven onder het [packagecontract](CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos) vallen.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Commandodetectie en aanroepen van externe executables en builtins in eigen shellcode.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Builtins worden rechtstreeks gebruikt; zij vereisen geen externe commandodetectie.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een script verstopt executable en argumenten in één commandovariabele zonder de fout bij commandodetectie af te handelen. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Vind het executable rechtstreeks met de beschreven `command -v`-toekenning en fouthelper, en geef afzonderlijke data-argumenten mee.
+
+**Grensgevallen**
+
+Builtins worden rechtstreeks gebruikt; zij vereisen geen externe commandodetectie. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Controleer de discovery, fouthelper, commandopositie en gescheiden argumenten; onderscheid builtins van externe tools.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Shellcode opmaken en benoemen
+
+**Norm**
+
+Gebruik vier spaties per inspringniveau in zowel broncode als gegenereerde shellcode. Gebruik beschrijvende `UPPER_SNAKE_CASE`-namen voor instellingen, gevonden commando’s en toestand van het hoofdprogramma; gebruik `lower_snake_case` voor helperfuncties en hun interne werkvariabelen.
+
+Groepeer instellingen en afgeleide waarden op doel en introduceer ieder logisch blok met een kort commentaar. Houd de hoofdverwerking leesbaar van voorbereiding via uitvoering tot resultaatafhandeling. Schrijf bodies van `if`, `case` en lussen met meerdere acties op afzonderlijke ingesprongen regels. Houd eenmalige verwerking bijeen wanneer extractie de stroom onduidelijker zou maken; plaats de omvangrijke verwerking vóór een kleine terugvaltak.
+
+Quote data-expansies in argumenten, tests en toekenningen. Behoud letterlijke witruimte in heredocs en meerregelige gequote data bij het opmaken.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Inspringing, naamgeving, blokopmaak en dataquoting in shellbron en gegenereerde shell.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Letterlijke witruimte in heredocs en meerregelige gequote data blijft behouden; eenmalige verwerking hoeft geen aparte helper te krijgen.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een formatter past de letterlijke inspringing in een heredoc aan of laat een data-argument ongequote. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Gebruik de beschreven namen en vier-spatie-inspringing voor code, quote data en behoud de betekenisvolle witruimte van letterlijke inhoud.
+
+**Grensgevallen**
+
+Letterlijke witruimte in heredocs en meerregelige gequote data blijft behouden; eenmalige verwerking hoeft geen aparte helper te krijgen. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Controleer namen, blokdoelen en de stroom van voorbereiding tot resultaat; vergelijk letterlijke data vóór en na opmaak.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Shellargumenten en runtime-instellingen verwerken
+
+**Norm**
+
+Behoud bestaande argumentnamen, invoerformaten, configuratiebronnen en exitgedrag. Documenteer een bewust gewijzigd publiek contract samen met de aanroepers. Voor daemonconfiguratie en inloggegevens geldt [behoud van de bestaande invoerbron](#daemonconfiguratie-als-invoerbron-behouden).
+
+Verwerk korte opties in één POSIX `while getopts ... opt; do`-blok, met een afzonderlijke `case`-tak per optie. Eindig met één usage-/fouttak voor ongeldige opties en hulp, inclusief `-h` wanneer die optie is gedeclareerd. Behoud positionele argumenten voor interfaces die ze gebruiken.
+
+Los instelbare waarden, voor zover deze bronnen worden ondersteund, op in deze volgorde: expliciete commandline-invoer, niet-lege omgevingsvariabele, scriptdefault. Initialiseer omgevingsinstellingen met `${VARIABLE:-default}` vóór de argumentverwerking, zodat unset en leeg de default gebruiken. Pas expliciete argumenten daarna toe en zet het resultaat nooit terug naar environment of defaults.
+
+Valideer de effectieve instellingen na parsing en vóór gebruik, ongeacht hun bron. Controleer syntaxis, eenheden, bereiken, onderlinge waardevolgorde, booleans en runtimebetekenis. Behoud gedocumenteerde optionele lege waarden en meld ongeldige invoer via de foutinterface van het script.
+
+Beschrijf argumenten, opties, bijbehorende omgevingsvariabelen en defaults in usage- of hulptekst. Neem herhaalde opties en boolean-resetopties op wanneer die worden ondersteund.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Bestaande en gewijzigde shellinterfaces met CLI-argumenten, omgevingsvariabelen of defaults.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+De bronvolgorde geldt alleen voor ondersteunde bronnen. Positionele interfaces, gedocumenteerde optionele lege waarden en bestaande publieke contracten blijven behouden; hulp en resetopties worden niet zonder behoefte toegevoegd.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een CLI-override wordt na parsing teruggezet naar een omgevingswaarde, of environmentinvoer ontsnapt aan validatie. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Initialiseer ondersteunde environment/defaultbronnen, pas CLI-overrides toe en valideer vervolgens de effectieve waarden vóór gebruik.
+
+**Grensgevallen**
+
+De bronvolgorde geldt alleen voor ondersteunde bronnen. Positionele interfaces, gedocumenteerde optionele lege waarden en bestaande publieke contracten blijven behouden; hulp en resetopties worden niet zonder behoefte toegevoegd. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Volg iedere ondersteunde invoerbron tot de gebruikte waarde; vergelijk usage, argumentnamen, invoerformaat en exitgedrag met aanroepers.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Shellhelpers op een herkenbare taak afbakenen
+
+**Norm**
+
+Voeg een helper toe wanneer die een afzonderlijke taak benoemt, validatie of opmaak deelt of aanzienlijke duplicatie wegneemt. Verpak zonder zo’n reden geen enkele toekenning, append of `printf` in een helper.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Nieuwe en gewijzigde helperfuncties in shellcode.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Een korte helper is toegestaan wanneer hij een afzonderlijke taak benoemt of validatie of opmaak deelt; omvang alleen is geen criterium.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een helper verbergt uitsluitend één toekenning zonder gedeelde taak of validatie. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Een helper benoemt een afzonderlijke verwerking of deelt bestaande validatie tussen echte aanroepers.
+
+**Grensgevallen**
+
+Een korte helper is toegestaan wanneer hij een afzonderlijke taak benoemt of validatie of opmaak deelt; omvang alleen is geen criterium. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Beoordeel de taak, bestaande aanroepers en weggenomen duplicatie; houd eenmalige verwerking begrijpelijk.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Shellbuffers en tijdelijke bestanden kiezen
+
+**Norm**
+
+Gebruik shellvariabelen en `printf` voor begrensde tellers, buffers en tekst. Gebruik `mktemp` wanneer een commando een bestand verlangt of de data te groot of onveilig is voor variabelen, en verwijder tijdelijke bestanden na gebruik.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Gebufferde shellgegevens en tijdelijke bestanden.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Een commandocontract dat een bestand vereist of data die te groot of onveilig is voor variabelen rechtvaardigt `mktemp`.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een noodzakelijk tijdelijk bestand blijft na gebruik of een foutpad staan. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Gebruik variabelen voor begrensde tekst; maak een vereist tijdelijk bestand met `mktemp` en ruim het op.
+
+**Grensgevallen**
+
+Een commandocontract dat een bestand vereist of data die te groot of onveilig is voor variabelen rechtvaardigt `mktemp`. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Controleer dat het medium bij omvang en commandocontract past; volg levensduur en opruimen op de geraakte uitvoerpaden.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
+### Tekstbuffers en substitutiemetadata opbouwen
+
+**Norm**
+
+Bouw tekstbuffers met expliciete `printf`-formats en ge-escapete regeleinden in plaats van letterlijke lege regels in gequote toekenningen. Kies lijstscheiding volgens het invoer- of uitvoercontract en behoud betekenisvolle witruimte in letterlijke data.
+
+Gebruik expliciete markeringen wanneer gestructureerde metadata via command substitution wordt doorgegeven. Vertrouw er niet op dat kunstmatig toegevoegde regeleinden shellverwerking overleven.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Tekstbuffers, lijstscheiding en gestructureerde metadata via command substitution.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Betekenisvolle witruimte in letterlijke data blijft intact; deze opbouwregel rechtvaardigt geen wijziging van het dataformaat.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een metadataoverdracht vertrouwt uitsluitend op een toegevoegde afsluitende newline. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Bouw de buffer met expliciete formats en gebruik herkenbare markeringen voor gestructureerde metadata.
+
+**Grensgevallen**
+
+Betekenisvolle witruimte in letterlijke data blijft intact; deze opbouwregel rechtvaardigt geen wijziging van het dataformaat. Puppet-lint controleert geen shellsyntaxis, scriptopbouw of gerenderd shellgedrag. De Puppet-check voor exec-escaping bewijst dit shellcontract niet.
+
+**Handmatige review**
+
+Controleer formats, scheidingstekens en verlies van afsluitende regeleinden; behoud betekenisvolle witruimte.
+
+**Verificatie**
+
+Beoordeel de onjuiste en correcte scenario’s tegen de norm en voer bij gewijzigde shellcode de [shellvalidatie](../../../AGENTS.md#shell-validation) uit op bron en gerenderde uitvoer. Dit zijn handmatige scenario’s; de documentatietests bewijzen alleen de structuur en verwijzingen van deze regel.
+
 ### Runtime-tools op hun functie beoordelen
 
 **Norm**
 
-Beoordeel externe tools volgens de [afspraken over native tools en dependencies](../../../AGENTS.md#native-tools-and-dependencies). Gebruik voor eenvoudige controles bij voorkeur shellfunctionaliteit of de uitvoer en exitcode van het oorspronkelijke commando. Een parser zoals `jq` blijft geschikt voor complexe gestructureerde gegevens. Neem bij het verwijderen van een tool ook de pakketinstallatie en andere afnemers mee, en toets volgens de shellvalidatie of het gedrag gelijk blijft. Deze afweging vraagt handmatige review; Puppet-lint bepaalt niet of een runtime-tool functioneel nodig is.
+Gebruik bij voorkeur de eigen uitvoer, filters en exitstatus van het oorspronkelijke commando. Converteer uitvoer niet naar JSON of een ander formaat alleen om een eenvoudige waarde uit te lezen of succes vast te stellen.
+
+Gebruik shellvergelijkingen, `case`-patronen, parameterexpansie en builtins voor eenvoudige validatie en tekstbewerkingen wanneer zij het vereiste gedrag betrouwbaar behouden. Installeer geen extra packages uitsluitend voor bewerkingen die de gedeclareerde shell of het oorspronkelijke commando al eenvoudig uitvoert.
+
+Gebruik een specifieke parser zoals `jq` wanneer oorspronkelijke gestructureerde uitvoer betrouwbare verwerking van meerdere velden of complexe structuren vereist. Vervang een noodzakelijke gestructureerde parser niet door kwetsbare shellparsing alleen om een dependency te verwijderen.
+
+Voor runtime-dependencies geldt het [packagecontract](CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos). Behoud dependencies die andere afnemers nog nodig hebben. De [shellreview en validatie](../../../AGENTS.md#shell-scripts) regelen het onderzoek van alle afnemers en de vergelijking van gedrag bij vervanging.
 
 **Herkomst**
 
@@ -2236,7 +2906,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Contr
 
 **Norm**
 
-Behoud volgens de [invoerafspraken](../../../AGENTS.md#arguments-and-runtime-settings) de bestaande invoerroute voor daemonconfiguratie en inloggegevens. Lees waar mogelijk de effectieve daemonconfiguratie, bijvoorbeeld met `vnstat --showconfig`, zodat je geen tweede instellingen of sysfs-terugvalroutes hoeft te onderhouden.
+Behoud de bestaande invoerroute voor daemonconfiguratie en inloggegevens. Kopieer die waarden niet naar extra commandline-opties of omgevingsvariabelen. Lees waar mogelijk de effectieve daemonconfiguratie, bijvoorbeeld met `vnstat --showconfig`, zodat je geen tweede instellingen of sysfs-terugvalroutes hoeft te onderhouden.
 
 **Herkomst**
 
@@ -2298,7 +2968,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Verge
 
 **Norm**
 
-Borg de runtimepackages volgens [packageafhankelijkheden bij externe commando’s](CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos). Checks volgen de algemene [shellconventies](../../../AGENTS.md#shell-scripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. De aanvullende [monitoringcontracten](../../../AGENTS.md#monitoring-checks) regelen gedeelde executables, instellingen per target en de levenscyclus van registraties. Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
+Borg de runtimepackages volgens [packageafhankelijkheden bij externe commando’s](CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos). Checks volgen de algemene [shellconventies](#shellscripts) en gebruiken POSIX `#!/bin/sh` met Nagios-exitcodes. Volg voor gedeelde executables en instellingen per target de [registratielevenscyclus](#checkexecutables-onafhankelijk-van-targets-delen). Beoordeel status, ernst, parsing, buffering en perfdata ook tegen de hieronder beschreven uitvoercontracten. Lange uitvoer staat standaard aan; een schakelaar daarvoor wordt alleen op verzoek toegevoegd.
 
 **Herkomst**
 
@@ -2355,6 +3025,196 @@ Controleer twee verschillende registraties en verwijder één target; het execut
 **Verificatie**
 
 Handmatige beoordeling van beide bovenstaande reviewscenario’s tegen de norm: het onjuiste scenario wordt afgekeurd, het correcte scenario voldoet mits de beschreven prerequisites en uitzonderingsvoorwaarden zijn aangetoond. Bij een echte wijziging wordt de concrete functionele validatie buiten de repository uitgevoerd en in de review vastgelegd; de tooltests bewijzen geen modulegedrag.
+
+### Checkexecutables onafhankelijk van targets delen
+
+**Norm**
+
+Deploy bij een nieuwe of gewijzigde monitoringcheck één executable per checkimplementatie op iedere beheerde host, gedeeld door alle targetregistraties. Genereer geen kopieën of wrappers alleen om verschillende targetwaarden in te vullen. Geef targetidentiteit en instellingen die tussen registraties verschillen als runtimeargumenten of via een bestaande configuratie-interface door. Beperk templating van het executable tot waarden die alle registraties op de host delen.
+
+Beheer het gedeelde executable onafhankelijk van individuele registraties, zodat het verwijderen of uitschakelen van één target de checks voor andere targets behoudt.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Nieuwe en gewijzigde checkimplementaties, executabletemplates en targetregistraties.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Een bestaande configuratie-interface is toegestaan naast runtimeargumenten; executabletemplating is beperkt tot hostbreed gedeelde waarden.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Het verwijderen van één target verwijdert ook het executable dat een ander target gebruikt. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Twee registraties gebruiken hetzelfde executable met hun eigen instellingen; het executable heeft een onafhankelijke eigenaar.
+
+**Grensgevallen**
+
+Een bestaande configuratie-interface is toegestaan naast runtimeargumenten; executabletemplating is beperkt tot hostbreed gedeelde waarden. De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Handmatige review**
+
+Volg iedere registratie naar hetzelfde executable en controleer gedeelde templatewaarden, targetargumenten en eigenaarschap bij verwijderen of uitschakelen.
+
+**Verificatie**
+
+Valideer minstens twee targets met eigen instellingen en verwijder of deactiveer één target volgens de [monitoringvalidatie](../../../AGENTS.md#monitoring-validation). Controleer behoud van het executable en de andere registratie. Vergelijk ook beide handmatige reviewscenario’s.
+
+### Monitoring onafhankelijk van de waargenomen taak houden
+
+**Norm**
+
+Houd monitoring onafhankelijk van de taak die zij observeert: inspecteer resultaten of status zonder de taakrunner aan te roepen, te sourcen of ervan afhankelijk te zijn.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Monitoring van taken en hun uitvoer of opgeslagen status.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Geen uitzondering: statusinspectie mag geen uitvoering of sourcing van de taakrunner vereisen.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een check start de taakrunner om te bepalen of diens laatste resultaat gezond was. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Lees het bestaande resultaat of de status zonder de taak uit te voeren.
+
+**Grensgevallen**
+
+Geen uitzondering: statusinspectie mag geen uitvoering of sourcing van de taakrunner vereisen. De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Handmatige review**
+
+Volg commandopaden en afhankelijkheden van de check; controleer dat inspectie de waargenomen taak niet uitvoert.
+
+**Verificatie**
+
+Vergelijk de scenario’s en controleer de check met synthetische taakresultaten zonder beschikbare taakrunner; beoordeel dat de inspectie geen taak uitvoert.
+
+### Vastgestelde afwijkingen en onvolledige inspecties onderscheiden
+
+**Norm**
+
+Meld een geverifieerd ontbrekend vereist onderdeel, een policyafwijking of een inactieve vereiste service als CRITICAL. Meld ontbrekende rechten of tools en onleesbare uitvoer die beoordeling verhinderen als UNKNOWN.
+
+Zet een mislukte inspectie nooit om naar een lege verzameling of een gezond resultaat. Behoud vastgestelde afwijkingen naast onvolledige waarnemingen en documenteer hun statusprioriteit. Houd diagnostiek deterministisch en begrensd; benoem het geraakte object en de verwachte en waargenomen toestand. Aanvullende tellers mogen geen gezondheid vaststellen.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Statusbepaling en diagnose bij geverifieerde afwijkingen en mislukte of onvolledige inspecties.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity: deze norm vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: voor deze norm bestaat geen automatische correctie.
+
+**Toegestane uitzonderingen**
+
+Een onbeschikbare inspectietool levert UNKNOWN; een geverifieerd ontbrekend vereist onderdeel levert CRITICAL. Bij samenloop blijft de gedocumenteerde prioriteit zichtbaar.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft deze handmatige norm niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een mislukte inspectie wordt een lege lijst en daardoor een gezond resultaat. Keur dit af.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Behoud een vastgestelde afwijking én het onvolledige deel en kies de exitstatus volgens de gedocumenteerde prioriteit.
+
+**Grensgevallen**
+
+Een onbeschikbare inspectietool levert UNKNOWN; een geverifieerd ontbrekend vereist onderdeel levert CRITICAL. Bij samenloop blijft de gedocumenteerde prioriteit zichtbaar. De huidige projectchecks analyseren dit runtimecontract niet; opmaak- of resourcechecks leveren hiervoor geen bewijs.
+
+**Handmatige review**
+
+Onderscheid werkelijk vastgesteld ontbreken van een inspectie die ontbreken niet kan beoordelen; toets gemengde resultaten, objectidentiteit en verwachte versus waargenomen toestand.
+
+**Verificatie**
+
+Controleer met synthetische invoer ontbrekende componenten, beleidsafwijkingen, inactieve services, ontbrekende rechten/tools, onleesbare uitvoer en gecombineerde afwijkingen met onvolledige inspectie. Vergelijk beide reviewscenario’s; tooltests bewijzen geen monitoringgedrag.
 
 ### Invoer en configuratie
 
@@ -2426,7 +3286,9 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Volg 
 
 **Norm**
 
-De check verwerkt commandline-opties, omgevingsvariabelen en defaults volgens het [configuratiecontract in `AGENTS.md`](../../../AGENTS.md#monitoring-check-configuration), dat de algemene invoer- en validatieregels aanvult. Puppet mag twee expliciet opgegeven drempels alvast vergelijken, maar neemt daarvoor geen ontbrekende scriptdefault over.
+Pas de algemene [shellargument- en runtime-instellingen](#shellargumenten-en-runtime-instellingen-verwerken) op iedere check toe. Bied voor iedere configureerbare runtime-instelling commandline-opties én omgevingsvariabelen aan en volg de bestaande optieconventies van de check. Wijs ongeldige vereiste waarden af met Nagios UNKNOWN.
+
+Puppet mag twee expliciet opgegeven drempels alvast vergelijken, maar neemt daarvoor geen ontbrekende scriptdefault over. Voor registratie-overrides geldt [het defaultcontract](#optionele-monitoringdefaults-in-het-executable-houden).
 
 **Herkomst**
 
@@ -2488,7 +3350,7 @@ Handmatige vergelijking van het onjuiste en correcte scenario met de norm: Contr
 
 **Norm**
 
-Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie. Een scriptoptie of omgevingsvariabele verandert die agentinstellingen niet. Controleer hun samenhang volgens de [afspraken voor de executor](../../../AGENTS.md#executor-scheduling).
+Het uitvoerinterval en de timeout van de monitoringagent horen bij de registratie. Een scriptoptie of omgevingsvariabele verandert die agentinstellingen niet. De executor-timeout moet ruimte bieden voor uitvoering, beëindiging en uitvoer van het script. Beoordeel de agentplanning daarom afzonderlijk van scriptopties.
 
 **Herkomst**
 
