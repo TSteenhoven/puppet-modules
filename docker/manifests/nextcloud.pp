@@ -12,6 +12,11 @@
 # Set `server_name` and `admin_server_name` to publish either endpoint through Nginx; `docker::compose_proxy` only
 # manages one vhost per Compose stack, so a second, directly declared `nginx::server` covers the admin endpoint.
 #
+# Present stacks always apply this deployment's global OCC defaults (`default_quota`, `default_language`,
+# `default_locale`, `default_phone_region`, `default_app`, `skeleton_directory`) through `docker::nextcloud_occ`, each
+# guarded so Puppet only writes on an actual difference. There is no opt-out for applying these six, only for their
+# values; declare `docker::nextcloud_occ` resources directly for anything else.
+#
 # @example Deploy Nextcloud AIO behind Nginx with both endpoints published
 #   include basic_settings
 #
@@ -36,6 +41,21 @@
 # @param admin_server_name
 #   Optional public Nginx `server_name` for the AIO admin UI. When unset, the admin UI is reachable only on
 #   `127.0.0.1:<admin_port>` on the host itself.
+#
+# @param default_app
+#   Global default app written through OCC `config:system:set defaultapp`.
+#
+# @param default_language
+#   Global default language written through OCC `config:system:set default_language`.
+#
+# @param default_locale
+#   Global default locale written through OCC `config:system:set default_locale`.
+#
+# @param default_phone_region
+#   Global default phone region written through OCC `config:system:set default_phone_region`.
+#
+# @param default_quota
+#   Global default storage quota written through OCC `config:app:set files default_quota`.
 #
 # @param ensure
 #   Defaults to present. Delegates project lifecycle to `docker::compose`; follow its `ensure` contract before
@@ -87,6 +107,10 @@
 # @param ssl_certificate_trusted
 #   Optional trusted certificate path for public OCSP configuration.
 #
+# @param skeleton_directory
+#   Global default skeleton directory written through OCC `config:system:set skeletondirectory`. The default is an
+#   empty string, matching upstream AIO's own recommendation to disable the sample-content skeleton.
+#
 # @param ssl_verify
 #   Verifies the AIO upstream certificates when proxying over HTTPS. The default is `false` because both AIO
 #   endpoints serve self-signed HTTPS until a public domain is configured inside AIO itself.
@@ -99,6 +123,11 @@
 define docker::nextcloud (
   Integer[1, 65535]                     $admin_port                 = 8080,
   Optional[String]                      $admin_server_name          = undef,
+  String[1]                             $default_app                = 'files',
+  String[1]                             $default_language           = 'nl',
+  String[1]                             $default_locale             = 'nl_NL',
+  String[1]                             $default_phone_region       = 'NL',
+  String[1]                             $default_quota              = '10 GB',
   Enum['present', 'absent']             $ensure                     = present,
   String                                $image_tag                  = 'latest',
   Integer                               $monitoring_detail_limit    = 6000,
@@ -111,6 +140,7 @@ define docker::nextcloud (
   Integer                               $monitoring_timeout         = 60,
   Integer[1, 65535]                     $port                       = 11000,
   Optional[String]                      $server_name                = undef,
+  String                                $skeleton_directory         = '',
   Optional[String]                      $ssl_certificate            = undef,
   Optional[String]                      $ssl_certificate_key        = undef,
   Optional[String]                      $ssl_certificate_trusted    = undef,
@@ -178,6 +208,53 @@ define docker::nextcloud (
           project_directories        => $project_directories,
           target                     => $target,
           require                    => Class['docker'],
+        }
+      }
+
+      # Apply the deployment's global defaults through OCC once the stack is managed; each guard reads the current
+      # value back as JSON so Puppet only writes on an actual difference. docker::nextcloud_occ resolves its own
+      # ordering against the Docker::Compose[$name]/Docker::Compose_proxy[$name] resource declared above.
+      if ($ensure == present) {
+        docker::nextcloud_occ { "${name}_default_quota":
+          command      => ['config:app:set', 'files', 'default_quota', '--value', $default_quota],
+          compose_name => $name,
+          unless       => ['config:app:get', 'files', 'default_quota', '--output=json'],
+          unless_json  => stdlib::to_json($default_quota),
+        }
+
+        docker::nextcloud_occ { "${name}_default_language":
+          command      => ['config:system:set', 'default_language', '--value', $default_language],
+          compose_name => $name,
+          unless       => ['config:system:get', 'default_language', '--output=json'],
+          unless_json  => stdlib::to_json($default_language),
+        }
+
+        docker::nextcloud_occ { "${name}_default_locale":
+          command      => ['config:system:set', 'default_locale', '--value', $default_locale],
+          compose_name => $name,
+          unless       => ['config:system:get', 'default_locale', '--output=json'],
+          unless_json  => stdlib::to_json($default_locale),
+        }
+
+        docker::nextcloud_occ { "${name}_default_phone_region":
+          command      => ['config:system:set', 'default_phone_region', '--value', $default_phone_region],
+          compose_name => $name,
+          unless       => ['config:system:get', 'default_phone_region', '--output=json'],
+          unless_json  => stdlib::to_json($default_phone_region),
+        }
+
+        docker::nextcloud_occ { "${name}_defaultapp":
+          command      => ['config:system:set', 'defaultapp', '--value', $default_app],
+          compose_name => $name,
+          unless       => ['config:system:get', 'defaultapp', '--output=json'],
+          unless_json  => stdlib::to_json($default_app),
+        }
+
+        docker::nextcloud_occ { "${name}_skeletondirectory":
+          command      => ['config:system:set', 'skeletondirectory', '--value', $skeleton_directory],
+          compose_name => $name,
+          unless       => ['config:system:get', 'skeletondirectory', '--output=json'],
+          unless_json  => stdlib::to_json($skeleton_directory),
         }
       }
 

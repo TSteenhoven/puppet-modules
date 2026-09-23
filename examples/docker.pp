@@ -232,7 +232,7 @@ node 'twenty.example.org' {
 
 # Supply the deployment profile's AIO Compose file and complete AIO initialization before registering stores.
 # The host must provide the Docker package source and basic_settings::systemd for Compose service management.
-# The selected nextcloud-aio-mastercontainer service must provide OCC; standard AIO runs OCC in nextcloud-aio-nextcloud.
+# OCC runs in the nextcloud-aio-nextcloud service, matching standard AIO's documented OCC container.
 node 'nextcloud.example.org' {
   include docker
 

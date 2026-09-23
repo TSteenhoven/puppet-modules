@@ -335,9 +335,7 @@ Met `docker::nextcloud_s3` registreer je één S3-objectstore in een Nextcloud A
 
 Gebruik bij de [standaard AIO-configuratie](https://github.com/nextcloud/all-in-one/blob/main/compose.yaml) `nextcloud-aio`: AIO gebruikt die projectnaam ook voor de containers die de mastercontainer zelf aanmaakt. De gedeelde `docker::compose_exec` regelt de uitvoervolgorde en controleert of de juiste container draait. Rond de AIO-installatie af voordat je de S3-resources toepast: een ontbrekende of gestopte container of een onvoltooide installatie laat de opdracht mislukken zonder configuratie te schrijven. Een volgende Puppet-run kan het opnieuw proberen.
 
-De generieke define `docker::nextcloud_occ` gebruikt de bestaande serviceselectie van `docker::compose_exec`, met `service => 'nextcloud-aio-mastercontainer'`, zoals die in de gelinkte Compose-YAML staat. De geselecteerde container moet `php occ` als `www-data` kunnen uitvoeren.
-
-De [AIO-documentatie](https://github.com/nextcloud/all-in-one#how-to-run-occ-commands) voert OCC uit in `nextcloud-aio-nextcloud`. De selectie van de mastercontainer levert daarom op zichzelf geen werkende OCC-uitvoering in standaard AIO; de deployment moet OCC in de geselecteerde service beschikbaar maken. De aanroep gebruikt de PATH en werkmap van die container, zonder PHP op de host te installeren.
+De generieke define `docker::nextcloud_occ` gebruikt de bestaande serviceselectie van `docker::compose_exec`, met `service => 'nextcloud-aio-nextcloud'`, de container waarin de [AIO-documentatie](https://github.com/nextcloud/all-in-one#how-to-run-occ-commands) OCC uitvoert. De geselecteerde container moet `php occ` als `www-data` kunnen uitvoeren; de aanroep gebruikt de PATH en werkmap van die container, zonder PHP op de host te installeren.
 
 De resourcenaam bepaalt de naam onder `objectstore`. Iedere resource beheert alleen die eigen configuratie en laat andere stores staan. Puppet schrijft alleen bij een inhoudelijk verschil. Optionele instellingen die je weglaat krijgen hun standaardwaarde van Nextcloud; een eerder opgegeven optie weglaten verwijdert de bijbehorende override.
 
