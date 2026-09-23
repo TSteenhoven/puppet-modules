@@ -21,6 +21,7 @@
 #   docker::authentik { 'authentik':
 #     database_password => Sensitive('replace-with-secret'),
 #     secret_key        => Sensitive('replace-with-secret'),
+#     smtp_server       => 'smtp.example.org',
 #   }
 #
 # @example Deploy Authentik behind Nginx
@@ -97,32 +98,28 @@
 #   Optional sender address written as `AUTHENTIK_EMAIL__FROM`. `undef` or empty derives `noreply@<first server_name>`
 #   or `noreply@basic_settings::server_fdqn` when SMTP is active.
 #
-# @param smtp_host
-#   Optional SMTP relay host written as `AUTHENTIK_EMAIL__HOST`. `undef` inherits `basic_settings::smtp_server` when
-#   `basic_settings` is declared.
-#
 # @param smtp_password
-#   Optional SMTP password written as `AUTHENTIK_EMAIL__PASSWORD`. Empty values are omitted from the generated `.env`
-#   file.
+#   Optional Sensitive password written as AUTHENTIK_EMAIL__PASSWORD. Undef or empty omits the entry.
+#   Requires a nonempty smtp_username; newlines are rejected without logging the password.
 #
 # @param smtp_port
-#   Optional SMTP relay port written as `AUTHENTIK_EMAIL__PORT`. `undef` uses `25` only when an SMTP host is available.
+#   Optional relay port written as AUTHENTIK_EMAIL__PORT. Undef omits it, using Authentik's default of 25.
+#
+# @param smtp_security
+#   Transport mode: none disables both AUTHENTIK_EMAIL__USE_TLS and AUTHENTIK_EMAIL__USE_SSL; tls enables only
+#   STARTTLS (USE_TLS); ssl enables only implicit TLS (USE_SSL). Defaults to none. Authentication is independent.
+#
+# @param smtp_server
+#   Optional relay written as AUTHENTIK_EMAIL__HOST. Undef or empty inherits a nonempty
+#   basic_settings::smtp_server when that class is declared. Without a relay, SMTP remains unconfigured;
+#   supplying additional SMTP options requires a resolved relay.
 #
 # @param smtp_timeout
-#   Optional SMTP timeout in seconds written as `AUTHENTIK_EMAIL__TIMEOUT`. `undef` uses `10` only when an SMTP host is
-#   available.
-#
-# @param smtp_use_ssl
-#   Optional implicit TLS/SSL setting written as `AUTHENTIK_EMAIL__USE_SSL`. `undef` uses `false` only when an SMTP host
-#   is available.
-#
-# @param smtp_use_tls
-#   Optional STARTTLS setting written as `AUTHENTIK_EMAIL__USE_TLS`. `undef` uses `false` only when an SMTP host is
-#   available.
+#   Optional timeout in seconds written as AUTHENTIK_EMAIL__TIMEOUT. Undef omits it, using Authentik's default of 10.
 #
 # @param smtp_username
-#   Optional SMTP username written as `AUTHENTIK_EMAIL__USERNAME`. Empty values are omitted from the generated `.env`
-#   file.
+#   Optional user written as AUTHENTIK_EMAIL__USERNAME. Undef or empty omits the entry. Authentication requires
+#   both a nonempty username and password; when both are absent, both environment entries are omitted.
 #
 # @param ssl_certificate
 #   Public TLS certificate path for the generated Nginx vhost.
@@ -160,12 +157,11 @@ define docker::authentik (
   Enum['http', 'https']                 $scheme                     = 'https',
   Optional[String]                      $server_name                = undef,
   Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_from                  = undef,
-  Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_host                  = undef,
   Optional[Sensitive[String]]           $smtp_password              = undef,
   Optional[Integer[1, 65535]]           $smtp_port                  = undef,
+  Enum['none', 'tls', 'ssl']            $smtp_security              = 'none',
+  Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_server                = undef,
   Optional[Integer[1]]                  $smtp_timeout               = undef,
-  Optional[Boolean]                     $smtp_use_ssl               = undef,
-  Optional[Boolean]                     $smtp_use_tls               = undef,
   Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_username              = undef,
   Optional[String]                      $ssl_certificate            = undef,
   Optional[String]                      $ssl_certificate_key        = undef,
@@ -180,134 +176,62 @@ define docker::authentik (
   if (defined(Class['docker'])) {
     # Require Nginx when this stack creates a public vhost.
     if ($server_name == undef or defined(Class['nginx'])) {
-      # Resolve the SMTP relay host with the same explicit-then-basic_settings ordering used by GitLab's SMTP configuration.
-      if ($smtp_host == undef or ($smtp_host != undef and $smtp_host == '')) {
-        # Read the central SMTP relay only when basic_settings is available.
-        if ($basic_settings_defined) {
-          # Use a nonempty central SMTP host; otherwise leave SMTP unconfigured.
-          if ($basic_settings::smtp_server != '') {
-            # Use the central SMTP relay when a non-empty relay is configured.
-            $smtp_host_correct = $basic_settings::smtp_server
-          } else {
-            # Leave SMTP disabled when no central relay is available.
-            $smtp_host_correct = undef
-          }
+      # An omitted or empty explicit relay inherits the central relay when its owning class is available.
+      if ($smtp_server == undef or $smtp_server == '') {
+        # Read the relay only from a declared owner with a configured value.
+        if ($basic_settings_defined and $basic_settings::smtp_server != '') {
+          # Reuse the deployment's central relay.
+          $smtp_server_correct = $basic_settings::smtp_server
         } else {
-          # Leave SMTP disabled when no central relay is available.
-          $smtp_host_correct = undef
+          # Leave mail settings unmanaged without a relay.
+          $smtp_server_correct = undef
         }
       } else {
-        # Use the explicitly supplied SMTP host.
-        $smtp_host_correct = $smtp_host
+        # Explicit application settings take precedence over the central relay.
+        $smtp_server_correct = $smtp_server
       }
 
-      # Use Authentik's documented SMTP defaults only after SMTP is active through a resolved host.
-      if ($smtp_port == undef) {
-        # Apply the default SMTP port only when a relay host has been resolved.
-        if ($smtp_host_correct != undef) {
-          # Default an enabled SMTP connection to port 25.
-          $smtp_port_correct = 25
-        } else {
-          # Omit the SMTP port when no relay is configured.
-          $smtp_port_correct = undef
-        }
+      # Map the single transport choice to mutually exclusive Authentik flags only for active SMTP.
+      if ($smtp_server_correct != undef) {
+        # Anonymous internal relays remain the default; explicit tls or ssl selects the corresponding transport.
+        $smtp_use_ssl_correct = $smtp_security == 'ssl'
+        $smtp_use_tls_correct = $smtp_security == 'tls'
       } else {
-        # Preserve the caller's SMTP port.
-        $smtp_port_correct = $smtp_port
+        # Leave Authentik's mail defaults intact without a relay.
+        $smtp_use_ssl_correct = undef
+        $smtp_use_tls_correct = undef
       }
 
-      # Preserve an explicit SMTP timeout or choose a default for active SMTP.
-      if ($smtp_timeout == undef) {
-        # Apply the default SMTP timeout only when a relay host has been resolved.
-        if ($smtp_host_correct != undef) {
-          # Bound the default SMTP connection timeout to ten seconds.
-          $smtp_timeout_correct = 10
-        } else {
-          # Omit the SMTP timeout when no relay is configured.
-          $smtp_timeout_correct = undef
-        }
-      } else {
-        # Preserve the caller's SMTP timeout.
-        $smtp_timeout_correct = $smtp_timeout
+      # Empty credentials are absent; keep a supplied password Sensitive until its protected output is prepared.
+      $smtp_username_correct = $smtp_username ? {
+        ''      => undef,
+        default => $smtp_username,
+      }
+      $smtp_password_unwrapped = $smtp_password ? {
+        undef   => '',
+        default => $smtp_password.unwrap,
+      }
+      $smtp_password_correct = $smtp_password_unwrapped ? {
+        ''      => undef,
+        default => $smtp_password,
       }
 
-      # Preserve the caller's implicit-TLS setting and leave inactive SMTP unconfigured.
-      if ($smtp_use_ssl == undef) {
-        # Default implicit TLS to disabled only for an active SMTP connection.
-        if ($smtp_host_correct != undef) {
-          # Leave implicit SMTP TLS disabled unless explicitly requested.
-          $smtp_use_ssl_correct = false
-        } else {
-          # Omit the implicit TLS setting when no relay is configured.
-          $smtp_use_ssl_correct = undef
-        }
+      # Validate credentials without including their values in diagnostic messages.
+      if ($smtp_password_unwrapped !~ /\A[^\r\n]*\z/) {
+        # Authentik's environment and the shared SMTP interface require a single-line password.
+        $smtp_credentials_fail_text = 'SMTP smtp_password must not contain newlines.'
+      } elsif (($smtp_username_correct == undef) != ($smtp_password_correct == undef)) {
+        # A partial credential pair cannot establish the requested authentication.
+        $smtp_credentials_fail_text = 'SMTP authentication requires both smtp_username and a nonempty smtp_password.'
       } else {
-        # Preserve the caller's implicit SMTP TLS setting.
-        $smtp_use_ssl_correct = $smtp_use_ssl
-      }
-
-      # Preserve the caller's STARTTLS setting and leave inactive SMTP unconfigured.
-      if ($smtp_use_tls == undef) {
-        # Default STARTTLS to disabled only for an active SMTP connection.
-        if ($smtp_host_correct != undef) {
-          # Leave SMTP STARTTLS disabled unless explicitly requested.
-          $smtp_use_tls_correct = false
-        } else {
-          # Omit the STARTTLS setting when no relay is configured.
-          $smtp_use_tls_correct = undef
-        }
-      } else {
-        # Preserve the caller's SMTP STARTTLS setting.
-        $smtp_use_tls_correct = $smtp_use_tls
-      }
-
-      # Reject simultaneous implicit TLS and STARTTLS on one SMTP connection.
-      if ($smtp_use_ssl_correct == true and $smtp_use_tls_correct == true) {
-        # Record the conflicting SMTP TLS modes before generating application configuration.
-        $smtp_tls_fail_text = 'docker::authentik cannot enable both smtp_use_ssl and smtp_use_tls for the same SMTP connection.'
-      } else {
-        # Allow configuration generation when the SMTP TLS modes do not conflict.
-        $smtp_tls_fail_text = undef
-      }
-
-      # Keep optional SMTP authentication values out of the generated .env file when callers leave them empty.
-      if ($smtp_username == undef or ($smtp_username != undef and $smtp_username == '')) {
-        # Omit SMTP authentication when no non-empty username is supplied.
-        $smtp_username_correct = undef
-      } else {
-        # Keep the supplied SMTP authentication username.
-        $smtp_username_correct = $smtp_username
-      }
-
-      # Validate a supplied SMTP password while keeping absent authentication unconfigured.
-      if ($smtp_password != undef) {
-        # Unwrap the supplied password only to validate its single-line environment value.
-        $smtp_password_unwrapped = $smtp_password.unwrap
-        if ($smtp_password_unwrapped =~ /\A[^\r\n]*\z/) {
-          # Omit an empty password instead of writing empty SMTP credentials.
-          if ($smtp_password_unwrapped == '') {
-            # Omit an empty SMTP password from the generated environment.
-            $smtp_password_correct = undef
-          } else {
-            # Use the validated single-line password in the sensitive environment content.
-            $smtp_password_correct = $smtp_password_unwrapped
-          }
-          $smtp_password_fail_text = undef
-        } else {
-          # Reject a multiline SMTP password before generating environment content.
-          $smtp_password_correct = undef
-          $smtp_password_fail_text = 'docker::authentik smtp_password must not contain newlines.'
-        }
-      } else {
-        # Leave SMTP password content and its validation error unset when no password is supplied.
-        $smtp_password_correct = undef
-        $smtp_password_fail_text = undef
+        # A complete pair enables authentication; an absent pair leaves the relay anonymous.
+        $smtp_credentials_fail_text = undef
       }
 
       # Derive a sender address from the public Authentik name or the central server FQDN when SMTP is active and no explicit sender is set.
       if ($smtp_from == undef or ($smtp_from != undef and $smtp_from == '')) {
         # Derive a sender only when SMTP has an active relay host.
-        if ($smtp_host_correct != undef) {
+        if ($smtp_server_correct != undef) {
           # Fall back to the host identity only when no public server name was supplied.
           if ($server_name == undef or $server_name == '') {
             # Read the central server identity only when basic_settings is available.
@@ -338,17 +262,11 @@ define docker::authentik (
         $smtp_from_correct = $smtp_from
       }
 
-      # Report incompatible TLS modes before any password validation error.
-      if ($smtp_tls_fail_text == undef) {
-        # Pass on password-validation failures after TLS-mode validation succeeds.
-        $smtp_validation_fail_text = $smtp_password_fail_text
-      } else {
-        # Report the TLS-mode conflict before any password-validation error.
-        $smtp_validation_fail_text = $smtp_tls_fail_text
-      }
-
-      # Render credentials and manage the stack only after SMTP validation succeeds.
-      if ($smtp_validation_fail_text == undef) {
+      # Additional SMTP options require a relay; do not silently configure credentials without a destination.
+      $smtp_options = [$smtp_from, $smtp_port, $smtp_timeout,
+        $smtp_username_correct, $smtp_password_correct].filter |$value| { $value != undef and $value != '' }
+      if ($smtp_credentials_fail_text == undef
+        and ($smtp_server_correct != undef or ($smtp_options.empty and $smtp_security == 'none'))) {
         # Generate .env content for the Compose stack based on the provided parameters.
         $env_content = Sensitive.new(template('docker/authentik.env'))
 
@@ -429,7 +347,12 @@ define docker::authentik (
           }
         }
       } else {
-        fail($smtp_validation_fail_text)
+        # Preserve the specific credential diagnostic before checking the relay prerequisite.
+        $smtp_fail_text = $smtp_credentials_fail_text ? {
+          undef   => 'docker::authentik SMTP options require smtp_server or a nonempty basic_settings::smtp_server.',
+          default => $smtp_credentials_fail_text,
+        }
+        fail($smtp_fail_text)
       }
     } else {
       fail('docker::authentik requires the nginx class before it can create a reverse proxy vhost.')

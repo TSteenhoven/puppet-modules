@@ -26,13 +26,12 @@
 # Until AIO initialization completes, these resources fail without writing configuration; finish setup through the
 # admin UI and rerun Puppet.
 #
-# SMTP reuses docker::authentik's parameter names, relay fallback and Sensitive password contract. A resolved relay
-# alone sets only mail_smtpmode and mail_smtphost. All other mail settings are optional and use Nextcloud defaults
-# unless explicitly supplied. Empty credentials and sender addresses are omitted. Omitting a previously managed
-# optional value leaves it unchanged in Nextcloud; it does not restore its default. Supplying SMTP options requires
-# a resolved relay. All mail settings use docker::nextcloud_occ with typed JSON guards; no config.php content is
-# managed directly. Nonempty credentials enable mail_smtpauth; without credentials that switch remains unmanaged.
-# Nextcloud supports implicit SSL or automatic STARTTLS, not enforced STARTTLS; see
+# SMTP shares docker::authentik's parameter names, relay fallback and Sensitive password contract. A resolved relay
+# manages mail_smtpmode, mail_smtphost, mail_smtpsecure and boolean mail_smtpauth. Port, timeout, sender and credentials
+# are only written when supplied. Omitting these optional values does not remove previously stored values, but
+# omitting credentials disables authentication. All mail settings use docker::nextcloud_occ with typed JSON guards;
+# no config.php content is managed directly. Nextcloud supports implicit SSL or automatic STARTTLS, not enforced
+# STARTTLS; tls is rejected. See
 # https://docs.nextcloud.com/server/stable/admin_manual/configuration_server/email_configuration.html.
 #
 # @example Deploy Nextcloud AIO behind Nginx with both endpoints published
@@ -48,6 +47,7 @@
 #   docker::nextcloud { 'nextcloud':
 #     server_name         => 'cloud.example.org',
 #     admin_server_name   => 'cloud-admin.example.org',
+#     smtp_server         => 'smtp.example.org',
 #     ssl_certificate     => '/etc/letsencrypt/live/cloud.example.org/fullchain.pem',
 #     ssl_certificate_key => '/etc/letsencrypt/live/cloud.example.org/privkey.pem',
 #   }
@@ -127,36 +127,33 @@
 #   Optional plain sender address, split into `mail_from_address` and `mail_domain`. Undef or empty leaves both keys
 #   unmanaged so Nextcloud supplies its own sender. Display names are not supported.
 #
-# @param smtp_host
-#   Optional relay host written as `mail_smtphost`. Undef or empty inherits a nonempty `basic_settings::smtp_server`
-#   when that class is declared. A resolved host also sets `mail_smtpmode` to `smtp`; otherwise both keys are omitted.
-#
 # @param smtp_password
-#   Optional Sensitive SMTP password written as `mail_smtppassword`. Undef or empty is omitted; newlines are rejected,
-#   as in Authentik. A nonempty username or password enables `mail_smtpauth`; no authentication method is imposed.
-#   Commands, guards and output use the protection in docker::nextcloud_occ; credentials remain visible to
-#   administrators who can inspect process arguments.
+#   Optional Sensitive password written as mail_smtppassword. Undef or empty omits the key. Requires a nonempty
+#   smtp_username; newlines are rejected without logging the password. No authentication method
+#   is imposed. Commands, guards and output use the protection in docker::nextcloud_occ; credentials remain
+#   visible to administrators who can inspect process arguments.
 #
 # @param smtp_port
 #   Optional relay port written as integer `mail_smtpport`. Undef leaves it unmanaged; Nextcloud defaults to 25.
+#
+# @param smtp_security
+#   Transport mode: none writes an empty mail_smtpsecure for automatic STARTTLS when the relay offers it; ssl
+#   writes ssl for implicit TLS. Defaults to none. The tls mode is rejected because Nextcloud cannot enforce
+#   STARTTLS. Selecting ssl does not change the port; supply the port required by your relay.
+#
+# @param smtp_server
+#   Optional relay written as mail_smtphost. Undef or empty inherits a nonempty
+#   basic_settings::smtp_server when that class is declared. A relay selects SMTP mode and manages transport and
+#   authentication. Without a relay, mail settings remain unmanaged; additional SMTP options require a relay.
 #
 # @param smtp_timeout
 #   Optional timeout in seconds written as integer `mail_smtptimeout`. Undef leaves it unmanaged;
 #   Nextcloud defaults to 10.
 #
-# @param smtp_use_ssl
-#   Optional implicit TLS setting. True writes `mail_smtpsecure` as `ssl`; false selects None/STARTTLS (empty string).
-#   Undef leaves encryption unmanaged unless smtp_use_tls is supplied. Set smtp_port for the relay; enabling SSL does
-#   not change it automatically. Cannot be true together with smtp_use_tls.
-#
-# @param smtp_use_tls
-#   Optional STARTTLS selection matching Authentik's parameter name. True selects None/STARTTLS; false cannot disable
-#   Nextcloud's automatic STARTTLS upgrade. Neither value enforces STARTTLS. Undef leaves the choice to smtp_use_ssl
-#   alone; when both are undef, encryption remains unmanaged. Cannot be true together with smtp_use_ssl.
-#
 # @param smtp_username
-#   Optional username written as `mail_smtpname`. Undef or empty is omitted. A nonempty username or password enables
-#   boolean `mail_smtpauth`; without credentials it is unmanaged. Neither credential is required by this interface.
+#   Optional user written as mail_smtpname. Undef or empty omits the key. Authentication requires both a nonempty
+#   username and password. With a relay, mail_smtpauth is true for a complete pair and false without credentials.
+#   Omitted credential keys are not written or deleted; existing values remain stored but unused.
 #
 # @param ssl_certificate
 #   Public TLS certificate path for the generated Nginx vhosts; required when either public name is set.
@@ -200,12 +197,11 @@ define docker::nextcloud (
   Optional[String[1]]                   $server_name                = undef,
   String                                $skeleton_directory         = '',
   Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_from                  = undef,
-  Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_host                  = undef,
   Optional[Sensitive[String]]           $smtp_password              = undef,
   Optional[Integer[1, 65535]]           $smtp_port                  = undef,
+  Enum['none', 'tls', 'ssl']            $smtp_security              = 'none',
+  Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_server                = undef,
   Optional[Integer[1]]                  $smtp_timeout               = undef,
-  Optional[Boolean]                     $smtp_use_ssl               = undef,
-  Optional[Boolean]                     $smtp_use_tls               = undef,
   Optional[Pattern[/\A[^\r\n]*\z/]]     $smtp_username              = undef,
   Optional[String]                      $ssl_certificate            = undef,
   Optional[String]                      $ssl_certificate_key        = undef,
@@ -352,42 +348,23 @@ define docker::nextcloud (
             }
           }
 
-          # An empty explicit relay has the same fallback semantics as an omitted relay in Authentik.
-          if ($smtp_host == undef or $smtp_host == '') {
-            # Read the central relay only when its owning class is available.
+          # An omitted or empty explicit relay inherits the central relay when its owning class is available.
+          if ($smtp_server == undef or $smtp_server == '') {
+            # Read the relay only from a declared owner with a configured value.
             if (defined(Class['basic_settings']) and $basic_settings::smtp_server != '') {
-              # Use the centrally configured relay.
-              $smtp_host_correct = $basic_settings::smtp_server
+              # Reuse the deployment's central relay.
+              $smtp_server_correct = $basic_settings::smtp_server
             } else {
-              # No resolved relay means no implicit SMTP settings.
-              $smtp_host_correct = undef
+              # Leave mail settings unmanaged without a relay.
+              $smtp_server_correct = undef
             }
           } else {
-            # Explicit settings take precedence over central settings.
-            $smtp_host_correct = $smtp_host
+            # Explicit application settings take precedence over the central relay.
+            $smtp_server_correct = $smtp_server
           }
 
-          # Selecting a relay activates SMTP without overriding Nextcloud's optional defaults.
-          $smtp_mode_correct = $smtp_host_correct ? {
-            undef   => undef,
-            default => 'smtp',
-          }
-
-          # Nextcloud has one encryption setting: SSL or None/STARTTLS, with automatic STARTTLS negotiation.
-          if ($smtp_use_ssl != undef or $smtp_use_tls != undef) {
-            # Both false and STARTTLS use Nextcloud's empty-string encryption value.
-            $smtp_secure_correct = $smtp_use_ssl ? {
-              true    => 'ssl',
-              default => '',
-            }
-          } else {
-            # Leave encryption untouched without an explicit TLS setting.
-            $smtp_secure_correct = undef
-          }
-
-          # Keep empty authentication values unmanaged, as in Authentik.
+          # Empty credentials are absent; keep a supplied password Sensitive until its protected output is prepared.
           $smtp_username_correct = $smtp_username ? {
-            undef   => undef,
             ''      => undef,
             default => $smtp_username,
           }
@@ -400,48 +377,61 @@ define docker::nextcloud (
             default => $smtp_password,
           }
 
-          # Credentials request authentication; a relay alone leaves Nextcloud's authentication default untouched.
-          if ($smtp_username_correct != undef or $smtp_password_correct != undef) {
-            # Nextcloud needs this boolean switch in addition to the supplied credentials.
-            $smtp_auth_correct = true
+          # Validate credentials without including their values in diagnostic messages.
+          if ($smtp_password_unwrapped !~ /\A[^\r\n]*\z/) {
+            # Authentik's environment and the shared SMTP interface require a single-line password.
+            $smtp_credentials_fail_text = 'SMTP smtp_password must not contain newlines.'
+          } elsif (($smtp_username_correct == undef) != ($smtp_password_correct == undef)) {
+            # A partial credential pair cannot establish the requested authentication.
+            $smtp_credentials_fail_text = 'SMTP authentication requires both smtp_username and a nonempty smtp_password.'
           } else {
-            # Do not impose an authentication setting on relays without supplied credentials.
-            $smtp_auth_correct = undef
+            # A complete pair enables authentication; an absent pair leaves the relay anonymous.
+            $smtp_credentials_fail_text = undef
           }
 
-          # A missing sender leaves Nextcloud's own sender selection intact.
+          # A missing sender keeps Nextcloud's own sender selection intact.
           $smtp_from_correct = $smtp_from ? {
             undef   => undef,
             ''      => undef,
             default => $smtp_from,
           }
 
-          # Reject conflicting TLS modes before validating credentials or Nextcloud's split sender fields.
-          if (!($smtp_use_ssl == true and $smtp_use_tls == true)) {
-            # Match Authentik's single-line password contract without exposing the password in diagnostics.
-            if ($smtp_password_unwrapped =~ /\A[^\r\n]*\z/) {
-              # Nextcloud stores a plain sender address as separate local-part and domain keys.
-              if ($smtp_from_correct == undef or $smtp_from_correct =~ /\A[^@\s]+@[^@\s]+\z/) {
-                # Undef sender fields stay out of the OCC resource set.
-                $smtp_sender_parts = $smtp_from_correct ? {
-                  undef   => [undef, undef],
-                  default => split($smtp_from_correct, '@'),
-                }
-                $smtp_settings = {
-                  'mail_smtpmode'     => $smtp_mode_correct,
-                  'mail_smtphost'     => $smtp_host_correct,
-                  'mail_smtpport'     => $smtp_port,
-                  'mail_smtptimeout'  => $smtp_timeout,
-                  'mail_smtpsecure'   => $smtp_secure_correct,
-                  'mail_smtpauth'     => $smtp_auth_correct,
-                  'mail_smtpname'     => $smtp_username_correct,
-                  'mail_smtppassword' => $smtp_password_correct,
-                  'mail_from_address' => $smtp_sender_parts[0],
-                  'mail_domain'       => $smtp_sender_parts[1],
-                }.filter |$setting, $value| { $value != undef }
+          # Nextcloud's mailer cannot enforce STARTTLS; do not silently downgrade a requested transport.
+          if ($smtp_credentials_fail_text == undef and $smtp_security != 'tls') {
+            # Nextcloud stores a plain sender address as separate local-part and domain keys.
+            if ($smtp_from_correct == undef or $smtp_from_correct =~ /\A[^@\s]+@[^@\s]+\z/) {
+              # Undef sender fields stay out of the OCC resource set.
+              $smtp_sender_parts = $smtp_from_correct ? {
+                undef   => [undef, undef],
+                default => split($smtp_from_correct, '@'),
+              }
 
-                # Only a relay is required to enable SMTP; additional settings cannot activate it without a host.
-                if ($smtp_host_correct != undef or $smtp_settings.empty) {
+              # Optional settings are written only when supplied; transport and authentication follow the resolved relay.
+              $smtp_options = {
+                'mail_smtpport'     => $smtp_port,
+                'mail_smtptimeout'  => $smtp_timeout,
+                'mail_smtpname'     => $smtp_username_correct,
+                'mail_smtppassword' => $smtp_password_correct,
+                'mail_from_address' => $smtp_sender_parts[0],
+                'mail_domain'       => $smtp_sender_parts[1],
+              }.filter |$setting, $value| { $value != undef }
+
+              # A nondefault transport selection cannot activate SMTP without a relay.
+              if ($smtp_server_correct != undef or ($smtp_options.empty and $smtp_security == 'none')) {
+                # No relay means no SMTP resources, while the existing global OCC defaults remain independent.
+                if ($smtp_server_correct != undef) {
+                  # None selects automatic STARTTLS; absent credentials explicitly disable previously configured authentication.
+                  $smtp_secure_correct = $smtp_security ? {
+                    'ssl'   => 'ssl',
+                    default => '',
+                  }
+                  $smtp_settings = $smtp_options + {
+                    'mail_smtpmode'   => 'smtp',
+                    'mail_smtphost'   => $smtp_server_correct,
+                    'mail_smtpsecure' => $smtp_secure_correct,
+                    'mail_smtpauth'   => $smtp_username_correct != undef,
+                  }
+
                   # One OCC resource per key preserves unrelated configuration and correct scalar types.
                   $smtp_settings.each |$setting, $value| {
                     # Serialize credentials only inside protected OCC arguments and comparison values.
@@ -459,17 +449,20 @@ define docker::nextcloud (
                       unless_json  => Sensitive($value_json),
                     }
                   }
-                } else {
-                  fail('docker::nextcloud SMTP options require smtp_host or a nonempty basic_settings::smtp_server.')
                 }
               } else {
-                fail('docker::nextcloud smtp_from must be a plain local-part@domain address without a display name.')
+                fail('docker::nextcloud SMTP options require smtp_server or a nonempty basic_settings::smtp_server.')
               }
             } else {
-              fail('docker::nextcloud smtp_password must not contain newlines.')
+              fail('docker::nextcloud smtp_from must be a plain local-part@domain address without a display name.')
             }
           } else {
-            fail('docker::nextcloud cannot enable both smtp_use_ssl and smtp_use_tls for the same SMTP connection.')
+            # Preserve the specific credential diagnostic before checking Nextcloud's transport limitation.
+            $smtp_fail_text = $smtp_credentials_fail_text ? {
+              undef   => 'docker::nextcloud cannot enforce STARTTLS: smtp_security tls is unsupported; use none or ssl.',
+              default => $smtp_credentials_fail_text,
+            }
+            fail($smtp_fail_text)
           }
         } else {
           docker::compose { $name:
