@@ -3,9 +3,9 @@
 # Declare docker first and provide Docker::Compose[$compose_name], Docker::Compose_proxy[$compose_name], or
 # Docker::Nextcloud[$compose_name]. The owner must be visible when this resource is evaluated; wrappers must provide
 # Docker::Compose[$compose_name] in the final catalog. Missing owners fail compilation before declaring OCC commands.
-# OCC waits for the visible owner; docker::compose_exec selects its nextcloud-aio-mastercontainer Compose service.
-# The selected service must provide php occ for www-data through its PATH and working directory. Standard AIO documents
-# OCC in nextcloud-aio-nextcloud, so this mastercontainer selection requires a deployment that supplies OCC there.
+# OCC waits for the visible owner; docker::compose_exec selects its nextcloud-aio-nextcloud Compose service, matching
+# the container standard AIO documents OCC in (https://github.com/nextcloud/all-in-one#how-to-run-occ-commands).
+# The selected service must provide php occ for www-data through its PATH and working directory.
 # Commands run as www-data with php occ, resolved inside the selected container.
 # The mutation checks installation status before running; a missing/stopped container or incomplete installation fails.
 # No OCC helper scripts or request files are installed.
@@ -144,7 +144,7 @@ define docker::nextcloud_occ (
         docker::compose_exec { "docker_nextcloud_occ_${title}":
           command      => $command_correct,
           compose_name => $compose_name,
-          service      => 'nextcloud-aio-mastercontainer',
+          service      => 'nextcloud-aio-nextcloud',
           timeout      => $timeout,
           unless       => $unless_correct,
           user         => 'www-data',
