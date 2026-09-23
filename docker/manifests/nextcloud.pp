@@ -47,6 +47,7 @@
 #   docker::nextcloud { 'nextcloud':
 #     server_name         => 'cloud.example.org',
 #     admin_server_name   => 'cloud-admin.example.org',
+#     admin_whitelist_ips => ['192.0.2.10', '2001:db8::/32'],
 #     smtp_server         => 'smtp.example.org',
 #     ssl_certificate     => '/etc/letsencrypt/live/cloud.example.org/fullchain.pem',
 #     ssl_certificate_key => '/etc/letsencrypt/live/cloud.example.org/privkey.pem',
@@ -60,6 +61,12 @@
 # @param admin_server_name
 #   Optional public Nginx `server_name` for the AIO admin UI. When set, creates an HTTPS vhost on the standard Nginx
 #   listeners with upstream `https://127.0.0.1:<admin_port>`. When unset, access remains local or through an SSH tunnel.
+#
+# @param admin_whitelist_ips
+#   IPv4/IPv6 addresses or CIDR networks allowed through the admin vhost when admin_server_name is set. A nonempty
+#   list adds allow rules followed by deny all at server level. Defaults to []; an empty list leaves access
+#   unrestricted.
+#   Uses the client address seen by Nginx. Does not restrict the application vhost or direct access to admin_port.
 #
 # @param default_app
 #   Global default app written through OCC `config:system:set defaultapp`.
@@ -178,6 +185,7 @@
 define docker::nextcloud (
   Integer[1, 65535]                     $admin_port                 = 8080,
   Optional[String[1]]                   $admin_server_name          = undef,
+  Array[Stdlib::IP::Address]            $admin_whitelist_ips        = [],
   String[1]                             $default_app                = 'files',
   String[1]                             $default_language           = 'nl',
   String[1]                             $default_locale             = 'nl_NL',
@@ -335,8 +343,17 @@ define docker::nextcloud (
 
           # AIO's separate HTTPS admin endpoint reuses the same proxy implementation without deploying Compose twice.
           if ($admin_server_name != undef) {
+            # A nonempty whitelist restricts every admin proxy location; an empty list preserves unrestricted access.
+            $admin_whitelist_ips_correct = $admin_whitelist_ips.map |String $whitelist_ip| { "allow ${whitelist_ip};" }
+            $admin_whitelist_directives = $admin_whitelist_ips.empty ? {
+              true    => [],
+              default => concat($admin_whitelist_ips_correct, ['deny all;']),
+            }
+
+            # Apply access rules at server level so the security.txt proxy inherits the same restrictions.
             docker::proxy { "${name}_admin":
               content_security_policy => false,
+              directives              => $admin_whitelist_directives,
               proxy_port              => $admin_port,
               proxy_scheme            => 'https',
               proxy_ssl_verify        => $ssl_verify,

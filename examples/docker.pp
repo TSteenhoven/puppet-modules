@@ -251,9 +251,12 @@ node 'nextcloud.example.org' {
     require              => Class['basic_settings'],
   }
 
-  # Keep admin access on loopback for an SSH tunnel; configure backups separately in the AIO interface.
+  # Publish admin access only for trusted addresses; the certificate must cover both names.
+  # Configure backups separately in the AIO interface.
   # SMTP uses basic_settings::smtp_server above; no mail settings are needed on this resource.
   docker::nextcloud { 'nextcloud-aio':
+    admin_server_name   => 'cloud-admin.example.org',
+    admin_whitelist_ips => ['192.0.2.10', '2001:db8::/32'],
     server_name         => 'cloud.example.org',
     ssl_certificate     => '/etc/letsencrypt/live/cloud.example.org/fullchain.pem',
     ssl_certificate_key => '/etc/letsencrypt/live/cloud.example.org/privkey.pem',

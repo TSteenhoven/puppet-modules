@@ -31,6 +31,10 @@
 # @param content_security_policy
 #   CSP header value passed to `nginx::server`.
 #
+# @param directives
+#   Additional Nginx server-level directives passed to nginx::server. Defaults to an empty list. Use this for access
+#   rules that must also cover the separately generated security.txt proxy location.
+#
 # @param http2_enable
 #   Enables HTTP/2 for the public HTTPS listener when certificates are present.
 #
@@ -93,6 +97,7 @@ define docker::proxy (
   String                   $server_name,
   Optional[String]         $client_max_body_size          = undef,
   Variant[Boolean, String] $content_security_policy       = true,
+  Array[String]            $directives                    = [],
   Boolean                  $http2_enable                  = true,
   Boolean                  $http3_enable                  = true,
   Boolean                  $http_enable                   = true,
@@ -184,6 +189,7 @@ define docker::proxy (
       access_log                => $proxy_access_log,
       client_max_body_size      => $client_max_body_size,
       content_security_policy   => $content_security_policy,
+      directives                => $directives,
       docroot                   => undef,
       error_log                 => $proxy_error_log,
       http2_enable              => $http2_enable,
