@@ -230,15 +230,31 @@ node 'twenty.example.org' {
   }
 }
 
-# Supply the deployment profile's AIO Compose file and complete AIO initialization before registering stores.
-# The host must provide the Docker package source and basic_settings::systemd for Compose service management.
-# OCC runs in the nextcloud-aio-nextcloud service, matching standard AIO's documented OCC container.
+# Complete domain validation and initialization in AIO before expecting OCC defaults and S3 registration to succeed.
+# AIO requires one installation per Docker daemon; the Compose title does not isolate its fixed container names.
 node 'nextcloud.example.org' {
-  include docker
+  class { 'basic_settings':
+    docker_enable => true,
+    nginx_enable  => true,
+  }
 
-  # Keep the project name aligned with AIO's fixed label on the containers created by its mastercontainer.
-  docker::compose { 'nextcloud-aio':
-    compose_source => 'puppet:///modules/profile/nextcloud/compose.yaml',
+  # Prepare the runtime and systemd integration used by the AIO mastercontainer.
+  class { 'docker':
+    require => Class['basic_settings'],
+  }
+
+  # Terminate application TLS on the host; AIO's Apache upstream speaks HTTP on loopback.
+  class { 'nginx':
+    securitytxt_contacts => ['mailto:security@example.org'],
+    require              => Class['basic_settings'],
+  }
+
+  # Keep admin access on loopback for an SSH tunnel; configure backups separately in the AIO interface.
+  docker::nextcloud { 'nextcloud-aio':
+    server_name         => 'cloud.example.org',
+    ssl_certificate     => '/etc/letsencrypt/live/cloud.example.org/fullchain.pem',
+    ssl_certificate_key => '/etc/letsencrypt/live/cloud.example.org/privkey.pem',
+    require             => [Class['docker'], Package['nginx']],
   }
 
   # Register a path-style endpoint, preserving an explicit false option and fractional connection timeout.

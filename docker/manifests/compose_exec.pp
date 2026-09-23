@@ -1,10 +1,11 @@
-# @summary Runs a guarded command in one running service container of a managed Compose project.
+# @summary Runs a guarded command in a container belonging to a managed Compose deployment.
 #
 # Declare `docker` and the corresponding `docker::compose` stack, directly or through an application wrapper.
 # This resource waits for that stack; it does not manage its files, start containers or allocate a terminal.
-# Container discovery excludes one-off `docker compose run` containers and must find exactly one running service
-# container.
-# Missing or ambiguous matches fail without executing the command.
+# Service discovery excludes one-off docker compose run containers and requires exactly one running match.
+# For an application-managed sibling without Compose service labels, select its exact container_name instead.
+# Docker exec fails for a missing or stopped container. Explicit container names are not checked against project
+# labels; the caller must supply the name belonging to this deployment. Specify exactly one selection method.
 # Commands and guards are marked Sensitive and output logging is disabled. Sensitive arguments are redacted in reports,
 # but remain visible to anyone permitted to inspect host or container process arguments.
 # Environment values are passed through Docker's command arguments and are visible to host/Docker administrators.
@@ -23,10 +24,11 @@
 #   for shell code. Sensitive arguments remain protected while the command is assembled.
 #
 # @param compose_name
-#   Title of the managed docker::compose resource and value of its Compose project label.
+#   Title of the managed docker::compose resource. Also the project label when selecting by service.
 #
-# @param service
-#   Compose service label identifying the container; exactly one running container must match.
+# @param container_name
+#   Exact Docker container name for application-managed siblings without Compose labels. Defaults to undef;
+#   mutually exclusive with service. Container names are unique within the local Docker daemon.
 #
 # @param creates
 #   Optional absolute host path checked by Puppet; an existing path skips execution. Default undef.
@@ -34,6 +36,9 @@
 # @param environment
 #   Container process environment shared by command and unless, default empty. Use Sensitive values for secrets in
 #   Puppet reports.
+#
+# @param service
+#   Compose service label; exactly one running container must match. Defaults to undef; excludes container_name.
 #
 # @param stdin_file
 #   Optional absolute host file read as stdin for command only, enabling docker exec -i. Manage its permissions and
@@ -55,23 +60,32 @@
 define docker::compose_exec (
   Array[Variant[String, Sensitive[String]], 1]           $command,
   Pattern[/\A[A-Za-z0-9_.-]+\z/]                         $compose_name,
-  Pattern[/\A[A-Za-z0-9_.-]+\z/]                         $service,
-  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $creates      = undef,
-  Hash[String, Variant[String, Sensitive[String]]]       $environment  = {},
-  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $stdin_file   = undef,
-  Integer[1]                                             $timeout      = 120,
-  Optional[Array[Variant[String, Sensitive[String]], 1]] $unless       = undef,
-  Optional[String[1]]                                    $user         = undef,
+  Optional[Pattern[/\A[A-Za-z0-9][A-Za-z0-9_.-]*\z/]]    $container_name = undef,
+  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $creates        = undef,
+  Hash[String, Variant[String, Sensitive[String]]]       $environment    = {},
+  Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]               $service        = undef,
+  Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $stdin_file     = undef,
+  Integer[1]                                             $timeout        = 120,
+  Optional[Array[Variant[String, Sensitive[String]], 1]] $unless         = undef,
+  Optional[String[1]]                                    $user           = undef,
 ) {
-  # Validate environment keys before forming Docker options; values are escaped independently below.
-  if (defined(Class['docker']) and $environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
-    # Share container discovery with scheduled backups, including exclusion of temporary compose run containers.
-    $compose_name_shell = stdlib::shell_escape($compose_name)
-    $service_shell = stdlib::shell_escape($service)
-    $container_lookup_command = join([
-      'container_id=$(/usr/local/lib/puppet/docker-compose-container',
-      "${compose_name_shell} ${service_shell}) || exit 1",
-    ], ' ')
+  # Validate the exclusive container selection and environment keys before forming Docker options.
+  $selection_valid = (($service != undef and $container_name == undef) or ($service == undef and $container_name != undef))
+  if (defined(Class['docker']) and $selection_valid and $environment.keys.all |$key| { $key =~ /\A[A-Za-z_][A-Za-z0-9_]*\z/ }) {
+    # Use Compose labels for ordinary services and the exact Docker name for application-managed siblings.
+    if ($container_name == undef) {
+      # Share service discovery with scheduled backups, excluding temporary compose run containers.
+      $compose_name_shell = stdlib::shell_escape($compose_name)
+      $service_shell = stdlib::shell_escape($service)
+      $container_lookup_command = join([
+        'container_id=$(/usr/local/lib/puppet/docker-compose-container',
+        "${compose_name_shell} ${service_shell}) || exit 1",
+      ], ' ')
+    } else {
+      # Docker exec resolves this exact daemon-unique name and rejects absent or stopped containers.
+      $container_name_shell = stdlib::shell_escape($container_name)
+      $container_lookup_command = "container_id=${container_name_shell}"
+    }
 
     # Preserve argument boundaries, including quotes, whitespace and shell metacharacters.
     $environment_args_shell = $environment.map |$key, $value| {
@@ -149,6 +163,6 @@ define docker::compose_exec (
       unless    => $unless_command,
     }
   } else {
-    fail('docker::compose_exec requires the docker class and valid shell variable names for environment keys.')
+    fail('docker::compose_exec requires docker, exactly one of service or container_name, and valid environment keys.')
   }
 }

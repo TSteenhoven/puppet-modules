@@ -3,9 +3,9 @@
 # Declare docker first and provide Docker::Compose[$compose_name], Docker::Compose_proxy[$compose_name], or
 # Docker::Nextcloud[$compose_name]. The owner must be visible when this resource is evaluated; wrappers must provide
 # Docker::Compose[$compose_name] in the final catalog. Missing owners fail compilation before declaring OCC commands.
-# OCC waits for the visible owner; docker::compose_exec selects its nextcloud-aio-nextcloud Compose service, matching
-# the container standard AIO documents OCC in (https://github.com/nextcloud/all-in-one#how-to-run-occ-commands).
-# The selected service must provide php occ for www-data through its PATH and working directory.
+# OCC waits for the visible owner; docker::compose_exec selects the exact nextcloud-aio-nextcloud container name,
+# matching https://github.com/nextcloud/all-in-one#how-to-run-occ-commands. AIO creates this sibling itself without
+# Compose service or oneoff labels. The fixed name means only one AIO instance can run on this Docker daemon.
 # Commands run as www-data with php occ, resolved inside the selected container.
 # The mutation checks installation status before running; a missing/stopped container or incomplete installation fails.
 # No OCC helper scripts or request files are installed.
@@ -24,8 +24,8 @@
 #   OCC command and arguments without PHP or the OCC path. Use Sensitive[String] for arguments containing credentials.
 #
 # @param compose_name
-#   Shared title of the deployment owner and its managed docker::compose resource, and the container's project label.
-#   The standard AIO deployment uses nextcloud-aio, including for containers created by its mastercontainer.
+#   Shared title of the deployment owner and its managed docker::compose resource, used for ordering only.
+#   AIO owns the independently named nextcloud-aio-nextcloud container on the same local Docker daemon.
 #
 # @param timeout
 #   Maximum seconds for each command or guard, default 120. A Docker client timeout can leave PHP running.
@@ -140,15 +140,15 @@ define docker::nextcloud_occ (
           }
         }
 
-        # Use the shared executor's existing Compose service selection and availability checks.
+        # AIO siblings lack Compose service labels, so use the shared executor's exact-name selection.
         docker::compose_exec { "docker_nextcloud_occ_${title}":
-          command      => $command_correct,
-          compose_name => $compose_name,
-          service      => 'nextcloud-aio-nextcloud',
-          timeout      => $timeout,
-          unless       => $unless_correct,
-          user         => 'www-data',
-          require      => $compose_require,
+          command        => $command_correct,
+          compose_name   => $compose_name,
+          container_name => 'nextcloud-aio-nextcloud',
+          timeout        => $timeout,
+          unless         => $unless_correct,
+          user           => 'www-data',
+          require        => $compose_require,
         }
       } else {
         fail('docker::nextcloud_occ unless_json requires an unless command.')
