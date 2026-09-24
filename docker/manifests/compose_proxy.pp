@@ -17,9 +17,6 @@
 #     server_name    => 'example.org',
 #   }
 #
-# @param compose_source
-#   Compose file source passed to `docker::compose`.
-#
 # @param proxy_port
 #   Local upstream port used by Nginx for `proxy_pass`.
 #
@@ -42,7 +39,15 @@
 #   Optional `client_max_body_size` value for the generated Nginx vhost.
 #
 # @param compose_checksum
-#   Optional SHA256 checksum for the Compose file.
+#   Optional SHA256 checksum for compose_source, unavailable with compose_content. Defaults to undef.
+#
+# @param compose_content
+#   Optional rendered Compose content passed to docker::compose; defaults to undef. Supply exactly one of
+#   compose_content and compose_source for a present stack.
+#
+# @param compose_source
+#   Optional Compose file source passed to docker::compose; defaults to undef. Must start with https://, file:///,
+#   or puppet:///; excludes compose_content.
 #
 # @param content_security_policy
 #   CSP header value passed to `nginx::server`.
@@ -150,7 +155,6 @@
 #
 # @api public
 define docker::compose_proxy (
-  String                                       $compose_source,
   Integer[1, 65535]                            $proxy_port,
   String                                       $server_name,
   Optional[Pattern[/\A[^\r\n]+\z/]]            $backup_database_on_calendar    = undef,
@@ -159,6 +163,8 @@ define docker::compose_proxy (
   Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]     $backup_service                 = undef,
   Optional[String]                             $client_max_body_size           = undef,
   Optional[Pattern[/\A[0-9a-fA-F]{64}\z/]]     $compose_checksum               = undef,
+  Optional[String]                             $compose_content                = undef,
+  Optional[String]                             $compose_source                 = undef,
   Variant[Boolean, String]                     $content_security_policy        = true,
   Enum['present', 'absent']                    $ensure                         = present,
   Optional[Variant[String, Sensitive[String]]] $env_content                    = undef,
@@ -206,8 +212,9 @@ define docker::compose_proxy (
       backup_database_retention_days => $backup_database_retention_days,
       backup_database_type           => $backup_database_type,
       backup_service                 => $backup_service,
-      compose_source                 => $compose_source,
       compose_checksum               => $compose_checksum,
+      compose_content                => $compose_content,
+      compose_source                 => $compose_source,
       env_content                    => $env_content,
       env_source                     => $env_source,
       monitoring_detail_limit        => $monitoring_detail_limit,

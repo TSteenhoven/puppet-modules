@@ -124,7 +124,9 @@
 #
 # @param server_name
 #   Optional public hostname for Nextcloud; defaults to undef. Configure this same domain in the AIO interface.
-#   Undef leaves the application proxy to the deployment; a same-host HTTPS proxy is still required by AIO.
+#   When set, also maps this hostname to host-gateway in the mastercontainer through Compose extra_hosts.
+#   Undef omits that mapping and leaves the application proxy to the deployment; a same-host HTTPS proxy is still
+#   required.
 #
 # @param skeleton_directory
 #   Global default skeleton directory written through OCC `config:system:set skeletondirectory`. The default is an
@@ -247,7 +249,7 @@ define docker::nextcloud (
             docker::compose_proxy { $name:
               ensure                     => $ensure,
               client_max_body_size       => '0', # lint:ignore:140chars Nextcloud handles large file uploads itself; do not cap the request body at the proxy.
-              compose_source             => 'puppet:///modules/docker/nextcloud.yaml',
+              compose_content            => template('docker/nextcloud.yaml'),
               content_security_policy    => false, # Nextcloud ships its own CSP; avoid a conflicting proxy-level policy.
               env_content                => $env_content,
               monitoring_detail_limit    => $monitoring_detail_limit,
@@ -277,7 +279,7 @@ define docker::nextcloud (
           } else {
             docker::compose { $name:
               ensure                     => $ensure,
-              compose_source             => 'puppet:///modules/docker/nextcloud.yaml',
+              compose_content            => template('docker/nextcloud.yaml'),
               env_content                => $env_content,
               monitoring_detail_limit    => $monitoring_detail_limit,
               monitoring_expected_exited => $monitoring_expected_exited,
