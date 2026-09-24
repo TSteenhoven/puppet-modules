@@ -34,8 +34,12 @@
 #   Optional absolute host path checked by Puppet; an existing path skips execution. Default undef.
 #
 # @param environment
-#   Container process environment shared by command and unless, default empty. Use Sensitive values for secrets in
-#   Puppet reports.
+#   Container process environment shared by command, onlyif and unless, default empty. Use Sensitive values for
+#   secrets in Puppet reports.
+#
+# @param onlyif
+#   Optional read-only executable and arguments inside the container, accepting Sensitive[String]. Exit 0 allows
+#   command; other exit codes skip it. Also runs during Puppet --noop. Default undef adds no prerequisite check.
 #
 # @param service
 #   Compose service label; exactly one running container must match. Defaults to undef; excludes container_name.
@@ -53,7 +57,7 @@
 #   --noop. Default undef.
 #
 # @param user
-#   Optional container user or UID, optionally with a group, for both command and unless. Default undef uses the image
+#   Optional container user or UID, optionally with a group, for command and both guards. Default undef uses the image
 #   user. This does not change the host user connecting to Docker.
 #
 # @api public
@@ -63,6 +67,7 @@ define docker::compose_exec (
   Optional[Pattern[/\A[A-Za-z0-9][A-Za-z0-9_.-]*\z/]]    $container_name = undef,
   Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $creates        = undef,
   Hash[String, Variant[String, Sensitive[String]]]       $environment    = {},
+  Optional[Array[Variant[String, Sensitive[String]], 1]] $onlyif         = undef,
   Optional[Pattern[/\A[A-Za-z0-9_.-]+\z/]]               $service        = undef,
   Optional[Pattern[/\A\/[^\r\n]+\z/]]                    $stdin_file     = undef,
   Integer[1]                                             $timeout        = 120,
@@ -129,6 +134,26 @@ define docker::compose_exec (
       $interactive_arg = ''
     }
 
+    # Apply the same discovery and execution boundary to the read-only prerequisite guard.
+    if ($onlyif != undef) {
+      # Shell escaping is identical for the guard and the mutation.
+      $onlyif_args_shell = $onlyif.map |$argument| {
+        # Unwrap only while assembling the Sensitive exec guard.
+        $argument_correct = $argument ? {
+          Sensitive => $argument.unwrap,
+          default   => $argument,
+        }
+        stdlib::shell_escape($argument_correct)
+      }
+      $onlyif_command = Sensitive.new(join([
+        $container_lookup_command,
+        join(concat([$docker_exec_command, '"$container_id"'], $onlyif_args_shell, ['< /dev/null']), ' '),
+      ], "\n"))
+    } else {
+      # An omitted prerequisite guard adds no Docker call or execution restriction.
+      $onlyif_command = undef
+    }
+
     # Apply the same discovery and execution boundary to the read-only application guard.
     if ($unless != undef) {
       # Shell escaping is identical for the guard and the mutation.
@@ -145,7 +170,7 @@ define docker::compose_exec (
         join(concat([$docker_exec_command, '"$container_id"'], $unless_args_shell, ['< /dev/null']), ' '),
       ], "\n"))
     } else {
-      # An omitted guard performs no Docker calls during noop; creates stays a local Puppet check.
+      # An omitted application guard adds no Docker call; creates stays a local Puppet check.
       $unless_command = undef
     }
 
@@ -157,6 +182,7 @@ define docker::compose_exec (
       ], "\n")),
       creates   => $creates,
       logoutput => false,
+      onlyif    => $onlyif_command,
       provider  => shell,
       require   => [Docker::Compose[$compose_name], File['/usr/local/lib/puppet/docker-compose-container']],
       timeout   => $timeout,

@@ -7,7 +7,9 @@
 # matching https://github.com/nextcloud/all-in-one#how-to-run-occ-commands. AIO creates this sibling itself without
 # Compose service or oneoff labels. The fixed name means only one AIO instance can run on this Docker daemon.
 # Commands run as www-data with php occ, resolved inside the selected container.
-# The mutation checks installation status before running; a missing/stopped container or incomplete installation fails.
+# A read-only onlyif guard requires successful OCC status JSON with installed set to boolean true. A missing/stopped
+# container, incomplete installation or unreadable status skips the mutation; each Puppet run checks again.
+# Installation and unless guards also run during noop, without executing the mutation.
 # No OCC helper scripts or request files are installed.
 # Commands and guards are Sensitive and output logging is disabled. Arguments remain visible through host/container
 # process inspection. OCC config:system:set has no --sensitive option.
@@ -31,8 +33,9 @@
 #   Maximum seconds for each command or guard, default 120. A Docker client timeout can leave PHP running.
 #
 # @param unless
-#   Optional read-only OCC command. Exit 0 skips the mutation; other exit codes allow it. Default undef runs every time.
-#   Guards also run during noop. Command exit 0 succeeds; other mutation exit codes fail the resource.
+#   Optional read-only OCC command. Exit 0 skips the mutation; other exit codes allow it only after installation.
+#   Default undef runs on every Puppet application after installation. Guards also run during noop.
+#   Command exit 0 succeeds; other mutation exit codes fail the resource.
 #
 # @param unless_json
 #   Optional expected JSON from unless, optionally Sensitive. Undef compares only exit status; otherwise parsed JSON
@@ -77,16 +80,9 @@ define docker::nextcloud_occ (
       if ($unless_json == undef or $unless != undef) {
         # Keep the documented AIO OCC invocation shared by commands and guards.
         $occ_prefix = ['php', 'occ', '--no-interaction', '--no-ansi']
-        $command_shell = concat($occ_prefix, $command).map |$argument| {
-          # Unwrap credentials only while preparing the Sensitive command.
-          $argument_correct = $argument ? {
-            Sensitive => $argument.unwrap,
-            default   => $argument,
-          }
-          stdlib::shell_escape($argument_correct)
-        }.join(' ')
+        $command_correct = concat($occ_prefix, $command)
 
-        # Compose checks the running container; OCC status verifies that installation has completed.
+        # Capture successful OCC status before parsing JSON so a pipeline cannot hide a failed status command.
         $status_shell = concat($occ_prefix, ['status', '--output=json']).map |$argument| {
           stdlib::shell_escape($argument)
         }.join(' ')
@@ -94,7 +90,10 @@ define docker::nextcloud_occ (
         $ready_shell = ['php', '-r', $ready_php].map |$argument| {
           stdlib::shell_escape($argument)
         }.join(' ')
-        $command_correct = ['/bin/sh', '-c', Sensitive("${status_shell} | ${ready_shell} && ${command_shell}")]
+        $onlyif_correct = ['/bin/sh', '-c', Sensitive(join([
+          "STATUS=\$(${status_shell}) || exit 1",
+          "printf '%s' \"\$STATUS\" | ${ready_shell}",
+        ], "\n"))]
 
         # JSON comparison is optional so ordinary OCC guards retain their native exit-code semantics.
         if ($unless != undef and $unless_json != undef) {
@@ -133,7 +132,7 @@ define docker::nextcloud_occ (
             "printf '%s' \"\$CURRENT\" | ${compare_shell}",
           ], "\n"))]
         } else {
-          # Preserve native OCC guard exit codes; without a guard, run on every Puppet application.
+          # Preserve native OCC guard exit codes; without an unless guard, run after each successful installation check.
           $unless_correct = $unless ? {
             undef   => undef,
             default => concat($occ_prefix, $unless),
@@ -145,6 +144,7 @@ define docker::nextcloud_occ (
           command        => $command_correct,
           compose_name   => $compose_name,
           container_name => 'nextcloud-aio-nextcloud',
+          onlyif         => $onlyif_correct,
           timeout        => $timeout,
           unless         => $unless_correct,
           user           => 'www-data',

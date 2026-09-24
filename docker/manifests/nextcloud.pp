@@ -23,8 +23,8 @@
 # `default_locale`, `default_phone_region`, `default_app`, `skeleton_directory`) through `docker::nextcloud_occ`, each
 # guarded so Puppet only writes on an actual difference. There is no opt-out for applying these six, only for their
 # values. SMTP has separate optional parameters below; use `docker::nextcloud_occ` directly for other settings.
-# Until AIO initialization completes, these resources fail without writing configuration; finish setup through the
-# admin UI and rerun Puppet.
+# Until AIO initialization completes, these resources are skipped without writing configuration. Finish setup through
+# the admin UI; the first Puppet run with a successful installation check applies any differing settings.
 #
 # SMTP shares docker::authentik's parameter names, relay fallback and Sensitive password contract. A resolved relay
 # manages mail_smtpmode, mail_smtphost, mail_smtpsecure and boolean mail_smtpauth. Port, timeout, sender and credentials
