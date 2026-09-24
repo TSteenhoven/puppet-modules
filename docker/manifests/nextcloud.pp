@@ -241,6 +241,9 @@ define docker::nextcloud (
             },
           }
 
+          # Get the IP version from the parent docker class, which inherits it from basic_settings::network or kernel.
+          $ip_version = $docker::ip_version
+
           # Both the Compose listeners and Nginx upstreams receive their ports from this interface.
           $env_content = Sensitive.new(template('docker/nextcloud.env'))
 

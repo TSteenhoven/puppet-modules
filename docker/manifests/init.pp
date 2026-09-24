@@ -22,6 +22,21 @@ class docker (
     # Set some values
     $monitoring_enable = defined(Class['basic_settings::monitoring'])
 
+    # Check if we have network class
+    if (!defined(Class['basic_settings::network'])) {
+      # Inherit IP policy from the kernel class when no central network class owns it.
+      if (defined(Class['basic_settings::kernel'])) {
+        # Keep Docker networks aligned with the kernel's IP policy.
+        $ip_version = $basic_settings::kernel::ip_version
+      } else {
+        # Enable both IP families when no central IP policy is available.
+        $ip_version = 'all'
+      }
+    } else {
+      # Prefer the central network class's IP policy for Docker networks.
+      $ip_version = $basic_settings::network::ip_version
+    }
+
     # Install Docker from the separately managed repository.
     package { 'docker':
       ensure          => installed,

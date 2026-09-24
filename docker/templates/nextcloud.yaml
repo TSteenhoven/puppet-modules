@@ -28,4 +28,5 @@ networks:
   nextcloud-aio:
     name: nextcloud-aio
     driver: bridge
-    enable_ipv6: true
+    enable_ipv4: true
+    enable_ipv6: <%= @ip_version == 'all' %>
