@@ -51,6 +51,7 @@ De [linthandleiding](../README.md) beschrijft het gebruik, de installatie, de co
   - [Bestaande interfaces voor integratiewaarden gebruiken](#bestaande-interfaces-voor-integratiewaarden-gebruiken)
   - [Dependencies pas na een geslaagde controle koppelen](#dependencies-pas-na-een-geslaagde-controle-koppelen)
   - [Prerequisites van ordering onderscheiden](#prerequisites-van-ordering-onderscheiden)
+  - [Runtime-inventarisatie met Facter modelleren](#runtime-inventarisatie-met-facter-modelleren)
   - [Packageafhankelijkheden bij externe commando’s](#packageafhankelijkheden-bij-externe-commandos)
     - [Optionele packages activeren met realize](#optionele-packages-activeren-met-realize)
   - [Gedeelde voorwaarden om resources groeperen](#gedeelde-voorwaarden-om-resources-groeperen)
@@ -2207,6 +2208,72 @@ Controleer aanwezigheid, afwezigheid, declaratievolgorde en evaluatievolgorde vo
 **Verificatie**
 
 Handmatige beoordeling van beide scenario’s: Controleer aanwezigheid, afwezigheid, declaratievolgorde en evaluatievolgorde volgens de gekoppelde prerequisitereview. De onjuiste variant wordt afgekeurd; de juiste variant voldoet onder de beschreven voorwaarden. Module- en hostgedrag worden hiermee niet als getest gepresenteerd.
+
+### Runtime-inventarisatie met Facter modelleren
+
+**Norm**
+
+Gebruik bij voorkeur Facter voor herbruikbare, alleen-lezen inventarisatie die Puppet tijdens cataloguscompilatie nodig heeft over bestaande runtimeobjecten die het niet rechtstreeks beheert. Denk aan actieve containers, aanwezige applicatie-instances, dynamisch aangemaakte interfaces, door applicaties gegenereerde objecten en beschikbare hostmogelijkheden. Een fact observeert en retourneert toestand; classes, defined types en resources bepalen en voeren de configuratiewijzigingen uit.
+
+Houd een fact generiek wanneer meerdere afnemers dezelfde informatie kunnen gebruiken. Applicatiespecifieke selectie en beleid horen in de afnemende Puppet-code. Als optionele software of een optionele service ontbreekt of niet bereikbaar is, retourneert de fact een passende lege of afwezige waarde zonder de factverzameling te laten mislukken.
+
+Facts vormen een momentopname vóór het toepassen van de catalogus. Een object dat tijdens diezelfde Puppet-run ontstaat, verschijnt pas bij een volgende verzameling. Gebruik geen fact voor mutaties, acties die alleen tijdens catalogustoepassing zinvol zijn of toestand die pas tijdens dezelfde run ontstaat en direct daarna nodig is. De [ontwerpreview](../../../AGENTS.md#runtime-discovery-and-facter) bepaalt wanneer dit model wordt onderzocht; alleen het vermijden van een `exec` is geen reden voor een fact.
+
+**Herkomst**
+
+Projectregel
+
+**Toepassingsgebied**
+
+Custom facts en hun Puppet-afnemers die bestaande host- of applicatietoestand nodig hebben.
+
+**Automatische controle**
+
+Geen automatische controle
+
+**Detectiegrenzen**
+
+De linter beoordeelt geen Ruby-facts, runtimebeschikbaarheid, herbruikbaarheid of het moment waarop objecten ontstaan.
+
+**Meldingen en severity**
+
+Geen lintmelding of severity; deze ontwerpkeuze vereist handmatige review.
+
+**Autofix**
+
+Geen
+
+**Autofixvoorwaarden**
+
+Niet van toepassing: het verplaatsen van discovery vereist een inhoudelijke beoordeling van eigenaarschap en timing.
+
+**Toegestane uitzonderingen**
+
+Discovery tijdens catalogustoepassing blijft mogelijk wanneer informatie pas dan beschikbaar of bruikbaar is. Facter heeft de voorkeur voor het beschreven inventarisatiemodel, maar is geen algemene vervanging voor iedere `exec`.
+
+**Suppressions**
+
+Niet van toepassing op automatische detectie; een lintmarkering heft de handmatige review niet op.
+
+**Onjuist voorbeeld**
+
+Handmatig reviewscenario: Een Docker-fact filtert uitsluitend Nextcloud-containers, wijzigt hun configuratie of laat alle factverzameling falen wanneer Docker ontbreekt. Keur dit af. Keur ook een catalogus af die rekent op discovery van een container die pas later in dezelfde run wordt aangemaakt.
+
+**Correct voorbeeld**
+
+Handmatig reviewscenario: Een generieke fact retourneert actieve Docker-containernamen of een lege lijst bij een onbeschikbare runtime. Puppet selecteert de applicatiecontainers en maakt per container een resource; nieuw aangemaakte containers volgen bij de volgende Puppet-run.
+
+**Grensgevallen**
+
+Een container kan tussen factverzameling en catalogustoepassing verdwijnen. Een fact bewijst daarom geen actuele uitvoerbaarheid; de afnemende operatie behoudt haar eigen foutafhandeling. Een runtime die Puppet nog moet installeren levert tijdens de voorafgaande factverzameling geen inventaris op.
+
+**Handmatige review**
+
+Controleer dat discovery alleen leest, algemene inventarisatie geen applicatiebeleid bevat en de afnemer de momentopname correct gebruikt. Beoordeel normale uitvoer, lege inventaris, ontbrekende executables, onbereikbare services, mislukte discovery en objecten die later ontstaan of verdwijnen.
+
+**Verificatie**
+
+Beoordeel beide scenario's tegen de norm. Valideer factuitvoer en catalogusgedrag met geïsoleerde synthetische runtimegegevens buiten de repository volgens de [validatieafspraken](../../../AGENTS.md#isolation-and-evidence). De documentatietests controleren structuur en verwijzingen, niet het runtimegedrag van de fact.
 
 ### Packageafhankelijkheden bij externe commando’s
 

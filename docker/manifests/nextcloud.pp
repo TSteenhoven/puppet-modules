@@ -125,6 +125,11 @@
 # @param server_name
 #   Optional public hostname for Nextcloud; defaults to undef. Configure this same domain in the AIO interface.
 #   When set, also maps this hostname to host-gateway in the mastercontainer through Compose extra_hosts.
+#   Present deployments copy that mapping to running nextcloud-aio-* siblings from the docker_containers fact.
+#   Facts precede catalog application: newly created containers are covered on the next Puppet run. Each sibling
+#   gets a guarded exec after Compose; a missing master mapping or a stopped/disappeared container fails that exec.
+#   The update runs as root inside the sibling and needs its existing sh, awk, mktemp, cat and rm tools.
+#   No packages are installed in the containers. No mapping cleanup runs when retiring the deployment.
 #   Undef omits that mapping and leaves the application proxy to the deployment; a same-host HTTPS proxy is still
 #   required.
 #
@@ -278,6 +283,79 @@ define docker::nextcloud (
               ssl_certificate_trusted    => $ssl_certificate_trusted,
               target                     => $target,
               require                    => Class['docker'],
+            }
+
+            # Facts describe running containers before this catalog; AIO siblings created later wait for the next run.
+            $docker_containers = $facts['docker_containers'] ? {
+              undef   => [],
+              default => $facts['docker_containers'],
+            }
+            $aio_child_containers = $docker_containers.filter |String $container| {
+              $container =~ /^nextcloud-aio-/ and $container != 'nextcloud-aio-mastercontainer'
+            }
+
+            # Each resource reports failures for one AIO sibling; container discovery remains solely in Facter.
+            $aio_child_containers.each |String $container| {
+              # Read Docker's chosen host-gateway from the master, shared by each command and its read-only guard.
+              $host_shell = stdlib::shell_escape($server_name)
+              $host_address_awk_shell = stdlib::shell_escape('$2 == host { print $1; exit }')
+              $host_address_command = join([
+                'ADDRESS=$(/usr/bin/docker exec nextcloud-aio-mastercontainer',
+                "awk -v host=${host_shell} ${host_address_awk_shell} /etc/hosts) || exit 1",
+              ], ' ')
+
+              # A failed or empty master lookup must never produce an empty mapping.
+              $host_address_check = '[ -n "$ADDRESS" ] || exit 1'
+
+              # Ignore whitespace differences but reject stale entries even when a correct entry also exists.
+              $host_mapping_awk_shell = stdlib::shell_escape(join([
+                '$2 == host { if ($1 == ip) { found=1 } else { stale=1 } }',
+                'END { exit !(found && !stale) }',
+              ], ' '))
+
+              # Docker mounts /etc/hosts separately: buffer the replacement securely, then overwrite the existing inode.
+              $host_mapping_script = @(HOSTS_SCRIPT)
+                # Resolve tools already supplied by the container image.
+                AWK=$(command -v awk) || exit 1
+                MKTEMP=$(command -v mktemp) || exit 1
+                CAT=$(command -v cat) || exit 1
+                RM=$(command -v rm) || exit 1
+
+                # Keep cleanup active on success, write failure and handled signals.
+                HOSTS_TMP=$($MKTEMP) || exit 1
+                trap '$RM -f "$HOSTS_TMP"' 0
+                trap 'exit 1' 1 2 15
+
+                # Preserve unrelated hosts and replace all entries whose hostname field matches this deployment.
+                $AWK -v host="$1" '
+                    BEGIN { print "# Managed by puppet" }
+                    $2 != host && $0 != "# Managed by puppet" { print }
+                ' /etc/hosts > "$HOSTS_TMP" &&
+                    printf '%s\t%s\n' "$2" "$1" >> "$HOSTS_TMP" &&
+                    $CAT "$HOSTS_TMP" > /etc/hosts
+                exit $?
+                | HOSTS_SCRIPT
+              $host_mapping_script_shell = stdlib::shell_escape($host_mapping_script)
+
+              # Escape the runtime inventory before it crosses the host shell boundary.
+              $container_shell = stdlib::shell_escape($container)
+              $host_mapping_command = join([
+                $host_address_command,
+                $host_address_check,
+                "/usr/bin/docker exec --user 0 ${container_shell} /bin/sh -c ${host_mapping_script_shell} puppet-host-mapping ${host_shell} \"\$ADDRESS\"", # lint:ignore:140chars
+              ], "\n")
+              $host_mapping_unless = join([
+                $host_address_command,
+                $host_address_check,
+                "/usr/bin/docker exec ${container_shell} awk -v ip=\"\$ADDRESS\" -v host=${host_shell} ${host_mapping_awk_shell} /etc/hosts", # lint:ignore:140chars
+              ], "\n")
+
+              exec { "${name}_host_mapping_${container}":
+                command  => $host_mapping_command,
+                provider => shell,
+                unless   => $host_mapping_unless,
+                require  => [Class['docker'], Docker::Compose_proxy[$name]],
+              }
             }
           } else {
             docker::compose { $name:

@@ -202,6 +202,12 @@ External disclosure is every transfer outside an organization-controlled or expl
 - Verify that the documented contract covers availability and absence according to those criteria; validate both cases, including relevant declaration and evaluation order.
 - Apply the [dependency review criteria](.tools/lint/docs/CODE_RULES.md#resources-en-afhankelijkheden) and [external-command package contract](.tools/lint/docs/CODE_RULES.md#packageafhankelijkheden-bij-externe-commandos), including exec resources and managed scripts.
 
+### Runtime Discovery And Facter
+
+- Before adding shell-based runtime discovery to Puppet resources, evaluate whether Puppet needs reusable observed host or application state during catalog compilation. Apply the [runtime inventory criteria](.tools/lint/docs/CODE_RULES.md#runtime-inventarisatie-met-facter-modelleren), including the separation of observation, application policy, and mutation.
+- Review generic facts against all affected consumers, optional runtime availability, and the timing of fact collection. Validate unavailable runtimes and state that appears only during catalog application; record when a subsequent Puppet run is required.
+- Do not choose Facter merely to remove an `exec`; explain whether the information is reusable inventory or whether separating discovery from configuration clarifies the Puppet model.
+
 ### Resource Placement And Ordering
 
 - Review each added or moved declaration in the complete surrounding implementation against the [resource placement and ordering criteria](.tools/lint/docs/CODE_RULES.md#volgorde-en-meldingen). Record any necessary placement exception and its technical reason in the change review.
