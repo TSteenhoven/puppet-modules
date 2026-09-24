@@ -44,8 +44,8 @@ class docker (
       install_options => ['--no-install-recommends', '--no-install-suggests'],
     }
 
-    # Compose deployment, backups and monitoring share these dependencies.
-    ensure_packages(['coreutils', 'dash', 'docker-compose-plugin', 'gzip', 'util-linux'], {
+    # Compose deployment, host-side container mappings, backups and monitoring share these dependencies.
+    ensure_packages(['coreutils', 'dash', 'docker-compose-plugin', 'gzip', 'mawk', 'util-linux'], {
       'ensure'          => 'installed',
       'install_options' => ['--no-install-recommends', '--no-install-suggests'],
     })
@@ -91,7 +91,7 @@ class docker (
     # Create service check
     if ($monitoring_enable and $basic_settings::monitoring::package != 'none') {
       # Install the check's shell, text tools, JSON parser and Docker CLI.
-      $monitoring_packages = ['docker-ce-cli', 'jq', 'mawk', 'sed']
+      $monitoring_packages = ['docker-ce-cli', 'jq', 'sed']
 
       ensure_packages($monitoring_packages, {
         'ensure'          => 'installed',
@@ -101,7 +101,7 @@ class docker (
       # Prepare package names before constructing resource dependencies.
       $monitoring_required_packages = concat(
         $monitoring_packages,
-        ['coreutils', 'dash', 'docker-compose-plugin'],
+        ['coreutils', 'dash', 'docker-compose-plugin', 'mawk'],
       )
 
       # The parent owns one shared check; project definitions only register their arguments.
